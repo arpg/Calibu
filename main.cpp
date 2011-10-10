@@ -5,14 +5,18 @@
  **/
 
 #include <pangolin/pangolin.h>
-#include <pangolin/videosource.h>
+#include <pangolin/video.h>
 
 using namespace pangolin;
 
 int main( int /*argc*/, char* argv[] )
 {
+  std::string video_uri = "v4l:///dev/video0";
+
   // Setup Firewire Camera
-  FirewireVideo video(0,DC1394_VIDEO_MODE_640x480_RGB8,DC1394_FRAMERATE_30,DC1394_ISO_SPEED_400,50);
+//  FirewireVideo video(0,DC1394_VIDEO_MODE_640x480_RGB8,DC1394_FRAMERATE_30,DC1394_ISO_SPEED_400,50);
+  VideoInput video(video_uri);
+
   const unsigned w = video.Width();
   const unsigned h = video.Height();
 
@@ -25,16 +29,15 @@ int main( int /*argc*/, char* argv[] )
   // OpenGl Texture for video frame
   GlTexture texVideo(w,h,GL_RGBA8);
 
+  unsigned char* rgb = new unsigned char[video.Width()*video.Height()*3];
+
   for(int frame=0; !pangolin::ShouldQuit(); ++frame)
   {
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
     // Get newest frame from camera and upload to GPU as texture
-    {
-      FirewireFrame frame = video.GetNewest(true);
-      texVideo.Upload(frame.Image(),GL_RGB,GL_UNSIGNED_BYTE);
-      video.PutFrame(frame);
-    }
+    video.GrabNext(rgb,true);
+    texVideo.Upload(rgb,GL_RGB,GL_UNSIGNED_BYTE);
 
     // Activate video viewport and render texture
     vVideo.Activate();
@@ -46,6 +49,8 @@ int main( int /*argc*/, char* argv[] )
     // Process window events via GLUT
     glutMainLoopEvent();
   }
+
+  delete[] rgb;
 
   return 0;
 }

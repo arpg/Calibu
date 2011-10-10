@@ -22,6 +22,11 @@ INCLUDE(SetPlatformVars)
 SET(
   SOURCES
   main.cpp
+  hungarian.h hungarian.cpp
+  conics.h conics.cpp
+  ransac.h
+  rectangle.h
+  target.h target.cpp
 )
 
 #######################################################
