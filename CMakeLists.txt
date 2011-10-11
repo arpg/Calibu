@@ -25,8 +25,11 @@ SET(
   hungarian.h hungarian.cpp
   camera.h camera.cpp
   conics.h conics.cpp
+  find_conics.h
   ransac.h
   rectangle.h
+  adaptive_threshold.h
+  label.h label.cpp
   target.h target.cpp
   utils.h utils.cpp
 )
@@ -56,7 +59,7 @@ LINK_LIBRARIES(
   ${FREEGLUT_LIBRARY}
   ${Pangolin_LIBRARY}
   ${DC1394_LIBRARY}
-  lapack
+  lapack cvd
 #  ${Boost_LIBRARIES}
 )
 

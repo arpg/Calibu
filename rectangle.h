@@ -9,8 +9,7 @@
 #ifndef RV_RECTANGLE_H
 #define RV_RECTANGLE_H
 
-//#include <cvd/image_io.h>
-//#include "maths_utils.h"
+#include <TooN/TooN.h>
 
 class Rectangle
 {
@@ -166,15 +165,15 @@ public:
     return ret;
   }
 
-//    IRectangle Clamp( const CVD::ImageRef& size ) const
-//    {
-//      RobotVision::IRectangle ret(*this);
-//      ret.x1 = std::max(0,ret.x1);
-//      ret.y1 = std::max(0,ret.y1);
-//      ret.x2 = std::min(size.x-1,ret.x2);
-//      ret.y2 = std::min(size.y-1,ret.y2);
-//      return ret;
-//    }
+  IRectangle Clamp( int minx, int miny, int maxx, int maxy ) const
+  {
+    IRectangle ret(*this);
+    ret.x1 = std::max(minx,ret.x1);
+    ret.y1 = std::max(miny,ret.y1);
+    ret.x2 = std::min(maxx,ret.x2);
+    ret.y2 = std::min(maxy,ret.y2);
+    return ret;
+  }
 
   bool Contains( int x, int y ) const
   {
