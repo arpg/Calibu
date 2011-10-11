@@ -13,12 +13,8 @@
 #include <TooN/TooN.h>
 #include <TooN/se3.h>
 
-#include "Camera/abstract_camera.h"
-#include "Camera/linear_camera.h"
-#include "image_utils.h"
-
-namespace RobotVision
-{
+#include "conics.h"
+#include "camera.h"
 
 class Target
 {
@@ -39,7 +35,7 @@ public:
 
   void FindTarget(
     const TooN::SE3<>& T_cw,
-    const RobotVision::AbstractCamera& cam,
+    const AbstractCamera& cam,
     std::vector<Conic>& conics,
     std::vector<int>& ellipse_target_map,
     int match_neighbours = 10,
@@ -50,7 +46,7 @@ public:
   );
 
   void FindTarget(
-    const RobotVision::LinearCamera& cam,
+    const LinearCamera& cam,
     std::vector<Conic>& conics,
     std::vector<int>& ellipse_target_map,
     int match_neighbours = 10,
@@ -107,8 +103,6 @@ void SortRows(TooN::Matrix<R,C,P>& M)
 {
   for( int r=0; r < M.num_rows(); ++r )
     std::sort(&(M[r][0]), &(M[r][M.num_cols()-1])+1);
-}
-
 }
 
 #endif // TARGET_H

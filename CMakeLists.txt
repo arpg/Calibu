@@ -23,10 +23,12 @@ SET(
   SOURCES
   main.cpp
   hungarian.h hungarian.cpp
+  camera.h camera.cpp
   conics.h conics.cpp
   ransac.h
   rectangle.h
   target.h target.cpp
+  utils.h utils.cpp
 )
 
 #######################################################
@@ -54,6 +56,7 @@ LINK_LIBRARIES(
   ${FREEGLUT_LIBRARY}
   ${Pangolin_LIBRARY}
   ${DC1394_LIBRARY}
+  lapack
 #  ${Boost_LIBRARIES}
 )
 

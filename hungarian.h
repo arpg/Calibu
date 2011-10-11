@@ -32,9 +32,6 @@
 #define HUNGARIAN_MODE_MINIMIZE_COST   0
 #define HUNGARIAN_MODE_MAXIMIZE_UTIL 1
 
-namespace RobotVision
-{
-
 typedef struct {
   int num_rows;
   int num_cols;
@@ -59,8 +56,6 @@ void hungarian_solve(hungarian_problem_t* p);
 
 /** Print the cost matrix. **/
 void hungarian_print_costmatrix(hungarian_problem_t* p);
-
-}
 
 #endif
 

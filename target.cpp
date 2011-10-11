@@ -11,19 +11,17 @@
 #include <iostream>
 #include <fstream>
 
+#include <TooN/se2.h>
 #include <TooN/LU.h>
+#include <TooN/SVD.h>
 
 #include "hungarian.h"
 #include "conics.h"
 #include "ransac.h"
+#include "utils.h"
 
 using namespace std;
 using namespace TooN;
-using namespace CVD;
-using namespace RobotVision;
-
-namespace RobotVision
-{
 
 Target::Target()
   : seed(0), dt(NULL)
@@ -177,6 +175,50 @@ double RansacMatchCostFunction( const SE2<>& T, int i, RansacMatchData* data )
   return d*d;
 }
 
+TooN::SE2<> PoseFromCorrespondences(const vector<const TooN::Vector<2> *>& a, const vector<const TooN::Vector<2> *>& b)
+{
+  int n = a.size();
+  double x1 = 0.0, x2 = 0.0, y1 = 0.0, y2 = 0.0, xx = 0.0, yy = 0.0, xy = 0.0, yx = 0.0;
+
+  for (int i=0; i<n; ++i)
+  {
+    const TooN::Vector<2> & p1 = *a[i];
+    const TooN::Vector<2> & p2 = *b[i];
+
+    x1 += p1[0];
+    x2 += p2[0];
+    y1 += p1[1];
+    y2 += p2[1];
+    xx += p1[0]*p2[0];
+    yy += p1[1]*p2[1];
+    xy += p1[0]*p2[1];
+    yx += p1[1]*p2[0];
+  }
+
+  double N = (double)n;
+
+  double Sxx = xx - x1*x2/N; // calculate S
+  double Syy = yy - y1*y2/N;
+  double Sxy = xy - x1*y2/N;
+  double Syx = yx - y1*x2/N;
+
+  double xm1 = x1/N; // calculate means
+  double xm2 = x2/N;
+  double ym1 = y1/N;
+  double ym2 = y2/N;
+
+  double yaw = atan2(Sxy-Syx, Sxx+Syy);
+
+  // calculate pose
+  return SE2<>(
+    SO2<>(yaw),
+    makeVector(
+      xm2 - (xm1*cos(yaw) - ym1*sin(yaw)),
+      ym2 - (xm1*sin(yaw) + ym1*cos(yaw))
+    )
+  );
+}
+
 SE2<> RansacMatchModelFunction( const std::vector<int>& indices, RansacMatchData* data )
 {
   vector<const Vector<2>* > mp;
@@ -315,7 +357,7 @@ double RansacHomogCostFunction( const Matrix<3,3>& H_tm, int i, RansacMatchData*
 {
   const Vector<2>& m = data->mpts[i];
   const Vector<2>& t = data->tpts[data->mpts_label[i]];
-  const Vector<2> m_t = dn(H_tm * up(m));
+  const Vector<2> m_t = project(H_tm * unproject(m));
   return norm_sq(m_t - t);
 }
 
@@ -355,7 +397,7 @@ void Target::FindTarget(
   vector<int> vis_t_map;
   for( unsigned int i=0; i < tpts3d.size(); ++i )
   {
-    const Vector<2> t = cam.projectmap( T_cw * tpts3d[i] );
+    const Vector<2> t = cam.project_map( T_cw * tpts3d[i] );
     if( img_rect.Contains(t) )
     {
       vis_t.push_back(t);
@@ -372,6 +414,28 @@ void Target::FindTarget(
 
   for(unsigned i=0; i<m.size(); ++i )
     conics_target_map[i] = m_map[i] >= 0 ? vis_t_map[m_map[i]] : -1;
+}
+
+Vector<3> nd_b(const SE3<>& T_ba, const Vector<3>& n_a)
+{
+  const Vector<3> n_b = T_ba.get_rotation() * n_a;
+  const double d_b = 1 - T_ba.get_translation() * n_b;
+  return n_b / d_b;
+}
+
+TooN::Vector<3> IntersectCamFeaturePlane( const TooN::Vector<2>& p, const AbstractCamera & cam, const TooN::SE3<>& T_wk, const TooN::Vector<4>& N_w)
+{
+  const Vector<3> nd_k = nd_b(T_wk.inverse(),project(N_w));
+  const Vector<3> kinvp = cam.unmap_unproject(p);
+  const double denom = nd_k * kinvp;
+  if( denom !=0 ) {
+    const Vector<3> r_k = -kinvp / denom;
+    const Vector<3> r_w = project(T_wk * unproject(r_k));
+    return r_w;
+  }else{
+    assert(false);
+    return Vector<3>();
+  }
 }
 
 void Target::FindTarget(
@@ -428,7 +492,8 @@ void Target::FindTarget(
   vector<Vector<2> >  mpts;
 
   pair<Vector<3>,Matrix<3,3> > plane = PlaneFromConics(conics,radius,cam.K(), plane_inlier_threshold);
-  const Vector<4> N_w = ToN(plane.first);
+  const Vector<4> N_w = unproject(plane.first) / norm(plane.first);
+
   if( !TooN::isfinite(N_w) )
     return;
 
@@ -485,7 +550,5 @@ void Target::FindTarget(
       }
     }
   }
-
-}
 
 }

@@ -11,10 +11,7 @@
 #include <TooN/TooN.h>
 
 #include "rectangle.h"
-//#include "Camera/abstract_camera.h"
-
-namespace RobotVision
-{
+#include "camera.h"
 
 struct Conic
 {
@@ -35,8 +32,6 @@ std::pair<TooN::Vector<3>,TooN::Matrix<3,3> > PlaneFromConics(
   const TooN::Matrix<3,3>& K, double inlier_threshold
 );
 
-//Conic UnmapConic( const Conic& c, const RobotVision::AbstractCamera& cam );
-
-}
+Conic UnmapConic( const Conic& c, const AbstractCamera& cam );
 
 #endif // CONICS_H

@@ -29,9 +29,6 @@
 #include <limits>
 #include "hungarian.h"
 
-namespace RobotVision
-{
-
 #define INF std::numeric_limits<double>::max()
 #define verbose (0)
 
@@ -409,6 +406,4 @@ void hungarian_solve(hungarian_problem_t* p)
   free(row_dec);
   free(unchosen_row);
   free(col_mate);
-}
-
 }

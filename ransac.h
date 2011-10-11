@@ -12,9 +12,6 @@
 #include <vector>
 #include <limits>
 
-namespace RobotVision
-{
-
 template<typename Model, int minimum_set_size, typename Data>
 class Ransac
 {
@@ -102,8 +99,6 @@ inline Model Ransac<Model,minimum_set_size,Data>::Compute(unsigned int num_eleme
 
   inliers = best_consensus_set;
   return best_model;
-}
-
 }
 
 #endif // RANSAC_H

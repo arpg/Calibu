@@ -11,9 +11,10 @@
 #include <TooN/LU.h>
 #include <TooN/SVD.h>
 
+#include "utils.h"
+
 using namespace std;
 using namespace TooN;
-using namespace RobotVision;
 
 double Distance( const Conic& c1, const Conic& c2, double circle_radius )
 {
@@ -118,27 +119,27 @@ pair<Vector<3>,Matrix<3,3> > PlaneFromConics( vector<Conic>& conics, double plan
   return best;
 }
 
-//Conic UnmapConic( const Conic& c, const AbstractCamera& cam )
-//{
-//  std::vector<TooN::Vector<2> > d;
-//  std::vector<TooN::Vector<2> > u;
+Conic UnmapConic( const Conic& c, const AbstractCamera& cam )
+{
+  std::vector<TooN::Vector<2> > d;
+  std::vector<TooN::Vector<2> > u;
 
-//  d.push_back(c.center);
-//  d.push_back(makeVector(c.bbox.x1,c.bbox.y1));
-//  d.push_back(makeVector(c.bbox.x1,c.bbox.y2));
-//  d.push_back(makeVector(c.bbox.x2,c.bbox.y1));
-//  d.push_back(makeVector(c.bbox.x2,c.bbox.y2));
+  d.push_back(c.center);
+  d.push_back(makeVector(c.bbox.x1,c.bbox.y1));
+  d.push_back(makeVector(c.bbox.x1,c.bbox.y2));
+  d.push_back(makeVector(c.bbox.x2,c.bbox.y1));
+  d.push_back(makeVector(c.bbox.x2,c.bbox.y2));
 
-//  for( int i=0; i<5; ++i )
-//    u.push_back( cam.unmap(d[i]) );
+  for( int i=0; i<5; ++i )
+    u.push_back( cam.unmap(d[i]) );
 
-//  // Distortion locally estimated by homography
-//  const Matrix<3,3> H_du = EstimateH_ba(u,d);
+  // Distortion locally estimated by homography
+  const Matrix<3,3> H_du = EstimateH_ba(u,d);
 
-//  Conic ret;
-////  ret.bbox = c.bbox;
-//  ret.C = H_du.T() * c.C * H_du;
-//  ret.Dual = LU<>(ret.C).get_inverse();
-//  ret.center = u[0];
-//  return ret;
-//}
+  Conic ret;
+//  ret.bbox = c.bbox;
+  ret.C = H_du.T() * c.C * H_du;
+  ret.Dual = LU<>(ret.C).get_inverse();
+  ret.center = u[0];
+  return ret;
+}
