@@ -47,7 +47,7 @@ class LinearCamera : public AbstractCamera
 {
 public:
 
-  LinearCamera(int w, int h, double u0, double v0, double fu, double fv)
+  LinearCamera(int w, int h, double fu, double fv, double u0, double v0)
     :AbstractCamera(w,h), _pp(TooN::makeVector(u0,v0)), _f(TooN::makeVector(fu,fv)),
       _K(TooN::Identity), _Kinv(TooN::Identity)
   {
@@ -61,7 +61,7 @@ public:
     _Kinv(1,2) = -_pp[1] / _f[1];
   }
 
-  inline TooN::Vector<2> map(const TooN::Vector<2>& cam) const
+  inline virtual TooN::Vector<2> map(const TooN::Vector<2>& cam) const
   {
     return TooN::makeVector(
       _f[0] * cam[0] + _pp[0],
@@ -69,7 +69,7 @@ public:
     );
   }
 
-  inline TooN::Vector<2> unmap(const TooN::Vector<2>& img) const
+  inline virtual TooN::Vector<2> unmap(const TooN::Vector<2>& img) const
   {
     return TooN::makeVector(
       (img[0] - _pp[0]) / _f[0],
@@ -77,12 +77,12 @@ public:
     );
   }
 
-  inline virtual const TooN::Matrix<3,3>& K() const
+  inline const TooN::Matrix<3,3>& K() const
   {
     return _K;
   }
 
-  inline virtual const TooN::Matrix<3,3>& Kinv() const
+  inline const TooN::Matrix<3,3>& Kinv() const
   {
     return _Kinv;
   }
@@ -92,6 +92,72 @@ protected:
   TooN::Vector<2> _f;
   TooN::Matrix<3,3> _K;
   TooN::Matrix<3,3> _Kinv;
+};
+
+class FovCamera : public LinearCamera
+{
+public:
+
+  FovCamera(int w, int h, double fu, double fv, double u0, double v0, double W)
+      :LinearCamera(w,h,fu,fv,u0,v0), _W(W)
+  {
+      if( _W != 0.0 )
+      {
+        _2tan = 2.0 * tan(_W / 2.0 );
+        _1over2tan = 1.0 / _2tan;
+        _Winv = 1.0 / _W;
+      }else{
+        _Winv = 0.0;
+        _2tan = 0.0;
+      }
+  }
+
+  inline double rtrans_factor(double r) const
+  {
+    if(r < 0.001 || _W == 0.0)
+      return 1.0;
+    else
+      return (_Winv* atan(r * _2tan) / r);
+  }
+
+  inline double invrtrans(double r) const
+  {
+    if(_W == 0.0)
+      return r;
+    return(tan(r * _W) * _1over2tan);
+  }
+
+  inline TooN::Vector<2> map(const TooN::Vector<2>& cam) const
+  {
+    const double fac = rtrans_factor(norm(cam));
+
+    return TooN::makeVector(
+      fac * _f[0] * cam[0] + _pp[0],
+      fac * _f[1] * cam[1] + _pp[1]
+    );
+
+  }
+
+  inline TooN::Vector<2> unmap(const TooN::Vector<2>& img) const
+  {
+      const TooN::Vector<2> distCam = TooN::makeVector(
+        (img[0] - _pp[0]) / _f[0],
+        (img[1] - _pp[1]) / _f[1]
+      );
+      const double distR = norm(distCam);
+      const double R = invrtrans(distR);
+      if( distR > 0.01 ) {
+          return (R / distR) * distCam;
+      }else{
+          return distCam;
+      }
+  }
+
+protected:
+  double _W;
+  double _Winv;
+  double _2tan;
+  double _1over2tan;
 };
 
 #endif // CAMERA_H

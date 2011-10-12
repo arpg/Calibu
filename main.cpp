@@ -6,8 +6,12 @@
 
 #include <vector>
 
+#include <boost/foreach.hpp>
+#define foreach BOOST_FOREACH
+
 #include <pangolin/pangolin.h>
 #include <pangolin/video.h>
+#include <pangolin/firewire.h>
 
 #include <TooN/se3.h>
 
@@ -16,6 +20,7 @@
 #include <cvd/image_convert.h>
 #include <cvd/integral_image.h>
 #include <cvd/vision.h>
+#include <cvd/gl_helpers.h>
 
 #include "adaptive_threshold.h"
 #include "label.h"
@@ -23,6 +28,7 @@
 #include "find_conics.h"
 #include "target.h"
 #include "camera.h"
+#include "drawing.h"
 
 using namespace std;
 using namespace pangolin;
@@ -55,12 +61,75 @@ double ReprojectionErrorRMS(
   return sqrt(sse / n);
 }
 
+#include <map>
+#include <vector>
+#include <opencv/cv.h>
+#include <set>
+#include <cvd/random.h>
+
+
+void solvePnP(
+    const vector<cv::Point2f> & matched_obs, const  vector<cv::Point3f> & matched_3d,
+    const Matrix<3> & K, const Vector<4> & dist_coef,
+    SE3<double> & pose, bool use_guess
+){
+    Vector<3> rot_vec;
+    Vector<3> trans;
+    if (use_guess){
+        rot_vec = pose.get_rotation().ln();
+        trans = pose.get_translation();
+    }
+
+    cv::Mat cv_K(K.num_rows(),K.num_cols(),CV_64FC1,const_cast<double *>(K.my_data));
+    cv::Mat cv_dist(dist_coef.size(),1,CV_64FC1,const_cast<double *>(dist_coef.my_data));
+    cv::Mat cv_rot(rot_vec.size(),1,CV_64FC1,rot_vec.my_data);
+    cv::Mat cv_trans(trans.size(),1,CV_64FC1,trans.my_data);
+
+    cv::Mat cv_matched_3d(matched_3d);
+    cv::Mat cv_matched_obs(matched_obs);
+
+    cv::solvePnP(cv_matched_3d, cv_matched_obs, cv_K, cv_dist, cv_rot, cv_trans, use_guess);
+    TooN::SO3<double> so3(rot_vec);
+    pose =  SE3<double>(so3.get_matrix(),trans);
+}
+
+void PnP(
+    const LinearCamera& cam,
+    const Target& target,
+    const vector<Vector<2> >& ellipses,
+    const vector<int>& ellipse_target_map,
+    SE3<>& T_cw,
+    bool guess = false
+) {
+  // Attempt to compute pose
+  if( ellipses.size() >= 4 )
+  {
+    vector<cv::Point2f> cvimg;
+    vector<cv::Point3f> cvpts;
+    for( unsigned int i=0; i < ellipses.size(); ++ i)
+    {
+      const int ti = ellipse_target_map[i];
+      if( 0 <= ti)
+      {
+        assert( ti < (int)target.circles3D().size() );
+        const Vector<2> m = cam.unmap(ellipses[i]);
+        const Vector<3> t = target.circles3D()[ti];
+        cvimg.push_back( cv::Point2f( m[0],m[1] ) );
+        cvpts.push_back( cv::Point3f( t[0], t[1], t[2] ) );
+      }
+    }
+    if( cvimg.size() >= 4 )
+      solvePnP(cvimg,cvpts,Identity,Zeros,T_cw,guess);
+  }
+}
+
 int main( int /*argc*/, char* argv[] )
 {
-  std::string video_uri = "v4l:///dev/video0";
+  // Load configuration data
+  pangolin::ParseVarsFile("app.cfg");
 
-  // Setup Firewire Camera
-//  FirewireVideo video(0,DC1394_VIDEO_MODE_640x480_RGB8,DC1394_FRAMERATE_30,DC1394_ISO_SPEED_400,50);
+  // Setup Video
+  Var<string> video_uri("video_uri");
   VideoInput video(video_uri);
 
   const unsigned w = video.Width();
@@ -69,15 +138,23 @@ int main( int /*argc*/, char* argv[] )
   // Create Glut window
   pangolin::CreateGlutWindowAndBind("Main",2*w+PANEL_WIDTH,h);
 
+  // Pangolin 3D Render state
+  pangolin::OpenGlRenderState s_cam;
+  s_cam.Set(ProjectionMatrix(640,480,420,420,320,240,1,1E6));
+  s_cam.Set(IdentityMatrix(GlModelViewStack));
+  pangolin::Handler3D handler(s_cam);
+
   // Create viewport for video with fixed aspect
-  View& vPanel = CreatePanel("ui").SetBounds(1.0,0.0,0,PANEL_WIDTH);
-  View& vVideo = Display("Video").SetAspect((float)w/h);
-  View& vDebug = Display("Debug").SetAspect((float)w/h);
+  View& vPanel = pangolin::CreatePanel("ui").SetBounds(1.0,0.0,0,PANEL_WIDTH);
+  View& vVideo = pangolin::Display("Video").SetAspect((float)w/h);
+  View& vDebug = pangolin::Display("Debug").SetAspect((float)w/h);
+  View& v3D    = pangolin::Display("3D").SetAspect((float)w/h).SetHandler(&handler);
 
   Display("Container")
       .SetBounds(1.0,0.0,PANEL_WIDTH,1.0,false)
       .SetLayout(LayoutEqual)
       .AddDisplay(vVideo)
+      .AddDisplay(v3D)
       .AddDisplay(vDebug);
 
   // OpenGl Texture for video frame
@@ -95,8 +172,8 @@ int main( int /*argc*/, char* argv[] )
   Image<byte> tI(size);
 
   // Camera parameters
-  //camera =[ 1.32234 1.76001 0.500052 0.483979 -0.739503 ]
-  LinearCamera cam(w,h,w/2,h/3,w*1.32234, h*1.76001);
+  Vector<5,float> cam_params = Var<Vector<5,float> >("cam_params");
+  FovCamera cam( w,h, w*cam_params[0],h*cam_params[1], w*cam_params[2],h*cam_params[3], cam_params[4] );
 
   // Target to track from
   Target target;
@@ -127,7 +204,7 @@ int main( int /*argc*/, char* argv[] )
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
     // Get newest frame from camera and upload to GPU as texture
-    video.GrabNext((byte*)Irgb.data(),true);
+    video.GrabNewest((byte*)Irgb.data(),true);
 
     // Generic processing
     rgb_to_grey.convert(Irgb,I);
@@ -153,7 +230,6 @@ int main( int /*argc*/, char* argv[] )
     for( size_t i=0; i < conics.size(); ++i )
       ellipses.push_back(conics[i].center);
 
-
     // Find target given approximate pose T_cw
     target.FindTarget(
       T_cw, cam, conics, conics_target_map, target_match_neighbours,
@@ -162,7 +238,7 @@ int main( int /*argc*/, char* argv[] )
     );
 
     // Update pose given correspondences
-//    PnP(cam,target,ellipses,conics_target_map,T_cw,true);
+    PnP(cam,target,ellipses,conics_target_map,T_cw,true);
     rms = ReprojectionErrorRMS(cam,T_cw,target,ellipses,conics_target_map);
 
     if( !isfinite((double)rms) || rms > max_rms )
@@ -173,7 +249,7 @@ int main( int /*argc*/, char* argv[] )
         conics_camframe.push_back(UnmapConic(conics[i],cam));
 
       // Find target given (approximately) undistorted conics
-      const static LinearCamera idcam(-1,-1,0,0,1,1);
+      const static LinearCamera idcam(-1,-1,1,1,0,0);
       target.FindTarget(
           idcam,conics_camframe, conics_target_map, target_match_neighbours,
           target_ransac_its, target_ransac_min_pts, target_ransac_max_err,
@@ -181,18 +257,38 @@ int main( int /*argc*/, char* argv[] )
         );
 
       // Estimate camera pose relative to target coordinate system
-//      PnP(cam,target,ellipses,conics_target_map,T_cw,false);
+      PnP(cam,target,ellipses,conics_target_map,T_cw,false);
       rms = ReprojectionErrorRMS(cam,T_cw,target,ellipses,conics_target_map);
     }
 
-    // Display images
-    vVideo.Activate();
+    // Display Live Image
+    glColor3f(1,1,1);
+    vVideo.ActivateScissorAndClear();
     texRGB.Upload(Irgb.data(),GL_RGB,GL_UNSIGNED_BYTE);
     texRGB.RenderToViewportFlipY();
 
-    vDebug.Activate();
+    // Display detected ellipses
+    glOrtho(-0.5,w-0.5,h-0.5,-0.5,0,1.0);
+    for( int i=0; i<ellipses.size(); ++i )
+    {
+        glColorBin(conics_target_map[i],ellipses.size());
+        DrawCross(ellipses[i],2);
+    }
+
+    // Display thresholded image
+    glColor3f(1,1,1);
+    vDebug.ActivateScissorAndClear();
     tex.Upload(tI.data(),GL_LUMINANCE,GL_UNSIGNED_BYTE);
     tex.RenderToViewportFlipY();
+
+    // Display 3D Vis
+    glEnable(GL_DEPTH_TEST);
+    v3D.ActivateScissorAndClear(s_cam);
+    glDepthFunc(GL_LEQUAL);
+    DrawTarget(target,makeVector(0,0),1,0.2,0.2);
+    DrawTarget(conics_target_map,target,makeVector(0,0),1);
+    glColor3f(1,0,0);
+    glDrawFrustrum(cam.Kinv(),w,h,T_cw.inverse(),-100);
 
     vPanel.Render();
 
