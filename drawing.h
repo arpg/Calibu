@@ -48,6 +48,8 @@ void DrawTarget( const std::vector<int>& map, const Target& target, const TooN::
 
 void SetPixelTransferScale( float scale );
 
+void glDrawAxis(float s);
+
 void glDrawFrustrum(
   const TooN::Matrix<3,3>& Kinv, int w, int h, float scale
 );

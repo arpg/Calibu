@@ -67,39 +67,13 @@ double ReprojectionErrorRMS(
 #include <set>
 #include <cvd/random.h>
 
-
-void solvePnP(
-    const vector<cv::Point2f> & matched_obs, const  vector<cv::Point3f> & matched_3d,
-    const Matrix<3> & K, const Vector<4> & dist_coef,
-    SE3<double> & pose, bool use_guess
-){
-    Vector<3> rot_vec;
-    Vector<3> trans;
-    if (use_guess){
-        rot_vec = pose.get_rotation().ln();
-        trans = pose.get_translation();
-    }
-
-    cv::Mat cv_K(K.num_rows(),K.num_cols(),CV_64FC1,const_cast<double *>(K.my_data));
-    cv::Mat cv_dist(dist_coef.size(),1,CV_64FC1,const_cast<double *>(dist_coef.my_data));
-    cv::Mat cv_rot(rot_vec.size(),1,CV_64FC1,rot_vec.my_data);
-    cv::Mat cv_trans(trans.size(),1,CV_64FC1,trans.my_data);
-
-    cv::Mat cv_matched_3d(matched_3d);
-    cv::Mat cv_matched_obs(matched_obs);
-
-    cv::solvePnP(cv_matched_3d, cv_matched_obs, cv_K, cv_dist, cv_rot, cv_trans, use_guess);
-    TooN::SO3<double> so3(rot_vec);
-    pose =  SE3<double>(so3.get_matrix(),trans);
-}
-
-void PnP(
+void opencv_pnp(
     const LinearCamera& cam,
     const Target& target,
     const vector<Vector<2> >& ellipses,
     const vector<int>& ellipse_target_map,
     SE3<>& T_cw,
-    bool guess = false
+    bool use_guess = false
 ) {
   // Attempt to compute pose
   if( ellipses.size() >= 4 )
@@ -119,7 +93,23 @@ void PnP(
       }
     }
     if( cvimg.size() >= 4 )
-      solvePnP(cvimg,cvpts,Identity,Zeros,T_cw,guess);
+    {
+      cv::Mat cv_matched_3d(cvpts);
+      cv::Mat cv_matched_obs(cvimg);
+      cv::Mat cv_K(3,3,CV_64FC1);
+      cv::setIdentity(cv_K);
+      cv::Mat cv_dist(4,1,CV_64FC1,0.0);
+
+      Vector<3> rot_vec = T_cw.get_rotation().ln();
+      Vector<3> trans = T_cw.get_translation();
+      cv::Mat cv_rot(3,1,CV_64FC1,rot_vec.my_data);
+      cv::Mat cv_trans(3,1,CV_64FC1,trans.my_data);
+      cv::solvePnP(
+        cv_matched_3d, cv_matched_obs,
+        cv_K, cv_dist, cv_rot, cv_trans, use_guess
+      );
+      T_cw =  SE3<double>(TooN::SO3<double>(rot_vec),trans);
+    }
   }
 }
 
@@ -238,7 +228,7 @@ int main( int /*argc*/, char* argv[] )
     );
 
     // Update pose given correspondences
-    PnP(cam,target,ellipses,conics_target_map,T_cw,true);
+    opencv_pnp(cam,target,ellipses,conics_target_map,T_cw,true);
     rms = ReprojectionErrorRMS(cam,T_cw,target,ellipses,conics_target_map);
 
     if( !isfinite((double)rms) || rms > max_rms )
@@ -257,7 +247,7 @@ int main( int /*argc*/, char* argv[] )
         );
 
       // Estimate camera pose relative to target coordinate system
-      PnP(cam,target,ellipses,conics_target_map,T_cw,false);
+      opencv_pnp(cam,target,ellipses,conics_target_map,T_cw,false);
       rms = ReprojectionErrorRMS(cam,T_cw,target,ellipses,conics_target_map);
     }
 
@@ -285,6 +275,7 @@ int main( int /*argc*/, char* argv[] )
     glEnable(GL_DEPTH_TEST);
     v3D.ActivateScissorAndClear(s_cam);
     glDepthFunc(GL_LEQUAL);
+    glDrawAxis(100);
     DrawTarget(target,makeVector(0,0),1,0.2,0.2);
     DrawTarget(conics_target_map,target,makeVector(0,0),1);
     glColor3f(1,0,0);

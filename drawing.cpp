@@ -101,6 +101,21 @@ void DrawTarget( const vector<int>& map, const Target& target, const Vector<2>& 
   }
 }
 
+void glDrawAxis(float s)
+{
+  glBegin(GL_LINES);
+  glColor3f(1,0,0);
+  glVertex3f(0,0,0);
+  glVertex3f(s,0,0);
+  glColor3f(0,1,0);
+  glVertex3f(0,0,0);
+  glVertex3f(0,s,0);
+  glColor3f(0,0,1);
+  glVertex3f(0,0,0);
+  glVertex3f(0,0,s);
+  glEnd();
+}
+
 void glDrawFrustrum( const Matrix<3,3>& Kinv, int w, int h, float scale )
 {
   glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
