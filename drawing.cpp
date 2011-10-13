@@ -121,11 +121,11 @@ void glDrawFrustrum( const Matrix<3,3>& Kinv, int w, int h, float scale )
   glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
   glBegin(GL_TRIANGLE_FAN);
   glVertex3d(0,0,0);
-  CVD::glVertex( -scale * Kinv * TooN::makeVector(0,0,1) );
-  CVD::glVertex( -scale * Kinv * TooN::makeVector(w,0,1) );
-  CVD::glVertex( -scale * Kinv * TooN::makeVector(w,h,1) );
-  CVD::glVertex( -scale * Kinv * TooN::makeVector(0,h,1) );
-  CVD::glVertex( -scale * Kinv * TooN::makeVector(0,0,1) );
+  CVD::glVertex( scale * Kinv * TooN::makeVector(0,0,1) );
+  CVD::glVertex( scale * Kinv * TooN::makeVector(w,0,1) );
+  CVD::glVertex( scale * Kinv * TooN::makeVector(w,h,1) );
+  CVD::glVertex( scale * Kinv * TooN::makeVector(0,h,1) );
+  CVD::glVertex( scale * Kinv * TooN::makeVector(0,0,1) );
   glEnd();
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }

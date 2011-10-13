@@ -83,8 +83,113 @@ void Target::LoadPattern( std::string filename, double radius, double scale )
   SortRows(*dt);
 }
 
+void Target::GenerateCircular(unsigned int max_circles, double radius, double min_distance, double border, const Vector<2>& size)
+{
+  assert(size[0] == size[1]);
 
-void Target::Generate(unsigned int max_circles, double radius, double min_distance, double border, const Vector<2>& size)
+  Clear();
+
+  const int MAX_FAILS = 1000;
+
+  this->size = size;
+  this->radius = radius;
+
+  const double md2 = min_distance * min_distance;
+
+  int fails = 0;
+
+  // Generate circles
+
+  const double big_circle_radius = size[0]/2 - border - radius;
+
+  while( tpts.size() < max_circles && fails < MAX_FAILS )
+  {
+    const double x = ((double)rand() * 2 * big_circle_radius / (double)RAND_MAX) - big_circle_radius;
+    const double y = (signbit((int)rand() - (int)RAND_MAX/2) ? 1 : -1) * sqrt(big_circle_radius*big_circle_radius - x*x);
+
+    Vector<2> p = makeVector(
+      radius + border + big_circle_radius + x,
+      radius + border + big_circle_radius + y
+    );
+
+    bool good = true;
+    for( unsigned int i=0; i<tpts.size(); ++i )
+    {
+      if( norm_sq(p - tpts[i]) < md2 )
+      {
+        good = false;
+        break;
+      }
+    }
+    if( good )
+    {
+      tpts.push_back(p);
+      tpts3d.push_back(makeVector(p[0],p[1],0));
+      fails = 0;
+    }else{
+      ++fails;
+    }
+  }
+
+  cout << "Target generated with " << tpts.size() << " circles." << endl;
+
+  // Construct Distance matrix
+  dt = new Matrix<>(DistanceMatrix(tpts));
+  SortRows(*dt);
+}
+
+void Target::GenerateEmptyCircle(unsigned int max_circles, double radius, double min_distance, double border, double clear_radius, const Vector<2>& size)
+{
+  Clear();
+
+  const int MAX_FAILS = 1000;
+
+  this->size = size;
+  this->radius = radius;
+
+  const Vector<2> center = size / 2;
+
+  const double md2 = min_distance * min_distance;
+
+  int fails = 0;
+
+  // Generate circles
+
+  while( tpts.size() < max_circles && fails < MAX_FAILS )
+  {
+    Vector<2> p = makeVector(
+      (radius+border) + (double)rand() * ((double)size[0] - 2*(radius+border)) / (double)RAND_MAX,
+      (radius+border) + (double)rand() * ((double)size[1] - 2*(radius+border)) / (double)RAND_MAX
+    );
+
+    bool good = norm( p - center) > clear_radius;
+
+    for( unsigned int i=0; i<tpts.size(); ++i )
+    {
+      if( norm_sq(p - tpts[i]) < md2 )
+      {
+        good = false;
+        break;
+      }
+    }
+    if( good )
+    {
+      tpts.push_back(p);
+      tpts3d.push_back(makeVector(p[0],p[1],0));
+      fails = 0;
+    }else{
+      ++fails;
+    }
+  }
+
+  cout << "Target generated with " << tpts.size() << " circles." << endl;
+
+  // Construct Distance matrix
+  dt = new Matrix<>(DistanceMatrix(tpts));
+  SortRows(*dt);
+}
+
+void Target::GenerateRandom(unsigned int max_circles, double radius, double min_distance, double border, const Vector<2>& size)
 {
   Clear();
 

@@ -22,7 +22,9 @@ public:
   Target();
 
   void SetSeed(int s );
-  void Generate(unsigned int max_circles, double radius, double min_distance, double border, const TooN::Vector<2>& size );
+  void GenerateCircular(unsigned int max_circles, double radius, double min_distance, double border, const TooN::Vector<2>& size );
+  void GenerateEmptyCircle(unsigned int max_circles, double radius, double min_distance, double border, double clear_radius, const TooN::Vector<2>& size );
+  void GenerateRandom(unsigned int max_circles, double radius, double min_distance, double border, const TooN::Vector<2>& size );
   void LoadPattern( std::string filename, double radius, double scale = 1.0 );
   void SaveEPS( std::string filename );
 

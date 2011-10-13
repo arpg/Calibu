@@ -130,22 +130,23 @@ int main( int /*argc*/, char* argv[] )
 
   // Pangolin 3D Render state
   pangolin::OpenGlRenderState s_cam;
-  s_cam.Set(ProjectionMatrix(640,480,420,420,320,240,1,1E6));
+  s_cam.Set(ProjectionMatrixRDF_TopLeft(640,480,420,420,320,240,1,1E6));
   s_cam.Set(IdentityMatrix(GlModelViewStack));
   pangolin::Handler3D handler(s_cam);
 
   // Create viewport for video with fixed aspect
   View& vPanel = pangolin::CreatePanel("ui").SetBounds(1.0,0.0,0,PANEL_WIDTH);
   View& vVideo = pangolin::Display("Video").SetAspect((float)w/h);
-  View& vDebug = pangolin::Display("Debug").SetAspect((float)w/h);
   View& v3D    = pangolin::Display("3D").SetAspect((float)w/h).SetHandler(&handler);
+//  View& vDebug = pangolin::Display("Debug").SetAspect((float)w/h);
 
   Display("Container")
       .SetBounds(1.0,0.0,PANEL_WIDTH,1.0,false)
       .SetLayout(LayoutEqual)
       .AddDisplay(vVideo)
       .AddDisplay(v3D)
-      .AddDisplay(vDebug);
+//      .AddDisplay(vDebug)
+      ;
 
   // OpenGl Texture for video frame
   GlTexture texRGB(w,h,GL_RGBA8);
@@ -167,7 +168,9 @@ int main( int /*argc*/, char* argv[] )
 
   // Target to track from
   Target target;
-  target.Generate(60,25,75,15,makeVector(842,595));
+//  target.GenerateCircular(60,20,50,15,makeVector(595,595));
+//  target.GenerateRandom(60,25,75,15,makeVector(842,595));
+  target.GenerateEmptyCircle(60,25,75,15,200,makeVector(842,595));
   target.SaveEPS("test.eps");
 
   // Current pose
@@ -265,11 +268,11 @@ int main( int /*argc*/, char* argv[] )
         DrawCross(ellipses[i],2);
     }
 
-    // Display thresholded image
-    glColor3f(1,1,1);
-    vDebug.ActivateScissorAndClear();
-    tex.Upload(tI.data(),GL_LUMINANCE,GL_UNSIGNED_BYTE);
-    tex.RenderToViewportFlipY();
+//    // Display thresholded image
+//    glColor3f(1,1,1);
+//    vDebug.ActivateScissorAndClear();
+//    tex.Upload(tI.data(),GL_LUMINANCE,GL_UNSIGNED_BYTE);
+//    tex.RenderToViewportFlipY();
 
     // Display 3D Vis
     glEnable(GL_DEPTH_TEST);
@@ -279,7 +282,7 @@ int main( int /*argc*/, char* argv[] )
     DrawTarget(target,makeVector(0,0),1,0.2,0.2);
     DrawTarget(conics_target_map,target,makeVector(0,0),1);
     glColor3f(1,0,0);
-    glDrawFrustrum(cam.Kinv(),w,h,T_cw.inverse(),-100);
+    glDrawFrustrum(cam.Kinv(),w,h,T_cw.inverse(),100);
 
     vPanel.Render();
 
