@@ -30,8 +30,13 @@ void glColorHSV( double hue, double s, double v )
 
 void glColorBin( int bin, int max_bins, double sat, double val )
 {
-  const double hue = (double)(bin%max_bins) * 360.0 / (double)max_bins;
-  glColorHSV(hue,sat,val);
+  if( bin >= 0 )
+  {
+    const double hue = (double)(bin%max_bins) * 360.0 / (double)max_bins;
+    glColorHSV(hue,sat,val);
+  }else{
+    glColor3f(1,1,1);
+  }
 }
 
 void DrawRectangle( const IRectangle& r )

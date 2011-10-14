@@ -6,6 +6,7 @@
 
 #include <vector>
 
+#include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/foreach.hpp>
 #define foreach BOOST_FOREACH
 
@@ -37,6 +38,13 @@ using namespace CVD;
 
 const int PANEL_WIDTH = 200;
 
+struct Keyframe
+{
+  SE3<> T_kw;
+  vector<Conic> conics;
+  vector<int> conics_target_map;
+};
+
 double ReprojectionErrorRMS(
   const AbstractCamera& cam,
   const SE3<>& T_cw,
@@ -59,6 +67,79 @@ double ReprojectionErrorRMS(
   }
 
   return sqrt(sse / n);
+}
+
+TooN::Matrix<3,3> SkewSym( const TooN::Vector<3>& A, const TooN::Vector<3>& B )
+{
+  return TooN::Data(
+    0, -A[2], A[1],
+    A[2], 0, -A[0],
+    -A[1], A[0], 0
+  );
+}
+
+TooN::Matrix<3,3> SkewSym( const TooN::Vector<3>& V )
+{
+  return SkewSym(V,V);
+}
+
+SE3<> StaticPoseFromMirroredVirtualPoses(const boost::ptr_vector<Keyframe>& keyframes )
+{
+  // As described in this paper
+  // "Camera Pose Estimation using Images of Planar Mirror Reflections" ECCV 2010
+  // Rui Rodrigues, Joao Barreto, Urbano Nunes
+
+  if( keyframes.size() >= 3 )
+  {
+    // Method 1
+    const unsigned Nkf = keyframes.size() -1;
+    const SE3<> T_w0 = keyframes[0].T_kw.inverse();
+
+    Matrix<> As(Nkf*3,4);
+    for( int i=0; i<Nkf; ++i )
+    {
+      const SE3<> T_iw = keyframes[i+1].T_kw * T_w0;
+      const Vector<3> t = T_iw.get_translation();
+      const Vector<3> theta_omega = T_iw.get_rotation().ln();
+      const double theta = norm(theta_omega);
+      const Vector<3> omega = theta_omega / theta;
+      const double tanthby2 = tan(theta/2.0);
+      const Matrix<3,3> skew_t = SkewSym(t);
+
+      As.slice(3*i,0,3,3) = skew_t + tanthby2 * omega.as_col() * t.as_row();
+      As.slice(3*i,3,3,1) = -2 * tanthby2 * omega.as_col();
+    }
+
+    // Solve system using SVD
+    SVD<> svd(As);
+    const Vector<4> _N_0 = svd.backsub((Vector<4>)Zeros);
+    const Vector<4> N_0 = _N_0 / norm(_N_0.slice<0,3>());
+
+    // Compute Symmetry transformation S in ss(3) induced by N_0
+    // "The top-left 3 × 3 sub-matrix of any element in ss(3) is always a House-holder matrix"
+    // therefore S in ss(3) is involutionary: S^{-1} = S
+    // T = S1.S2 where S1,S2 in ss(3) and T in SE(3)
+
+    Matrix<4,4> S = Identity;
+    {
+      const Vector<3> n = N_0.slice<0,3>();
+      const double d = N_0[3];
+      S.slice<0,0,3,3>() = ((Matrix<3,3>)Identity) - 2 * n.as_col() * n.as_row();
+      S.slice<0,3,3,1>() = 2 * d * n.as_col();
+    }
+
+    const Vector<4> x_0 = S * makeVector(0,0,0,1);
+    const Vector<3> x_w = project(T_w0 * x_0);
+
+    // How do we obtain rotation?
+    // Perhaps, given plane, we should just use PnP mirroring observations?
+
+    // Do we need to mirror intrinsics?
+
+    return SE3<>(SO3<>(), x_w );
+  }else{
+    return SE3<>();
+  }
 }
 
 #include <map>
@@ -168,15 +249,26 @@ int main( int /*argc*/, char* argv[] )
 
   // Target to track from
   Target target;
-//  target.GenerateCircular(60,20,50,15,makeVector(595,595));
-//  target.GenerateRandom(60,25,75,15,makeVector(842,595));
-  target.GenerateEmptyCircle(60,25,75,15,200,makeVector(842,595));
+  target.GenerateRandom(60,25/(842.0/297.0),75/(842.0/297.0),15/(842.0/297.0),makeVector(297,210));
+//  target.GenerateCircular(60,20,50,15,makeVector(210,210));
+//  target.GenerateEmptyCircle(60,25,75,15,200,makeVector(297,210));
   target.SaveEPS("test.eps");
 
   // Current pose
   SE3<> T_cw;
 
+  // Fixed mirrored pose
+  SE3<> T_0w;
+
+  // Stored keyframes
+  boost::ptr_vector<Keyframe> keyframes;
+
   // Variables
+  Var<bool> add_keyframe("ui.Add Keyframe",false,false);
+
+  Var<bool> use_mirror("ui.Use Mirror",false,true);
+  Var<bool> calc_mirror_pose("ui.Calculate Mirrored Pose",false,false);
+
   Var<float> at_threshold("ui.Adap Threshold",0.5,0,1.0);
   Var<int> at_window("ui.Adapt Window",20,1,200);
   Var<float> conic_min_area("ui.Conic min area",40, 0, 1E5);
@@ -184,13 +276,13 @@ int main( int /*argc*/, char* argv[] )
   Var<float> conic_min_density("ui.Conic min density",0.7, 0, 1.0);
   Var<float> conic_min_aspect("ui.Conic min aspect",0.1, 0, 1.0);
   Var<float> conic_max_residual("Conic max residual",1);
-  Var<int> target_match_neighbours("ui.Match Neighbours",10, 5, 20);
+  Var<int> target_match_neighbours("ui.Match Descriptor Neighbours",10, 5, 20);
   Var<int> target_ransac_its("ui.Ransac Its", 100, 20, 500);
   Var<int> target_ransac_min_pts("ui.Ransac Min Pts", 5, 5, 10);
-  Var<float> target_ransac_max_err("ui.Ransac Max Err", 2000, 1E2, 1E5);
+  Var<float> target_ransac_max_inlier_err_mm("ui.Ransac Max Inlier Err (mm)", 15, 0, 50);
   Var<float> target_plane_inlier_thresh("ui.Plane inlier thresh", 1.5, 0.1, 10);
   Var<double> rms("ui.RMS", 0);
-  Var<double> max_rms("ui.max RMS", 5, 0.1, 10);
+  Var<double> max_rms("ui.max RMS", 1.0, 0.01, 10);
 
   for(int frame=0; !pangolin::ShouldQuit(); ++frame)
   {
@@ -224,14 +316,12 @@ int main( int /*argc*/, char* argv[] )
       ellipses.push_back(conics[i].center);
 
     // Find target given approximate pose T_cw
-    target.FindTarget(
-      T_cw, cam, conics, conics_target_map, target_match_neighbours,
-      target_ransac_its, target_ransac_min_pts, target_ransac_max_err,
-      target_plane_inlier_thresh
-    );
+    // TODO: Make this a bit better!
+    target.FindTarget( T_cw, cam, conics, conics_target_map );
 
     // Update pose given correspondences
     opencv_pnp(cam,target,ellipses,conics_target_map,T_cw,true);
+    // TODO: put rms in terms of target units.
     rms = ReprojectionErrorRMS(cam,T_cw,target,ellipses,conics_target_map);
 
     if( !isfinite((double)rms) || rms > max_rms )
@@ -245,13 +335,28 @@ int main( int /*argc*/, char* argv[] )
       const static LinearCamera idcam(-1,-1,1,1,0,0);
       target.FindTarget(
           idcam,conics_camframe, conics_target_map, target_match_neighbours,
-          target_ransac_its, target_ransac_min_pts, target_ransac_max_err,
-          target_plane_inlier_thresh
+          target_ransac_its, target_ransac_min_pts, target_ransac_max_inlier_err_mm,
+          target_plane_inlier_thresh, use_mirror
         );
 
       // Estimate camera pose relative to target coordinate system
       opencv_pnp(cam,target,ellipses,conics_target_map,T_cw,false);
       rms = ReprojectionErrorRMS(cam,T_cw,target,ellipses,conics_target_map);
+    }
+
+    if( pangolin::Pushed(add_keyframe) )
+    {
+      Keyframe* kf = new Keyframe();
+      kf->T_kw = T_cw;
+      kf->conics.insert(kf->conics.begin(),conics.begin(),conics.end());
+      kf->conics_target_map.insert(
+      kf->conics_target_map.begin(),conics_target_map.begin(),conics_target_map.end());
+      keyframes.push_back(std::auto_ptr<Keyframe>(kf));
+    }
+
+    if( pangolin::Pushed(calc_mirror_pose) )
+    {
+      T_0w = StaticPoseFromMirroredVirtualPoses(keyframes);
     }
 
     // Display Live Image
@@ -262,10 +367,9 @@ int main( int /*argc*/, char* argv[] )
 
     // Display detected ellipses
     glOrtho(-0.5,w-0.5,h-0.5,-0.5,0,1.0);
-    for( int i=0; i<ellipses.size(); ++i )
-    {
-        glColorBin(conics_target_map[i],ellipses.size());
-        DrawCross(ellipses[i],2);
+    for( int i=0; i<ellipses.size(); ++i ) {
+      glColorBin(conics_target_map[i],ellipses.size());
+      DrawCross(ellipses[i],2);
     }
 
 //    // Display thresholded image
@@ -278,11 +382,23 @@ int main( int /*argc*/, char* argv[] )
     glEnable(GL_DEPTH_TEST);
     v3D.ActivateScissorAndClear(s_cam);
     glDepthFunc(GL_LEQUAL);
-    glDrawAxis(100);
+    glDrawAxis(30);
     DrawTarget(target,makeVector(0,0),1,0.2,0.2);
     DrawTarget(conics_target_map,target,makeVector(0,0),1);
+
+    // Live pose
     glColor3f(1,0,0);
-    glDrawFrustrum(cam.Kinv(),w,h,T_cw.inverse(),100);
+    glDrawFrustrum(cam.Kinv(),w,h,T_cw.inverse(),30);
+
+    // Static pose
+    glColor3f(0,0,1);
+    glDrawFrustrum(cam.Kinv(),w,h,T_0w.inverse(),30);
+
+    // Keyframes
+    glColor3f(0.5,0.5,0.5);
+    foreach (Keyframe& kf, keyframes) {
+      glDrawFrustrum(cam.Kinv(),w,h,kf.T_kw.inverse(),30);
+    }
 
     vPanel.Render();
 

@@ -49,8 +49,26 @@ void Target::Clear()
   // remove existing
   if( dt ) delete dt;
   tpts.clear();
+  tpts_reflected.clear();
   tpts3d.clear();
 }
+
+void Target::InitialiseFrom2DPts()
+{
+  for(vector<Vector<2> >::const_iterator i = tpts.begin(); i != tpts.end(); ++i )
+  {
+    const Vector<2>& p = *i;
+    tpts3d.push_back(makeVector(p[0],p[1],0));
+    tpts_reflected.push_back(makeVector(-p[0],p[1]));
+  }
+
+  // Construct Distance matrix
+  dt = new Matrix<>(DistanceMatrix(tpts));
+  SortRows(*dt);
+
+  cout << "Target generated with " << tpts.size() << " circles." << endl;
+}
+
 
 void Target::LoadPattern( std::string filename, double radius, double scale )
 {
@@ -65,22 +83,18 @@ void Target::LoadPattern( std::string filename, double radius, double scale )
   f.open(filename.c_str());
   while( !f.eof() )
   {
-    Vector<3> p;
+    Vector<2> p;
+    double z;
     f >> p[0];
     f >> p[1];
-    f >> p[2];
+    f >> z;
     p *= scale;
     size[0] = max(size[0],p[0]);
     size[1] = max(size[1],p[1]);
-    tpts3d.push_back(p);
-    tpts.push_back(p.slice<0,2>());
+    tpts.push_back(p);
   }
 
-  cout << "Target loaded with " << tpts.size() << " circles." << endl;
-
-  // Construct Distance matrix
-  dt = new Matrix<>(DistanceMatrix(tpts));
-  SortRows(*dt);
+  InitialiseFrom2DPts();
 }
 
 void Target::GenerateCircular(unsigned int max_circles, double radius, double min_distance, double border, const Vector<2>& size)
@@ -124,18 +138,13 @@ void Target::GenerateCircular(unsigned int max_circles, double radius, double mi
     if( good )
     {
       tpts.push_back(p);
-      tpts3d.push_back(makeVector(p[0],p[1],0));
       fails = 0;
     }else{
       ++fails;
     }
   }
 
-  cout << "Target generated with " << tpts.size() << " circles." << endl;
-
-  // Construct Distance matrix
-  dt = new Matrix<>(DistanceMatrix(tpts));
-  SortRows(*dt);
+  InitialiseFrom2DPts();
 }
 
 void Target::GenerateEmptyCircle(unsigned int max_circles, double radius, double min_distance, double border, double clear_radius, const Vector<2>& size)
@@ -175,18 +184,13 @@ void Target::GenerateEmptyCircle(unsigned int max_circles, double radius, double
     if( good )
     {
       tpts.push_back(p);
-      tpts3d.push_back(makeVector(p[0],p[1],0));
       fails = 0;
     }else{
       ++fails;
     }
   }
 
-  cout << "Target generated with " << tpts.size() << " circles." << endl;
-
-  // Construct Distance matrix
-  dt = new Matrix<>(DistanceMatrix(tpts));
-  SortRows(*dt);
+  InitialiseFrom2DPts();
 }
 
 void Target::GenerateRandom(unsigned int max_circles, double radius, double min_distance, double border, const Vector<2>& size)
@@ -222,18 +226,13 @@ void Target::GenerateRandom(unsigned int max_circles, double radius, double min_
     if( good )
     {
       tpts.push_back(p);
-      tpts3d.push_back(makeVector(p[0],p[1],0));
       fails = 0;
     }else{
       ++fails;
     }
   }
 
-  cout << "Target generated with " << tpts.size() << " circles." << endl;
-
-  // Construct Distance matrix
-  dt = new Matrix<>(DistanceMatrix(tpts));
-  SortRows(*dt);
+  InitialiseFrom2DPts();
 }
 
 void Target::SaveEPS(string filename)
@@ -276,8 +275,7 @@ struct RansacMatchData
 double RansacMatchCostFunction( const SE2<>& T, int i, RansacMatchData* data )
 {
   const Vector<2> p = T * data->mpts[i];
-  const double d = norm(data->tpts[data->mpts_label[i]] - p);
-  return d*d;
+  return norm(data->tpts[data->mpts_label[i]] - p);
 }
 
 TooN::SE2<> PoseFromCorrespondences(const vector<const TooN::Vector<2> *>& a, const vector<const TooN::Vector<2> *>& b)
@@ -487,12 +485,7 @@ void Target::FindTarget(
   const SE3<>& T_cw,
   const AbstractCamera& cam,
   vector<Conic>& conics,
-  vector<int>& conics_target_map,
-  int match_neighbours,
-  int ransac_iterations,
-  int ransac_min_ellipses,
-  double ransac_max_fit_error,
-  double plane_inlier_threshold
+  vector<int>& conics_target_map
 ) {
   // We have conic centers, and projected centers. Try to match
 
@@ -551,49 +544,12 @@ void Target::FindTarget(
   int ransac_iterations,
   int ransac_min_ellipses,
   double ransac_max_fit_error,
-  double plane_inlier_threshold
+  double plane_inlier_threshold,
+  bool use_mirror
 ) {
 
-//  // Compute distance matrix for observed conics
-//  Matrix<> ellipse_dm(conics.size(),conics.size());
-//  ellipse_dm = Zeros;
-//  for( unsigned int j=0; j<conics.size(); ++j)
-//  {
-//    for( unsigned int i=0; i < j; ++i)
-//    {
-//      const double d = Distance(conics[j],conics[i],radius);
-//      ellipse_dm[j][i] = d;
-//      ellipse_dm[i][j] = d;
-//    }
-//    if( !isfinite(conics[j].center) )
-//      cout << conics[j].C << endl;
-//    ellipses.push_back(conics[j].center);
-//    ellipse_target_map.push_back(-1);
-//  }
-//  SortRows(ellipse_dm);
-//
-//  // Match using Hungarian method
-//  Match(ellipse_dm,ellipse_target_map,match_neighbours);
-//
-//  // RANSAC Consistent Homography
-//  RansacMatchData rmd(ellipses,tpts,ellipse_target_map);
-//  Ransac<Matrix<3,3>,5,RansacMatchData*> ransac( &RansacHomogModelFunction, &RansacHomogCostFunction, &rmd);
-//
-//  vector<int> inliers;
-//  Matrix<3,3> H_tm = ransac.Compute(
-//    ellipses.size(),inliers,ransac_iterations,
-//    ransac_max_fit_error,ransac_min_ellipses
-//  );
-//
-//  // strip outliers from map
-//  for( unsigned int i=0; i<ellipses.size(); ++i )
-//  {
-//    if( find(inliers.begin(),inliers.end(),i) == inliers.end() )
-//      ellipse_target_map[i] = -1;
-//  }
-
-
   // Compute metric positions in 2D
+  const vector<TooN::Vector<2> >& tpts = use_mirror ? tpts_reflected : this->tpts;
   vector<Vector<2> >  mpts;
 
   pair<Vector<3>,Matrix<3,3> > plane = PlaneFromConics(conics,radius,cam.K(), plane_inlier_threshold);
@@ -629,31 +585,31 @@ void Target::FindTarget(
       );
     }
 
-    // Given inliers and 2D transform, find more correspondences
-    for( unsigned int i=0; i< mpts.size(); ++i )
-    {
-      // For each point without a match
-      if( conics_target_map[i] < 0 )
-      {
-        // find closest point
-        const Vector<2> m_t = T_tm * mpts[i];
-        const int t = ClosestPoint(tpts, m_t );
+//    // Given inliers and 2D transform, find more correspondences
+//    for( unsigned int i=0; i< mpts.size(); ++i )
+//    {
+//      // For each point without a match
+//      if( conics_target_map[i] < 0 )
+//      {
+//        // find closest point
+//        const Vector<2> m_t = T_tm * mpts[i];
+//        const int t = ClosestPoint(tpts, m_t );
 
-        assert( t >= 0 && t < (int)tpts.size() );
+//        assert( t >= 0 && t < (int)tpts.size() );
 
-        const double d = norm(m_t - tpts[t]);
+//        const double d = norm(m_t - tpts[t]);
 
-        // check error is small
-        if( d*d < ransac_max_fit_error )
-        {
-          // check target circle hasn't already been matched
-          if( find(conics_target_map.begin(),conics_target_map.end(),t) == conics_target_map.end() )
-          {
-            conics_target_map[i] = t;
-          }
-        }
-      }
-    }
+//        // check error is small
+//        if( d < ransac_max_fit_error )
+//        {
+//          // check target circle hasn't already been matched
+//          if( find(conics_target_map.begin(),conics_target_map.end(),t) == conics_target_map.end() )
+//          {
+//            conics_target_map[i] = t;
+//          }
+//        }
+//      }
+//    }
   }
 
 }

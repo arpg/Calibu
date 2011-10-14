@@ -39,12 +39,7 @@ public:
     const TooN::SE3<>& T_cw,
     const AbstractCamera& cam,
     std::vector<Conic>& conics,
-    std::vector<int>& ellipse_target_map,
-    int match_neighbours = 10,
-    int ransac_iterations = 100,
-    int ransac_min_ellipses = 10,
-    double ransac_max_fit_error = 2000,
-    double plane_inlier_threshold = 1.5
+    std::vector<int>& ellipse_target_map
   );
 
   void FindTarget(
@@ -55,11 +50,13 @@ public:
     int ransac_iterations = 100,
     int ransac_min_ellipses = 10,
     double ransac_max_fit_error = 2000,
-    double plane_inlier_threshold = 1.5
+    double plane_inlier_threshold = 1.5,
+    bool use_mirror = false
   );
 
 protected:
   void Clear();
+  void InitialiseFrom2DPts();
   void Match( const TooN::Matrix<>& sorted_measurement_distance_matrix, std::vector<int>& measurement_label, int match_neighbours  );
   void Match( const std::vector<TooN::Vector<2> >& measurement, std::vector<int>& measurement_label, int match_neighbours  );
 
@@ -67,6 +64,7 @@ protected:
   TooN::Vector<2> size;
   double radius;
   std::vector<TooN::Vector<2> > tpts;
+  std::vector<TooN::Vector<2> > tpts_reflected;
   std::vector<TooN::Vector<3> > tpts3d;
   TooN::Matrix<>* dt;
 };
