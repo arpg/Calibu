@@ -60,9 +60,26 @@ void DrawCross( float x, float y, int r )
   glEnd();
 }
 
+void DrawCross( float x, float y, float z, int r )
+{
+  glBegin(GL_LINES);
+    glVertex3f(x,y-r,z);
+    glVertex3f(x,y+r,z);
+    glVertex3f(x-r,y,z);
+    glVertex3f(x+r,y,z);
+    glVertex3f(x,y,z-r);
+    glVertex3f(x,y,z+r);
+  glEnd();
+}
+
 void DrawCross( const Vector<2>& p, int r )
 {
   DrawCross(p[0],p[1],r);
+}
+
+void DrawCross( const Vector<3>& p, int r )
+{
+  DrawCross(p[0],p[1],p[2],r);
 }
 
 void DrawCircle( const Vector<2>& p, double radius )

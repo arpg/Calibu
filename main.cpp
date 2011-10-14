@@ -69,18 +69,13 @@ double ReprojectionErrorRMS(
   return sqrt(sse / n);
 }
 
-TooN::Matrix<3,3> SkewSym( const TooN::Vector<3>& A, const TooN::Vector<3>& B )
+TooN::Matrix<3,3> SkewSym( const TooN::Vector<3>& A)
 {
   return TooN::Data(
     0, -A[2], A[1],
     A[2], 0, -A[0],
     -A[1], A[0], 0
   );
-}
-
-TooN::Matrix<3,3> SkewSym( const TooN::Vector<3>& V )
-{
-  return SkewSym(V,V);
 }
 
 SE3<> StaticPoseFromMirroredVirtualPoses(const boost::ptr_vector<Keyframe>& keyframes )
@@ -96,6 +91,7 @@ SE3<> StaticPoseFromMirroredVirtualPoses(const boost::ptr_vector<Keyframe>& keyf
     const SE3<> T_w0 = keyframes[0].T_kw.inverse();
 
     Matrix<> As(Nkf*3,4);
+    As = Zeros;
     for( int i=0; i<Nkf; ++i )
     {
       const SE3<> T_iw = keyframes[i+1].T_kw * T_w0;
@@ -110,9 +106,12 @@ SE3<> StaticPoseFromMirroredVirtualPoses(const boost::ptr_vector<Keyframe>& keyf
       As.slice(3*i,3,3,1) = -2 * tanthby2 * omega.as_col();
     }
 
+    cout << "---------------------"<< endl;
+
     // Solve system using SVD
     SVD<> svd(As);
-    const Vector<4> _N_0 = svd.backsub((Vector<4>)Zeros);
+
+    const Vector<4> _N_0 = svd.get_VT()[3];
     const Vector<4> N_0 = _N_0 / norm(_N_0.slice<0,3>());
 
     // Compute Symmetry transformation S in ss(3) induced by N_0
@@ -349,9 +348,8 @@ int main( int /*argc*/, char* argv[] )
       Keyframe* kf = new Keyframe();
       kf->T_kw = T_cw;
       kf->conics.insert(kf->conics.begin(),conics.begin(),conics.end());
-      kf->conics_target_map.insert(
-      kf->conics_target_map.begin(),conics_target_map.begin(),conics_target_map.end());
-      keyframes.push_back(std::auto_ptr<Keyframe>(kf));
+      kf->conics_target_map.insert(kf->conics_target_map.begin(),conics_target_map.begin(),conics_target_map.end());
+      keyframes.push_back(kf);
     }
 
     if( pangolin::Pushed(calc_mirror_pose) )
@@ -386,13 +384,15 @@ int main( int /*argc*/, char* argv[] )
     DrawTarget(target,makeVector(0,0),1,0.2,0.2);
     DrawTarget(conics_target_map,target,makeVector(0,0),1);
 
+    // Static pose
+    glColor3f(0,0,1);
+    DrawCross(T_0w.get_translation());
+//    glDrawFrustrum(cam.Kinv(),w,h,T_0w.inverse(),30);
+
+
     // Live pose
     glColor3f(1,0,0);
     glDrawFrustrum(cam.Kinv(),w,h,T_cw.inverse(),30);
-
-    // Static pose
-    glColor3f(0,0,1);
-    glDrawFrustrum(cam.Kinv(),w,h,T_0w.inverse(),30);
 
     // Keyframes
     glColor3f(0.5,0.5,0.5);

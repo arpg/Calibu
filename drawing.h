@@ -40,6 +40,8 @@ void DrawCross( float x, float y, int r = 5 );
 
 void DrawCross( const TooN::Vector<2>& p, int r = 5 );
 
+void DrawCross( const TooN::Vector<3>& p, int r = 5 );
+
 void DrawCircle( const TooN::Vector<2>& p, double radius = 5 );
 
 void DrawTarget( const Target& t, const TooN::Vector<2>& offset, double scale = 1.0, double sat = 1.0, double val = 1.0 );
