@@ -29,6 +29,7 @@
 #include <TooN/TooN.h>
 #include "rectangle.h"
 #include "target.h"
+#include "utils.h"
 
 void glColorHSV( double hue, double s, double v );
 
@@ -61,15 +62,6 @@ void glDrawFrustrum(
 );
 
 // Inlines
-
-template<typename P>
-inline TooN::Matrix<4,4,P> T_4x4(const TooN::SE3<P>& T)
-{
-  TooN::Matrix<4,4,P> ret = TooN::Identity;
-  ret.template slice<0,0,3,3>() = T.get_rotation().get_matrix();
-  ret.T()[3].template slice<0,3>() = T.get_translation();
-  return ret;
-}
 
 inline void glSetFrameOfReferenceF( const TooN::SE3<>& T_wf )
 {

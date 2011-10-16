@@ -69,15 +69,6 @@ double ReprojectionErrorRMS(
   return sqrt(sse / n);
 }
 
-TooN::Matrix<3,3> SkewSym( const TooN::Vector<3>& A)
-{
-  return TooN::Data(
-    0, -A[2], A[1],
-    A[2], 0, -A[0],
-    -A[1], A[0], 0
-  );
-}
-
 SE3<> StaticPoseFromMirroredVirtualPoses(const boost::ptr_vector<Keyframe>& keyframes )
 {
   // As described in this paper
@@ -106,36 +97,33 @@ SE3<> StaticPoseFromMirroredVirtualPoses(const boost::ptr_vector<Keyframe>& keyf
       As.slice(3*i,3,3,1) = -2 * tanthby2 * omega.as_col();
     }
 
-    cout << "---------------------"<< endl;
-
     // Solve system using SVD
     SVD<> svd(As);
 
     const Vector<4> _N_0 = svd.get_VT()[3];
     const Vector<4> N_0 = _N_0 / norm(_N_0.slice<0,3>());
 
-    // Compute Symmetry transformation S in ss(3) induced by N_0
-    // "The top-left 3 × 3 sub-matrix of any element in ss(3) is always a House-holder matrix"
-    // therefore S in ss(3) is involutionary: S^{-1} = S
-    // T = S1.S2 where S1,S2 in ss(3) and T in SE(3)
+//    {
+//    // Compute Symmetry transformation S in ss(3) induced by N_0
+//    const Matrix<4,4> S = SymmetryTransform(N_0);
+//    const Vector<4> x_0 = S * makeVector(0,0,0,1);
 
-    Matrix<4,4> S = Identity;
-    {
-      const Vector<3> n = N_0.slice<0,3>();
-      const double d = N_0[3];
-      S.slice<0,0,3,3>() = ((Matrix<3,3>)Identity) - 2 * n.as_col() * n.as_row();
-      S.slice<0,3,3,1>() = 2 * d * n.as_col();
-    }
+//    // Compensate for fact we were detecting reflected target
+//    const Vector<3> x_w_ref = project(T_w0 * x_0);
+//    const Vector<3> x_w = makeVector(x_w_ref[0],x_w_ref[1],-x_w_ref[2]);
+//    return SE3<>(SO3<>(), x_w );
+//    }
 
-    const Vector<4> x_0 = S * makeVector(0,0,0,1);
-    const Vector<3> x_w = project(T_w0 * x_0);
+    // Transform plane to world frame of reference
+    const Vector<4> N_w = T_4x4(T_w0.inverse()).T() * N_0;
+    const Vector<4> N_z0 = makeVector(0,0,1,0);
 
-    // How do we obtain rotation?
-    // Perhaps, given plane, we should just use PnP mirroring observations?
+    const Matrix<4,4> S1 = SymmetryTransform(N_z0);
+    const Matrix<4,4> S2 = SymmetryTransform(N_w);
 
-    // Do we need to mirror intrinsics?
-
-    return SE3<>(SO3<>(), x_w );
+    const SE3<> T_00 = FromMatrix(S2*S1);
+    const SE3<> T_w0r = T_w0 * T_00;
+    return T_w0r;
   }else{
     return SE3<>();
   }
