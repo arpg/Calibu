@@ -23,13 +23,13 @@
 #include <cvd/vision.h>
 #include <cvd/gl_helpers.h>
 
-#include "adaptive_threshold.h"
-#include "label.h"
-#include "conics.h"
-#include "find_conics.h"
-#include "target.h"
-#include "camera.h"
-#include "drawing.h"
+#include "fiducials/adaptive_threshold.h"
+#include "fiducials/label.h"
+#include "fiducials/conics.h"
+#include "fiducials/find_conics.h"
+#include "fiducials/target.h"
+#include "fiducials/camera.h"
+#include "fiducials/drawing.h"
 
 using namespace std;
 using namespace pangolin;
