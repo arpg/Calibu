@@ -9,10 +9,10 @@ TooN::Matrix<3,3> EstimateH_ba(
   const std::vector<TooN::Vector<2> >& b
 );
 
-inline TooN::SE3<> FromMatrix(TooN::Matrix<4,4> T)
+inline TooN::SE3<> FromMatrix(TooN::Matrix<4,4> T_wa)
 {
-  const TooN::SO3<> R(T.slice<0,0,3,3>());
-  return TooN::SE3<>(R, T.T()[3].slice<0,3>() );
+  const TooN::SO3<> R(T_wa.slice<0,0,3,3>());
+  return TooN::SE3<>(R, T_wa.T()[3].slice<0,3>() );
 }
 
 template<typename P>
@@ -42,7 +42,7 @@ inline TooN::Matrix<4,4> SymmetryTransform( TooN::Vector<4> N )
 
   TooN::Matrix<4,4> S = TooN::Identity;
   const TooN::Vector<3> n = N.slice<0,3>();
-  const double d = N[3];
+  const double d = -N[3];
   S.slice<0,0,3,3>() = ((TooN::Matrix<3,3>)TooN::Identity) - 2 * n.as_col() * n.as_row();
   S.slice<0,3,3,1>() = 2 * d * n.as_col();
   return S;

@@ -69,7 +69,7 @@ double ReprojectionErrorRMS(
   return sqrt(sse / n);
 }
 
-SE3<> StaticPoseFromMirroredVirtualPoses(const boost::ptr_vector<Keyframe>& keyframes )
+Vector<4> StaticPoseFromMirroredVirtualPoses(const boost::ptr_vector<Keyframe>& keyframes )
 {
   // As described in this paper
   // "Camera Pose Estimation using Images of Planar Mirror Reflections" ECCV 2010
@@ -102,6 +102,9 @@ SE3<> StaticPoseFromMirroredVirtualPoses(const boost::ptr_vector<Keyframe>& keyf
 
     const Vector<4> _N_0 = svd.get_VT()[3];
     const Vector<4> N_0 = _N_0 / norm(_N_0.slice<0,3>());
+    const Vector<4> N_w  = T_4x4(T_w0.inverse()).T() * N_0;
+
+    return N_w / norm(N_w.slice<0,3>());
 
 //    {
 //    // Compute Symmetry transformation S in ss(3) induced by N_0
@@ -114,18 +117,9 @@ SE3<> StaticPoseFromMirroredVirtualPoses(const boost::ptr_vector<Keyframe>& keyf
 //    return SE3<>(SO3<>(), x_w );
 //    }
 
-    // Transform plane to world frame of reference
-    const Vector<4> N_w = T_4x4(T_w0.inverse()).T() * N_0;
-    const Vector<4> N_z0 = makeVector(0,0,1,0);
-
-    const Matrix<4,4> S1 = SymmetryTransform(N_z0);
-    const Matrix<4,4> S2 = SymmetryTransform(N_w);
-
-    const SE3<> T_00 = FromMatrix(S2*S1);
-    const SE3<> T_w0r = T_w0 * T_00;
-    return T_w0r;
   }else{
-    return SE3<>();
+//    return SE3<>();
+    throw exception();
   }
 }
 
@@ -342,7 +336,26 @@ int main( int /*argc*/, char* argv[] )
 
     if( pangolin::Pushed(calc_mirror_pose) )
     {
-      T_0w = StaticPoseFromMirroredVirtualPoses(keyframes);
+      const Vector<4> N0_wm = StaticPoseFromMirroredVirtualPoses(keyframes);
+
+      {
+      // Compute Symmetry transformation S in ss(3) induced by N_0
+      const Matrix<4,4> S_wm_wm0 = SymmetryTransform(N0_wm);
+      const Vector<3> t0_wm0 = keyframes[0].T_kw.inverse().get_translation();
+      const Vector<3> t0_wm = project(S_wm_wm0 * unproject(t0_wm0));
+      T_0w.get_translation() = t0_wm;
+      }
+
+//      // Transform plane to world frame of reference
+//      const Vector<4> N_wr = makeVector(N_w[0],N_w[1],-N_w[2],N_w[3]);
+//      const Vector<4> Nz0_w = makeVector(0,0,1,0);
+
+//      const Matrix<4,4> S1 = SymmetryTransform(Nz0_w);
+//      const Matrix<4,4> S2 = SymmetryTransform(N_wr);
+
+//      const SE3<> T_00 = FromMatrix(S2*S1);
+//      const SE3<> T_w0r = T_w0 * T_00;
+//      return T_w0r.inverse();
     }
 
     // Display Live Image
@@ -372,21 +385,172 @@ int main( int /*argc*/, char* argv[] )
     DrawTarget(target,makeVector(0,0),1,0.2,0.2);
     DrawTarget(conics_target_map,target,makeVector(0,0),1);
 
+    Vector<3> r_w = Zeros;
+
+    if( keyframes.size() >= 3 )
+    {
+      // Method 1
+      const unsigned Nkf = keyframes.size() -1;
+      const SE3<> T_w0 = keyframes[0].T_kw.inverse();
+
+      Matrix<> As(Nkf*3,4);
+      As = Zeros;
+      for( int i=0; i<Nkf; ++i )
+      {
+        const SE3<> T_iw = keyframes[i+1].T_kw * T_w0;
+        const Vector<3> t = T_iw.get_translation();
+        const Vector<3> theta_omega = T_iw.get_rotation().ln();
+        const double theta = norm(theta_omega);
+        const Vector<3> omega = theta_omega / theta;
+        const double tanthby2 = tan(theta/2.0);
+        const Matrix<3,3> skew_t = SkewSym(t);
+
+        As.slice(3*i,0,3,3) = skew_t + tanthby2 * omega.as_col() * t.as_row();
+        As.slice(3*i,3,3,1) = -2 * tanthby2 * omega.as_col();
+      }
+
+      // Solve system using SVD
+      SVD<> svd(As);
+
+      const Vector<4> _N_0 = svd.get_VT()[3];
+      Vector<4> N_0 = _N_0 / norm(_N_0.slice<0,3>());
+      N_0[3] *= -1;
+
+//      glSetFrameOfReferenceF(keyframes[0].T_kw.inverse());
+//      glColor3f(0.2,0,0);
+//      DrawPlane(N_0,10,100);
+//      glUnsetFrameOfReference();
+
+      const Vector<4> _N0_wm  = T_4x4(T_w0.inverse()).T() * N_0;
+      const Vector<4> N0_wm  = _N0_wm / norm(_N0_wm.slice<0,3>());
+
+//      glColor3f(0,0.2,0);
+//      DrawPlane(N0_wm,15,100);
+
+
+      {
+        // Compute Symmetry transformation S in ss(3) induced by N_0
+        const Matrix<4,4> S_0_r0 = SymmetryTransform(N_0);
+        const Vector<4> tr0_r0 = makeVector(0,0,0,1);
+        const Vector<4> t0_0 = S_0_r0 * tr0_r0;
+
+        // Compensate for fact we were detecting reflected target
+        const Vector<3> t0_wm = project(T_w0 * t0_0);
+        const Vector<3> t0_w = makeVector(t0_wm[0],t0_wm[1],-t0_wm[2]);
+
+        r_w = t0_w;
+
+        glColor3f(0,1,0);
+        DrawCross(t0_wm);
+
+        glColor3f(0,1,0);
+        DrawCross(r_w);
+      }
+
+//      {
+//        // Compute Symmetry transformation S in ss(3) induced by N_0
+//        const Matrix<4,4> S_wm_wm0 = SymmetryTransform(N0_wm);
+//        const Vector<3> t0_wm0 = T_w0 * makeVector(0,0,0);
+//        const Vector<3> t0_wm = project(S_wm_wm0 * unproject(t0_wm0));
+
+//        glColor3f(1,0,0);
+//        DrawCross(t0_wm0);
+
+//        glColor3f(0,0,1);
+//        DrawCross(t0_wm);
+//      }
+
+      {
+//        glSetFrameOfReferenceF(T_w0);
+
+        const Vector<4> N1_0 = makeVector(N_0[0],N_0[1],N_0[2],N_0[3]);
+        const Vector<4> N1_w = T_4x4(T_w0.inverse()).T() * N1_0;
+        const Vector<4> N1_wr = makeVector(N1_w[0],N1_w[1],-N1_w[2],N1_w[3]);
+        const Vector<4> N1_wr_norm = N1_wr / norm(N1_wr.slice<0,3>());
+        const Vector<4> N1_0r = T_4x4(T_w0).T() * N1_wr_norm;
+
+        const Vector<4> Nz = makeVector(0,0,-1,0);
+//        SE3<> T_wf = FromMatrix(SymmetryTransform(Nz)*SymmetryTransform(Nz)) ;
+
+        const Matrix<4,4> T_wm = T_w0 * SymmetryTransform(N1_0);
+        const Vector<4> Nz_m = T_wm.T() * Nz;
+
+        const SE3<> T_wr = FromMatrix(T_wm * SymmetryTransform(Nz_m));
+
+        glColor3f(0,0,1);
+        glDrawFrustrum(cam.Kinv(),w,h,T_wr,30);
+
+
+//        cout << "----------------" << endl;
+//        cout << N1_0 << endl;
+//        cout << N1_w << endl;
+//        cout << N1_wr << endl;
+//        cout << N1_wr_norm << endl;
+//        cout << N1_0r << endl;
+
+//        glColor3f(0,0.2,0);
+//        DrawPlane(Nz,15,100);
+//        DrawPlane(N1_0r,15,100);
+
+//        glUnsetFrameOfReference();
+
+      }
+
+//      {
+//        // Compute Symmetry transformation S in ss(3) induced by N_0
+//        const Vector<4> N1 = makeVector(N_0[0],N_0[1],-N_0[2],N_0[3]);
+//        const Vector<4> N2 = makeVector(0,0,-1,0);
+
+//        TooN::SE3<> T = FromMatrix(SymmetryTransform(N2)*SymmetryTransform(N1));
+//        glColor3f(0,0,1);
+//        glDrawFrustrum(cam.Kinv(),w,h,T_w0*T,30);
+
+//        glColor3f(0,1,1);
+//        glDrawFrustrum(cam.Kinv(),w,h,(T_w0*T).inverse(),30);
+//        glColor3f(1,1,0);
+//        glDrawFrustrum(cam.Kinv(),w,h,(T*T_w0).inverse(),30);
+//        glColor3f(1,0,1);
+//        glDrawFrustrum(cam.Kinv(),w,h,(T*T_w0),30);
+//      }
+
+      // Draw live mirror
+      {
+        Vector<3> l_w = T_cw.inverse().get_translation();
+        l_w[2] *= -1;
+        const Vector<3> N = l_w - r_w;
+        const double dist = norm(N);
+        const Vector<3> n = N / dist;
+        const double d = -(r_w + N/2.0) * n;
+
+        glColor3f(1,0,0);
+        DrawCross(l_w);
+
+//        glColor4f(0.2,0.2,0.2,0.2);
+//        DrawPlane(makeVector(n[0],n[1],n[2],d),10,100);
+      }
+    }
+
+//    glColor3f(0.2,0.2,0.2);
+//    Draw_z0(10,100);
+
     // Static pose
-    glColor3f(0,0,1);
-    DrawCross(T_0w.get_translation());
+//    glColor3f(0,0,1);
 //    glDrawFrustrum(cam.Kinv(),w,h,T_0w.inverse(),30);
+//    glColor3f(0,1,0);
+//    glDrawFrustrum(cam.Kinv(),w,h,T_0w,30);
+//    DrawCross(T_0w.get_translation());
 
-
-    // Live pose
-    glColor3f(1,0,0);
-    glDrawFrustrum(cam.Kinv(),w,h,T_cw.inverse(),30);
 
     // Keyframes
     glColor3f(0.5,0.5,0.5);
     foreach (Keyframe& kf, keyframes) {
       glDrawFrustrum(cam.Kinv(),w,h,kf.T_kw.inverse(),30);
     }
+//    if(keyframes.size() > 0 )
+//    {
+//      glColor3f(1,0.5,0.5);
+//      glDrawFrustrum(cam.Kinv(),w,h,keyframes[0].T_kw.inverse(),30);
+//    }
 
     vPanel.Render();
 
