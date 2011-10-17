@@ -66,7 +66,7 @@ void Target::InitialiseFrom2DPts()
   dt = new Matrix<>(DistanceMatrix(tpts));
   SortRows(*dt);
 
-  cout << "Target generated with " << tpts.size() << " circles." << endl;
+//  cout << "Target generated with " << tpts.size() << " circles." << endl;
 }
 
 

@@ -233,7 +233,8 @@ int main( int /*argc*/, char* argv[] )
   target.GenerateRandom(60,25/(842.0/297.0),75/(842.0/297.0),15/(842.0/297.0),makeVector(297,210));
 //  target.GenerateCircular(60,20,50,15,makeVector(210,210));
 //  target.GenerateEmptyCircle(60,25,75,15,200,makeVector(297,210));
-  target.SaveEPS("test.eps");
+  target.SaveEPS("target_A4.eps");
+  cout << "Calibration target saved as: target_A4.eps" << endl;
 
   // Current pose
   SE3<> T_cw;
