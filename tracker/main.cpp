@@ -1,9 +1,3 @@
-/**
- * @author  Steven Lovegrove
- * Copyright (C) 2010  Steven Lovegrove
- *                     Imperial College London
- **/
-
 #include <vector>
 
 #include <boost/ptr_container/ptr_vector.hpp>
