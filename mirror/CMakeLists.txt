@@ -33,5 +33,3 @@ TARGET_LINK_LIBRARIES(
   ${OpenCV_LIBS}
   lapack cvd
 )
-
-file(COPY app.cfg DESTINATION ${PROJECT_BINARY_DIR}/${SAMPLE_NAME} )

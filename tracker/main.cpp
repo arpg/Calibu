@@ -203,7 +203,7 @@ int main( int /*argc*/, char* argv[] )
     integral_image(I,intI);
 
     // Threshold and label image
-    AdaptiveThreshold(I,intI,tI,at_threshold,at_window,(byte)255,(byte)0);
+    AdaptiveThreshold(I,intI,tI,at_threshold,at_window,(byte)0,(byte)255);
     vector<PixelClass> labels;
     Label(tI,lI,labels);
 

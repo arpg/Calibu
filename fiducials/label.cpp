@@ -45,7 +45,7 @@ inline short RootLabel(vector<PixelClass>& labels, short label )
 
 inline void AssignLabel( const BasicImage<byte>& I, BasicImage<short>& label, vector<PixelClass>& labels, int r, int c )
 {
-  const bool v = I[r][c] > 0;
+  const bool v = I[r][c] < 128;
   if( v )
   {
     const short lup = r>0? RootLabel(labels,label[r-1][c]) : -1;

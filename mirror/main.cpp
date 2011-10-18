@@ -11,6 +11,7 @@
 #include <TooN/se3.h>
 
 #include <cvd/image.h>
+#include <cvd/image_io.h>
 #include <cvd/rgb.h>
 #include <cvd/image_convert.h>
 #include <cvd/integral_image.h>
@@ -115,10 +116,30 @@ double ReprojectionErrorRMS(
   return sqrt(sse / n);
 }
 
-void ConvertRGBtoI(Image<Rgb<byte> >& Irgb, Image<byte>& I)
+void ConvertRGBtoI(BasicImage<Rgb<byte> >& Irgb, BasicImage<byte>& I)
 {
   static CVD::ConvertImage<Rgb<byte>,byte> rgb_to_grey;
   rgb_to_grey.convert(Irgb,I);
+}
+
+void DrawLabels(const vector<PixelClass>& labels )
+{
+  foreach(const PixelClass& p, labels)
+  {
+    if( p.equiv == -1 )
+    {
+        glBegin(GL_LINES);
+            glVertex2f(p.bbox.x1,p.bbox.y1);
+            glVertex2f(p.bbox.x2,p.bbox.y1);
+            glVertex2f(p.bbox.x1,p.bbox.y2);
+            glVertex2f(p.bbox.x2,p.bbox.y2);
+            glVertex2f(p.bbox.x1,p.bbox.y1);
+            glVertex2f(p.bbox.x1,p.bbox.y2);
+            glVertex2f(p.bbox.x2,p.bbox.y1);
+            glVertex2f(p.bbox.x2,p.bbox.y2);
+        glEnd();
+    }
+  }
 }
 
 int main( int /*argc*/, char* argv[] )
@@ -196,9 +217,10 @@ int main( int /*argc*/, char* argv[] )
   Var<bool> use_mirror("ui.Use Mirror",false,true);
   Var<bool> calc_mirror_pose("ui.Calculate Mirrored Pose",false,false);
 
+  Var<bool> disp_thresh("ui.Display Thresh",false);
   Var<float> at_threshold("ui.Adap Threshold",0.5,0,1.0);
   Var<int> at_window("ui.Adapt Window",50,1,200);
-  Var<float> conic_min_area("ui.Conic min area",40, 0, 1E5);
+  Var<float> conic_min_area("ui.Conic min area",40, 0, 100);
   Var<float> conic_max_area("ui.Conic max area",1E4, 0, 1E5);
   Var<float> conic_min_density("ui.Conic min density",0.7, 0, 1.0);
   Var<float> conic_min_aspect("ui.Conic min aspect",0.1, 0, 1.0);
@@ -225,7 +247,7 @@ int main( int /*argc*/, char* argv[] )
     integral_image(I,intI);
 
     // Threshold and label image
-    AdaptiveThreshold(I,intI,tI,at_threshold,at_window,(byte)255,(byte)0);
+    AdaptiveThreshold(I,intI,tI,at_threshold,at_window,(byte)0,(byte)255);
     vector<PixelClass> labels;
     Label(tI,lI,labels);
 
@@ -286,13 +308,20 @@ int main( int /*argc*/, char* argv[] )
 
     if( pangolin::Pushed(calc_mirror_pose) )
     {
+        CVD::img_save(Irgb,"test.png");
     }
 
     // Display Live Image
     glColor3f(1,1,1);
     vVideo.ActivateScissorAndClear();
-    texRGB.Upload(Irgb.data(),GL_RGB,GL_UNSIGNED_BYTE);
-    texRGB.RenderToViewportFlipY();
+
+    if(!disp_thresh) {
+        texRGB.Upload(Irgb.data(),GL_RGB,GL_UNSIGNED_BYTE);
+        texRGB.RenderToViewportFlipY();
+    }else{
+        tex.Upload(tI.data(),GL_LUMINANCE,GL_UNSIGNED_BYTE);
+        tex.RenderToViewportFlipY();
+    }
 
     // Display detected ellipses
     glOrtho(-0.5,w-0.5,h-0.5,-0.5,0,1.0);
@@ -300,6 +329,8 @@ int main( int /*argc*/, char* argv[] )
       glColorBin(conics_target_map[i],ellipses.size());
       DrawCross(ellipses[i],2);
     }
+    glColor3f(1,0,0);
+    DrawLabels(labels);
 
 //    // Display thresholded image
 //    glColor3f(1,1,1);
