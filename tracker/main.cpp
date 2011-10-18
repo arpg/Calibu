@@ -113,6 +113,14 @@ int main( int /*argc*/, char* argv[] )
   // Load configuration data
   pangolin::ParseVarsFile("app.cfg");
 
+  // Target to track from
+  Target target;
+  target.GenerateRandom(60,25/(842.0/297.0),75/(842.0/297.0),15/(842.0/297.0),makeVector(297,210));
+//  target.GenerateCircular(60,20,50,15,makeVector(210,210));
+//  target.GenerateEmptyCircle(60,25,75,15,200,makeVector(297,210));
+  target.SaveEPS("target_A4.eps");
+  cout << "Calibration target saved as: target_A4.eps" << endl;
+
   // Setup Video
   Var<string> video_uri("video_uri");
   VideoInput video(video_uri);
@@ -126,7 +134,7 @@ int main( int /*argc*/, char* argv[] )
   // Pangolin 3D Render state
   pangolin::OpenGlRenderState s_cam;
   s_cam.Set(ProjectionMatrixRDF_TopLeft(640,480,420,420,320,240,1,1E6));
-  s_cam.Set(IdentityMatrix(GlModelViewStack));
+  s_cam.Set(FromTooN(SE3<>(SO3<>(),makeVector(-target.Size()[0]/2,-target.Size()[1]/2,500))));
   pangolin::Handler3D handler(s_cam);
 
   // Create viewport for video with fixed aspect
@@ -161,14 +169,6 @@ int main( int /*argc*/, char* argv[] )
   Vector<5,float> cam_params = Var<Vector<5,float> >("cam_params");
   FovCamera cam( w,h, w*cam_params[0],h*cam_params[1], w*cam_params[2],h*cam_params[3], cam_params[4] );
 
-  // Target to track from
-  Target target;
-  target.GenerateRandom(60,25/(842.0/297.0),75/(842.0/297.0),15/(842.0/297.0),makeVector(297,210));
-//  target.GenerateCircular(60,20,50,15,makeVector(210,210));
-//  target.GenerateEmptyCircle(60,25,75,15,200,makeVector(297,210));
-  target.SaveEPS("target_A4.eps");
-  cout << "Calibration target saved as: target_A4.eps" << endl;
-
   // Current pose
   SE3<> T_cw;
 
@@ -191,6 +191,7 @@ int main( int /*argc*/, char* argv[] )
 
   for(int frame=0; !pangolin::ShouldQuit(); ++frame)
   {
+    Viewport::DisableScissor();
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
     // Get newest frame from camera and upload to GPU as texture

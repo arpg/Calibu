@@ -39,84 +39,6 @@ struct Keyframe
   vector<int> conics_target_map;
 };
 
-double ReprojectionErrorRMS(
-  const AbstractCamera& cam,
-  const SE3<>& T_cw,
-  const Target& target,
-  const vector<Vector<2> >& ellipses,
-  const vector<int>& ellipse_target_map
-) {
-  int n=0;
-  double sse =0;
-
-  for( unsigned i=0; i<ellipses.size(); ++i )
-  {
-    const int ti = ellipse_target_map[i];
-    if( ti >= 0 )
-    {
-      const Vector<2> t = cam.project_map(T_cw * target.circles3D()[ti]);
-      sse += norm_sq(t - ellipses[i]);
-      ++n;
-    }
-  }
-
-  return sqrt(sse / n);
-}
-
-Vector<4> StaticPoseFromMirroredVirtualPoses(const boost::ptr_vector<Keyframe>& keyframes )
-{
-  // As described in this paper
-  // "Camera Pose Estimation using Images of Planar Mirror Reflections" ECCV 2010
-  // Rui Rodrigues, Joao Barreto, Urbano Nunes
-
-  if( keyframes.size() >= 3 )
-  {
-    // Method 1
-    const unsigned Nkf = keyframes.size() -1;
-    const SE3<> T_w0 = keyframes[0].T_kw.inverse();
-
-    Matrix<> As(Nkf*3,4);
-    As = Zeros;
-    for( int i=0; i<Nkf; ++i )
-    {
-      const SE3<> T_iw = keyframes[i+1].T_kw * T_w0;
-      const Vector<3> t = T_iw.get_translation();
-      const Vector<3> theta_omega = T_iw.get_rotation().ln();
-      const double theta = norm(theta_omega);
-      const Vector<3> omega = theta_omega / theta;
-      const double tanthby2 = tan(theta/2.0);
-      const Matrix<3,3> skew_t = SkewSym(t);
-
-      As.slice(3*i,0,3,3) = skew_t + tanthby2 * omega.as_col() * t.as_row();
-      As.slice(3*i,3,3,1) = -2 * tanthby2 * omega.as_col();
-    }
-
-    // Solve system using SVD
-    SVD<> svd(As);
-
-    const Vector<4> _N_0 = svd.get_VT()[3];
-    const Vector<4> N_0 = _N_0 / norm(_N_0.slice<0,3>());
-    const Vector<4> N_w  = T_4x4(T_w0.inverse()).T() * N_0;
-
-    return N_w / norm(N_w.slice<0,3>());
-
-//    {
-//    // Compute Symmetry transformation S in ss(3) induced by N_0
-//    const Matrix<4,4> S = SymmetryTransform(N_0);
-//    const Vector<4> x_0 = S * makeVector(0,0,0,1);
-
-//    // Compensate for fact we were detecting reflected target
-//    const Vector<3> x_w_ref = project(T_w0 * x_0);
-//    const Vector<3> x_w = makeVector(x_w_ref[0],x_w_ref[1],-x_w_ref[2]);
-//    return SE3<>(SO3<>(), x_w );
-//    }
-
-  }else{
-//    return SE3<>();
-    throw exception();
-  }
-}
-
 #include <map>
 #include <vector>
 #include <opencv/cv.h>
@@ -169,10 +91,48 @@ void opencv_pnp(
   }
 }
 
+double ReprojectionErrorRMS(
+  const AbstractCamera& cam,
+  const SE3<>& T_cw,
+  const Target& target,
+  const vector<Vector<2> >& ellipses,
+  const vector<int>& ellipse_target_map
+) {
+  int n=0;
+  double sse =0;
+
+  for( unsigned i=0; i<ellipses.size(); ++i )
+  {
+    const int ti = ellipse_target_map[i];
+    if( ti >= 0 )
+    {
+      const Vector<2> t = cam.project_map(T_cw * target.circles3D()[ti]);
+      sse += norm_sq(t - ellipses[i]);
+      ++n;
+    }
+  }
+
+  return sqrt(sse / n);
+}
+
+void ConvertRGBtoI(Image<Rgb<byte> >& Irgb, Image<byte>& I)
+{
+  static CVD::ConvertImage<Rgb<byte>,byte> rgb_to_grey;
+  rgb_to_grey.convert(Irgb,I);
+}
+
 int main( int /*argc*/, char* argv[] )
 {
   // Load configuration data
   pangolin::ParseVarsFile("app.cfg");
+
+  // Target to track from
+  Target target;
+  target.GenerateRandom(60,25/(842.0/297.0),75/(842.0/297.0),15/(842.0/297.0),makeVector(297,210));
+//  target.GenerateCircular(60,20,50,15,makeVector(210,210));
+//  target.GenerateEmptyCircle(60,25,75,15,200,makeVector(297,210));
+  target.SaveEPS("target_A4.eps");
+  cout << "Calibration target saved as: target_A4.eps" << endl;
 
   // Setup Video
   Var<string> video_uri("video_uri");
@@ -187,7 +147,7 @@ int main( int /*argc*/, char* argv[] )
   // Pangolin 3D Render state
   pangolin::OpenGlRenderState s_cam;
   s_cam.Set(ProjectionMatrixRDF_TopLeft(640,480,420,420,320,240,1,1E6));
-  s_cam.Set(IdentityMatrix(GlModelViewStack));
+  s_cam.Set(FromTooN(SE3<>(SO3<>(),makeVector(-target.Size()[0]/2,-target.Size()[1]/2,500))));
   pangolin::Handler3D handler(s_cam);
 
   // Create viewport for video with fixed aspect
@@ -210,7 +170,6 @@ int main( int /*argc*/, char* argv[] )
 
   // Declare Image buffers
   CVD::ImageRef size(w,h);
-  CVD::ConvertImage<Rgb<byte>,byte> rgb_to_grey;
   Image<Rgb<byte> > Irgb(size);
   Image<byte> I(size);
   Image<float> intI(size);
@@ -221,14 +180,6 @@ int main( int /*argc*/, char* argv[] )
   // Camera parameters
   Vector<5,float> cam_params = Var<Vector<5,float> >("cam_params");
   FovCamera cam( w,h, w*cam_params[0],h*cam_params[1], w*cam_params[2],h*cam_params[3], cam_params[4] );
-
-  // Target to track from
-  Target target;
-  target.GenerateRandom(60,25/(842.0/297.0),75/(842.0/297.0),15/(842.0/297.0),makeVector(297,210));
-//  target.GenerateCircular(60,20,50,15,makeVector(210,210));
-//  target.GenerateEmptyCircle(60,25,75,15,200,makeVector(297,210));
-  target.SaveEPS("target_A4.eps");
-  cout << "Calibration target saved as: target_A4.eps" << endl;
 
   // Current pose
   SE3<> T_cw;
@@ -246,7 +197,7 @@ int main( int /*argc*/, char* argv[] )
   Var<bool> calc_mirror_pose("ui.Calculate Mirrored Pose",false,false);
 
   Var<float> at_threshold("ui.Adap Threshold",0.5,0,1.0);
-  Var<int> at_window("ui.Adapt Window",20,1,200);
+  Var<int> at_window("ui.Adapt Window",50,1,200);
   Var<float> conic_min_area("ui.Conic min area",40, 0, 1E5);
   Var<float> conic_max_area("ui.Conic max area",1E4, 0, 1E5);
   Var<float> conic_min_density("ui.Conic min density",0.7, 0, 1.0);
@@ -262,13 +213,14 @@ int main( int /*argc*/, char* argv[] )
 
   for(int frame=0; !pangolin::ShouldQuit(); ++frame)
   {
+    Viewport::DisableScissor();
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
     // Get newest frame from camera and upload to GPU as texture
     video.GrabNewest((byte*)Irgb.data(),true);
 
     // Generic processing
-    rgb_to_grey.convert(Irgb,I);
+    ConvertRGBtoI(Irgb,I);
     gradient<>(I,dI);
     integral_image(I,intI);
 
@@ -320,6 +272,9 @@ int main( int /*argc*/, char* argv[] )
       rms = ReprojectionErrorRMS(cam,T_cw,target,ellipses,conics_target_map);
     }
 
+//    // Follow Live camera
+//    s_cam.Set(FromTooN(T_cw));
+
     if( pangolin::Pushed(add_keyframe) )
     {
       Keyframe* kf = new Keyframe();
@@ -331,26 +286,6 @@ int main( int /*argc*/, char* argv[] )
 
     if( pangolin::Pushed(calc_mirror_pose) )
     {
-      const Vector<4> N0_wm = StaticPoseFromMirroredVirtualPoses(keyframes);
-
-      {
-      // Compute Symmetry transformation S in ss(3) induced by N_0
-      const Matrix<4,4> S_wm_wm0 = SymmetryTransform(N0_wm);
-      const Vector<3> t0_wm0 = keyframes[0].T_kw.inverse().get_translation();
-      const Vector<3> t0_wm = project(S_wm_wm0 * unproject(t0_wm0));
-      T_0w.get_translation() = t0_wm;
-      }
-
-//      // Transform plane to world frame of reference
-//      const Vector<4> N_wr = makeVector(N_w[0],N_w[1],-N_w[2],N_w[3]);
-//      const Vector<4> Nz0_w = makeVector(0,0,1,0);
-
-//      const Matrix<4,4> S1 = SymmetryTransform(Nz0_w);
-//      const Matrix<4,4> S2 = SymmetryTransform(N_wr);
-
-//      const SE3<> T_00 = FromMatrix(S2*S1);
-//      const SE3<> T_w0r = T_w0 * T_00;
-//      return T_w0r.inverse();
     }
 
     // Display Live Image
@@ -380,11 +315,19 @@ int main( int /*argc*/, char* argv[] )
     DrawTarget(target,makeVector(0,0),1,0.2,0.2);
     DrawTarget(conics_target_map,target,makeVector(0,0),1);
 
+    // Draw Camera
+    glColor3f(1,0,0);
+    glDrawFrustrum(cam.Kinv(),w,h,T_cw.inverse(),10);
+
     Vector<3> r_w = Zeros;
 
     if( keyframes.size() >= 3 )
     {
       // Method 1
+      // As described in this paper
+      // "Camera Pose Estimation using Images of Planar Mirror Reflections" ECCV 2010
+      // Rui Rodrigues, Joao Barreto, Urbano Nunes
+
       const unsigned Nkf = keyframes.size() -1;
       const SE3<> T_w0 = keyframes[0].T_kw.inverse();
 
