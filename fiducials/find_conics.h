@@ -32,6 +32,8 @@
 #include <TooN/LU.h>
 #include <TooN/SVD.h>
 
+#include <fiducials/label.h>
+
 template<typename TdI>
 TooN::Matrix<3,3> FindEllipse(
   const CVD::BasicImage<TdI>& dI,
@@ -41,19 +43,27 @@ TooN::Matrix<3,3> FindEllipse(
   //Precise ellipse estimation without contour point extraction
   //Jean-Nicolas Ouellet, Patrick Hebert
 
-  const TooN::Vector<2> centre = TooN::makeVector(
+  const TooN::Vector<2> c = TooN::makeVector(
     r.x1 + (r.x2-r.x1) / 2.0,
     r.y1 + (r.y2-r.y1) / 2.0
   );
 
+  const TooN::Vector<2> f = TooN::makeVector(
+    2.0 / r.Width(), 2.0 / r.Height()
+  );
+
   // Transform to approximately unit circle at origin
   const TooN::Matrix<3,3> H = TooN::Data(
-      2.0 / r.Width(), 0, centre[0],
-      0, 2.0 / r.Height(), centre[1],
+      f[0], 0, c[0],
+      0, f[1], c[1],
       0, 0, 1
   );
 
-  const TooN::Matrix<3,3> Hinv = TooN::LU<3>(H).get_inverse();
+  const TooN::Matrix<3,3> Hinv = TooN::Data(
+      1/f[0], 0, -c[0]/f[0],
+      0, 1/f[1], -c[1]/f[1],
+      0, 0, 1
+  );
 
   // Form system Ax = b to solve
   TooN::Matrix<5,5> A = TooN::Zeros;
@@ -65,9 +75,10 @@ TooN::Matrix<3,3> FindEllipse(
     for( int u=r.x1; u<=r.x2; ++u )
     {
       // li = (ai,bi,ci)' = (I_ui,I_vi, -dI' x_i)'
-//      const TooN::Vector<2> xi = TooN::makeVector(u,v); // - centre;
-//      const TooN::Vector<3> li = H.T() * TooN::makeVector(dI[v][u][0],dI[v][u][1],-dI[v][u] * xi);
-      const TooN::Vector<3> li = H.T() * TooN::makeVector(dI[v][u][0],dI[v][u][1],-(dI[v][u][0] * u + dI[v][u][1] * v) );
+      const TooN::Vector<3> d =
+        TooN::makeVector(dI[v][u][0],dI[v][u][1],-(dI[v][u][0] * u + dI[v][u][1] * v) );
+      const TooN::Vector<3> li = //H.T() * d;
+        TooN::makeVector( d[0]*H(0,0), d[1]*H(1,1), d[0]*H(0,2) + d[1] * H(1,2) + d[2] );
       const TooN::Vector<5> Ki = TooN::makeVector(li[0]*li[0],li[0]*li[1],li[1]*li[1],li[0]*li[2],li[1]*li[2]);
       A += Ki.as_col()*Ki.as_row();
       b += -Ki*li[2]*li[2];
@@ -92,18 +103,16 @@ TooN::Matrix<3,3> FindEllipse(
   return C/C[2][2];
 }
 
-template<typename TdI>
-void FindConics(
-    const std::vector<PixelClass>& labels,
-    const CVD::BasicImage<TdI>& dI,
-    std::vector<Conic>& conics,
-    float min_area,
-    float max_area,
-    float min_density,
-    float min_aspect,
-    float max_residual
+void FindCandidateConicsFromLabels(
+  CVD::ImageRef size,
+  const std::vector<PixelClass>& labels,
+  std::vector<PixelClass>& candidates,
+  float min_area,
+  float max_area,
+  float min_density,
+  float min_aspect
 ) {
-  const CVD::ImageRef size = dI.size();
+  const int border = 3;
 
   for( unsigned int i=0; i<labels.size(); ++i )
   {
@@ -111,7 +120,7 @@ void FindConics(
     {
       const IRectangle& r = labels[i].bbox;
       // reject rectangles clipped by camera view
-      if( r.x1 != 0 && r.y1 != 0 && r.x2 != size.x-1 && r.y2 != size.y-1)
+      if( r.x1 >= border && r.y1 >= border && r.x2 < size.x-border && r.y2 < size.y-border)
       {
         const int area = r.Width() * r.Height();
         if( min_area <= area && area <= max_area )
@@ -122,28 +131,39 @@ void FindConics(
             const double density = (double)labels[i].size / (double)area;
             if( min_density <=  density )
             {
-              const IRectangle region = r.Grow(2).Clamp(0,0,size.x-1,size.y-1);
-
-              Conic conic;
-              double residual = 0;
-              conic.C = FindEllipse(dI,region, residual);
-
-              if( residual < max_residual ){
-                  conic.bbox = r;
-                  conic.Dual = TooN::LU<3>(conic.C).get_inverse();
-                  conic.Dual /= conic.Dual[2][2];
-                  conic.center = TooN::makeVector(conic.Dual[0][2],conic.Dual[1][2]);
-
-                  if( r.Contains(conic.center))
-                    conics.push_back( conic );
-              }
-
+              PixelClass candidate = labels[i];
+              candidate.bbox = r.Grow(2).Clamp(border,border,size.x-(1+border),size.y-(1+border));
+              candidates.push_back(candidate);
             }
           }
 
         }
       }
     }
+  }
+}
+
+template<typename TdI>
+void FindConics(
+    const std::vector<PixelClass>& candidates,
+    const CVD::BasicImage<TdI>& dI,
+    std::vector<Conic>& conics
+) {
+  for( unsigned int i=0; i<candidates.size(); ++i )
+  {
+      const IRectangle region = candidates[i].bbox;
+
+      Conic conic;
+      double residual = 0;
+      conic.C = FindEllipse(dI,region, residual);
+
+      conic.bbox = region;
+      conic.Dual = TooN::LU<3>(conic.C).get_inverse();
+      conic.Dual /= conic.Dual[2][2];
+      conic.center = TooN::makeVector(conic.Dual[0][2],conic.Dual[1][2]);
+
+      if( region.Contains(conic.center))
+        conics.push_back( conic );
   }
 }
 

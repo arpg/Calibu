@@ -174,13 +174,12 @@ int main( int /*argc*/, char* argv[] )
 
   // Variables
   Var<bool> disp_thresh("ui.Display Thresh",false);
-  Var<float> at_threshold("ui.Adap Threshold",0.5,0,1.0);
-  Var<int> at_window("ui.Adapt Window",50,1,200);
-  Var<float> conic_min_area("ui.Conic min area",40, 0, 1E5);
-  Var<float> conic_max_area("ui.Conic max area",1E4, 0, 1E5);
-  Var<float> conic_min_density("ui.Conic min density",0.7, 0, 1.0);
+  Var<float> at_threshold("ui.Adap Threshold",1.0,0,1.0);
+  Var<int> at_window("ui.Adapt Window",w/3,1,200);
+  Var<float> conic_min_area("ui.Conic min area",25, 0, 1E5);
+  Var<float> conic_max_area("ui.Conic max area",4E4, 0, 1E5);
+  Var<float> conic_min_density("ui.Conic min density",0.4, 0, 1.0);
   Var<float> conic_min_aspect("ui.Conic min aspect",0.1, 0, 1.0);
-  Var<float> conic_max_residual("Conic max residual",1);
   Var<int> target_match_neighbours("ui.Match Descriptor Neighbours",10, 5, 20);
   Var<int> target_ransac_its("ui.Ransac Its", 100, 20, 500);
   Var<int> target_ransac_min_pts("ui.Ransac Min Pts", 5, 5, 10);
@@ -188,6 +187,7 @@ int main( int /*argc*/, char* argv[] )
   Var<float> target_plane_inlier_thresh("ui.Plane inlier thresh", 1.5, 0.1, 10);
   Var<double> rms("ui.RMS", 0);
   Var<double> max_rms("ui.max RMS", 1.0, 0.01, 10);
+  Var<bool> lock_to_cam("ui.AR",false);
 
   for(int frame=0; !pangolin::ShouldQuit(); ++frame)
   {
@@ -208,12 +208,13 @@ int main( int /*argc*/, char* argv[] )
     Label(tI,lI,labels);
 
     // Find conics
+    vector<PixelClass> candidates;
     vector<Conic> conics;
-    FindConics(
-      labels,dI,conics,
-      conic_min_area,conic_max_area,conic_min_density,
-      conic_min_aspect,conic_max_residual
+    FindCandidateConicsFromLabels(
+      I.size(),labels,candidates,
+      conic_min_area,conic_max_area,conic_min_density, conic_min_aspect
     );
+    FindConics( candidates,dI,conics );
 
     // Generate map and point structures
     vector<int> conics_target_map(conics.size(),-1);
@@ -221,33 +222,40 @@ int main( int /*argc*/, char* argv[] )
     for( size_t i=0; i < conics.size(); ++i )
       ellipses.push_back(conics[i].center);
 
-    // Find target given approximate pose T_cw
-    target.FindTarget( T_cw, cam, conics, conics_target_map );
+//    // Find target given approximate pose T_cw
+//    target.FindTarget( T_cw, cam, conics, conics_target_map );
 
-    // Update pose given correspondences
-    opencv_pnp(cam,target,ellipses,conics_target_map,T_cw,true);
-    // TODO: put rms in terms of target units.
-    rms = ReprojectionErrorRMS(cam,T_cw,target,ellipses,conics_target_map);
+//    // Update pose given correspondences
+//    opencv_pnp(cam,target,ellipses,conics_target_map,T_cw,true);
+//    // TODO: put rms in terms of target units.
+//    rms = ReprojectionErrorRMS(cam,T_cw,target,ellipses,conics_target_map);
 
-    if( !isfinite((double)rms) || rms > max_rms )
+//    if( !isfinite((double)rms) || rms > max_rms )
+//    {
+//      // Undistort Conics
+//      vector<Conic> conics_camframe;
+//      for( unsigned int i=0; i<conics.size(); ++i )
+//        conics_camframe.push_back(UnmapConic(conics[i],cam));
+
+//      // Find target given (approximately) undistorted conics
+//      const static LinearCamera idcam(-1,-1,1,1,0,0);
+//      target.FindTarget(
+//          idcam,conics_camframe, conics_target_map, target_match_neighbours,
+//          target_ransac_its, target_ransac_min_pts, target_ransac_max_inlier_err_mm,
+//          target_plane_inlier_thresh
+//        );
+
+//      // Estimate camera pose relative to target coordinate system
+//      opencv_pnp(cam,target,ellipses,conics_target_map,T_cw,false);
+//      rms = ReprojectionErrorRMS(cam,T_cw,target,ellipses,conics_target_map);
+//    }
+
+    if( lock_to_cam )
     {
-      // Undistort Conics
-      vector<Conic> conics_camframe;
-      for( unsigned int i=0; i<conics.size(); ++i )
-        conics_camframe.push_back(UnmapConic(conics[i],cam));
-
-      // Find target given (approximately) undistorted conics
-      const static LinearCamera idcam(-1,-1,1,1,0,0);
-      target.FindTarget(
-          idcam,conics_camframe, conics_target_map, target_match_neighbours,
-          target_ransac_its, target_ransac_min_pts, target_ransac_max_inlier_err_mm,
-          target_plane_inlier_thresh
-        );
-
-      // Estimate camera pose relative to target coordinate system
-      opencv_pnp(cam,target,ellipses,conics_target_map,T_cw,false);
-      rms = ReprojectionErrorRMS(cam,T_cw,target,ellipses,conics_target_map);
+      // Follow Live camera
+      s_cam.Set(FromTooN(T_cw));
     }
+
 
     // Display Live Image
     glColor3f(1,1,1);

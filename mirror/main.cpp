@@ -55,7 +55,7 @@ void opencv_pnp(
     bool use_guess = false
 ) {
   // Attempt to compute pose
-  if( ellipses.size() >= 4 )
+  if( ellipses.size() >= 3 )
   {
     vector<cv::Point2f> cvimg;
     vector<cv::Point3f> cvpts;
@@ -218,13 +218,12 @@ int main( int /*argc*/, char* argv[] )
   Var<bool> calc_mirror_pose("ui.Calculate Mirrored Pose",false,false);
 
   Var<bool> disp_thresh("ui.Display Thresh",false);
-  Var<float> at_threshold("ui.Adap Threshold",0.5,0,1.0);
-  Var<int> at_window("ui.Adapt Window",50,1,200);
-  Var<float> conic_min_area("ui.Conic min area",40, 0, 100);
-  Var<float> conic_max_area("ui.Conic max area",1E4, 0, 1E5);
-  Var<float> conic_min_density("ui.Conic min density",0.7, 0, 1.0);
+  Var<float> at_threshold("ui.Adap Threshold",1.0,0,1.0);
+  Var<int> at_window("ui.Adapt Window",w/3,1,200);
+  Var<float> conic_min_area("ui.Conic min area",25, 0, 100);
+  Var<float> conic_max_area("ui.Conic max area",4E4, 0, 1E5);
+  Var<float> conic_min_density("ui.Conic min density",0.4, 0, 1.0);
   Var<float> conic_min_aspect("ui.Conic min aspect",0.1, 0, 1.0);
-  Var<float> conic_max_residual("Conic max residual",1);
   Var<int> target_match_neighbours("ui.Match Descriptor Neighbours",10, 5, 20);
   Var<int> target_ransac_its("ui.Ransac Its", 100, 20, 500);
   Var<int> target_ransac_min_pts("ui.Ransac Min Pts", 5, 5, 10);
@@ -232,6 +231,7 @@ int main( int /*argc*/, char* argv[] )
   Var<float> target_plane_inlier_thresh("ui.Plane inlier thresh", 1.5, 0.1, 10);
   Var<double> rms("ui.RMS", 0);
   Var<double> max_rms("ui.max RMS", 1.0, 0.01, 10);
+  Var<bool> lock_to_cam("ui.AR",false);
 
   for(int frame=0; !pangolin::ShouldQuit(); ++frame)
   {
@@ -252,12 +252,13 @@ int main( int /*argc*/, char* argv[] )
     Label(tI,lI,labels);
 
     // Find conics
+    vector<PixelClass> candidates;
     vector<Conic> conics;
-    FindConics(
-      labels,dI,conics,
-      conic_min_area,conic_max_area,conic_min_density,
-      conic_min_aspect,conic_max_residual
+    FindCandidateConicsFromLabels(
+      I.size(),labels,candidates,
+      conic_min_area,conic_max_area,conic_min_density, conic_min_aspect
     );
+    FindConics( candidates,dI,conics );
 
     // Generate map and point structures
     vector<int> conics_target_map(conics.size(),-1);
@@ -294,8 +295,11 @@ int main( int /*argc*/, char* argv[] )
       rms = ReprojectionErrorRMS(cam,T_cw,target,ellipses,conics_target_map);
     }
 
-//    // Follow Live camera
-//    s_cam.Set(FromTooN(T_cw));
+    if( lock_to_cam )
+    {
+      // Follow Live camera
+      s_cam.Set(FromTooN(T_cw));
+    }
 
     if( pangolin::Pushed(add_keyframe) )
     {
@@ -326,11 +330,15 @@ int main( int /*argc*/, char* argv[] )
     // Display detected ellipses
     glOrtho(-0.5,w-0.5,h-0.5,-0.5,0,1.0);
     for( int i=0; i<ellipses.size(); ++i ) {
-      glColorBin(conics_target_map[i],ellipses.size());
+      glColorBin(conics_target_map[i],target.circles().size());
       DrawCross(ellipses[i],2);
     }
-    glColor3f(1,0,0);
-    DrawLabels(labels);
+
+//    glColor3f(1,0,0);
+//    DrawLabels(labels);
+
+    glColor3f(0,1,0);
+    DrawLabels(candidates);
 
 //    // Display thresholded image
 //    glColor3f(1,1,1);

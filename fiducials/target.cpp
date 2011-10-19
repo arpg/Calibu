@@ -606,31 +606,31 @@ void Target::FindTarget(
       );
     }
 
-//    // Given inliers and 2D transform, find more correspondences
-//    for( unsigned int i=0; i< mpts.size(); ++i )
-//    {
-//      // For each point without a match
-//      if( conics_target_map[i] < 0 )
-//      {
-//        // find closest point
-//        const Vector<2> m_t = T_tm * mpts[i];
-//        const int t = ClosestPoint(tpts, m_t );
+    // Given inliers and 2D transform, find more correspondences
+    for( unsigned int i=0; i< mpts.size(); ++i )
+    {
+      // For each point without a match
+      if( conics_target_map[i] < 0 )
+      {
+        // find closest point
+        const Vector<2> m_t = T_tm * mpts[i];
+        const int t = ClosestPoint(tpts, m_t );
 
-//        assert( t >= 0 && t < (int)tpts.size() );
+        assert( t >= 0 && t < (int)tpts.size() );
 
-//        const double d = norm(m_t - tpts[t]);
+        const double d = norm(m_t - tpts[t]);
 
-//        // check error is small
-//        if( d < ransac_max_fit_error )
-//        {
-//          // check target circle hasn't already been matched
-//          if( find(conics_target_map.begin(),conics_target_map.end(),t) == conics_target_map.end() )
-//          {
-//            conics_target_map[i] = t;
-//          }
-//        }
-//      }
-//    }
+        // check error is small
+        if( d < ransac_max_fit_error )
+        {
+          // check target circle hasn't already been matched
+          if( find(conics_target_map.begin(),conics_target_map.end(),t) == conics_target_map.end() )
+          {
+            conics_target_map[i] = t;
+          }
+        }
+      }
+    }
   }
 
 }

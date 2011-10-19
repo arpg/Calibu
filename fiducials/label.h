@@ -25,6 +25,9 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#ifndef PIXEL_LABEL_H
+#define PIXEL_LABEL_H
+
 #include <cvd/image.h>
 #include <cvd/rgb.h>
 
@@ -42,3 +45,5 @@ void Label(
   CVD::BasicImage<short>& label,
   std::vector<PixelClass>& labels
 );
+
+#endif // PIXEL_LABEL_H
