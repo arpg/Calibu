@@ -1,3 +1,4 @@
+#include <map>
 #include <vector>
 
 #include <boost/ptr_container/ptr_vector.hpp>
@@ -18,13 +19,14 @@
 #include <cvd/vision.h>
 #include <cvd/gl_helpers.h>
 
-#include "fiducials/adaptive_threshold.h"
-#include "fiducials/label.h"
-#include "fiducials/conics.h"
-#include "fiducials/find_conics.h"
-#include "fiducials/target.h"
-#include "fiducials/camera.h"
-#include "fiducials/drawing.h"
+#include <fiducials/adaptive_threshold.h>
+#include <fiducials/label.h>
+#include <fiducials/conics.h>
+#include <fiducials/find_conics.h>
+#include <fiducials/target.h>
+#include <fiducials/pnp.h>
+#include <fiducials/camera.h>
+#include <fiducials/drawing.h>
 
 using namespace std;
 using namespace pangolin;
@@ -39,82 +41,6 @@ struct Keyframe
   vector<Conic> conics;
   vector<int> conics_target_map;
 };
-
-#include <map>
-#include <vector>
-#include <opencv/cv.h>
-#include <set>
-#include <cvd/random.h>
-
-void opencv_pnp(
-    const LinearCamera& cam,
-    const Target& target,
-    const vector<Vector<2> >& ellipses,
-    const vector<int>& ellipse_target_map,
-    SE3<>& T_cw,
-    bool use_guess = false
-) {
-  // Attempt to compute pose
-  if( ellipses.size() >= 3 )
-  {
-    vector<cv::Point2f> cvimg;
-    vector<cv::Point3f> cvpts;
-    for( unsigned int i=0; i < ellipses.size(); ++ i)
-    {
-      const int ti = ellipse_target_map[i];
-      if( 0 <= ti)
-      {
-        assert( ti < (int)target.circles3D().size() );
-        const Vector<2> m = cam.unmap(ellipses[i]);
-        const Vector<3> t = target.circles3D()[ti];
-        cvimg.push_back( cv::Point2f( m[0],m[1] ) );
-        cvpts.push_back( cv::Point3f( t[0], t[1], t[2] ) );
-      }
-    }
-    if( cvimg.size() >= 4 )
-    {
-      cv::Mat cv_matched_3d(cvpts);
-      cv::Mat cv_matched_obs(cvimg);
-      cv::Mat cv_K(3,3,CV_64FC1);
-      cv::setIdentity(cv_K);
-      cv::Mat cv_dist(4,1,CV_64FC1,0.0);
-
-      Vector<3> rot_vec = T_cw.get_rotation().ln();
-      Vector<3> trans = T_cw.get_translation();
-      cv::Mat cv_rot(3,1,CV_64FC1,rot_vec.my_data);
-      cv::Mat cv_trans(3,1,CV_64FC1,trans.my_data);
-      cv::solvePnP(
-        cv_matched_3d, cv_matched_obs,
-        cv_K, cv_dist, cv_rot, cv_trans, use_guess
-      );
-      T_cw =  SE3<double>(TooN::SO3<double>(rot_vec),trans);
-    }
-  }
-}
-
-double ReprojectionErrorRMS(
-  const AbstractCamera& cam,
-  const SE3<>& T_cw,
-  const Target& target,
-  const vector<Vector<2> >& ellipses,
-  const vector<int>& ellipse_target_map
-) {
-  int n=0;
-  double sse =0;
-
-  for( unsigned i=0; i<ellipses.size(); ++i )
-  {
-    const int ti = ellipse_target_map[i];
-    if( ti >= 0 )
-    {
-      const Vector<2> t = cam.project_map(T_cw * target.circles3D()[ti]);
-      sse += norm_sq(t - ellipses[i]);
-      ++n;
-    }
-  }
-
-  return sqrt(sse / n);
-}
 
 void ConvertRGBtoI(BasicImage<Rgb<byte> >& Irgb, BasicImage<byte>& I)
 {
@@ -271,9 +197,9 @@ int main( int /*argc*/, char* argv[] )
     target.FindTarget( T_cw, cam, conics, conics_target_map );
 
     // Update pose given correspondences
-    opencv_pnp(cam,target,ellipses,conics_target_map,T_cw,true);
+    PoseFromPoints(cam,target.circles3D(),ellipses,conics_target_map,T_cw,true);
     // TODO: put rms in terms of target units.
-    rms = ReprojectionErrorRMS(cam,T_cw,target,ellipses,conics_target_map);
+    rms = ReprojectionErrorRMS(cam,T_cw,target.circles3D(),ellipses,conics_target_map);
 
     if( !isfinite((double)rms) || rms > max_rms )
     {
@@ -291,8 +217,8 @@ int main( int /*argc*/, char* argv[] )
         );
 
       // Estimate camera pose relative to target coordinate system
-      opencv_pnp(cam,target,ellipses,conics_target_map,T_cw,false);
-      rms = ReprojectionErrorRMS(cam,T_cw,target,ellipses,conics_target_map);
+      PoseFromPoints(cam,target.circles3D(),ellipses,conics_target_map,T_cw,false);
+      rms = ReprojectionErrorRMS(cam,T_cw,target.circles3D(),ellipses,conics_target_map);
     }
 
     if( lock_to_cam )

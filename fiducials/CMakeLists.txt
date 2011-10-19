@@ -14,6 +14,7 @@ SET(
   target.h target.cpp
   utils.h utils.cpp
   drawing.h drawing.cpp
+  pnp.h pnp.cpp
 )
 
 #######################################################
