@@ -46,7 +46,7 @@ LINK_LIBRARIES(
   ${DC1394_LIBRARY}
   ${Boost_LIBRARIES}
   ${OpenCV_LIBS}
-  lapack cvd
+  lapack cvd toontag
 )
 
 ADD_LIBRARY(${LIBRARY_NAME} SHARED ${SOURCES})

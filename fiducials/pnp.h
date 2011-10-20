@@ -5,7 +5,16 @@
 #include <TooN/se3.h>
 #include "camera.h"
 
-void PoseFromPoints(
+TooN::SE3<> FindPose(
+    const LinearCamera& cam,
+    const std::vector<TooN::Vector<3> >& pts3d,
+    const std::vector<TooN::Vector<2> >& pts2d,
+    std::vector<int>& map2d_3d,
+    double robust_inlier_tol,
+    size_t robust_iterations
+);
+
+void PoseFromPointsLeastSq(
     const LinearCamera& cam,
     const std::vector<TooN::Vector<3> >& pts3d,
     const std::vector<TooN::Vector<2> >& pts2d,

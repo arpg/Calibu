@@ -197,7 +197,7 @@ int main( int /*argc*/, char* argv[] )
     target.FindTarget( T_cw, cam, conics, conics_target_map );
 
     // Update pose given correspondences
-    PoseFromPoints(cam,target.circles3D(),ellipses,conics_target_map,T_cw,true);
+    PoseFromPointsLeastSq(cam,target.circles3D(),ellipses,conics_target_map,T_cw,true);
     // TODO: put rms in terms of target units.
     rms = ReprojectionErrorRMS(cam,T_cw,target.circles3D(),ellipses,conics_target_map);
 
@@ -217,7 +217,7 @@ int main( int /*argc*/, char* argv[] )
         );
 
       // Estimate camera pose relative to target coordinate system
-      PoseFromPoints(cam,target.circles3D(),ellipses,conics_target_map,T_cw,false);
+      PoseFromPointsLeastSq(cam,target.circles3D(),ellipses,conics_target_map,T_cw,false);
       rms = ReprojectionErrorRMS(cam,T_cw,target.circles3D(),ellipses,conics_target_map);
     }
 

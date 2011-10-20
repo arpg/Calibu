@@ -1,4 +1,5 @@
 #include <vector>
+#include <ctime>
 
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/foreach.hpp>
@@ -55,6 +56,8 @@ int main( int /*argc*/, char* argv[] )
 
   // Create Glut window
   pangolin::CreateGlutWindowAndBind("Main",2*w+PANEL_WIDTH,h);
+  glEnable (GL_BLEND);
+  glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
   // Pangolin 3D Render state
   pangolin::OpenGlRenderState s_cam;
@@ -94,8 +97,13 @@ int main( int /*argc*/, char* argv[] )
   Vector<5,float> cam_params = Var<Vector<5,float> >("cam_params");
   FovCamera cam( w,h, w*cam_params[0],h*cam_params[1], w*cam_params[2],h*cam_params[3], cam_params[4] );
 
-  // Current pose
-  SE3<> T_cw;
+  // Last good pose
+  int good_frames = 0;
+  clock_t last_good = 0;
+  SE3<> T_gw;
+
+  // Pose hypothesis
+  SE3<> T_hw;
 
   // Variables
   Var<bool> disp_thresh("ui.Display Thresh",false);
@@ -113,6 +121,10 @@ int main( int /*argc*/, char* argv[] )
   Var<double> rms("ui.RMS", 0);
   Var<double> max_rms("ui.max RMS", 1.0, 0.01, 10);
   Var<bool> lock_to_cam("ui.AR",false);
+
+  Var<double> robust_4pt_inlier_tol("ui.Ransac 4Pt Inlier", 0.006, 1E-3, 1E-2);
+  Var<int>    robust_4pt_its("ui.Ransac 4pt its", 200, 10, 500);
+  Var<double> max_mmps("ui.max mms per sec", 1500, 100, 2000);
 
   for(int frame=0; !pangolin::ShouldQuit(); ++frame)
   {
@@ -148,14 +160,17 @@ int main( int /*argc*/, char* argv[] )
       ellipses.push_back(conics[i].center);
 
     // Find target given approximate pose T_cw
-    target.FindTarget( T_cw, cam, conics, conics_target_map );
+    target.FindTarget( T_hw, cam, conics, conics_target_map );
 
     // Update pose given correspondences
-    PoseFromPoints(cam,target.circles3D(),ellipses,conics_target_map,T_cw,true);
-    // TODO: put rms in terms of target units.
-    rms = ReprojectionErrorRMS(cam,T_cw,target.circles3D(),ellipses,conics_target_map);
+    T_hw = FindPose(cam,target.circles3D(),ellipses,conics_target_map,robust_4pt_inlier_tol,robust_4pt_its);
+    rms = ReprojectionErrorRMS(cam,T_hw,target.circles3D(),ellipses,conics_target_map);
 
-    if( !isfinite((double)rms) || rms > max_rms )
+    int inliers =0;
+    for( int i=0; i < conics_target_map.size(); ++i)
+        if( conics_target_map[i] >=0 ) inliers++;
+
+    if( !isfinite((double)rms) || rms > max_rms || (good_frames < 5 && inliers < 6) )
     {
       // Undistort Conics
       vector<Conic> conics_camframe;
@@ -171,14 +186,33 @@ int main( int /*argc*/, char* argv[] )
         );
 
       // Estimate camera pose relative to target coordinate system
-      PoseFromPoints(cam,target.circles3D(),ellipses,conics_target_map,T_cw,false);
-      rms = ReprojectionErrorRMS(cam,T_cw,target.circles3D(),ellipses,conics_target_map);
+      T_hw = FindPose(cam,target.circles3D(),ellipses,conics_target_map,robust_4pt_inlier_tol,robust_4pt_its);
+      rms = ReprojectionErrorRMS(cam,T_hw,target.circles3D(),ellipses,conics_target_map);
+    }
+
+    if( isfinite((double)rms) && rms < max_rms )
+    {
+        // seconds since good
+        const double t = std::difftime(clock(),last_good) / (double) CLOCKS_PER_SEC;
+        const double dx = norm(T_hw.inverse().get_translation() - T_gw.inverse().get_translation());
+        if( dx / t < max_mmps || last_good == 0) {
+            good_frames++;
+        }else{
+            good_frames = 0;
+        }
+        if( good_frames > 5 )
+        {
+            T_gw = T_hw;
+            last_good = clock();
+        }
+    }else{
+        good_frames = 0;
     }
 
     if( lock_to_cam )
     {
       // Follow Live camera
-      s_cam.Set(FromTooN(T_cw));
+      s_cam.Set(FromTooN(T_gw));
     }
 
 
@@ -197,7 +231,7 @@ int main( int /*argc*/, char* argv[] )
     // Display detected ellipses
     glOrtho(-0.5,w-0.5,h-0.5,-0.5,0,1.0);
     for( int i=0; i<ellipses.size(); ++i ) {
-      glColorBin(conics_target_map[i],ellipses.size());
+      glColorBin(conics_target_map[i],target.circles3D().size());
       DrawCross(ellipses[i],2);
     }
 
@@ -210,8 +244,11 @@ int main( int /*argc*/, char* argv[] )
     DrawTarget(conics_target_map,target,makeVector(0,0),1);
 
     // Draw Camera
-    glColor3f(1,0,0);
-    glDrawFrustrum(cam.Kinv(),w,h,T_cw.inverse(),10);
+    if( good_frames > 5 )
+    {
+        glColor3f(1,0,0);
+        glDrawFrustrum(cam.Kinv(),w,h,T_gw.inverse(),10);
+    }
 
     vPanel.Render();
 
