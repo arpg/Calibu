@@ -32,7 +32,7 @@
 #include <TooN/LU.h>
 #include <TooN/SVD.h>
 
-#include <fiducials/label.h>
+#include "label.h"
 
 template<typename TdI>
 TooN::Matrix<3,3> FindEllipse(
