@@ -3,7 +3,7 @@
 #include <cvd/integral_image.h>
 #include <cvd/vision.h>
 
-#include <pangolin/pangolin.h>
+//#include <pangolin/pangolin.h>
 
 #include "adaptive_threshold.h"
 #include "label.h"
@@ -11,7 +11,7 @@
 #include "pnp.h"
 
 using namespace std;
-using namespace pangolin;
+//using namespace pangolin;
 using namespace TooN;
 using namespace CVD;
 
