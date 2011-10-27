@@ -29,15 +29,12 @@
 #define DRAWING_H
 
 #include <pangolin/pangolin.h>
+#include <pangolin/gl.h>
 #include <cvd/gl_helpers.h>
 #include <TooN/TooN.h>
 #include "rectangle.h"
 #include "target.h"
 #include "utils.h"
-
-void glColorHSV( double hue, double s, double v );
-
-void glColorBin( int bin, int max_bins, double sat = 1.0, double val = 1.0 );
 
 void DrawRectangle( const IRectangle& r );
 

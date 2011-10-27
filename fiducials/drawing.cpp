@@ -30,41 +30,7 @@
 using namespace std;
 using namespace TooN;
 using namespace CVD;
-
-// h [0,360)
-// s [0,1]
-// v [0,1]
-void glColorHSV( double hue, double s, double v )
-{
-  const double h = hue / 60.0;
-  const int i = floor(h);
-  const double f = (i%2 == 0) ? 1-(h-i) : h-i;
-  const double m = v * (1-s);
-  const double n = v * (1-s*f);
-  switch(i)
-  {
-  case 0: glColor3d(v,n,m); break;
-  case 1: glColor3d(n,v,m); break;
-  case 2: glColor3d(m,v,n); break;
-  case 3: glColor3d(m,n,v); break;
-  case 4: glColor3d(n,m,v); break;
-  case 5: glColor3d(v,m,n); break;
-  default:
-    break;
-  }
-
-}
-
-void glColorBin( int bin, int max_bins, double sat, double val )
-{
-  if( bin >= 0 )
-  {
-    const double hue = (double)(bin%max_bins) * 360.0 / (double)max_bins;
-    glColorHSV(hue,sat,val);
-  }else{
-    glColor3f(1,1,1);
-  }
-}
+using namespace pangolin;
 
 void DrawRectangle( const IRectangle& r )
 {
