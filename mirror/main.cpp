@@ -8,6 +8,8 @@
 #include <pangolin/pangolin.h>
 #include <pangolin/video.h>
 #include <pangolin/firewire.h>
+#include <pangolin/video_record_repeat.h>
+#include <pangolin/input_record_repeat.h>
 
 #include <TooN/se3.h>
 
@@ -70,8 +72,13 @@ void DrawLabels(const vector<PixelClass>& labels )
 
 int main( int /*argc*/, char* argv[] )
 {
+    const static string ui_file = "app.clicks";
+
     // Load configuration data
     pangolin::ParseVarsFile("app.cfg");
+
+    InputRecordRepeat input("ui.");
+    input.LoadBuffer(ui_file);
 
     // Target to track from
     Target target;
@@ -83,7 +90,8 @@ int main( int /*argc*/, char* argv[] )
 
     // Setup Video
     Var<string> video_uri("video_uri");
-    VideoInput video(video_uri);
+    VideoRecordRepeat video(video_uri, "video.pvn", 1024*1024*200);
+//    VideoInput video(video_uri);
 
     const unsigned w = video.Width();
     const unsigned h = video.Height();
@@ -143,10 +151,15 @@ int main( int /*argc*/, char* argv[] )
     boost::ptr_vector<Keyframe> keyframes;
 
     // Variables
+    Var<bool> record("ui.Record",false,false);
+    Var<bool> play("ui.Play",false,false);
+    Var<bool> source("ui.Source",false,false);
+
     Var<bool> add_keyframe("ui.Add Keyframe",false,false);
 
     Var<bool> use_mirror("ui.Use Mirror",false,true);
-    Var<bool> calc_mirror_pose("ui.Calculate Mirrored Pose",false,false);
+    Var<bool> draw_mirror("ui.Draw Mirror",false,true);
+//    Var<bool> calc_mirror_pose("ui.Calculate Mirrored Pose",false,false);
 
     Var<bool> disp_thresh("ui.Display Thresh",false);
     Var<float> at_threshold("ui.Adap Threshold",1.0,0,1.0);
@@ -175,6 +188,9 @@ int main( int /*argc*/, char* argv[] )
 
         // Get newest frame from camera and upload to GPU as texture
         video.GrabNewest((byte*)Irgb.data(),true);
+
+        // Associate input with this video frame
+        input.SetIndex(video.FrameId());
 
         // Generic processing
         ConvertRGBtoI(Irgb,I);
@@ -328,108 +344,31 @@ int main( int /*argc*/, char* argv[] )
             // Solve system using SVD
             SVD<> svd(As);
 
+            // Get mirror plane for virtual camera 0 in cam0 FoR
             const Vector<4> _N_0 = svd.get_VT()[3];
             Vector<4> N_0 = _N_0 / norm(_N_0.slice<0,3>());
+            // d has different meaning in paper. Negate to match my thesis.
             N_0[3] *= -1;
 
-            //      glSetFrameOfReferenceF(keyframes[0].T_kw.inverse());
-            //      glColor3f(0.2,0,0);
-            //      DrawPlane(N_0,10,100);
-            //      glUnsetFrameOfReference();
+            // Render plane corresponding to first keyframe
+            glSetFrameOfReferenceF(keyframes[0].T_kw.inverse());
+            glColor3f(0.2,0,0);
+            DrawPlane(N_0,10,100);
+            glUnsetFrameOfReference();
 
-            const Vector<4> _N0_wm  = T_4x4(T_w0.inverse()).T() * N_0;
-            const Vector<4> N0_wm  = _N0_wm / norm(_N0_wm.slice<0,3>());
-
-            //      glColor3f(0,0.2,0);
-            //      DrawPlane(N0_wm,15,100);
-
-
+            // Attempt to render real camera.
+            // We seem to have the correct translation. Rotation is wrong.
+            // It's because the real camera (from the paper), relates to the real
+            // points, Q, but we're using Qhat which doesn't match the real Q.
             {
-                // Compute Symmetry transformation S in ss(3) induced by N_0
-                const Matrix<4,4> S_0_r0 = SymmetryTransform(N_0);
-                const Vector<4> tr0_r0 = makeVector(0,0,0,1);
-                const Vector<4> t0_0 = S_0_r0 * tr0_r0;
-
-                // Compensate for fact we were detecting reflected target
-                const Vector<3> t0_wm = project(T_w0 * t0_0);
-                const Vector<3> t0_w = makeVector(t0_wm[0],t0_wm[1],-t0_wm[2]);
-
-                r_w = t0_w;
-
-                glColor3f(0,1,0);
-                DrawCross(t0_wm);
-
-                glColor3f(0,1,0);
-                DrawCross(r_w);
-            }
-
-            //      {
-            //        // Compute Symmetry transformation S in ss(3) induced by N_0
-            //        const Matrix<4,4> S_wm_wm0 = SymmetryTransform(N0_wm);
-            //        const Vector<3> t0_wm0 = T_w0 * makeVector(0,0,0);
-            //        const Vector<3> t0_wm = project(S_wm_wm0 * unproject(t0_wm0));
-
-            //        glColor3f(1,0,0);
-            //        DrawCross(t0_wm0);
-
-            //        glColor3f(0,0,1);
-            //        DrawCross(t0_wm);
-            //      }
-
-            {
-                //        glSetFrameOfReferenceF(T_w0);
-
-                const Vector<4> N1_0 = makeVector(N_0[0],N_0[1],N_0[2],N_0[3]);
-                const Vector<4> N1_w = T_4x4(T_w0.inverse()).T() * N1_0;
-                const Vector<4> N1_wr = makeVector(N1_w[0],N1_w[1],-N1_w[2],N1_w[3]);
-                const Vector<4> N1_wr_norm = N1_wr / norm(N1_wr.slice<0,3>());
-                const Vector<4> N1_0r = T_4x4(T_w0).T() * N1_wr_norm;
-
-                const Vector<4> Nz = makeVector(0,0,-1,0);
-                //        SE3<> T_wf = FromMatrix(SymmetryTransform(Nz)*SymmetryTransform(Nz)) ;
-
-                const Matrix<4,4> T_wm = T_w0 * SymmetryTransform(N1_0);
-                const Vector<4> Nz_m = T_wm.T() * Nz;
-
-                const SE3<> T_wr = FromMatrix(T_wm * SymmetryTransform(Nz_m));
-
+                const Vector<4> Nz = makeVector(0,0,1,0);
+                const SE3<> T_wr = FromMatrix(SymmetryTransform(Nz) * T_w0 * SymmetryTransform(N_0));
                 glColor3f(0,0,1);
                 glDrawFrustrum(cam.Kinv(),w,h,T_wr,30);
-
-
-                //        cout << "----------------" << endl;
-                //        cout << N1_0 << endl;
-                //        cout << N1_w << endl;
-                //        cout << N1_wr << endl;
-                //        cout << N1_wr_norm << endl;
-                //        cout << N1_0r << endl;
-
-                //        glColor3f(0,0.2,0);
-                //        DrawPlane(Nz,15,100);
-                //        DrawPlane(N1_0r,15,100);
-
-                //        glUnsetFrameOfReference();
-
             }
 
-            //      {
-            //        // Compute Symmetry transformation S in ss(3) induced by N_0
-            //        const Vector<4> N1 = makeVector(N_0[0],N_0[1],-N_0[2],N_0[3]);
-            //        const Vector<4> N2 = makeVector(0,0,-1,0);
-
-            //        TooN::SE3<> T = FromMatrix(SymmetryTransform(N2)*SymmetryTransform(N1));
-            //        glColor3f(0,0,1);
-            //        glDrawFrustrum(cam.Kinv(),w,h,T_w0*T,30);
-
-            //        glColor3f(0,1,1);
-            //        glDrawFrustrum(cam.Kinv(),w,h,(T_w0*T).inverse(),30);
-            //        glColor3f(1,1,0);
-            //        glDrawFrustrum(cam.Kinv(),w,h,(T*T_w0).inverse(),30);
-            //        glColor3f(1,0,1);
-            //        glDrawFrustrum(cam.Kinv(),w,h,(T*T_w0),30);
-            //      }
-
             // Draw live mirror
+            if( draw_mirror )
             {
                 Vector<3> l_w = T_gw.inverse().get_translation();
                 l_w[2] *= -1;
@@ -441,32 +380,42 @@ int main( int /*argc*/, char* argv[] )
                 glColor3f(1,0,0);
                 DrawCross(l_w);
 
-                //        glColor4f(0.2,0.2,0.2,0.2);
-                //        DrawPlane(makeVector(n[0],n[1],n[2],d),10,100);
+                glColor4f(0.2,0.2,0.2,0.2);
+                DrawPlane(makeVector(n[0],n[1],n[2],d),10,100);
             }
         }
 
-        //    glColor3f(0.2,0.2,0.2);
-        //    Draw_z0(10,100);
-
-        // Static pose
-        //    glColor3f(0,0,1);
-        //    glDrawFrustrum(cam.Kinv(),w,h,T_0w.inverse(),30);
-        //    glColor3f(0,1,0);
-        //    glDrawFrustrum(cam.Kinv(),w,h,T_0w,30);
-        //    DrawCross(T_0w.get_translation());
-
-
         // Keyframes
         glColor3f(0.5,0.5,0.5);
-        foreach (Keyframe& kf, keyframes) {
-            glDrawFrustrum(cam.Kinv(),w,h,kf.T_kw.inverse(),30);
+//        foreach (Keyframe& kf, keyframes) {
+//            glDrawFrustrum(cam.Kinv(),w,h,kf.T_kw.inverse(),30);
+//        }
+        if(keyframes.size() > 0 )
+        {
+          glSetFrameOfReferenceF(keyframes[0].T_kw.inverse());
+          glDrawAxis(30);
+          glUnsetFrameOfReference();
+
+          glColor3f(1,0.5,0.5);
+          glDrawFrustrum(cam.Kinv(),w,h,keyframes[0].T_kw.inverse(),30);
         }
-        //    if(keyframes.size() > 0 )
-        //    {
-        //      glColor3f(1,0.5,0.5);
-        //      glDrawFrustrum(cam.Kinv(),w,h,keyframes[0].T_kw.inverse(),30);
-        //    }
+
+        if(pangolin::Pushed(record)) {
+            video.Record();
+            input.Record();
+        }
+
+        if(pangolin::Pushed(play)) {
+            video.Play(true);
+            input.PlayBuffer(0,input.Size()-1);
+            input.SaveBuffer(ui_file);
+        }
+
+        if(pangolin::Pushed(source)) {
+            video.Source();
+            input.Stop();
+            input.SaveBuffer(ui_file);
+        }
 
         vPanel.Render();
 
