@@ -7,8 +7,10 @@
 #include <fiducials/tracker.h>
 #include <fiducials/drawing.h>
 
-#include <CCameraModel/CameraModel.h>
+#include <CameraModel.h>
 #include <CCameraModel/GridCalibrator.h>
+
+#include <Eigen/Eigen>
 
 using namespace std;
 using namespace pangolin;
@@ -66,8 +68,8 @@ int main( int /*argc*/, char* argv[] )
   GlTexture tex(w,h,GL_LUMINANCE8);
 
   // Declare Image buffers
-  CVD::ConvertImage<Rgb<byte>,byte> rgb_to_grey;
-  Image<Rgb<byte> > Irgb(size);
+//  CVD::ConvertImage<Rgb<byte>,byte> rgb_to_grey;
+//  Image<Rgb<byte> > Irgb(size);
   Image<byte> I(size);
 
   // Camera parameters
@@ -77,12 +79,28 @@ int main( int /*argc*/, char* argv[] )
   // Variables
   Var<bool> disp_thresh("ui.Display Thresh",false);
   Var<bool> lock_to_cam("ui.AR",false);
+  Var<bool> add_image("ui.add Image",false,false);
+  Var<bool> minimise("ui.minimise",false,false);
 
-  CameraModel* pCameraModel = new CameraModel( "PinholeRadTan" );
-  pCameraModel->initialise_parameters( size.x, size.y );
+  Eigen::MatrixXd pattern = Eigen::MatrixXd(3, tracker.target.circles().size() );
+  for(size_t i=0; i < tracker.target.circles().size(); ++i )
+  {
+      TooN::Vector<3> circ = tracker.target.circles3D()[i];
+      pattern.col(i) << circ[0] , circ[1], circ[2];
+  }
+
+  GridCalibrator calibrator(
+      "Arctan", size.x, size.y, pattern
+//      "PinholeRadTan", size.x, size.y, pattern
+  );
+
+  double rms = 0;
+  Var<double> var_rms("ui.rms");
 
   for(int frame=0; !pangolin::ShouldQuit(); ++frame)
   {
+    var_rms = rms;
+
     Viewport::DisableScissor();
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
@@ -93,6 +111,71 @@ int main( int /*argc*/, char* argv[] )
 
     const bool tracking_good =
         tracker.ProcessFrame(cam,I);
+
+    if( Pushed(add_image) ) {
+        vector<int> target_conics_map(tracker.target.circles().size(), -1);
+        for( int i=0; i < tracker.conics_target_map.size(); ++i ) {
+            if(tracker.conics_target_map[i] >= 0) {
+                target_conics_map[tracker.conics_target_map[i]] = i;
+            }
+        }
+
+        bool complete = true;
+        int unseen = 0;
+        for( int i=0; i < target_conics_map.size(); ++i ) {
+            if( target_conics_map[i] == -1 ) {
+                complete = false;
+                ++unseen;
+            }
+        }
+
+        if(unseen > 0 ) {
+            cout << "Unseen: " << unseen << endl;
+        }
+
+        if( complete ) {
+            cout << "Calling Calibrator" << endl;
+            Eigen::MatrixXd obs = Eigen::MatrixXd(2, tracker.target.circles().size() );
+            for(size_t i=0; i < tracker.target.circles().size(); ++i ) {
+                const int c = target_conics_map[i];
+                TooN::Vector<2> circ = tracker.conics[c].center;
+                obs.col(i) <<  circ[0] , circ[1];
+            }
+
+            cout << obs << endl;
+            calibrator.add_view(obs);
+
+            cout <<
+                    calibrator.get_camera_copy()->get<double>("fx") / size.x << " " <<
+                    calibrator.get_camera_copy()->get<double>("fy") / size.y << " " <<
+                    calibrator.get_camera_copy()->get<double>("cx") / size.x << " " <<
+                    calibrator.get_camera_copy()->get<double>("cy") / size.y << " " <<
+                    calibrator.get_camera_copy()->get<double>("k1") << " " <<
+                    calibrator.get_camera_copy()->get<double>("k2") << " " <<
+                    calibrator.get_camera_copy()->get<double>("p1") << " " <<
+                    calibrator.get_camera_copy()->get<double>("p2") << " 0.0" << endl;
+
+            calibrator.save("camparams.txt");
+        }
+
+    }
+
+    if(Pushed(minimise)) {
+        calibrator.minimise();
+        calibrator.save("camparams.txt");
+
+        cout <<
+                calibrator.get_camera_copy()->get<double>("fx") / size.x << " " <<
+                calibrator.get_camera_copy()->get<double>("fy") / size.y << " " <<
+                calibrator.get_camera_copy()->get<double>("cx") / size.x << " " <<
+                calibrator.get_camera_copy()->get<double>("cy") / size.y << " " <<
+                calibrator.get_camera_copy()->get<double>("k1") << " " <<
+                calibrator.get_camera_copy()->get<double>("k2") << " " <<
+                calibrator.get_camera_copy()->get<double>("p1") << " " <<
+                calibrator.get_camera_copy()->get<double>("p2") << " 0.0" << endl;
+    }
+
+    calibrator.iterate(rms);
 
     if( lock_to_cam )
         s_cam.Set(FromTooN(tracker.T_gw));
@@ -123,7 +206,7 @@ int main( int /*argc*/, char* argv[] )
     glDepthFunc(GL_LEQUAL);
     glDrawAxis(30);
     DrawTarget(tracker.target,makeVector(0,0),1,0.2,0.2);
-//    DrawTarget(conics_target_map,target,makeVector(0,0),1);
+    DrawTarget(tracker.conics_target_map,tracker.target,makeVector(0,0),1);
 
 //    if( tracking_good )
     {
