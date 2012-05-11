@@ -7,10 +7,15 @@
 #include <fiducials/tracker.h>
 #include <fiducials/drawing.h>
 
+#include <CCameraModel/CameraModel.h>
+#include <CCameraModel/GridCalibrator.h>
+
 using namespace std;
 using namespace pangolin;
 using namespace TooN;
 using namespace CVD;
+
+using namespace CCameraModel;
 
 const int PANEL_WIDTH = 200;
 
@@ -72,6 +77,9 @@ int main( int /*argc*/, char* argv[] )
   // Variables
   Var<bool> disp_thresh("ui.Display Thresh",false);
   Var<bool> lock_to_cam("ui.AR",false);
+
+  CameraModel* pCameraModel = new CameraModel( "PinholeRadTan" );
+  pCameraModel->initialise_parameters( size.x, size.y );
 
   for(int frame=0; !pangolin::ShouldQuit(); ++frame)
   {
