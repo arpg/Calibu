@@ -77,8 +77,9 @@ int main( int /*argc*/, char* argv[] )
   Image<byte> I(size);
 
   // Camera parameters
-  Vector<5,float> cam_params = Var<Vector<5,float> >("cam_params");
-  FovCamera cam( w,h, w*cam_params[0],h*cam_params[1], w*cam_params[2],h*cam_params[3], cam_params[4] );
+  Vector<9,float> cam_params = Var<Vector<9,float> >("cam_params");
+//  FovCamera cam( w,h, w*cam_params[0],h*cam_params[1], w*cam_params[2],h*cam_params[3], cam_params[4] );
+  MatlabCamera cam( w,h, w*cam_params[0],h*cam_params[1], w*cam_params[2],h*cam_params[3], cam_params[4], cam_params[5], cam_params[6], cam_params[7], cam_params[8]);
 
   // Variables
   Var<bool> disp_thresh("ui.Display Thresh",false);
@@ -181,7 +182,7 @@ int main( int /*argc*/, char* argv[] )
                 calibrator.get_camera_copy()->get<double>("p2") << " 0.0" << endl;
     }
 
-    calibrator.iterate(rms);
+//    calibrator.iterate(rms);
 
     if( lock_to_cam )
         s_cam.Set(FromTooN(tracker.T_gw));
