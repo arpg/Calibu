@@ -12,7 +12,8 @@
 
 #include <Eigen/Eigen>
 
-#define USE_COLOUR 1;
+//#define USE_COLOUR 1
+#define USE_USHORT 1
 
 using namespace std;
 using namespace pangolin;
@@ -73,6 +74,9 @@ int main( int /*argc*/, char* argv[] )
 #ifdef USE_COLOUR
   CVD::ConvertImage<Rgb<byte>,byte> rgb_to_grey;
   Image<Rgb<byte> > Irgb(size);
+#elif USE_USHORT
+  CVD::ConvertImage<unsigned short,byte> rgb_to_grey;
+  Image<unsigned short> Irgb(size);
 #endif
   Image<byte> I(size);
 
@@ -109,7 +113,7 @@ int main( int /*argc*/, char* argv[] )
     Viewport::DisableScissor();
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
-#ifdef USE_COLOUR
+#if (USE_COLOUR || USE_USHORT )
     video.GrabNewest((byte*)Irgb.data(),true);
     rgb_to_grey.convert(Irgb,I);
 #else
@@ -194,6 +198,10 @@ int main( int /*argc*/, char* argv[] )
     if(!disp_thresh) {
 #ifdef USE_COLOUR
         texRGB.Upload(Irgb.data(),GL_RGB,GL_UNSIGNED_BYTE);
+#elif USE_USHORT
+        glPixelTransferScale(100);
+        texRGB.Upload(Irgb.data(),GL_LUMINANCE,GL_UNSIGNED_SHORT);
+        glPixelTransferScale(1);
 #else
         texRGB.Upload(I.data(),GL_LUMINANCE,GL_UNSIGNED_BYTE);
 #endif
