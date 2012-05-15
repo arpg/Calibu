@@ -12,8 +12,8 @@
 
 #include <Eigen/Eigen>
 
-//#define USE_COLOUR 1
-#define USE_USHORT 1
+#define USE_COLOUR 1
+//#define USE_USHORT 1
 
 using namespace std;
 using namespace pangolin;
