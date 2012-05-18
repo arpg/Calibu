@@ -37,6 +37,6 @@ IF(CCAMERAMODEL_FOUND)
     ${OpenCV_LIBS}
     ${CVD_LIBRARY}
     ${CCAMERAMODEL_LIBRARIES}
-    lapack toontag
+    lapack toontag vrpn quat
   )
 ENDIF()

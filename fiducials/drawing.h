@@ -62,6 +62,8 @@ void glDrawFrustrum(
   const TooN::Matrix<3,3>& Kinv, int w, int h, const TooN::SE3<>& T_wf, float scale
 );
 
+void glDrawGrid(float num_lines = 30, float line_delta = 2);
+
 // Inlines
 
 inline void glSetFrameOfReferenceF( const TooN::SE3<>& T_wf )

@@ -151,3 +151,26 @@ void glDrawFrustrum( const Matrix<3,3>& Kinv, int w, int h, const TooN::SE3<>& T
   glDrawFrustrum(Kinv,w,h,scale);
   glUnsetFrameOfReference();
 }
+
+void glDrawGrid(float num_lines, float line_delta)
+{
+    glBegin(GL_LINES);
+
+    for(int i = -num_lines; i < num_lines; i++){
+        glVertex3f( line_delta*num_lines, i*line_delta, 0.0);
+        glVertex3f(-line_delta*num_lines, i*line_delta, 0.0);
+
+        glVertex3f(i*line_delta,  line_delta*num_lines, 0.0);
+        glVertex3f(i*line_delta, -line_delta*num_lines, 0.0);
+    }
+
+//    glColor4ub(255, 0, 0, 128);
+//    glVertex3f( line_delta*num_lines , 0.0, 0.0);
+//    glVertex3f(-line_delta*num_lines , 0.0, 0.0);
+
+//    glColor4ub(0, 255, 0, 128);
+//    glVertex3f( 0.0,  line_delta*num_lines, 0.0);
+//    glVertex3f( 0.0, -line_delta*num_lines, 0.0);
+
+    glEnd();
+}
