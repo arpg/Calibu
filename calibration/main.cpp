@@ -11,6 +11,8 @@
 #include <CCameraModel/GridCalibrator.h>
 
 #include <Eigen/Eigen>
+#include <unsupported/Eigen/MatrixFunctions>
+#include <unsupported/Eigen/OpenGLSupport>
 
 #define USE_VICON 1
 #define USE_COLOUR 1
@@ -72,18 +74,13 @@ struct ViconTracking
 
     void TrackingEvent(const vrpn_TRACKERCB tData )
     {
-        double local_timestamp = Tic();
-        double vicon_timestamp = tData.msg_time.tv_sec + (1e-6 * tData.msg_time.tv_usec);
+//        double local_timestamp = Tic();
+//        double vicon_timestamp = tData.msg_time.tv_sec + (1e-6 * tData.msg_time.tv_usec);
 
-        // get position
-        Eigen::Vector3d p_v;
-        p_v << tData.pos[0], tData.pos[1], tData.pos[2];
-
-        memcpy(m_pos,tData.pos,3*sizeof(double));
-        memcpy(m_quat,tData.quat,4*sizeof(double));
-
-        cout << vicon_timestamp << " (" << local_timestamp << ")"
-             << endl << ": " << p_v << endl << endl;
+        q_to_ogl_matrix(&T_wc(0,0), tData.quat);
+        T_wc(0,3) = tData.pos[0];
+        T_wc(1,3) = tData.pos[1];
+        T_wc(2,3) = tData.pos[2];
     }
 
     static void VRPN_CALLBACK c_callback(void* userData, const vrpn_TRACKERCB tData )
@@ -92,8 +89,7 @@ struct ViconTracking
         self->TrackingEvent(tData);
     }
 
-    double m_pos[3];
-    double m_quat[4];
+    Eigen::Matrix4d T_wc;
 
     bool m_run;
     vrpn_Tracker_Remote* m_object;
@@ -103,14 +99,34 @@ struct ViconTracking
 struct Observation
 {
     Eigen::MatrixXd obs;
-    Eigen::Matrix4f Tfw;
+    Eigen::Matrix4d T_fw;
 };
 #endif
+
+void OptimiseTargetVicon(
+    const MatlabCamera& cam,
+    const Target& target,
+    const std::vector<Observation>& vicon_obs,
+    Eigen::Matrix4d& T_cf,
+    Eigen::Matrix4d& T_wt
+) {
+    for( int i=0; i< vicon_obs.size(); ++i ) {
+        const Observation& sample = vicon_obs[i];
+        for( int j=0; j < target.circles3D().size(); ++j ) {
+            TooN::Vector<3> p_t = target.circles3D()[j];
+            Eigen::Vector4d P_c = T_cf * sample.T_fw * T_wt * Eigen::Vector4d(p_t[0],p_t[1],p_t[2],1);
+//            cam.map()
+        }
+    }
+}
 
 int main( int /*argc*/, char* argv[] )
 {
 #ifdef USE_VICON
     ViconTracking vicon("BOX","192.168.10.1");
+    std::vector<Observation> vicon_obs;
+    Eigen::Matrix4d T_cf;
+    Eigen::Matrix4d T_tw;
 #endif
 
     // Load configuration data
@@ -123,12 +139,20 @@ int main( int /*argc*/, char* argv[] )
     const unsigned w = video.Width();
     const unsigned h = video.Height();
     CVD::ImageRef size(w,h);
-    
+
+    // Unit hell!
+    const double ppi = 72; // Points Per Inch
+    const double USwp = 11 * ppi;
+    const double UShp = 8.5 * ppi;
+    const double mpi = 0.0254; // meters per inch
+    const double mpp = mpi / ppi; // meters per point
+    const double unit = mpp;
+
     // Setup Tracker and associated target
     Tracker tracker(size);
     tracker.target.GenerateRandom(
                 //    60,25/(842.0/297.0),75/(842.0/297.0),15/(842.0/297.0),makeVector(297,210) // A4
-                60,792*25/(842.0),792*75/(842.0),792*40/(842.0),makeVector(792,612) // US Letter
+                60,unit*USwp*25/(842.0),unit*USwp*75/(842.0),unit*USwp*40/(842.0),makeVector(unit*USwp,unit*UShp) // US Letter
                 );
     tracker.target.SaveEPS("target.eps");
     
@@ -141,7 +165,7 @@ int main( int /*argc*/, char* argv[] )
 
     // Pangolin 3D Render state
     pangolin::OpenGlRenderState s_cam;
-    s_cam.Set(ProjectionMatrixRDF_TopLeft(640,480,420,420,320,240,1,1E6));
+    s_cam.Set(ProjectionMatrixRDF_TopLeft(640,480,420,420,320,240,1E-3,1E6));
     s_cam.Set(FromTooN(SE3<>(SO3<>(),makeVector(-tracker.target.Size()[0]/2,-tracker.target.Size()[1]/2,500))));
 
     pangolin::Handler3D handler(s_cam);
@@ -254,6 +278,10 @@ int main( int /*argc*/, char* argv[] )
                 }
                 
                 calibrator.add_view(obs, visibleCircles);
+
+#ifdef USE_VICON
+                vicon_obs.push_back((Observation){obs,vicon.T_wc});
+#endif // USE_VICON
             }
             
         }
@@ -334,17 +362,9 @@ int main( int /*argc*/, char* argv[] )
 
         {
             glPushMatrix();
-
-            double T_wb_colmaj[16];
-            q_to_ogl_matrix(T_wb_colmaj, vicon.m_quat);
-            T_wb_colmaj[12] = vicon.m_pos[0];
-            T_wb_colmaj[13] = vicon.m_pos[1];
-            T_wb_colmaj[14] = vicon.m_pos[2];
-            glMultMatrixd(T_wb_colmaj);
-
+            glMultMatrix(vicon.T_wc);
             glColor3f(1,0,0);
-            glDrawAxis(0.2);
-            glDrawFrustrum(cam.Kinv(),w,h,0.2);
+            glDrawAxis(0.1);
             glPopMatrix();
         }
 #endif // USE_VICON
