@@ -280,6 +280,30 @@ void Target::SaveEPS(string filename)
   f.close();
 }
 
+void Target::SaveRotatedEPS(string filename)
+{
+  ofstream f;
+  f.open(filename.c_str());
+  f << "%!PS-Adobe EPSF-3.0" << endl;
+  f << "%%Creator: FiducialCalibrationTarget" << endl;
+  f << "%%Title: Calibration Target" << endl;
+  f << "%%Origin: 0 0" << endl;
+  f << "%%BoundingBox: 0 0 " << size[1] << " " << size[0] << endl;
+  f << "% seed: " << seed << endl;
+  f << "% radius: " << radius << endl;
+  f << endl;
+
+  for( unsigned int i=0; i<tpts.size(); ++i )
+  {
+    Vector<2>& p = tpts[i];
+    f << p[1] << " " << p[0] << " " << radius << " 0 360 arc closepath" << endl
+      << "0.0 setgray fill" << endl
+      << endl;
+  }
+
+  f.close();
+}
+
 
 
 struct RansacMatchData

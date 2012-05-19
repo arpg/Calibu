@@ -48,6 +48,7 @@ public:
   void GenerateRandom(unsigned int max_circles, double radius, double min_distance, double border, const TooN::Vector<2>& size );
   void LoadPattern( std::string filename, double radius, double scale = 1.0 );
   void SaveEPS( std::string filename );
+  void SaveRotatedEPS( std::string filename);
 
   TooN::Vector<2> Size() const;
 
