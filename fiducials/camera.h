@@ -160,4 +160,41 @@ protected:
   double _1over2tan;
 };
 
+class MatlabCamera : public LinearCamera
+{
+public:
+
+  MatlabCamera(int w, int h, double fu, double fv, double u0, double v0, double k1, double k2, double p1, double p2, double k3)
+      :LinearCamera(w,h,fu,fv,u0,v0), _k1(k1), _k2(k2), _p1(p1), _p2(p2), _k3(k3)
+  {
+  }
+
+  inline TooN::Vector<2> map(const TooN::Vector<2>& cam) const
+  {
+      const double rd = norm(cam);
+      const double rd2 = rd*rd;
+      const double rd4 = rd2*rd2;
+      return LinearCamera::map(( (1 + _k1*rd2 + _k2*rd4 + _k3*rd4*rd2)*cam));
+  }
+
+  inline TooN::Vector<2> unmap(const TooN::Vector<2>& img) const
+  {
+      TooN::Vector<2> u = LinearCamera::unmap(img);
+      TooN::Vector<2> md = u;
+
+      for (int i=0; i<20; i++)
+      {
+          double rd = norm(md);
+          const double rd2 = rd*rd;
+          const double rd4 = rd2*rd2;
+          const double radial =  1 + _k1*rd2 + _k2*rd2*rd2 + _k3*rd4*rd2;
+          md = u/radial;
+      }
+      return md;
+  }
+
+protected:
+  double _k1, _k2, _p1, _p2, _k3;
+};
+
 #endif // CAMERA_H

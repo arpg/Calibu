@@ -32,6 +32,7 @@ int main( int /*argc*/, char* argv[] )
   tracker.target.GenerateRandom(
     60,25/(842.0/297.0),75/(842.0/297.0),15/(842.0/297.0),makeVector(297,210)
   );
+  tracker.target.SaveEPS("target.eps");
 
   // Create Glut window
   pangolin::CreateGlutWindowAndBind("Main",2*w+PANEL_WIDTH,h);
@@ -45,12 +46,12 @@ int main( int /*argc*/, char* argv[] )
   pangolin::Handler3D handler(s_cam);
 
   // Create viewport for video with fixed aspect
-  View& vPanel = pangolin::CreatePanel("ui").SetBounds(1.0,0.0,0,PANEL_WIDTH);
+  View& vPanel = pangolin::CreatePanel("ui").SetBounds(1.0,0.0,0,Attach::Pix(PANEL_WIDTH));
   View& vVideo = pangolin::Display("Video").SetAspect((float)w/h);
   View& v3D    = pangolin::Display("3D").SetAspect((float)w/h).SetHandler(&handler);
 
   Display("Container")
-      .SetBounds(1.0,0.0,PANEL_WIDTH,1.0,false)
+      .SetBounds(1.0,0.0,Attach::Pix(PANEL_WIDTH),1.0,false)
       .SetLayout(LayoutEqual)
       .AddDisplay(vVideo)
       .AddDisplay(v3D);
@@ -77,8 +78,10 @@ int main( int /*argc*/, char* argv[] )
     Viewport::DisableScissor();
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
-    video.GrabNewest((byte*)Irgb.data(),true);
-    rgb_to_grey.convert(Irgb,I);
+//    video.GrabNewest((byte*)Irgb.data(),true);
+//    rgb_to_grey.convert(Irgb,I);
+
+    video.GrabNewest((byte*)I.data(),true);
 
     const bool tracking_good =
         tracker.ProcessFrame(cam,I);
@@ -91,7 +94,8 @@ int main( int /*argc*/, char* argv[] )
     vVideo.ActivateScissorAndClear();
 
     if(!disp_thresh) {
-        texRGB.Upload(Irgb.data(),GL_RGB,GL_UNSIGNED_BYTE);
+//        texRGB.Upload(Irgb.data(),GL_RGB,GL_UNSIGNED_BYTE);
+        texRGB.Upload(I.data(),GL_LUMINANCE,GL_UNSIGNED_BYTE);
         texRGB.RenderToViewportFlipY();
     }else{
         tex.Upload(tracker.tI.data(),GL_LUMINANCE,GL_UNSIGNED_BYTE);
@@ -113,7 +117,7 @@ int main( int /*argc*/, char* argv[] )
     DrawTarget(tracker.target,makeVector(0,0),1,0.2,0.2);
 //    DrawTarget(conics_target_map,target,makeVector(0,0),1);
 
-    if( tracking_good )
+//    if( tracking_good )
     {
         // Draw Camera
         glColor3f(1,0,0);
