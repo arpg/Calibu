@@ -83,10 +83,9 @@ double Cost( const pair<Vector3d,Matrix3d >& plane, const vector<Conic>& conics,
 array<pair<Vector3d,Matrix3d >, 2 > PlaneFromConic(const Conic& c, double plane_circle_radius, const Matrix3d& K )
 {
   const Matrix3d Cn = K.transpose() * c.C *K;
-  SVD<3> svd(Cn);
-  const Matrix3d R1 = svd.get_U();
-  const Vector3d l = svd.get_diagonal();
-//  const Matrix3d C_ = svd.get_diagonal();
+  Eigen::JacobiSVD<Matrix3d> svd(Cn, ComputeFullU );
+  const Matrix3d R1 = svd.matrixU();
+  const Vector3d l = svd.singularValues();
   const double t = atan( sqrt( (l[1]-l[0]) / (l[2]-l[1]) ) );
 
   std::array<pair<Vector3d,Matrix3d >, 2> r;
@@ -158,7 +157,7 @@ Conic UnmapConic( const Conic& c, const AbstractCamera& cam )
   Conic ret;
 //  ret.bbox = c.bbox;
   ret.C = H_du.transpose() * c.C * H_du;
-  ret.Dual = LU<>(ret.C).get_inverse();
+  ret.Dual = ret.C.inverse();
   ret.center = u[0];
   return ret;
 }

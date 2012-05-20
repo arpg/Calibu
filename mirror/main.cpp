@@ -342,13 +342,13 @@ int main( int /*argc*/, char* argv[] )
             }
 
             // Solve system using SVD
-            SVD<> svd(As);
+            Eigen::JacobiSVD svd(As, ComputeFullV);
 
             // Get mirror plane for virtual camera 0 in cam0 FoR
-            const Vector<4> _N_0 = svd.get_VT()[3];
-            Vector<4> N_0 = _N_0 / norm(_N_0.slice<0,3>());
+            const Vector4d _N_0 = svd.matrixV().col(3);
+            Vector4d N_0 = _N_0 / (_N_0.head<3>()).norm();
             // d has different meaning in paper. Negate to match my thesis.
-            N_0[3] *= -1;
+            N_0(3) *= -1;
 
             // Render plane corresponding to first keyframe
             glSetFrameOfReferenceF(keyframes[0].T_kw.inverse());

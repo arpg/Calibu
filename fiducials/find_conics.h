@@ -85,8 +85,7 @@ Eigen::Matrix3d FindEllipse(
     }
   }
 
-  Eigen::SVD<> svd(A);
-  const Eigen::Matrix<double,5,1> x = svd.backsub(b);
+  const Eigen::Matrix<double,5,1> x = A.jacobiSvd().solve(b);
 
 //  //compute the risidual on the system to see if the algebraic error is too large.
 //  //note: maybe there is a better error metric.
@@ -97,7 +96,7 @@ Eigen::Matrix3d FindEllipse(
   Eigen::Matrix3d C_star_norm;
   C_star_norm << x[0],x[1]/2.0,x[3]/2.0,  x[1]/2.0,x[2],x[4]/2.0,  x[3]/2.0,x[4]/2.0,1.0;
 
-  const Eigen::Matrix3d C = Hinv.T() * Eigen::LU<3>(C_star_norm).get_inverse() * Hinv;
+  const Eigen::Matrix3d C = Hinv.T() * C_star_norm.inverse() * Hinv;
 //  const Matrix3d C_star = LU<3>(C).get_inverse();
 //  return C_star/C_star[2][2];
 
@@ -159,7 +158,7 @@ void FindConics(
       conic.C = FindEllipse(dI,region, residual);
 
       conic.bbox = region;
-      conic.Dual = Eigen::LU<3>(conic.C).get_inverse();
+      conic.Dual = conic.C.inverse();
       conic.Dual /= conic.Dual(2,2);
       conic.center = Eigen::Vector2d(conic.Dual(0,2),conic.Dual(1,2));
 

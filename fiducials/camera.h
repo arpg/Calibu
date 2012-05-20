@@ -1,6 +1,7 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
+#include <array>
 #include <Eigen/Dense>
 
 inline Eigen::Vector2d project(const Eigen::Vector3d& p)
@@ -10,7 +11,7 @@ inline Eigen::Vector2d project(const Eigen::Vector3d& p)
 
 inline Eigen::Vector3d project(const Eigen::Vector4d& p)
 {
-    return Eigen::Vector2d(p(0)/p(2), p(1)/p(2) );
+    return Eigen::Vector3d(p(0)/p(3), p(1)/p(3), p(2)/p(3) );
 }
 
 inline Eigen::Vector3d unproject(const Eigen::Vector2d& p)
@@ -27,8 +28,9 @@ class AbstractCamera
 {
 public:
   AbstractCamera(int width, int height)
-    : size( Eigen::Vector2d(width,height) )
   {
+      size[0] = width;
+      size[1] = height;
   }
 
   //applies camera intrinsics including distortion
@@ -60,7 +62,7 @@ public:
   }
 
 protected:
-  Eigen::Matrix<unsigned,2,1> size;
+  std::array<unsigned,2> size;
 };
 
 class LinearCamera : public AbstractCamera
