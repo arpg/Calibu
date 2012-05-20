@@ -12,7 +12,7 @@
 
 using namespace std;
 //using namespace pangolin;
-using namespace TooN;
+using namespace Eigen;
 using namespace CVD;
 
 Tracker::Tracker(const CVD::ImageRef& video_size)
@@ -87,7 +87,7 @@ bool Tracker::ProcessFrame(LinearCamera& cam, CVD::Image<CVD::byte>& I, CVD::Ima
     // Generate map and point structures
     conics_target_map.clear();
     conics_target_map.resize(conics.size(),-1);
-    vector<Vector<2> > ellipses;
+    vector<Vector2d > ellipses;
     for( size_t i=0; i < conics.size(); ++i )
         ellipses.push_back(conics[i].center);
 

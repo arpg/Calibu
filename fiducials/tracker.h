@@ -1,7 +1,7 @@
 #ifndef TRACKER_H
 #define TRACKER_H
 
-#include <TooN/se3.h>
+#include <sophus/se3.h>
 #include <ctime>
 #include <cvd/image.h>
 #include <cvd/rgb.h>
@@ -35,12 +35,12 @@ struct Tracker
     std::vector<int> conics_target_map;
 
     // Last good pose
-    TooN::SE3<> T_gw;
+    Sophus::SE3 T_gw;
     std::clock_t last_good;
     int good_frames;
 
     // Pose hypothesis
-    TooN::SE3<> T_hw;
+    Sophus::SE3 T_hw;
 
     // Tracking Settings
 

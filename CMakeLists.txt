@@ -7,6 +7,7 @@ SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/CMakeModules/"
 
 IF (CMAKE_COMPILER_IS_GNUCXX )
 #  ADD_DEFINITIONS("-Wall -Wno-error=deprecated-declarations -Werror")
+   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 ENDIF()
 
 # Overide with cmake -DCMAKE_BUILD_TYPE=Debug {dir}

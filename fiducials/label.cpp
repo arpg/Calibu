@@ -30,7 +30,7 @@
 #include <vector>
 
 using namespace std;
-using namespace TooN;
+using namespace Eigen;
 using namespace CVD;
 
 inline short RootLabel(vector<PixelClass>& labels, short label )

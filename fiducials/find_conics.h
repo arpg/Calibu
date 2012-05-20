@@ -28,14 +28,12 @@
 #ifndef FIND_CONICS_H
 #define FIND_CONICS_H
 
-#include <TooN/TooN.h>
-#include <TooN/LU.h>
-#include <TooN/SVD.h>
+#include <Eigen/Dense>
 
 #include "label.h"
 
 template<typename TdI>
-TooN::Matrix<3,3> FindEllipse(
+Eigen::Matrix3d FindEllipse(
   const CVD::BasicImage<TdI>& dI,
   const IRectangle& r,
   double& residual
@@ -43,31 +41,31 @@ TooN::Matrix<3,3> FindEllipse(
   //Precise ellipse estimation without contour point extraction
   //Jean-Nicolas Ouellet, Patrick Hebert
 
-  const TooN::Vector<2> c = TooN::makeVector(
+  const Eigen::Vector2d c = Eigen::Vector2d(
     r.x1 + (r.x2-r.x1) / 2.0,
     r.y1 + (r.y2-r.y1) / 2.0
   );
 
-  const TooN::Vector<2> f = TooN::makeVector(
+  const Eigen::Vector2d f = Eigen::Vector2d(
     2.0 / r.Width(), 2.0 / r.Height()
   );
 
   // Transform to approximately unit circle at origin
-  const TooN::Matrix<3,3> H = TooN::Data(
+  Eigen::Matrix3d H;
+  H <<
       f[0], 0, c[0],
       0, f[1], c[1],
-      0, 0, 1
-  );
+      0, 0, 1;
 
-  const TooN::Matrix<3,3> Hinv = TooN::Data(
+  Eigen::Matrix3d Hinv;
+  H <<
       1/f[0], 0, -c[0]/f[0],
       0, 1/f[1], -c[1]/f[1],
-      0, 0, 1
-  );
+      0, 0, 1;
 
   // Form system Ax = b to solve
-  TooN::Matrix<5,5> A = TooN::Zeros;
-  TooN::Vector<5> b = TooN::Zeros;
+  Eigen::Matrix<double,5,5> A = Eigen::Matrix<double,5,5>::Zero();
+  Eigen::Matrix<double,5,1> b = Eigen::Matrix<double,5,1>::Zero();
 
   float elementCount = 0;
   for( int v=r.y1; v<=r.y2; ++v )
@@ -75,32 +73,35 @@ TooN::Matrix<3,3> FindEllipse(
     for( int u=r.x1; u<=r.x2; ++u )
     {
       // li = (ai,bi,ci)' = (I_ui,I_vi, -dI' x_i)'
-      const TooN::Vector<3> d =
-        TooN::makeVector(dI[v][u][0],dI[v][u][1],-(dI[v][u][0] * u + dI[v][u][1] * v) );
-      const TooN::Vector<3> li = //H.T() * d;
-        TooN::makeVector( d[0]*H(0,0), d[1]*H(1,1), d[0]*H(0,2) + d[1] * H(1,2) + d[2] );
-      const TooN::Vector<5> Ki = TooN::makeVector(li[0]*li[0],li[0]*li[1],li[1]*li[1],li[0]*li[2],li[1]*li[2]);
-      A += Ki.as_col()*Ki.as_row();
+      const Eigen::Vector3d d =
+        Eigen::Vector3d(dI[v][u][0],dI[v][u][1],-(dI[v][u][0] * u + dI[v][u][1] * v) );
+      const Eigen::Vector3d li = //H.T() * d;
+        Eigen::Vector3d( d[0]*H(0,0), d[1]*H(1,1), d[0]*H(0,2) + d[1] * H(1,2) + d[2] );
+      Eigen::Matrix<double,5,1> Ki;
+      Ki << li[0]*li[0], li[0]*li[1], li[1]*li[1], li[0]*li[2], li[1]*li[2];
+      A += Ki*Ki.transpose();
       b += -Ki*li[2]*li[2];
       elementCount++;
     }
   }
 
-  TooN::SVD<> svd(A);
-  const TooN::Vector<5> x = svd.backsub(b);
+  Eigen::SVD<> svd(A);
+  const Eigen::Matrix<double,5,1> x = svd.backsub(b);
 
 //  //compute the risidual on the system to see if the algebraic error is too large.
 //  //note: maybe there is a better error metric.
-//  const TooN::Vector<5> error =  A*x - b;
+//  const Eigen::Vector<5> error =  A*x - b;
 //  residual = error*error;
 //  //residual/=elementCount;
 
-  const TooN::Matrix<3,3> C_star_norm = TooN::Data(x[0],x[1]/2.0,x[3]/2.0,  x[1]/2.0,x[2],x[4]/2.0,  x[3]/2.0,x[4]/2.0,1.0);
-  const TooN::Matrix<3,3> C = Hinv.T() * TooN::LU<3>(C_star_norm).get_inverse() * Hinv;
-//  const Matrix<3,3> C_star = LU<3>(C).get_inverse();
+  Eigen::Matrix3d C_star_norm;
+  C_star_norm << x[0],x[1]/2.0,x[3]/2.0,  x[1]/2.0,x[2],x[4]/2.0,  x[3]/2.0,x[4]/2.0,1.0;
+
+  const Eigen::Matrix3d C = Hinv.T() * Eigen::LU<3>(C_star_norm).get_inverse() * Hinv;
+//  const Matrix3d C_star = LU<3>(C).get_inverse();
 //  return C_star/C_star[2][2];
 
-  return C/C[2][2];
+  return C/C(2,2);
 }
 
 void FindCandidateConicsFromLabels(
@@ -158,9 +159,9 @@ void FindConics(
       conic.C = FindEllipse(dI,region, residual);
 
       conic.bbox = region;
-      conic.Dual = TooN::LU<3>(conic.C).get_inverse();
-      conic.Dual /= conic.Dual[2][2];
-      conic.center = TooN::makeVector(conic.Dual[0][2],conic.Dual[1][2]);
+      conic.Dual = Eigen::LU<3>(conic.C).get_inverse();
+      conic.Dual /= conic.Dual(2,2);
+      conic.center = Eigen::Vector2d(conic.Dual(0,2),conic.Dual(1,2));
 
       if( region.Contains(conic.center))
         conics.push_back( conic );

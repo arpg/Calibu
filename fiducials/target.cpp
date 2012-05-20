@@ -32,9 +32,7 @@
 #include <iostream>
 #include <fstream>
 
-#include <TooN/se2.h>
-#include <TooN/LU.h>
-#include <TooN/SVD.h>
+#include <sophus/se2.h>
 
 #include "hungarian.h"
 #include "conics.h"
@@ -42,7 +40,7 @@
 #include "utils.h"
 
 using namespace std;
-using namespace TooN;
+using namespace Eigen;
 
 Target::Target()
   : seed(0), dt(NULL)
@@ -56,12 +54,12 @@ void Target::SetSeed(int s )
   srand(seed);
 }
 
-Matrix<> DistanceMatrix(const vector<Vector<2> >& pts )
+MatrixXd DistanceMatrix(const vector<Vector2d >& pts )
 {
-  Matrix<> D(pts.size(),pts.size());
+  MatrixXd D(pts.size(),pts.size());
   for( unsigned int j=0; j < pts.size(); ++j )
     for( unsigned int i=0; i < pts.size(); ++i )
-      D[j][i] = norm(pts[i] - pts[j]);
+        D(j,i) = (pts[i] - pts[j]).norm();
   return D;
 }
 
@@ -76,15 +74,15 @@ void Target::Clear()
 
 void Target::InitialiseFrom2DPts()
 {
-  for(vector<Vector<2> >::const_iterator i = tpts.begin(); i != tpts.end(); ++i )
+  for(vector<Vector2d >::const_iterator i = tpts.begin(); i != tpts.end(); ++i )
   {
-    const Vector<2>& p = *i;
-    tpts3d.push_back(makeVector(p[0],p[1],0));
-    tpts_reflected.push_back(makeVector(-p[0],p[1]));
+    const Vector2d& p = *i;
+    tpts3d.push_back(Vector3d(p[0],p[1],0));
+    tpts_reflected.push_back(Vector2d(-p[0],p[1]));
   }
 
   // Construct Distance matrix
-  dt = new Matrix<>(DistanceMatrix(tpts));
+  dt = new MatrixXd(DistanceMatrix(tpts));
   SortRows(*dt);
 
 //  cout << "Target generated with " << tpts.size() << " circles." << endl;
@@ -104,7 +102,7 @@ void Target::LoadPattern( std::string filename, double radius, double scale )
   f.open(filename.c_str());
   while( !f.eof() )
   {
-    Vector<2> p;
+    Vector2d p;
     double z;
     f >> p[0];
     f >> p[1];
@@ -118,7 +116,7 @@ void Target::LoadPattern( std::string filename, double radius, double scale )
   InitialiseFrom2DPts();
 }
 
-void Target::GenerateCircular(unsigned int max_circles, double radius, double min_distance, double border, const Vector<2>& size)
+void Target::GenerateCircular(unsigned int max_circles, double radius, double min_distance, double border, const Vector2d& size)
 {
   assert(size[0] == size[1]);
 
@@ -142,7 +140,7 @@ void Target::GenerateCircular(unsigned int max_circles, double radius, double mi
     const double x = ((double)rand() * 2 * big_circle_radius / (double)RAND_MAX) - big_circle_radius;
     const double y = (signbit((int)rand() - (int)RAND_MAX/2) ? 1 : -1) * sqrt(big_circle_radius*big_circle_radius - x*x);
 
-    Vector<2> p = makeVector(
+    Vector2d p = Vector2d(
       radius + border + big_circle_radius + x,
       radius + border + big_circle_radius + y
     );
@@ -150,7 +148,7 @@ void Target::GenerateCircular(unsigned int max_circles, double radius, double mi
     bool good = true;
     for( unsigned int i=0; i<tpts.size(); ++i )
     {
-      if( norm_sq(p - tpts[i]) < md2 )
+      if( (p - tpts[i]).squaredNorm() < md2 )
       {
         good = false;
         break;
@@ -168,7 +166,7 @@ void Target::GenerateCircular(unsigned int max_circles, double radius, double mi
   InitialiseFrom2DPts();
 }
 
-void Target::GenerateEmptyCircle(unsigned int max_circles, double radius, double min_distance, double border, double clear_radius, const Vector<2>& size)
+void Target::GenerateEmptyCircle(unsigned int max_circles, double radius, double min_distance, double border, double clear_radius, const Vector2d& size)
 {
   Clear();
 
@@ -177,7 +175,7 @@ void Target::GenerateEmptyCircle(unsigned int max_circles, double radius, double
   this->size = size;
   this->radius = radius;
 
-  const Vector<2> center = size / 2;
+  const Vector2d center = size / 2;
 
   const double md2 = min_distance * min_distance;
 
@@ -187,16 +185,16 @@ void Target::GenerateEmptyCircle(unsigned int max_circles, double radius, double
 
   while( tpts.size() < max_circles && fails < MAX_FAILS )
   {
-    Vector<2> p = makeVector(
+    Vector2d p = Vector2d(
       (radius+border) + (double)rand() * ((double)size[0] - 2*(radius+border)) / (double)RAND_MAX,
       (radius+border) + (double)rand() * ((double)size[1] - 2*(radius+border)) / (double)RAND_MAX
     );
 
-    bool good = norm( p - center) > clear_radius;
+    bool good = ( p - center).norm() > clear_radius;
 
     for( unsigned int i=0; i<tpts.size(); ++i )
     {
-      if( norm_sq(p - tpts[i]) < md2 )
+      if( (p - tpts[i]).squaredNorm() < md2 )
       {
         good = false;
         break;
@@ -214,7 +212,7 @@ void Target::GenerateEmptyCircle(unsigned int max_circles, double radius, double
   InitialiseFrom2DPts();
 }
 
-void Target::GenerateRandom(unsigned int max_circles, double radius, double min_distance, double border, const Vector<2>& size)
+void Target::GenerateRandom(unsigned int max_circles, double radius, double min_distance, double border, const Vector2d& size)
 {
   Clear();
 
@@ -231,14 +229,14 @@ void Target::GenerateRandom(unsigned int max_circles, double radius, double min_
 
   while( tpts.size() < max_circles && fails < MAX_FAILS )
   {
-    Vector<2> p = makeVector(
+    Vector2d p = Vector2d(
       (radius+border) + (double)rand() * ((double)size[0] - 2*(radius+border)) / (double)RAND_MAX,
       (radius+border) + (double)rand() * ((double)size[1] - 2*(radius+border)) / (double)RAND_MAX
     );
     bool good = true;
     for( unsigned int i=0; i<tpts.size(); ++i )
     {
-      if( norm_sq(p - tpts[i]) < md2 )
+      if( (p - tpts[i]).squaredNorm() < md2 )
       {
         good = false;
         break;
@@ -271,7 +269,7 @@ void Target::SaveEPS(string filename)
 
   for( unsigned int i=0; i<tpts.size(); ++i )
   {
-    Vector<2>& p = tpts[i];
+    Vector2d& p = tpts[i];
     f << p[0] << " " << size[1] - p[1] << " " << radius << " 0 360 arc closepath" << endl
       << "0.0 setgray fill" << endl
       << endl;
@@ -295,7 +293,7 @@ void Target::SaveRotatedEPS(string filename)
 
   for( unsigned int i=0; i<tpts.size(); ++i )
   {
-    Vector<2>& p = tpts[i];
+    Vector2d& p = tpts[i];
     f << p[1] << " " << p[0] << " " << radius << " 0 360 arc closepath" << endl
       << "0.0 setgray fill" << endl
       << endl;
@@ -308,30 +306,30 @@ void Target::SaveRotatedEPS(string filename)
 
 struct RansacMatchData
 {
-  RansacMatchData(const vector<Vector<2> >& m, const vector<Vector<2> >& t, vector<int>& ml)
+  RansacMatchData(const vector<Vector2d >& m, const vector<Vector2d >& t, vector<int>& ml)
     :mpts(m),tpts(t),mpts_label(ml)
   {}
 
-  const vector<Vector<2> >& mpts;
-  const vector<Vector<2> >& tpts;
+  const vector<Vector2d >& mpts;
+  const vector<Vector2d >& tpts;
   vector<int>& mpts_label;
 };
 
-double RansacMatchCostFunction( const SE2<>& T, int i, RansacMatchData* data )
+double RansacMatchCostFunction( const Sophus::SE2& T, int i, RansacMatchData* data )
 {
-  const Vector<2> p = T * data->mpts[i];
-  return norm(data->tpts[data->mpts_label[i]] - p);
+  const Vector2d p = T * data->mpts[i];
+  return (data->tpts[data->mpts_label[i]] - p).norm();
 }
 
-TooN::SE2<> PoseFromCorrespondences(const vector<const TooN::Vector<2> *>& a, const vector<const TooN::Vector<2> *>& b)
+Sophus::SE2 PoseFromCorrespondences(const vector<const Eigen::Vector2d *>& a, const vector<const Eigen::Vector2d *>& b)
 {
   int n = a.size();
   double x1 = 0.0, x2 = 0.0, y1 = 0.0, y2 = 0.0, xx = 0.0, yy = 0.0, xy = 0.0, yx = 0.0;
 
   for (int i=0; i<n; ++i)
   {
-    const TooN::Vector<2> & p1 = *a[i];
-    const TooN::Vector<2> & p2 = *b[i];
+    const Eigen::Vector2d & p1 = *a[i];
+    const Eigen::Vector2d & p2 = *b[i];
 
     x1 += p1[0];
     x2 += p2[0];
@@ -358,19 +356,19 @@ TooN::SE2<> PoseFromCorrespondences(const vector<const TooN::Vector<2> *>& a, co
   double yaw = atan2(Sxy-Syx, Sxx+Syy);
 
   // calculate pose
-  return SE2<>(
-    SO2<>(yaw),
-    makeVector(
+  return Sophus::SE2(
+    Sophus::SO2(yaw),
+    Eigen::Vector2d(
       xm2 - (xm1*cos(yaw) - ym1*sin(yaw)),
       ym2 - (xm1*sin(yaw) + ym1*cos(yaw))
     )
   );
 }
 
-SE2<> RansacMatchModelFunction( const std::vector<int>& indices, RansacMatchData* data )
+Sophus::SE2 RansacMatchModelFunction( const std::vector<int>& indices, RansacMatchData* data )
 {
-  vector<const Vector<2>* > mp;
-  vector<const Vector<2>* > tp;
+  vector<const Vector2d* > mp;
+  vector<const Vector2d* > tp;
   for( unsigned int k=0; k<indices.size(); ++k )
   {
     const int i = indices[k];
@@ -380,19 +378,19 @@ SE2<> RansacMatchModelFunction( const std::vector<int>& indices, RansacMatchData
   return PoseFromCorrespondences(mp,tp);
 }
 
-SE2<> RansacMatchCorrespondences(
-  const vector<Vector<2> >& measurement,
-  const vector<Vector<2> >& target,
+Sophus::SE2 RansacMatchCorrespondences(
+  const vector<Vector2d >& measurement,
+  const vector<Vector2d >& target,
   vector<int>& measurement_label,
   int iterations,
   double max_point_fit_error,
   int min_consensus_size
 ) {
   RansacMatchData rmd(measurement,target,measurement_label);
-  Ransac<SE2<>,2,RansacMatchData*> ransac( &RansacMatchModelFunction, &RansacMatchCostFunction, &rmd);
+  Ransac<Sophus::SE2,2,RansacMatchData*> ransac( &RansacMatchModelFunction, &RansacMatchCostFunction, &rmd);
 
   vector<int> inliers;
-  SE2<> T = ransac.Compute(
+  Sophus::SE2 T = ransac.Compute(
     measurement.size(),inliers,iterations,
     max_point_fit_error,min_consensus_size
   );
@@ -406,20 +404,20 @@ SE2<> RansacMatchCorrespondences(
   return T;
 }
 
-double DescriptorDist( const Vector<>& m, const Vector<>& t, int neighbours )
+double DescriptorDist( const VectorXd& m, const VectorXd& t, int neighbours )
 {
-  const int dsize = std::min(m.size(),neighbours);
-  return norm( m.slice(0,dsize) - t.slice(0,dsize) );
+  const int dsize = std::min((int)m.rows(),neighbours);
+  return ( m.head(dsize) - t.head(dsize) ).norm();
 }
 
-int ClosestPoint( const vector<Vector<2> >& t, const Vector<2>& p )
+int ClosestPoint( const vector<Vector2d >& t, const Vector2d& p )
 {
   double best_d = numeric_limits<double>::max();
   int best_i = -1;
 
   for( unsigned int i=0; i < t.size(); ++i )
   {
-    const double d = norm(t[i] - p);
+    const double d = (t[i] - p).norm();
     if( d < best_d )
     {
       best_i = i;
@@ -430,7 +428,7 @@ int ClosestPoint( const vector<Vector<2> >& t, const Vector<2>& p )
   return best_i;
 }
 
-void ClosestPoints( const vector<Vector<2> >& a, const vector<Vector<2> >& b, vector<int>& a_map)
+void ClosestPoints( const vector<Vector2d >& a, const vector<Vector2d >& b, vector<int>& a_map)
 {
   for( unsigned i=0; i<a.size(); ++i )
   {
@@ -438,7 +436,7 @@ void ClosestPoints( const vector<Vector<2> >& a, const vector<Vector<2> >& b, ve
   }
 }
 
-void MutualClosest( const vector<Vector<2> >& a, const vector<Vector<2> >& b, vector<int>& a_map)
+void MutualClosest( const vector<Vector2d >& a, const vector<Vector2d >& b, vector<int>& a_map)
 {
   vector<int> b_map(b.size(),-1);
   ClosestPoints(b,a,b_map);
@@ -451,34 +449,34 @@ void MutualClosest( const vector<Vector<2> >& a, const vector<Vector<2> >& b, ve
   }
 }
 
-void Target::Match( const vector<Vector<2> >& measurement, vector<int>& measurement_label, int match_neighbours  )
+void Target::Match( const vector<Vector2d >& measurement, vector<int>& measurement_label, int match_neighbours  )
 {
-  Matrix<> dm = DistanceMatrix(measurement);
+  MatrixXd dm = DistanceMatrix(measurement);
   SortRows(dm);
   Match(dm,measurement_label,match_neighbours);
 }
 
-void Target::Match( const TooN::Matrix<>& sorted_measurement_distance_matrix, std::vector<int>& measurement_label, int match_neighbours )
+void Target::Match( const Eigen::MatrixXd& sorted_measurement_distance_matrix, std::vector<int>& measurement_label, int match_neighbours )
 {
-  const Matrix<>& dm = sorted_measurement_distance_matrix;
-  const size_t msize = dm.num_rows();
+  const MatrixXd& dm = sorted_measurement_distance_matrix;
+  const size_t msize = dm.rows();
 
   // Create cost matrix and padd with zeroes
   const size_t size = max(msize, tpts.size());
-  Matrix<> cost(size,size);
-  cost = Zeros;
+  MatrixXd cost(size,size);
+  cost.setZero();
 
   // Assign measurement to target association cost
   for( unsigned int j = 0; j < msize; ++j )
     for( unsigned int i = 0; i < tpts.size(); ++i )
-      cost[j][i] = DescriptorDist( dm[j], (*dt)[i], match_neighbours );
+      cost(j,i) = DescriptorDist( dm.row(j), (*dt).row(i), match_neighbours );
 
-  double* c_cost[cost.num_rows()];
-  for( int i=0; i<cost.num_rows(); ++i )
+  double* c_cost[cost.rows()];
+  for( int i=0; i<cost.rows(); ++i )
     c_cost[i] = &cost[i][0];
 
   hungarian_problem_t hp;
-  hungarian_init(&hp,c_cost,cost.num_rows(),cost.num_cols() );
+  hungarian_init(&hp,c_cost,cost.rows(),cost.cols() );
   hungarian_solve(&hp);
 
   for( unsigned int j=0; j<msize; ++j )
@@ -490,9 +488,9 @@ void Target::Match( const TooN::Matrix<>& sorted_measurement_distance_matrix, st
   hungarian_free(&hp);
 }
 
-Vector<2> Mean( vector<Vector<2> >& pts )
+Vector2d Mean( vector<Vector2d >& pts )
 {
-  Vector<2> sum = Zeros;
+  Vector2d sum = Vector2d::Zero();
   for( unsigned int i=0; i<pts.size(); ++i )
   {
     sum = sum + pts[i];
@@ -501,24 +499,24 @@ Vector<2> Mean( vector<Vector<2> >& pts )
 }
 
 
-double RansacHomogCostFunction( const Matrix<3,3>& H_tm, int i, RansacMatchData* data )
+double RansacHomogCostFunction( const Matrix3d& H_tm, int i, RansacMatchData* data )
 {
-  const Vector<2>& m = data->mpts[i];
-  const Vector<2>& t = data->tpts[data->mpts_label[i]];
-  const Vector<2> m_t = project(H_tm * unproject(m));
-  return norm_sq(m_t - t);
+  const Vector2d& m = data->mpts[i];
+  const Vector2d& t = data->tpts[data->mpts_label[i]];
+  const Vector2d m_t = project( (Vector3d)(H_tm * unproject(m)) );
+  return (m_t - t).squaredNorm();
 }
 
-Matrix<3,3> RansacHomogModelFunction( const std::vector<int>& indices, RansacMatchData* data )
+Matrix3d RansacHomogModelFunction( const std::vector<int>& indices, RansacMatchData* data )
 {
-  std::vector<Vector<2> > mpts;
-  std::vector<Vector<2> > tpts;
+  std::vector<Vector2d > mpts;
+  std::vector<Vector2d > tpts;
 
   for( unsigned int i=0; i< indices.size(); ++i )
   {
     const int mi = indices[i];
-    const Vector<2>& m = data->mpts[mi];
-    const Vector<2>& t = data->tpts[data->mpts_label[mi]];
+    const Vector2d& m = data->mpts[mi];
+    const Vector2d& t = data->tpts[data->mpts_label[mi]];
     mpts.push_back(m);
     tpts.push_back(t);
   }
@@ -527,7 +525,7 @@ Matrix<3,3> RansacHomogModelFunction( const std::vector<int>& indices, RansacMat
 }
 
 void Target::FindTarget(
-  const SE3<>& T_cw,
+  const Sophus::SE3& T_cw,
   const AbstractCamera& cam,
   vector<Conic>& conics,
   vector<int>& conics_target_map
@@ -536,11 +534,11 @@ void Target::FindTarget(
 
   const IRectangle img_rect( 0,0,cam.width(),cam.height());
 
-  vector<Vector<2> > vis_t;
+  vector<Vector2d > vis_t;
   vector<int> vis_t_map;
   for( unsigned int i=0; i < tpts3d.size(); ++i )
   {
-    const Vector<2> t = cam.project_map( T_cw * tpts3d[i] );
+    const Vector2d t = cam.project_map( T_cw * tpts3d[i] );
     if( img_rect.Contains(t) )
     {
       vis_t.push_back(t);
@@ -548,7 +546,7 @@ void Target::FindTarget(
     }
   }
 
-  vector<Vector<2> > m;
+  vector<Vector2d > m;
   for( unsigned i=0; i<conics.size(); ++i )
     m.push_back(conics[i].center);
 
@@ -559,25 +557,25 @@ void Target::FindTarget(
     conics_target_map[i] = m_map[i] >= 0 ? vis_t_map[m_map[i]] : -1;
 }
 
-Vector<3> nd_b(const SE3<>& T_ba, const Vector<3>& n_a)
+Vector3d nd_b(const Sophus::SE3& T_ba, const Vector3d& n_a)
 {
-  const Vector<3> n_b = T_ba.get_rotation() * n_a;
-  const double d_b = 1 - T_ba.get_translation() * n_b;
+  const Vector3d n_b = T_ba.so3() * n_a;
+  const double d_b = 1 - T_ba.translation().dot(n_b);
   return n_b / d_b;
 }
 
-TooN::Vector<3> IntersectCamFeaturePlane( const TooN::Vector<2>& p, const AbstractCamera & cam, const TooN::SE3<>& T_wk, const TooN::Vector<4>& N_w)
+Eigen::Vector3d IntersectCamFeaturePlane( const Eigen::Vector2d& p, const AbstractCamera & cam, const Sophus::SE3& T_wk, const Eigen::Vector4d& N_w)
 {
-  const Vector<3> nd_k = nd_b(T_wk.inverse(),project(N_w));
-  const Vector<3> kinvp = cam.unmap_unproject(p);
-  const double denom = nd_k * kinvp;
+  const Vector3d nd_k = nd_b(T_wk.inverse(),project(N_w));
+  const Vector3d kinvp = cam.unmap_unproject(p);
+  const double denom = nd_k.dot(kinvp);
   if( denom !=0 ) {
-    const Vector<3> r_k = -kinvp / denom;
-    const Vector<3> r_w = project(T_wk * unproject(r_k));
+    const Vector3d r_k = -kinvp / denom;
+    const Vector3d r_w = project(T_wk * unproject(r_k));
     return r_w;
   }else{
     assert(false);
-    return Vector<3>();
+    return Vector3d();
   }
 }
 
@@ -594,32 +592,32 @@ void Target::FindTarget(
 ) {
 
   // Compute metric positions in 2D
-  const vector<TooN::Vector<2> >& tpts = use_mirror ? tpts_reflected : this->tpts;
-  vector<Vector<2> >  mpts;
+  const vector<Eigen::Vector2d >& tpts = use_mirror ? tpts_reflected : this->tpts;
+  vector<Vector2d >  mpts;
 
-  pair<Vector<3>,Matrix<3,3> > plane = PlaneFromConics(conics,radius,cam.K(), plane_inlier_threshold);
-  const Vector<4> N_w = unproject(plane.first) / norm(plane.first);
+  pair<Vector3d,Matrix3d > plane = PlaneFromConics(conics,radius,cam.K(), plane_inlier_threshold);
+  const Vector4d N_w = unproject(plane.first) / (plane.first).norm();
 
-  if( !TooN::isfinite(N_w) )
+  if( !Eigen::isfinite(N_w) )
     return;
 
   for( unsigned int i=0; i< conics.size(); ++i )
   {
-    const Vector<2> ud = conics[i].center;
-    const Vector<3> p3d = IntersectCamFeaturePlane(ud,cam,SE3<>(),N_w);
-    const Vector<2> pnorm = (plane.second.T() * p3d).slice<0,2>();
+    const Vector2d ud = conics[i].center;
+    const Vector3d p3d = IntersectCamFeaturePlane(ud,cam,Sophus::SE3(),N_w);
+    const Vector2d pnorm = (plane.second.transpose() * p3d).head<2>();
     mpts.push_back(pnorm);
   }
 
   if( conics.size() >= 2 )
   {
-    Matrix<> ellipse_dm = DistanceMatrix(mpts);
+    MatrixXd ellipse_dm = DistanceMatrix(mpts);
     SortRows(ellipse_dm);
 
     // Match using Hungarian method
     Match(ellipse_dm,conics_target_map,match_neighbours);
 
-    SE2<> T_tm;
+    Sophus::SE2 T_tm;
 
     // Perform RANSAC to remove outliers
     if( ransac_iterations )
@@ -637,12 +635,12 @@ void Target::FindTarget(
       if( conics_target_map[i] < 0 )
       {
         // find closest point
-        const Vector<2> m_t = T_tm * mpts[i];
+        const Vector2d m_t = T_tm * mpts[i];
         const int t = ClosestPoint(tpts, m_t );
 
         assert( t >= 0 && t < (int)tpts.size() );
 
-        const double d = norm(m_t - tpts[t]);
+        const double d = (m_t - tpts[t]).norm();
 
         // check error is small
         if( d < ransac_max_fit_error )

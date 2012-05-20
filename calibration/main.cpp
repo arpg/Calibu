@@ -113,7 +113,7 @@ void OptimiseTargetVicon(
     for( int i=0; i< vicon_obs.size(); ++i ) {
         const Observation& sample = vicon_obs[i];
         for( int j=0; j < target.circles3D().size(); ++j ) {
-            TooN::Vector<3> p_t = target.circles3D()[j];
+            TooN::Vector3d p_t = target.circles3D()[j];
             Eigen::Vector4d P_c = T_cf * sample.T_fw * T_wt * Eigen::Vector4d(p_t[0],p_t[1],p_t[2],1);
 //            cam.map()
         }
@@ -166,7 +166,7 @@ int main( int /*argc*/, char* argv[] )
     // Pangolin 3D Render state
     pangolin::OpenGlRenderState s_cam;
     s_cam.Set(ProjectionMatrixRDF_TopLeft(640,480,420,420,320,240,1E-3,1E6));
-    s_cam.Set(FromTooN(SE3<>(SO3<>(),makeVector(-tracker.target.Size()[0]/2,-tracker.target.Size()[1]/2,500))));
+    s_cam.Set(FromTooN(Sophus::SE3(SO3<>(),makeVector(-tracker.target.Size()[0]/2,-tracker.target.Size()[1]/2,500))));
 
     pangolin::Handler3D handler(s_cam);
     
@@ -214,7 +214,7 @@ int main( int /*argc*/, char* argv[] )
     Eigen::MatrixXd pattern = Eigen::MatrixXd(3, tracker.target.circles().size() );
     for(size_t i=0; i < tracker.target.circles().size(); ++i )
     {
-        TooN::Vector<3> circ = tracker.target.circles3D()[i];
+        TooN::Vector3d circ = tracker.target.circles3D()[i];
         pattern.col(i) << circ[0] , circ[1], circ[2];
     }
     
@@ -270,7 +270,7 @@ int main( int /*argc*/, char* argv[] )
                 for(size_t i=0; i < tracker.target.circles().size(); ++i ) {
                     const int c = target_conics_map[i];
                     if(c >= 0 ) {
-                        TooN::Vector<2> circ = tracker.conics[c].center;
+                        Eigen::Vector2d circ = tracker.conics[c].center;
                         obs.col(i) <<  circ[0] , circ[1];
                     }else{
                         obs.col(i) << NAN, NAN;

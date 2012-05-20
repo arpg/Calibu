@@ -9,7 +9,7 @@
 
 using namespace std;
 using namespace pangolin;
-using namespace TooN;
+using namespace Eigen;
 using namespace CVD;
 
 const int PANEL_WIDTH = 200;
@@ -42,7 +42,7 @@ int main( int /*argc*/, char* argv[] )
   // Pangolin 3D Render state
   pangolin::OpenGlRenderState s_cam;
   s_cam.Set(ProjectionMatrixRDF_TopLeft(640,480,420,420,320,240,1,1E6));
-  s_cam.Set(FromTooN(SE3<>(SO3<>(),makeVector(-tracker.target.Size()[0]/2,-tracker.target.Size()[1]/2,500))));
+  s_cam.Set(FromEigen(Sophus::SE3(SO3<>(),makeVector(-tracker.target.Size()[0]/2,-tracker.target.Size()[1]/2,500))));
   pangolin::Handler3D handler(s_cam);
 
   // Create viewport for video with fixed aspect
@@ -87,7 +87,7 @@ int main( int /*argc*/, char* argv[] )
         tracker.ProcessFrame(cam,I);
 
     if( lock_to_cam )
-        s_cam.Set(FromTooN(tracker.T_gw));
+        s_cam.Set(FromEigen(tracker.T_gw));
 
     // Display Live Image
     glColor3f(1,1,1);

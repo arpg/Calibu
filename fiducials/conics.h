@@ -28,7 +28,8 @@
 #ifndef CONICS_H
 #define CONICS_H
 
-#include <TooN/TooN.h>
+#include <array>
+#include <Eigen/Dense>
 
 #include "rectangle.h"
 #include "camera.h"
@@ -36,20 +37,20 @@
 struct Conic
 {
   IRectangle bbox;
-  TooN::Matrix<3,3> C;
-  TooN::Matrix<3,3> Dual;
-  TooN::Vector<2> center;
+  Eigen::Matrix3d C;
+  Eigen::Matrix3d Dual;
+  Eigen::Vector2d center;
 };
 
 double Distance( const Conic& c1, const Conic& c2, double circle_radius );
 
-TooN::Vector<2,std::pair<TooN::Vector<3>,TooN::Matrix<3,3> > > PlaneFromConic(
-  const Conic& c, double plane_circle_radius, const TooN::Matrix<3,3>& K
+std::array<std::pair<Eigen::Vector3d,Eigen::Matrix3d >, 2 > PlaneFromConic(
+  const Conic& c, double plane_circle_radius, const Eigen::Matrix3d& K
 );
 
-std::pair<TooN::Vector<3>,TooN::Matrix<3,3> > PlaneFromConics(
+std::pair<Eigen::Vector3d,Eigen::Matrix3d > PlaneFromConics(
   std::vector<Conic>& conics, double plane_circle_radius,
-  const TooN::Matrix<3,3>& K, double inlier_threshold
+  const Eigen::Matrix3d& K, double inlier_threshold
 );
 
 Conic UnmapConic( const Conic& c, const AbstractCamera& cam );

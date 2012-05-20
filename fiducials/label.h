@@ -28,6 +28,8 @@
 #ifndef PIXEL_LABEL_H
 #define PIXEL_LABEL_H
 
+#include <vector>
+
 #include <cvd/image.h>
 #include <cvd/rgb.h>
 

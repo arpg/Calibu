@@ -1,30 +1,50 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
-#include <TooN/TooN.h>
+#include <Eigen/Dense>
+
+inline Eigen::Vector2d project(const Eigen::Vector3d& p)
+{
+    return Eigen::Vector2d(p(0)/p(2), p(1)/p(2) );
+}
+
+inline Eigen::Vector3d project(const Eigen::Vector4d& p)
+{
+    return Eigen::Vector2d(p(0)/p(2), p(1)/p(2) );
+}
+
+inline Eigen::Vector3d unproject(const Eigen::Vector2d& p)
+{
+    return Eigen::Vector3d( p(0), p(1), 1 );
+}
+
+inline Eigen::Vector4d unproject(const Eigen::Vector3d& p)
+{
+    return Eigen::Vector4d(p(0), p(1), p(2), 1 );
+}
 
 class AbstractCamera
 {
 public:
   AbstractCamera(int width, int height)
-    : size( TooN::makeVector(width,height) )
+    : size( Eigen::Vector2d(width,height) )
   {
   }
 
   //applies camera intrinsics including distortion
-  virtual TooN::Vector<2> map(const TooN::Vector<2>& camframe) const = 0;
+  virtual Eigen::Vector2d map(const Eigen::Vector2d& camframe) const = 0;
 
   //undo camera intrinsics including undistortion
-  virtual TooN::Vector<2> unmap(const TooN::Vector<2>& imframe) const = 0;
+  virtual Eigen::Vector2d unmap(const Eigen::Vector2d& imframe) const = 0;
 
   // Project p_cam in to the camera, applying intrinsics and distortion
-  inline TooN::Vector<2> project_map(const TooN::Vector<3>& p_cam) const
+  inline Eigen::Vector2d project_map(const Eigen::Vector3d& p_cam) const
   {
     return map( project(p_cam) );
   }
 
   // Take image coordinates into 3D camera coordinates on image plane
-  inline TooN::Vector<3> unmap_unproject(const TooN::Vector<2>& img) const
+  inline Eigen::Vector3d unmap_unproject(const Eigen::Vector2d& img) const
   {
     return unproject( unmap( img) );
   }
@@ -34,13 +54,13 @@ public:
   inline int pixel_area() const { return size[0] * size[1]; }
   inline double aspect() const { return (double)size[0] / (double)size[1]; }
 
-  inline bool in_image(const TooN::Vector<2> & obs) const
+  inline bool in_image(const Eigen::Vector2d & obs) const
   {
     return (obs[0]>=0 && obs[0]<width() && obs[1]>=1 && obs[1]<height());
   }
 
 protected:
-  TooN::Vector<2,unsigned> size;
+  Eigen::Matrix<unsigned,2,1> size;
 };
 
 class LinearCamera : public AbstractCamera
@@ -48,8 +68,8 @@ class LinearCamera : public AbstractCamera
 public:
 
   LinearCamera(int w, int h, double fu, double fv, double u0, double v0)
-    :AbstractCamera(w,h), _pp(TooN::makeVector(u0,v0)), _f(TooN::makeVector(fu,fv)),
-      _K(TooN::Identity), _Kinv(TooN::Identity)
+    :AbstractCamera(w,h), _pp(Eigen::Vector2d(u0,v0)), _f(Eigen::Vector2d(fu,fv)),
+      _K(Eigen::Matrix3d::Identity()), _Kinv(Eigen::Matrix3d::Identity())
   {
     _K(0,0) = _f[0];
     _K(1,1) = _f[1];
@@ -61,37 +81,37 @@ public:
     _Kinv(1,2) = -_pp[1] / _f[1];
   }
 
-  inline virtual TooN::Vector<2> map(const TooN::Vector<2>& cam) const
+  inline virtual Eigen::Vector2d map(const Eigen::Vector2d& cam) const
   {
-    return TooN::makeVector(
+    return Eigen::Vector2d(
       _f[0] * cam[0] + _pp[0],
       _f[1] * cam[1] + _pp[1]
     );
   }
 
-  inline virtual TooN::Vector<2> unmap(const TooN::Vector<2>& img) const
+  inline virtual Eigen::Vector2d unmap(const Eigen::Vector2d& img) const
   {
-    return TooN::makeVector(
+    return Eigen::Vector2d(
       (img[0] - _pp[0]) / _f[0],
       (img[1] - _pp[1]) / _f[1]
     );
   }
 
-  inline const TooN::Matrix<3,3>& K() const
+  inline const Eigen::Matrix3d& K() const
   {
     return _K;
   }
 
-  inline const TooN::Matrix<3,3>& Kinv() const
+  inline const Eigen::Matrix3d& Kinv() const
   {
     return _Kinv;
   }
 
 protected:
-  TooN::Vector<2> _pp;
-  TooN::Vector<2> _f;
-  TooN::Matrix<3,3> _K;
-  TooN::Matrix<3,3> _Kinv;
+  Eigen::Vector2d _pp;
+  Eigen::Vector2d _f;
+  Eigen::Matrix3d _K;
+  Eigen::Matrix3d _Kinv;
 };
 
 class FovCamera : public LinearCamera
@@ -127,24 +147,24 @@ public:
     return(tan(r * _W) * _1over2tan);
   }
 
-  inline TooN::Vector<2> map(const TooN::Vector<2>& cam) const
+  inline Eigen::Vector2d map(const Eigen::Vector2d& cam) const
   {
-    const double fac = rtrans_factor(norm(cam));
+    const double fac = rtrans_factor(cam.norm());
 
-    return TooN::makeVector(
+    return Eigen::Vector2d(
       fac * _f[0] * cam[0] + _pp[0],
       fac * _f[1] * cam[1] + _pp[1]
     );
 
   }
 
-  inline TooN::Vector<2> unmap(const TooN::Vector<2>& img) const
+  inline Eigen::Vector2d unmap(const Eigen::Vector2d& img) const
   {
-      const TooN::Vector<2> distCam = TooN::makeVector(
+      const Eigen::Vector2d distCam = Eigen::Vector2d(
         (img[0] - _pp[0]) / _f[0],
         (img[1] - _pp[1]) / _f[1]
       );
-      const double distR = norm(distCam);
+      const double distR = distCam.norm();
       const double R = invrtrans(distR);
       if( distR > 0.01 ) {
           return (R / distR) * distCam;
@@ -169,22 +189,22 @@ public:
   {
   }
 
-  inline TooN::Vector<2> map(const TooN::Vector<2>& cam) const
+  inline Eigen::Vector2d map(const Eigen::Vector2d& cam) const
   {
-      const double rd = norm(cam);
+      const double rd = cam.norm();
       const double rd2 = rd*rd;
       const double rd4 = rd2*rd2;
       return LinearCamera::map(( (1 + _k1*rd2 + _k2*rd4 + _k3*rd4*rd2)*cam));
   }
 
-  inline TooN::Vector<2> unmap(const TooN::Vector<2>& img) const
+  inline Eigen::Vector2d unmap(const Eigen::Vector2d& img) const
   {
-      TooN::Vector<2> u = LinearCamera::unmap(img);
-      TooN::Vector<2> md = u;
+      Eigen::Vector2d u = LinearCamera::unmap(img);
+      Eigen::Vector2d md = u;
 
       for (int i=0; i<20; i++)
       {
-          double rd = norm(md);
+          double rd = md.norm();
           const double rd2 = rd*rd;
           const double rd4 = rd2*rd2;
           const double radial =  1 + _k1*rd2 + _k2*rd2*rd2 + _k3*rd4*rd2;

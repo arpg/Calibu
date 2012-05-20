@@ -9,7 +9,7 @@
 #ifndef RV_RECTANGLE_H
 #define RV_RECTANGLE_H
 
-#include <TooN/TooN.h>
+#include <Eigen/Dense>
 
 class Rectangle
 {
@@ -32,7 +32,7 @@ public:
     this->y1 = y1;
   }
 
-  Rectangle(const TooN::Vector<2> & tl, const TooN::Vector<2> & br)
+  Rectangle(const Eigen::Vector2d & tl, const Eigen::Vector2d & br)
   {
     this->x1 = tl[0];
     this->x2 = br[0];
@@ -70,7 +70,7 @@ public:
     return true;
   }
 
-  bool contains(const TooN::Vector<2> & v) const
+  bool contains(const Eigen::Vector2d & v) const
   {
     if(  y1  > v[1])   return false;
     if(  x1 > v[0])  return false;
@@ -180,7 +180,7 @@ public:
     return x1 <= x && x <= x2 && y1 <= y && y <= y2;
   }
 
-  bool Contains( const TooN::Vector<2>& p ) const
+  bool Contains( const Eigen::Vector2d& p ) const
   {
     return Contains(p[0],p[1]);
   }

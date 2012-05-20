@@ -11,7 +11,7 @@
 #include <pangolin/video_record_repeat.h>
 #include <pangolin/input_record_repeat.h>
 
-#include <TooN/se3.h>
+#include <Eigen/se3.h>
 
 #include <cvd/image.h>
 #include <cvd/image_io.h>
@@ -32,14 +32,14 @@
 
 using namespace std;
 using namespace pangolin;
-using namespace TooN;
+using namespace Eigen;
 using namespace CVD;
 
 const int PANEL_WIDTH = 200;
 
 struct Keyframe
 {
-    SE3<> T_kw;
+    Sophus::SE3 T_kw;
     vector<Conic> conics;
     vector<int> conics_target_map;
 };
@@ -102,7 +102,7 @@ int main( int /*argc*/, char* argv[] )
     // Pangolin 3D Render state
     pangolin::OpenGlRenderState s_cam;
     s_cam.Set(ProjectionMatrixRDF_TopLeft(640,480,420,420,320,240,1,1E6));
-    s_cam.Set(FromTooN(SE3<>(SO3<>(),makeVector(-target.Size()[0]/2,-target.Size()[1]/2,500))));
+    s_cam.Set(FromEigen(Sophus::SE3(SO3<>(),makeVector(-target.Size()[0]/2,-target.Size()[1]/2,500))));
     pangolin::Handler3D handler(s_cam);
 
     // Create viewport for video with fixed aspect
@@ -137,15 +137,15 @@ int main( int /*argc*/, char* argv[] )
     FovCamera cam( w,h, w*cam_params[0],h*cam_params[1], w*cam_params[2],h*cam_params[3], cam_params[4] );
 
     // Last good pose
-    TooN::SE3<> T_gw;
+    Sophus::SE3 T_gw;
     std::clock_t last_good;
     int good_frames;
 
     // Pose hypothesis
-    TooN::SE3<> T_hw;
+    Sophus::SE3 T_hw;
 
     // Fixed mirrored pose
-    SE3<> T_0w;
+    Sophus::SE3 T_0w;
 
     // Stored keyframes
     boost::ptr_vector<Keyframe> keyframes;
@@ -213,7 +213,7 @@ int main( int /*argc*/, char* argv[] )
 
         // Generate map and point structures
         vector<int> conics_target_map(conics.size(),-1);
-        vector<Vector<2> > ellipses;
+        vector<Vector2d > ellipses;
         for( size_t i=0; i < conics.size(); ++i )
             ellipses.push_back(conics[i].center);
 
@@ -267,7 +267,7 @@ int main( int /*argc*/, char* argv[] )
         if( good_frames > 5 )
         {
             if( lock_to_cam ) {
-                s_cam.Set(FromTooN(T_gw));
+                s_cam.Set(FromEigen(T_gw));
             }
 
             if( pangolin::Pushed(add_keyframe) ) {
@@ -313,7 +313,7 @@ int main( int /*argc*/, char* argv[] )
         glColor3f(1,0,0);
         glDrawFrustrum(cam.Kinv(),w,h,T_gw.inverse(),10);
 
-        Vector<3> r_w = Zeros;
+        Vector3d r_w = Zeros;
 
         if( keyframes.size() >= 3 )
         {
@@ -323,19 +323,19 @@ int main( int /*argc*/, char* argv[] )
             // Rui Rodrigues, Joao Barreto, Urbano Nunes
 
             const unsigned Nkf = keyframes.size() -1;
-            const SE3<> T_w0 = keyframes[0].T_kw.inverse();
+            const Sophus::SE3 T_w0 = keyframes[0].T_kw.inverse();
 
-            Matrix<> As(Nkf*3,4);
+            MatrixXd As(Nkf*3,4);
             As = Zeros;
             for( int i=0; i<Nkf; ++i )
             {
-                const SE3<> T_iw = keyframes[i+1].T_kw * T_w0;
-                const Vector<3> t = T_iw.get_translation();
-                const Vector<3> theta_omega = T_iw.get_rotation().ln();
+                const Sophus::SE3 T_iw = keyframes[i+1].T_kw * T_w0;
+                const Vector3d t = T_iw.get_translation();
+                const Vector3d theta_omega = T_iw.get_rotation().ln();
                 const double theta = norm(theta_omega);
-                const Vector<3> omega = theta_omega / theta;
+                const Vector3d omega = theta_omega / theta;
                 const double tanthby2 = tan(theta/2.0);
-                const Matrix<3,3> skew_t = SkewSym(t);
+                const Matrix3d skew_t = SkewSym(t);
 
                 As.slice(3*i,0,3,3) = skew_t + tanthby2 * omega.as_col() * t.as_row();
                 As.slice(3*i,3,3,1) = -2 * tanthby2 * omega.as_col();
@@ -362,7 +362,7 @@ int main( int /*argc*/, char* argv[] )
             // points, Q, but we're using Qhat which doesn't match the real Q.
             {
                 const Vector<4> Nz = makeVector(0,0,1,0);
-                const SE3<> T_wr = FromMatrix(SymmetryTransform(Nz) * T_w0 * SymmetryTransform(N_0));
+                const Sophus::SE3 T_wr = FromMatrix(SymmetryTransform(Nz) * T_w0 * SymmetryTransform(N_0));
                 glColor3f(0,0,1);
                 glDrawFrustrum(cam.Kinv(),w,h,T_wr,30);
             }
@@ -370,11 +370,11 @@ int main( int /*argc*/, char* argv[] )
             // Draw live mirror
             if( draw_mirror )
             {
-                Vector<3> l_w = T_gw.inverse().get_translation();
+                Vector3d l_w = T_gw.inverse().get_translation();
                 l_w[2] *= -1;
-                const Vector<3> N = l_w - r_w;
+                const Vector3d N = l_w - r_w;
                 const double dist = norm(N);
-                const Vector<3> n = N / dist;
+                const Vector3d n = N / dist;
                 const double d = -(r_w + N/2.0) * n;
 
                 glColor3f(1,0,0);
