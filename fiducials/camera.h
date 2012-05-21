@@ -4,22 +4,26 @@
 #include <array>
 #include <Eigen/Dense>
 
-inline Eigen::Vector2d project(const Eigen::Vector3d& p)
+template<typename T, int Opt, int MaxRows, int MaxCols>
+Eigen::Vector2d project(const Eigen::Matrix<T,3,1,Opt,MaxRows,MaxCols>& p)
 {
     return Eigen::Vector2d(p(0)/p(2), p(1)/p(2) );
 }
 
-inline Eigen::Vector3d project(const Eigen::Vector4d& p)
+template<typename T, int Opt, int MaxRows, int MaxCols>
+Eigen::Vector3d project(const Eigen::Matrix<T,4,1,Opt,MaxRows,MaxCols>& p)
 {
     return Eigen::Vector3d(p(0)/p(3), p(1)/p(3), p(2)/p(3) );
 }
 
-inline Eigen::Vector3d unproject(const Eigen::Vector2d& p)
+template<typename T, int Opt, int MaxRows, int MaxCols>
+Eigen::Vector3d unproject(const Eigen::Matrix<T,2,1,Opt,MaxRows,MaxCols>& p)
 {
     return Eigen::Vector3d( p(0), p(1), 1 );
 }
 
-inline Eigen::Vector4d unproject(const Eigen::Vector3d& p)
+template<typename T, int Opt, int MaxRows, int MaxCols>
+Eigen::Vector4d unproject(const Eigen::Matrix<T,3,1,Opt,MaxRows,MaxCols>& p)
 {
     return Eigen::Vector4d(p(0), p(1), p(2), 1 );
 }
