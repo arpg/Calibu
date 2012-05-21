@@ -126,7 +126,7 @@ bool Tracker::ProcessFrame(LinearCamera& cam, CVD::Image<CVD::byte>& I, CVD::Ima
     {
         // seconds since good
         const double t = std::difftime(clock(),last_good) / (double) CLOCKS_PER_SEC;
-        const double dx = norm(T_hw.inverse().get_translation() - T_gw.inverse().get_translation());
+        const double dx = (T_hw.inverse().translation() - T_gw.inverse().translation()).norm();
         if( dx / t < max_mmps || last_good == 0) {
             good_frames++;
         }else{

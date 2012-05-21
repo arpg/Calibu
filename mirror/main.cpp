@@ -11,7 +11,7 @@
 #include <pangolin/video_record_repeat.h>
 #include <pangolin/input_record_repeat.h>
 
-#include <Eigen/se3.h>
+#include <sophus/se3.h>
 
 #include <cvd/image.h>
 #include <cvd/image_io.h>
@@ -82,7 +82,7 @@ int main( int /*argc*/, char* argv[] )
 
     // Target to track from
     Target target;
-    target.GenerateRandom(60,25/(842.0/297.0),75/(842.0/297.0),15/(842.0/297.0),makeVector(297,210));
+    target.GenerateRandom(60,25/(842.0/297.0),75/(842.0/297.0),15/(842.0/297.0),Vector2d(297,210));
     //  target.GenerateCircular(60,20,50,15,makeVector(210,210));
     //  target.GenerateEmptyCircle(60,25,75,15,200,makeVector(297,210));
     target.SaveEPS("target_A4.eps");
@@ -102,7 +102,7 @@ int main( int /*argc*/, char* argv[] )
     // Pangolin 3D Render state
     pangolin::OpenGlRenderState s_cam;
     s_cam.Set(ProjectionMatrixRDF_TopLeft(640,480,420,420,320,240,1,1E6));
-    s_cam.Set(FromEigen(Sophus::SE3(SO3<>(),makeVector(-target.Size()[0]/2,-target.Size()[1]/2,500))));
+    s_cam.Set(FromTooN(toTooN(Sophus::SE3(Sophus::SO3(),Vector3d(-target.Size()[0]/2,-target.Size()[1]/2,500) ))));
     pangolin::Handler3D handler(s_cam);
 
     // Create viewport for video with fixed aspect
@@ -133,7 +133,9 @@ int main( int /*argc*/, char* argv[] )
     Image<byte> tI(size);
 
     // Camera parameters
-    Vector<5,float> cam_params = Var<Vector<5,float> >("cam_params");
+    Matrix<float,5,1> cam_params; // = Var<Matrix<float,5,1> >("cam_params");
+    cerr << "Not loading params properly" << endl;
+    cam_params << 0.694621, 0.925258, 0.505055, 0.484551, 0.968455;
     FovCamera cam( w,h, w*cam_params[0],h*cam_params[1], w*cam_params[2],h*cam_params[3], cam_params[4] );
 
     // Last good pose
@@ -249,7 +251,7 @@ int main( int /*argc*/, char* argv[] )
         {
             // seconds since good
             const double t = std::difftime(clock(),last_good) / (double) CLOCKS_PER_SEC;
-            const double dx = norm(T_hw.inverse().get_translation() - T_gw.inverse().get_translation());
+            const double dx = (T_hw.inverse().translation() - T_gw.inverse().translation()).norm();
             if( dx / t < max_mmps || last_good == 0) {
                 good_frames++;
             }else{
@@ -267,7 +269,7 @@ int main( int /*argc*/, char* argv[] )
         if( good_frames > 5 )
         {
             if( lock_to_cam ) {
-                s_cam.Set(FromEigen(T_gw));
+                s_cam.Set(FromTooN(toTooN(T_gw)));
             }
 
             if( pangolin::Pushed(add_keyframe) ) {
@@ -306,14 +308,14 @@ int main( int /*argc*/, char* argv[] )
         v3D.ActivateScissorAndClear(s_cam);
         glDepthFunc(GL_LEQUAL);
         glDrawAxis(30);
-        DrawTarget(target,makeVector(0,0),1,0.2,0.2);
-        DrawTarget(conics_target_map,target,makeVector(0,0),1);
+        DrawTarget(target,Vector2d(0,0),1,0.2,0.2);
+        DrawTarget(conics_target_map,target,Vector2d(0,0),1);
 
         // Draw Camera
         glColor3f(1,0,0);
         glDrawFrustrum(cam.Kinv(),w,h,T_gw.inverse(),10);
 
-        Vector3d r_w = Zeros;
+        Vector3d r_w = Vector3d::Zero();
 
         if( keyframes.size() >= 3 )
         {
@@ -326,23 +328,23 @@ int main( int /*argc*/, char* argv[] )
             const Sophus::SE3 T_w0 = keyframes[0].T_kw.inverse();
 
             MatrixXd As(Nkf*3,4);
-            As = Zeros;
+            As.setZero();
             for( int i=0; i<Nkf; ++i )
             {
                 const Sophus::SE3 T_iw = keyframes[i+1].T_kw * T_w0;
-                const Vector3d t = T_iw.get_translation();
-                const Vector3d theta_omega = T_iw.get_rotation().ln();
-                const double theta = norm(theta_omega);
+                const Vector3d t = T_iw.translation();
+                const Vector3d theta_omega = T_iw.so3().log();
+                const double theta = theta_omega.norm();
                 const Vector3d omega = theta_omega / theta;
                 const double tanthby2 = tan(theta/2.0);
                 const Matrix3d skew_t = SkewSym(t);
 
-                As.slice(3*i,0,3,3) = skew_t + tanthby2 * omega.as_col() * t.as_row();
-                As.slice(3*i,3,3,1) = -2 * tanthby2 * omega.as_col();
+                As.block<3,3>(3*i,0) = skew_t + tanthby2 * omega * t.transpose();
+                As.block<3,1>(3*i,3) = -2 * tanthby2 * omega;
             }
 
             // Solve system using SVD
-            Eigen::JacobiSVD svd(As, ComputeFullV);
+            Eigen::JacobiSVD<MatrixXd> svd(As, ComputeFullV);
 
             // Get mirror plane for virtual camera 0 in cam0 FoR
             const Vector4d _N_0 = svd.matrixV().col(3);
@@ -361,27 +363,32 @@ int main( int /*argc*/, char* argv[] )
             // It's because the real camera (from the paper), relates to the real
             // points, Q, but we're using Qhat which doesn't match the real Q.
             {
-                const Vector<4> Nz = makeVector(0,0,1,0);
-                const Sophus::SE3 T_wr = FromMatrix(SymmetryTransform(Nz) * T_w0 * SymmetryTransform(N_0));
+                const Vector4d Nz = Vector4d(0,0,1,0);
+                const Matrix4d T_wr(SymmetryTransform(Nz) * T_w0.matrix() * SymmetryTransform(N_0));
                 glColor3f(0,0,1);
-                glDrawFrustrum(cam.Kinv(),w,h,T_wr,30);
+
+                glMatrixMode(GL_MODELVIEW);
+                glPushMatrix();
+                glMultMatrix( T_wr );
+                glDrawFrustrum(cam.Kinv(),w,h,30);
+                glPopMatrix();
             }
 
             // Draw live mirror
             if( draw_mirror )
             {
-                Vector3d l_w = T_gw.inverse().get_translation();
+                Vector3d l_w = T_gw.inverse().translation();
                 l_w[2] *= -1;
                 const Vector3d N = l_w - r_w;
-                const double dist = norm(N);
+                const double dist = N.norm();
                 const Vector3d n = N / dist;
-                const double d = -(r_w + N/2.0) * n;
+                const double d = -(r_w + N/2.0).dot(n);
 
                 glColor3f(1,0,0);
                 DrawCross(l_w);
 
                 glColor4f(0.2,0.2,0.2,0.2);
-                DrawPlane(makeVector(n[0],n[1],n[2],d),10,100);
+                DrawPlane(Vector4d(n[0],n[1],n[2],d),10,100);
             }
         }
 

@@ -4,6 +4,8 @@
 #include <tag/fourpointpose.h>
 #include <tag/ransac.h>
 
+#include "utils.h"
+
 using namespace std;
 using namespace Eigen;
 using namespace tag;
@@ -43,24 +45,26 @@ void PoseFromPointsLeastSq(
 
       Vector3d rot_vec = T_cw.so3().log();
       Vector3d trans = T_cw.translation();
-      cv::Mat cv_rot(3,1,CV_64FC1,rot_vec.my_data);
-      cv::Mat cv_trans(3,1,CV_64FC1,trans.my_data);
+      cv::Mat cv_rot(3,1,CV_64FC1, &(rot_vec(0)) );
+      cv::Mat cv_trans(3,1,CV_64FC1, &(trans(0)) );
       cv::solvePnP(
         cv_matched_3d, cv_matched_obs,
         cv_K, cv_dist, cv_rot, cv_trans, use_guess
       );
-      T_cw =  Sophus::SE3(Sophus::SO3(rot_vec),trans);
+      T_cw = Sophus::SE3(Sophus::SO3::exp(rot_vec),trans);
     }
   }
 }
 
 struct Correspondence2D3D
 {
-    Vector2d pixel;
-    Vector3d position;
+    TooN::Vector<2> pixel;
+    TooN::Vector<3> position;
     int pt2d;
     int pt3d;
 };
+
+
 
 Sophus::SE3 FindPose(
     const LinearCamera& cam,
@@ -77,7 +81,7 @@ Sophus::SE3 FindPose(
         if( pt3d >= 0 )
         {
             observations.push_back( (Correspondence2D3D){
-              cam.unmap(pts2d[i]), pts3d[pt3d], i, pt3d }
+              toTooN<double,2>(cam.unmap(pts2d[i])), toTooN<double,3>(pts3d[pt3d]), i, pt3d }
             );
         }
     }
@@ -94,8 +98,9 @@ Sophus::SE3 FindPose(
         for( int i=0; i<observations.size(); ++i )
             if( !inliers[i] ) map2d_3d[observations[i].pt2d] = -1;
 
-        PoseFromPointsLeastSq(cam,pts3d,pts2d,map2d_3d,est.T,true);
-        return est.T;
+        Sophus::SE3 T = toEigen(est.T);
+        PoseFromPointsLeastSq(cam,pts3d,pts2d,map2d_3d,T,true);
+        return T;
     }
     return Sophus::SE3();
 }

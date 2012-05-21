@@ -6,6 +6,7 @@
 
 #include <fiducials/tracker.h>
 #include <fiducials/drawing.h>
+#include <fiducials/utils.h>
 
 #include <CameraModel.h>
 #include <CCameraModel/GridCalibrator.h>
@@ -20,7 +21,7 @@
 
 using namespace std;
 using namespace pangolin;
-using namespace TooN;
+using namespace Eigen;
 using namespace CVD;
 
 using namespace CCameraModel;
@@ -101,7 +102,6 @@ struct Observation
     Eigen::MatrixXd obs;
     Eigen::Matrix4d T_fw;
 };
-#endif
 
 void OptimiseTargetVicon(
     const MatlabCamera& cam,
@@ -113,12 +113,13 @@ void OptimiseTargetVicon(
     for( int i=0; i< vicon_obs.size(); ++i ) {
         const Observation& sample = vicon_obs[i];
         for( int j=0; j < target.circles3D().size(); ++j ) {
-            TooN::Vector3d p_t = target.circles3D()[j];
+            Eigen::Vector3d p_t = target.circles3D()[j];
             Eigen::Vector4d P_c = T_cf * sample.T_fw * T_wt * Eigen::Vector4d(p_t[0],p_t[1],p_t[2],1);
 //            cam.map()
         }
     }
 }
+#endif
 
 int main( int /*argc*/, char* argv[] )
 {
@@ -151,8 +152,8 @@ int main( int /*argc*/, char* argv[] )
     // Setup Tracker and associated target
     Tracker tracker(size);
     tracker.target.GenerateRandom(
-                //    60,25/(842.0/297.0),75/(842.0/297.0),15/(842.0/297.0),makeVector(297,210) // A4
-                60,unit*USwp*25/(842.0),unit*USwp*75/(842.0),unit*USwp*40/(842.0),makeVector(unit*USwp,unit*UShp) // US Letter
+                //    60,25/(842.0/297.0),75/(842.0/297.0),15/(842.0/297.0),Eigen::Vector2d(297,210) // A4
+                60,unit*USwp*25/(842.0),unit*USwp*75/(842.0),unit*USwp*40/(842.0),Eigen::Vector2d(unit*USwp,unit*UShp) // US Letter
                 );
     tracker.target.SaveEPS("target.eps");
     
@@ -166,8 +167,7 @@ int main( int /*argc*/, char* argv[] )
     // Pangolin 3D Render state
     pangolin::OpenGlRenderState s_cam;
     s_cam.Set(ProjectionMatrixRDF_TopLeft(640,480,420,420,320,240,1E-3,1E6));
-    s_cam.Set(FromTooN(Sophus::SE3(SO3<>(),makeVector(-tracker.target.Size()[0]/2,-tracker.target.Size()[1]/2,500))));
-
+    s_cam.Set(FromTooN(toTooN(Sophus::SE3(Sophus::SO3(),Vector3d(-tracker.target.Size()[0]/2,-tracker.target.Size()[1]/2,500) ))));
     pangolin::Handler3D handler(s_cam);
     
     // Create viewport for video with fixed aspect
@@ -201,7 +201,8 @@ int main( int /*argc*/, char* argv[] )
     Image<byte> I(size);
     
     // Camera parameters
-    Vector<9,float> cam_params = Var<Vector<9,float> >("cam_params");
+    Matrix<double,9,1> cam_params; // = Var<Matrix<double,9,1> >("cam_params");
+    cam_params << 0.808936, 1.06675, 0.495884, 0.520504, 0.180668, -0.354284, -0.00169838, 0.000600873, 0.0;
     //  FovCamera cam( w,h, w*cam_params[0],h*cam_params[1], w*cam_params[2],h*cam_params[3], cam_params[4] );
     MatlabCamera cam( w,h, w*cam_params[0],h*cam_params[1], w*cam_params[2],h*cam_params[3], cam_params[4], cam_params[5], cam_params[6], cam_params[7], cam_params[8]);
     
@@ -214,8 +215,7 @@ int main( int /*argc*/, char* argv[] )
     Eigen::MatrixXd pattern = Eigen::MatrixXd(3, tracker.target.circles().size() );
     for(size_t i=0; i < tracker.target.circles().size(); ++i )
     {
-        TooN::Vector3d circ = tracker.target.circles3D()[i];
-        pattern.col(i) << circ[0] , circ[1], circ[2];
+        pattern.col(i) = tracker.target.circles3D()[i];
     }
     
     GridCalibrator calibrator(
@@ -304,7 +304,7 @@ int main( int /*argc*/, char* argv[] )
         //    calibrator.iterate(rms);
         
         if( lock_to_cam )
-            s_cam.Set(FromTooN(tracker.T_gw));
+            s_cam.Set(FromTooN(toTooN(tracker.T_gw)));
         
         // Display Live Image
         glColor3f(1,1,1);
@@ -338,8 +338,8 @@ int main( int /*argc*/, char* argv[] )
         v3D.ActivateScissorAndClear(s_cam);
         glDepthFunc(GL_LEQUAL);
         glDrawAxis(30);
-        DrawTarget(tracker.target,makeVector(0,0),1,0.2,0.2);
-        DrawTarget(tracker.conics_target_map,tracker.target,makeVector(0,0),1);
+        DrawTarget(tracker.target,Vector2d(0,0),1,0.2,0.2);
+        DrawTarget(tracker.conics_target_map,tracker.target,Vector2d(0,0),1);
         
         //    if( tracking_good )
         {

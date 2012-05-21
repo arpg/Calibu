@@ -30,6 +30,51 @@
 
 #include <Eigen/Dense>
 #include <sophus/se3.h>
+#include <TooN/se3.h>
+
+template<typename T, unsigned s>
+TooN::Vector<s,T> toTooN(const Eigen::Matrix<T,s,1>& v)
+{
+    TooN::Vector<s,T> ret;
+    for(int i=0; i<s; ++i)
+        ret[i] = v(i);
+    return ret;
+}
+
+template<typename T, unsigned s>
+Eigen::Matrix<T,s,1> toEigen(const TooN::Vector<s,T>& v)
+{
+    Eigen::Matrix<T,s,1> ret;
+    for(int i=0; i<s; ++i)
+        ret(i) = v[i];
+    return ret;
+}
+
+inline TooN::SE3<double> toTooN(const Sophus::SE3& T)
+{
+    TooN::Vector<6> se3 = toTooN<double,6>(T.log());
+    return TooN::SE3<double>(se3);
+}
+
+inline Sophus::SE3 toEigen(const TooN::SE3<double>& T)
+{
+    Sophus::Vector6d se3 = toEigen<double,6>(T.ln());
+    return Sophus::SE3::exp(se3);
+}
+
+
+
+template<typename Derived>
+bool is_nan(const Eigen::MatrixBase<Derived>& x)
+{
+  return !(x.array() == x.array()).all();
+}
+
+template<typename Derived>
+bool is_finite(const Eigen::MatrixBase<Derived>& x)
+{
+  return !is_nan( (x.array() - x.array()).matrix() );
+}
 
 Eigen::Matrix3d EstimateH_ba(
   const std::vector<Eigen::Vector2d >& a,

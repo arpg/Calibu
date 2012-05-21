@@ -58,7 +58,7 @@ Eigen::Matrix3d EstimateH_ba(
   }
 
   const Matrix<double,9,9> Vt =
-    Eigen::JacobiSVD(M, ComputeFullV).matrixV().transpose();
+    Eigen::JacobiSVD<MatrixXd>(M, ComputeFullV).matrixV().transpose();
 
   // return last row of svd.get_VT(), reshaped in to 3x3
   Matrix3d H;

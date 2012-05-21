@@ -7,6 +7,8 @@
 #include <fiducials/tracker.h>
 #include <fiducials/drawing.h>
 
+#include <fiducials/utils.h>
+
 using namespace std;
 using namespace pangolin;
 using namespace Eigen;
@@ -30,7 +32,7 @@ int main( int /*argc*/, char* argv[] )
   // Setup Tracker and associated target
   Tracker tracker(size);
   tracker.target.GenerateRandom(
-    60,25/(842.0/297.0),75/(842.0/297.0),15/(842.0/297.0),makeVector(297,210)
+    60,25/(842.0/297.0),75/(842.0/297.0),15/(842.0/297.0),Vector2d(297,210)
   );
   tracker.target.SaveEPS("target.eps");
 
@@ -42,7 +44,7 @@ int main( int /*argc*/, char* argv[] )
   // Pangolin 3D Render state
   pangolin::OpenGlRenderState s_cam;
   s_cam.Set(ProjectionMatrixRDF_TopLeft(640,480,420,420,320,240,1,1E6));
-  s_cam.Set(FromEigen(Sophus::SE3(SO3<>(),makeVector(-tracker.target.Size()[0]/2,-tracker.target.Size()[1]/2,500))));
+  s_cam.Set(FromTooN(toTooN(Sophus::SE3(Sophus::SO3(),Vector3d(-tracker.target.Size()[0]/2,-tracker.target.Size()[1]/2,500) ))));
   pangolin::Handler3D handler(s_cam);
 
   // Create viewport for video with fixed aspect
@@ -66,7 +68,9 @@ int main( int /*argc*/, char* argv[] )
   Image<byte> I(size);
 
   // Camera parameters
-  Vector<5,float> cam_params = Var<Vector<5,float> >("cam_params");
+  Matrix<float,5,1> cam_params; // = Var<Matrix<float,5,1> >("cam_params");
+  cerr << "Not loading params properly" << endl;
+  cam_params << 0.694621, 0.925258, 0.505055, 0.484551, 0.968455;
   FovCamera cam( w,h, w*cam_params[0],h*cam_params[1], w*cam_params[2],h*cam_params[3], cam_params[4] );
 
   // Variables
@@ -87,7 +91,8 @@ int main( int /*argc*/, char* argv[] )
         tracker.ProcessFrame(cam,I);
 
     if( lock_to_cam )
-        s_cam.Set(FromEigen(tracker.T_gw));
+        s_cam.Set(FromTooN(toTooN(tracker.T_gw)));
+
 
     // Display Live Image
     glColor3f(1,1,1);
@@ -114,8 +119,8 @@ int main( int /*argc*/, char* argv[] )
     v3D.ActivateScissorAndClear(s_cam);
     glDepthFunc(GL_LEQUAL);
     glDrawAxis(30);
-    DrawTarget(tracker.target,makeVector(0,0),1,0.2,0.2);
-//    DrawTarget(conics_target_map,target,makeVector(0,0),1);
+    DrawTarget(tracker.target,Vector2d(0,0),1,0.2,0.2);
+//    DrawTarget(conics_target_map,target,Vector2d(0,0),1);
 
 //    if( tracking_good )
     {

@@ -54,9 +54,9 @@ void Target::SetSeed(int s )
   srand(seed);
 }
 
-MatrixXd DistanceMatrix(const vector<Vector2d >& pts )
+Matrix<double,Dynamic,Dynamic,RowMajor> DistanceMatrix(const vector<Vector2d >& pts )
 {
-  MatrixXd D(pts.size(),pts.size());
+  Matrix<double,Dynamic,Dynamic,RowMajor> D(pts.size(),pts.size());
   for( unsigned int j=0; j < pts.size(); ++j )
     for( unsigned int i=0; i < pts.size(); ++i )
         D(j,i) = (pts[i] - pts[j]).norm();
@@ -82,7 +82,7 @@ void Target::InitialiseFrom2DPts()
   }
 
   // Construct Distance matrix
-  dt = new MatrixXd(DistanceMatrix(tpts));
+  dt = new Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>(DistanceMatrix(tpts));
   SortRows(*dt);
 
 //  cout << "Target generated with " << tpts.size() << " circles." << endl;
@@ -451,19 +451,19 @@ void MutualClosest( const vector<Vector2d >& a, const vector<Vector2d >& b, vect
 
 void Target::Match( const vector<Vector2d >& measurement, vector<int>& measurement_label, int match_neighbours  )
 {
-  MatrixXd dm = DistanceMatrix(measurement);
+  Matrix<double,Dynamic,Dynamic,RowMajor> dm = DistanceMatrix(measurement);
   SortRows(dm);
   Match(dm,measurement_label,match_neighbours);
 }
 
-void Target::Match( const Eigen::MatrixXd& sorted_measurement_distance_matrix, std::vector<int>& measurement_label, int match_neighbours )
+void Target::Match( const Matrix<double,Dynamic,Dynamic,RowMajor>& sorted_measurement_distance_matrix, std::vector<int>& measurement_label, int match_neighbours )
 {
-  const MatrixXd& dm = sorted_measurement_distance_matrix;
+  const Matrix<double,Dynamic,Dynamic,RowMajor>& dm = sorted_measurement_distance_matrix;
   const size_t msize = dm.rows();
 
   // Create cost matrix and padd with zeroes
   const size_t size = max(msize, tpts.size());
-  MatrixXd cost(size,size);
+  Eigen::Matrix<double,Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> cost(size,size);
   cost.setZero();
 
   // Assign measurement to target association cost
@@ -473,14 +473,13 @@ void Target::Match( const Eigen::MatrixXd& sorted_measurement_distance_matrix, s
 
   double* c_cost[cost.rows()];
   for( int i=0; i<cost.rows(); ++i )
-    c_cost[i] = &cost[i][0];
+    c_cost[i] = &cost(i,0);
 
   hungarian_problem_t hp;
   hungarian_init(&hp,c_cost,cost.rows(),cost.cols() );
   hungarian_solve(&hp);
 
-  for( unsigned int j=0; j<msize; ++j )
-  {
+  for( unsigned int j=0; j<msize; ++j ) {
     const int label = hp.row_to_col_map[j];
     measurement_label[j] = label < (int)tpts.size() ? label : -1;
   }
@@ -571,7 +570,7 @@ Eigen::Vector3d IntersectCamFeaturePlane( const Eigen::Vector2d& p, const Abstra
   const double denom = nd_k.dot(kinvp);
   if( denom !=0 ) {
     const Vector3d r_k = -kinvp / denom;
-    const Vector3d r_w = project(T_wk * unproject(r_k));
+    const Vector3d r_w = T_wk * r_k;
     return r_w;
   }else{
     assert(false);
@@ -598,7 +597,7 @@ void Target::FindTarget(
   pair<Vector3d,Matrix3d > plane = PlaneFromConics(conics,radius,cam.K(), plane_inlier_threshold);
   const Vector4d N_w = unproject(plane.first) / (plane.first).norm();
 
-  if( !Eigen::isfinite(N_w) )
+  if( !is_finite(N_w) )
     return;
 
   for( unsigned int i=0; i< conics.size(); ++i )
@@ -611,7 +610,7 @@ void Target::FindTarget(
 
   if( conics.size() >= 2 )
   {
-    MatrixXd ellipse_dm = DistanceMatrix(mpts);
+    Matrix<double,Dynamic,Dynamic,RowMajor> ellipse_dm = DistanceMatrix(mpts);
     SortRows(ellipse_dm);
 
     // Match using Hungarian method

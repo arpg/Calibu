@@ -96,7 +96,7 @@ Eigen::Matrix3d FindEllipse(
   Eigen::Matrix3d C_star_norm;
   C_star_norm << x[0],x[1]/2.0,x[3]/2.0,  x[1]/2.0,x[2],x[4]/2.0,  x[3]/2.0,x[4]/2.0,1.0;
 
-  const Eigen::Matrix3d C = Hinv.T() * C_star_norm.inverse() * Hinv;
+  const Eigen::Matrix3d C = Hinv.transpose() * C_star_norm.inverse() * Hinv;
 //  const Matrix3d C_star = LU<3>(C).get_inverse();
 //  return C_star/C_star[2][2];
 

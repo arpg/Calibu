@@ -106,10 +106,42 @@ inline void SetPixelTransferScale( float scale )
 //    return Eigen_R_wn;
 //}
 
+/// Adapted from From TooN so3.h:
+/// creates an SO3 as a rotation that takes Vector a into the direction of Vector b
+/// with the rotation axis along a ^ b. If |a ^ b| == 0, it creates the identity rotation.
+/// An assertion will fail if Vector a and Vector b are in exactly opposite directions.
+/// @param a source Vector
+/// @param b target Vector
+Sophus::SO3 Rotation(const Eigen::Vector3d& a, const Eigen::Vector3d& b)
+{
+    Eigen::Vector3d n = a.cross(b);
+
+    if(n.squaredNorm() == 0) {
+        //check that the vectors are in the same direction if cross product is 0. If not,
+        //this means that the rotation is 180 degrees, which leads to an ambiguity in the rotation axis.
+        assert(a*b>=0);
+        return Sophus::SO3();
+    }
+
+    n.normalize();
+    Eigen::Matrix3d R1;
+    R1.col(0) = a.normalized();
+    R1.col(1) = n;
+    R1.col(2) = n.cross(R1.col(0));
+
+    Eigen::Matrix3d M;
+    M.col(0) = b.normalized();
+    M.col(1) = n;
+    M.col(2) = n.cross(M.col(0));
+    M = M * R1.transpose();
+
+    return Sophus::SO3(M);
+}
+
 inline Sophus::SE3 PlaneBasis_wp(const Eigen::Vector4d& N_w)
 {
     const Eigen::Vector3d n = N_w.head<3>();
-    const Sophus::SO3 R_wn = Sophus::SO3(Eigen::Vector3d(0,0,-1),n);
+    const Sophus::SO3 R_wn = Rotation(Eigen::Vector3d(0,0,-1),n);
     return Sophus::SE3(R_wn, -N_w[3]*n);
 }
 

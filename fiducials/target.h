@@ -79,7 +79,10 @@ public:
 protected:
   void Clear();
   void InitialiseFrom2DPts();
-  void Match( const Eigen::MatrixXd& sorted_measurement_distance_matrix, std::vector<int>& measurement_label, int match_neighbours  );
+  void Match(
+    const Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>& sorted_measurement_distance_matrix,
+    std::vector<int>& measurement_label, int match_neighbours
+  );
   void Match( const std::vector<Eigen::Vector2d >& measurement, std::vector<int>& measurement_label, int match_neighbours  );
 
   unsigned int seed;
@@ -88,12 +91,13 @@ protected:
   std::vector<Eigen::Vector2d > tpts;
   std::vector<Eigen::Vector2d > tpts_reflected;
   std::vector<Eigen::Vector3d > tpts3d;
-  Eigen::MatrixXd* dt;
+  Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>* dt;
 };
 
 // Utilities
 
-Eigen::MatrixXd DistanceMatrix(const std::vector<Eigen::Vector2d >& pts );
+Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>
+  DistanceMatrix(const std::vector<Eigen::Vector2d >& pts );
 
 template<int R,int C,typename P>
 void SortRows(Eigen::Matrix<P,R,C>& M);
@@ -121,10 +125,10 @@ inline double Target::Radius() const
 }
 
 template<int R,int C,typename P>
-void SortRows(Eigen::Matrix<P,R,C>& M)
+void SortRows(Eigen::Matrix<P,R,C,Eigen::RowMajor>& M)
 {
-  for( int r=0; r < M.num_rows(); ++r )
-    std::sort(&(M[r][0]), &(M[r][M.num_cols()-1])+1);
+  for( int r=0; r < M.rows(); ++r )
+    std::sort(&(M(r,0)), &(M(r,M.cols()-1))+1);
 }
 
 #endif // TARGET_H
