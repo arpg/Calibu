@@ -15,7 +15,7 @@
 #include <unsupported/Eigen/MatrixFunctions>
 #include <unsupported/Eigen/OpenGLSupport>
 
-#define USE_VICON 1
+//#define USE_VICON 1
 #define USE_COLOUR 1
 //#define USE_USHORT 1
 
@@ -223,8 +223,8 @@ int main( int /*argc*/, char* argv[] )
     // Setup Tracker and associated target
     Tracker tracker(size);
     tracker.target.GenerateRandom(
-                //    60,25/(842.0/297.0),75/(842.0/297.0),15/(842.0/297.0),Eigen::Vector2d(297,210) // A4
-                60,unit*USwp*25/(842.0),unit*USwp*75/(842.0),unit*USwp*40/(842.0),Eigen::Vector2d(unit*USwp,unit*UShp) // US Letter
+                    60,25/(842.0/297.0),75/(842.0/297.0),15/(842.0/297.0),Eigen::Vector2d(297,210) // A4
+//                60,unit*USwp*25/(842.0),unit*USwp*75/(842.0),unit*USwp*40/(842.0),Eigen::Vector2d(unit*USwp,unit*UShp) // US Letter
                 );
     tracker.target.SaveEPS("target.eps");
     
@@ -245,7 +245,9 @@ int main( int /*argc*/, char* argv[] )
     View& vPanel = pangolin::CreatePanel("ui").SetBounds(1.0,0.0,0,Attach::Pix(PANEL_WIDTH));
     View& vVideo = pangolin::CreateDisplay().SetAspect((float)w/h);
     View& v3D    = pangolin::CreateDisplay().SetAspect((float)w/h).SetHandler(&handler);
+#ifdef USE_VICON
     View& v3D2   = pangolin::CreateDisplay().SetAspect((float)w/h).SetHandler(&handler);
+#endif
 
     Display("Container")
             .SetBounds(1.0,0.0,Attach::Pix(PANEL_WIDTH),1.0,false)

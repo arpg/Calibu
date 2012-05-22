@@ -53,14 +53,14 @@ Eigen::Matrix3d FindEllipse(
   // Transform to approximately unit circle at origin
   Eigen::Matrix3d H;
   H <<
-      f[0], 0, c[0],
-      0, f[1], c[1],
+      f(0), 0, c(0),
+      0, f(1), c(1),
       0, 0, 1;
 
   Eigen::Matrix3d Hinv;
-  H <<
-      1/f[0], 0, -c[0]/f[0],
-      0, 1/f[1], -c[1]/f[1],
+  Hinv <<
+      1/f(0), 0, -c(0)/f(0),
+      0, 1/f(1), -c(1)/f(1),
       0, 0, 1;
 
   // Form system Ax = b to solve
@@ -85,7 +85,7 @@ Eigen::Matrix3d FindEllipse(
     }
   }
 
-  const Eigen::Matrix<double,5,1> x = A.jacobiSvd().solve(b);
+  const Eigen::Matrix<double,5,1> x = A.jacobiSvd(Eigen::ComputeFullU | Eigen::ComputeFullV).solve(b);
 
 //  //compute the risidual on the system to see if the algebraic error is too large.
 //  //note: maybe there is a better error metric.

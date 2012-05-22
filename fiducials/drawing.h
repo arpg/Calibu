@@ -32,6 +32,12 @@
 #include <pangolin/gl.h>
 
 #include <Eigen/Dense>
+
+// TODO: Work out why this is required to build in Debug
+#undef GL_VERSION_2_0
+#undef GL_VERSION_2_1
+#undef GL_VERSION_3_0
+#undef GL_ARB_gpu_shader_fp64
 #include <unsupported/Eigen/OpenGLSupport>
 
 #include "rectangle.h"
@@ -119,7 +125,7 @@ Sophus::SO3 Rotation(const Eigen::Vector3d& a, const Eigen::Vector3d& b)
     if(n.squaredNorm() == 0) {
         //check that the vectors are in the same direction if cross product is 0. If not,
         //this means that the rotation is 180 degrees, which leads to an ambiguity in the rotation axis.
-        assert(a*b>=0);
+        assert(a.dot(b)>=0);
         return Sophus::SO3();
     }
 
