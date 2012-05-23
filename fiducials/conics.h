@@ -28,6 +28,7 @@
 #ifndef CONICS_H
 #define CONICS_H
 
+#include <vector>
 #include <array>
 #include <Eigen/Dense>
 

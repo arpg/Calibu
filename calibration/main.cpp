@@ -1,5 +1,7 @@
 #include <pangolin/pangolin.h>
 #include <pangolin/video.h>
+#include <pangolin/video_record_repeat.h>
+#include <pangolin/input_record_repeat.h>
 
 #include <cvd/image_convert.h>
 #include <cvd/gl_helpers.h>
@@ -15,7 +17,7 @@
 #include <unsupported/Eigen/MatrixFunctions>
 #include <unsupported/Eigen/OpenGLSupport>
 
-//#define USE_VICON 1
+#define USE_VICON 1
 #define USE_COLOUR 1
 //#define USE_USHORT 1
 
@@ -78,16 +80,9 @@ struct ViconTracking
 //        double local_timestamp = Tic();
 //        double vicon_timestamp = tData.msg_time.tv_sec + (1e-6 * tData.msg_time.tv_usec);
 
-        T_wc = Sophus::SE3( Sophus::SO3(Quaterniond(tData.quat)),
+        T_wf = Sophus::SE3( Sophus::SO3(Quaterniond(tData.quat)),
             Vector3d(tData.pos[0], tData.pos[1], tData.pos[2])
         );
-
-        q_to_ogl_matrix(&T_wc_matrix(0,0), tData.quat);
-        T_wc_matrix(0,3) = tData.pos[0];
-        T_wc_matrix(1,3) = tData.pos[1];
-        T_wc_matrix(2,3) = tData.pos[2];
-
-        cout << (T_wc.matrix() - T_wc_matrix).norm() << endl;
     }
 
     static void VRPN_CALLBACK c_callback(void* userData, const vrpn_TRACKERCB tData )
@@ -96,8 +91,7 @@ struct ViconTracking
         self->TrackingEvent(tData);
     }
 
-    Eigen::Matrix4d T_wc_matrix;
-    Sophus::SE3 T_wc;
+    Sophus::SE3 T_wf;
 
     bool m_run;
     vrpn_Tracker_Remote* m_object;
@@ -147,7 +141,7 @@ void OptimiseTargetVicon(
     Eigen::Matrix<double,12,12> JTJ;
     Eigen::Matrix<double,12,1> JTy;
 
-    for( int it = 0; it < 100; ++it )
+    for( int it = 0; it < 1; ++it )
     {
         sumsqerr = 0;
         JTJ.setZero();
@@ -162,40 +156,84 @@ void OptimiseTargetVicon(
                 Eigen::Vector2d obs = project( (Eigen::Vector3d)(cam.K() * cam.unmap_unproject(sample.obs.col(j)) ) );
                 Eigen::Vector2d err = p_c - obs;
                 double sqerr = err.squaredNorm();
-                sumsqerr += sqerr;
 
+                if(isfinite(sqerr)) {
+                    sumsqerr += sqerr;
+                    const Eigen::Matrix<double,2,3> dpi = dpi_dx(p_c_);
+                    const Eigen::Matrix<double,2,4> mi1 = dpi * cam.K() * T_cf.matrix().block<3,4>(0,0);
+                    const Eigen::Matrix<double,4,1> mi2 = unproject( (Vector3d)(sample.T_fw * T_wt * P_t) );
+                    const Eigen::Matrix<double,2,4> mj1 = mi1 * (sample.T_fw * T_wt).matrix();
+                    const Eigen::Matrix<double,4,1> mj2 = unproject( (Vector3d)(P_t) );
 
-                const Eigen::Matrix<double,2,3> dpi = dpi_dx(p_c_);
-                const Eigen::Matrix<double,2,4> mi1 = dpi * cam.K() * T_cf.matrix().block<3,4>(0,0);
-                const Eigen::Matrix<double,4,1> mi2 = unproject( (Vector3d)(sample.T_fw * T_wt * P_t) );
-                const Eigen::Matrix<double,2,4> mj1 = mi1 * (sample.T_fw * T_wt).matrix();
-                const Eigen::Matrix<double,4,1> mj2 = unproject( (Vector3d)(P_t) );
+                    Eigen::Matrix<double,12,2> J;
+                    for(int i=0; i<6; ++i) {
+                        J.row(i) = mi1 * se3_gen(i) * mi2;
+                        J.row(i+6) = mj1 * se3_gen(i) * mj2;
+                    }
 
-                Eigen::Matrix<double,12,2> J;
-                for(int i=0; i<6; ++i) {
-                    J.row(i) = mi1 * se3_gen(i) * mi2;
-                    J.row(i+6) = mj1 * se3_gen(i) * mj2;
+                    JTJ += J.col(0) * J.col(0).transpose();
+                    JTJ += J.col(1) * J.col(1).transpose();
+                    JTy += J.col(0) * err(0);
+                    JTy += J.col(1) * err(1);
                 }
-
-                JTJ += J.col(0) * J.col(0).transpose();
-                JTJ += J.col(1) * J.col(1).transpose();
-                JTy += J.col(0) * err(0);
-                JTy += J.col(1) * err(1);
             }
         }
 
+        cout << sumsqerr << endl;
+
         JTJ.ldlt().solveInPlace(JTy);
 
-        T_cf = T_cf * Sophus::SE3::exp(JTy.segment<6>(0));
-        T_wt = T_wt * Sophus::SE3::exp(JTy.segment<6>(1));
+        T_cf = T_cf * Sophus::SE3::exp(-0.01 * JTy.segment<6>(0));
+        T_wt = T_wt * Sophus::SE3::exp(-0.01 * JTy.segment<6>(6));
     }
 }
 #endif
 
+template<typename T, int R, int C>
+std::istream& operator>> (std::istream& is, Eigen::Matrix<T,R,C>& o){
+    for(int r=0; r < R; ++r )  {
+        for(int c=0; c < C; ++c )  {
+            is >> o(r,c);
+        }
+    }
+    return is;
+}
+
+
+template<typename T>
+std::ostream& operator<< (std::ostream& os, const Eigen::Quaternion<T>& o){
+    os << o.w() << " " << o.x() << " " << o.y() << " " << o.z() << endl;
+    return os;
+}
+template<typename T>
+std::istream& operator>> (std::istream& is, Eigen::Quaternion<T>& o){
+    is >> o.w();
+    is >> o.x();
+    is >> o.y();
+    is >> o.z();
+    return is;
+}
+
+std::ostream& operator<< (std::ostream& os, const Sophus::SE3& o){
+    const Eigen::Vector3d& t = o.translation();
+    os << t(0) << " " << t(1) << " " << t(2) << " " << o.unit_quaternion();
+    return os;
+}
+
+std::istream& operator>> (std::istream& is, Sophus::SE3& o){
+    Eigen::Quaterniond q;
+    is >> o.translation()(0);
+    is >> o.translation()(1);
+    is >> o.translation()(2);
+    is >> q;
+    o.setQuaternion(q);
+    return is;
+}
+
 int main( int /*argc*/, char* argv[] )
 {
 #ifdef USE_VICON
-    ViconTracking vicon("BOX","192.168.10.1");
+    ViconTracking vicon("KINECT","192.168.10.1");
     std::vector<Observation> vicon_obs;
     Sophus::SE3 T_cf;
     Sophus::SE3 T_wt;
@@ -206,7 +244,11 @@ int main( int /*argc*/, char* argv[] )
     
     // Setup Video
     Var<string> video_uri("video_uri");
-    VideoInput video(video_uri);
+
+    const std::string ui_file = "input.log";
+    VideoRecordRepeat video(video_uri, "store.pvn", 1024*1024*200);
+    InputRecordRepeat input("vicon.");
+    input.LoadBuffer(ui_file);
     
     const unsigned w = video.Width();
     const unsigned h = video.Height();
@@ -223,8 +265,8 @@ int main( int /*argc*/, char* argv[] )
     // Setup Tracker and associated target
     Tracker tracker(size);
     tracker.target.GenerateRandom(
-                    60,25/(842.0/297.0),75/(842.0/297.0),15/(842.0/297.0),Eigen::Vector2d(297,210) // A4
-//                60,unit*USwp*25/(842.0),unit*USwp*75/(842.0),unit*USwp*40/(842.0),Eigen::Vector2d(unit*USwp,unit*UShp) // US Letter
+//                60,25/(842.0/297.0),75/(842.0/297.0),15/(842.0/297.0),Eigen::Vector2d(297,210) // A4
+                60,unit*USwp*25/(842.0),unit*USwp*75/(842.0),unit*USwp*40/(842.0),Eigen::Vector2d(unit*USwp,unit*UShp) // US Letter
                 );
     tracker.target.SaveEPS("target.eps");
     
@@ -238,7 +280,7 @@ int main( int /*argc*/, char* argv[] )
     // Pangolin 3D Render state
     pangolin::OpenGlRenderState s_cam;
     s_cam.Set(ProjectionMatrixRDF_TopLeft(640,480,420,420,320,240,1E-3,1E6));
-    s_cam.Set(FromTooN(toTooN(Sophus::SE3(Sophus::SO3(),Vector3d(-tracker.target.Size()[0]/2,-tracker.target.Size()[1]/2,500) ))));
+    s_cam.Set(FromTooN(toTooN(Sophus::SE3(Sophus::SO3(),Vector3d(-tracker.target.Size()[0]/2,-tracker.target.Size()[1]/2,tracker.target.Size()[0]*4) ))));
     pangolin::Handler3D handler(s_cam);
     
     // Create viewport for video with fixed aspect
@@ -280,11 +322,19 @@ int main( int /*argc*/, char* argv[] )
     MatlabCamera cam( w,h, w*cam_params[0],h*cam_params[1], w*cam_params[2],h*cam_params[3], cam_params[4], cam_params[5], cam_params[6], cam_params[7], cam_params[8]);
     
     // Variables
+    Var<bool> record("ui.Record",false,false);
+    Var<bool> play("ui.Play",false,false);
+    Var<bool> source("ui.Source",false,false);
+
     Var<bool> disp_thresh("ui.Display Thresh",false);
     Var<bool> lock_to_cam("ui.AR",false);
     Var<bool> add_image("ui.add Image",false,false);
-    Var<bool> minimise("ui.minimise",false,false);
-    
+    Var<bool> minimise("ui.minimise calib",false,false);
+    Var<bool> minimise_vicon("ui.minimise vicon",false,false);
+    Var<bool> reset("ui.reset",false,false);
+
+    Var<Sophus::SE3> vicon_T_wf("vicon.T_wf");
+
     Eigen::MatrixXd pattern = Eigen::MatrixXd(3, tracker.target.circles().size() );
     for(size_t i=0; i < tracker.target.circles().size(); ++i )
     {
@@ -312,9 +362,32 @@ int main( int /*argc*/, char* argv[] )
 #else
         video.GrabNewest((byte*)I.data(),true);
 #endif
-        
+        input.SetIndex(video.FrameId());
+
+        if(!video.IsPlaying()) {
+            vicon_T_wf = vicon.T_wf;
+            input.UpdateVariable(vicon_T_wf);
+        }
+
         const bool tracking_good =
                 tracker.ProcessFrame(cam,I);
+
+        if(pangolin::Pushed(record)) {
+            video.Record();
+            input.Record();
+        }
+
+        if(pangolin::Pushed(play)) {
+            video.Play(true);
+            input.PlayBuffer(0,input.Size()-1);
+            input.SaveBuffer(ui_file);
+        }
+
+        if(pangolin::Pushed(source)) {
+            video.Source();
+            input.Stop();
+            input.SaveBuffer(ui_file);
+        }
         
         if( Pushed(add_image) ) {
             // Reverse map (target -> conic from conic -> target)
@@ -353,7 +426,7 @@ int main( int /*argc*/, char* argv[] )
                 calibrator.add_view(obs, visibleCircles);
 
 #ifdef USE_VICON
-                vicon_obs.push_back((Observation){obs,vicon.T_wc});
+                vicon_obs.push_back((Observation){obs,vicon_T_wf});
 #endif // USE_VICON
             }
             
@@ -372,6 +445,15 @@ int main( int /*argc*/, char* argv[] )
                     calibrator.get_camera_copy()->get<double>("k2") << " " <<
                     calibrator.get_camera_copy()->get<double>("p1") << " " <<
                     calibrator.get_camera_copy()->get<double>("p2") << " 0.0" << endl;
+        }
+
+        if(Pushed(minimise_vicon)) {
+            OptimiseTargetVicon(cam,tracker.target,vicon_obs, T_cf, T_wt);
+        }
+
+        if(Pushed(reset)) {
+            T_cf = Sophus::SE3();
+            T_wt = Sophus::SE3();
         }
         
         //    calibrator.iterate(rms);
@@ -410,7 +492,7 @@ int main( int /*argc*/, char* argv[] )
         glEnable(GL_DEPTH_TEST);
         v3D.ActivateScissorAndClear(s_cam);
         glDepthFunc(GL_LEQUAL);
-        glDrawAxis(30);
+        glDrawAxis(0.1);
         DrawTarget(tracker.target,Vector2d(0,0),1,0.2,0.2);
         DrawTarget(tracker.conics_target_map,tracker.target,Vector2d(0,0),1);
         
@@ -418,7 +500,7 @@ int main( int /*argc*/, char* argv[] )
         {
             // Draw Camera
             glColor3f(1,0,0);
-            glDrawFrustrum(cam.Kinv(),w,h,tracker.T_gw.inverse(),10);
+            glDrawFrustrum(cam.Kinv(),w,h,tracker.T_gw.inverse(),0.1);
         }
 
 #ifdef USE_VICON
@@ -433,13 +515,17 @@ int main( int /*argc*/, char* argv[] )
         glDrawAxis(1);
         glEnable(GL_DEPTH_TEST);
 
-        {
-            glPushMatrix();
-            glMultMatrix(vicon.T_wc_matrix);
-            glColor3f(1,0,0);
-            glDrawAxis(0.1);
-            glPopMatrix();
-        }
+        // Draw Vicon
+        glSetFrameOfReferenceF(vicon_T_wf);
+        glDrawAxis(0.1);
+        glDrawFrustrum(cam.Kinv(),w,h,T_cf.inverse(),0.1);
+        glUnsetFrameOfReference();
+
+        // Draw Target
+        glSetFrameOfReferenceF(T_wt);
+        DrawTarget(tracker.target,Vector2d(0,0),1,0.2,0.2);
+        glUnsetFrameOfReference();
+
 #endif // USE_VICON
 
         vPanel.Render();
