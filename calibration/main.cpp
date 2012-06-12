@@ -298,7 +298,7 @@ int main( int /*argc*/, char* argv[] )
     const double unit = mpp;
 
     // Setup Tracker and associated target
-    Tracker tracker(size);
+    Tracker tracker(w,h);
     tracker.target.GenerateRandom(
 //                60,25/(842.0/297.0),75/(842.0/297.0),15/(842.0/297.0),Eigen::Vector2d(297,210) // A4
                 60,unit*USwp*25/(842.0),unit*USwp*75/(842.0),unit*USwp*40/(842.0),Eigen::Vector2d(unit*USwp,unit*UShp) // US Letter
@@ -406,7 +406,7 @@ int main( int /*argc*/, char* argv[] )
         }
 
         const bool tracking_good =
-                tracker.ProcessFrame(cam,I);
+                tracker.ProcessFrame(cam,I.data());
 
         if(pangolin::Pushed(record)) {
             video.Record();
@@ -526,7 +526,7 @@ int main( int /*argc*/, char* argv[] )
 #endif
             texRGB.RenderToViewportFlipY();
         }else{
-            tex.Upload(tracker.tI.data(),GL_LUMINANCE,GL_UNSIGNED_BYTE);
+            tex.Upload(tracker.tI.get(),GL_LUMINANCE,GL_UNSIGNED_BYTE);
             tex.RenderToViewportFlipY();
         }
         

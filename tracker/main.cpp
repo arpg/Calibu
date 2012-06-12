@@ -2,7 +2,6 @@
 #include <pangolin/video.h>
 
 #include <cvd/image_convert.h>
-#include <cvd/gl_helpers.h>
 
 #include <fiducials/tracker.h>
 #include <fiducials/drawing.h>
@@ -30,7 +29,7 @@ int main( int /*argc*/, char* argv[] )
   CVD::ImageRef size(w,h);
 
   // Setup Tracker and associated target
-  Tracker tracker(size);
+  Tracker tracker(w,h);
   tracker.target.GenerateRandom(
     60,25/(842.0/297.0),75/(842.0/297.0),15/(842.0/297.0),Vector2d(297,210)
   );
@@ -88,7 +87,7 @@ int main( int /*argc*/, char* argv[] )
     video.GrabNewest((byte*)I.data(),true);
 
     const bool tracking_good =
-        tracker.ProcessFrame(cam,I);
+        tracker.ProcessFrame(cam,I.data());
 
     if( lock_to_cam )
         s_cam.Set(FromTooN(toTooN(tracker.T_gw)));
@@ -103,7 +102,7 @@ int main( int /*argc*/, char* argv[] )
         texRGB.Upload(I.data(),GL_LUMINANCE,GL_UNSIGNED_BYTE);
         texRGB.RenderToViewportFlipY();
     }else{
-        tex.Upload(tracker.tI.data(),GL_LUMINANCE,GL_UNSIGNED_BYTE);
+        tex.Upload(tracker.tI.get(),GL_LUMINANCE,GL_UNSIGNED_BYTE);
         tex.RenderToViewportFlipY();
     }
 

@@ -34,7 +34,8 @@
 
 template<typename TdI>
 Eigen::Matrix3d FindEllipse(
-  const CVD::BasicImage<TdI>& dI,
+  const int w, const int h,
+  const TdI* dI,
   const IRectangle& r,
   double& residual
 ) {
@@ -70,11 +71,12 @@ Eigen::Matrix3d FindEllipse(
   float elementCount = 0;
   for( int v=r.y1; v<=r.y2; ++v )
   {
+    const TdI* dIv = dI + v*w;
     for( int u=r.x1; u<=r.x2; ++u )
     {
       // li = (ai,bi,ci)' = (I_ui,I_vi, -dI' x_i)'
       const Eigen::Vector3d d =
-        Eigen::Vector3d(dI[v][u][0],dI[v][u][1],-(dI[v][u][0] * u + dI[v][u][1] * v) );
+        Eigen::Vector3d(dIv[u][0],dIv[u][1],-(dIv[u][0] * u + dIv[u][1] * v) );
       const Eigen::Vector3d li = //H.T() * d;
         Eigen::Vector3d( d[0]*H(0,0), d[1]*H(1,1), d[0]*H(0,2) + d[1] * H(1,2) + d[2] );
       Eigen::Matrix<double,5,1> Ki;
@@ -104,7 +106,7 @@ Eigen::Matrix3d FindEllipse(
 }
 
 void FindCandidateConicsFromLabels(
-  CVD::ImageRef size,
+  unsigned w, unsigned h,
   const std::vector<PixelClass>& labels,
   std::vector<PixelClass>& candidates,
   float min_area,
@@ -120,7 +122,7 @@ void FindCandidateConicsFromLabels(
     {
       const IRectangle& r = labels[i].bbox;
       // reject rectangles clipped by camera view
-      if( r.x1 >= border && r.y1 >= border && r.x2 < size.x-border && r.y2 < size.y-border)
+      if( r.x1 >= border && r.y1 >= border && r.x2 < w-border && r.y2 < h-border)
       {
         const int area = r.Width() * r.Height();
         if( min_area <= area && area <= max_area )
@@ -132,7 +134,7 @@ void FindCandidateConicsFromLabels(
             if( min_density <=  density )
             {
               PixelClass candidate = labels[i];
-              candidate.bbox = r.Grow(2).Clamp(border,border,size.x-(1+border),size.y-(1+border));
+              candidate.bbox = r.Grow(2).Clamp(border,border,w-(1+border),h-(1+border));
               candidates.push_back(candidate);
             }
           }
@@ -145,8 +147,9 @@ void FindCandidateConicsFromLabels(
 
 template<typename TdI>
 void FindConics(
+    const int w, const int h,
     const std::vector<PixelClass>& candidates,
-    const CVD::BasicImage<TdI>& dI,
+    const TdI* dI,
     std::vector<Conic>& conics
 ) {
   for( unsigned int i=0; i<candidates.size(); ++i )
@@ -155,7 +158,7 @@ void FindConics(
 
       Conic conic;
       double residual = 0;
-      conic.C = FindEllipse(dI,region, residual);
+      conic.C = FindEllipse(w,h,dI,region, residual);
 
       conic.bbox = region;
       conic.Dual = conic.C.inverse();

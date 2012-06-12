@@ -14,7 +14,7 @@
 #include <sophus/se3.h>
 
 #include <cvd/image.h>
-#include <cvd/image_io.h>
+//#include <cvd/image_io.h>
 #include <cvd/rgb.h>
 #include <cvd/image_convert.h>
 #include <cvd/integral_image.h>
@@ -129,7 +129,7 @@ int main( int /*argc*/, char* argv[] )
     Image<byte> I(size);
     Image<float> intI(size);
     Image<short> lI(size);
-    Image<float[2]> dI(size);
+    Image<std::array<float,2> > dI(size);
     Image<byte> tI(size);
 
     // Camera parameters
@@ -196,22 +196,22 @@ int main( int /*argc*/, char* argv[] )
 
         // Generic processing
         ConvertRGBtoI(Irgb,I);
-        gradient<>(I,dI);
-        integral_image(I,intI);
+        gradient(w,h,I.data(),dI.data());
+        integral_image(w,h,I.data(),intI.data());
 
         // Threshold and label image
-        AdaptiveThreshold(I,intI,tI,at_threshold,at_window,(byte)0,(byte)255);
+        AdaptiveThreshold(w,h,I.data(),intI.data(),tI.data(),at_threshold,at_window,(byte)0,(byte)255);
         vector<PixelClass> labels;
-        Label(tI,lI,labels);
+        Label(w,h,tI.data(),lI.data(),labels);
 
         // Find conics
         vector<PixelClass> candidates;
         vector<Conic> conics;
         FindCandidateConicsFromLabels(
-                    I.size(),labels,candidates,
+                    w,h,labels,candidates,
                     conic_min_area,conic_max_area,conic_min_density, conic_min_aspect
                     );
-        FindConics( candidates,dI,conics );
+        FindConics(w,h,candidates,dI.data(),conics );
 
         // Generate map and point structures
         vector<int> conics_target_map(conics.size(),-1);

@@ -101,14 +101,6 @@ public:
     this->y1 = y1;
   }
 
-//    IRectangle(const CVD::ImageRef & tl, const CVD::ImageRef & br)
-//    {
-//      this->x1 = tl.x;
-//      this->x2 = br.x;
-//      this->y2 = br.y;
-//      this->y1 = tl.y;
-//    }
-
   int x1, y1, x2, y2;
 
   int Width() const

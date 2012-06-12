@@ -1,10 +1,5 @@
 #include "tracker.h"
 
-#include <cvd/integral_image.h>
-#include <cvd/vision.h>
-
-//#include <pangolin/pangolin.h>
-
 #include "adaptive_threshold.h"
 #include "label.h"
 #include "find_conics.h"
@@ -13,25 +8,27 @@
 using namespace std;
 //using namespace pangolin;
 using namespace Eigen;
-using namespace CVD;
 
-Tracker::Tracker(const CVD::ImageRef& video_size)
-    : w(video_size.x), h(video_size.y),
-    intI(video_size), dI(video_size), lI(video_size), tI(video_size),
+Tracker::Tracker(int w, int h)
+    : w(w), h(w),
+      intI(new float[w*h]), dI(new std::array<float,2>[w*h]), lI(new short[w*h]), tI(new unsigned char[w*h]),
     last_good(0), good_frames(0)
 {
 
 }
 
-bool Tracker::ProcessFrame(LinearCamera& cam, CVD::Image<CVD::byte>& I)
+bool Tracker::ProcessFrame(LinearCamera& cam, unsigned char* I)
 {
-    gradient<>(I,dI);
-    integral_image(I,intI);
-    return ProcessFrame(cam,I,dI,intI);
+    gradient<>(cam.width(), cam.height(), I, dI.get() );
+    integral_image(cam.width(), cam.height(), I, intI.get() );
+    return ProcessFrame(cam, I, dI.get(), intI.get());
 }
 
-bool Tracker::ProcessFrame(LinearCamera& cam, CVD::Image<CVD::byte>& I, CVD::Image<float[2]>& dI, CVD::Image<float>& intI)
+bool Tracker::ProcessFrame(LinearCamera& cam, unsigned char* I, std::array<float,2>* dI, float* intI)
 {
+    const int w = cam.width();
+    const int h = cam.height();
+
     const float at_threshold = 1.0;
     const int at_window = w/3;
     const float conic_min_area = 25;
@@ -69,20 +66,20 @@ bool Tracker::ProcessFrame(LinearCamera& cam, CVD::Image<CVD::byte>& I, CVD::Ima
 //    static Var<double> max_mmps("ui.max mms per sec", 1500, 100, 2000);
 
     // Threshold and label image
-    AdaptiveThreshold(I,intI,tI,at_threshold,at_window,(byte)0,(byte)255);
+    AdaptiveThreshold(w, h, I,intI,tI.get(),at_threshold,at_window,(unsigned char)0,(unsigned char)255);
     vector<PixelClass> labels;
-    Label(tI,lI,labels);
+    Label(w,h,tI.get(),lI.get(),labels);
 
     // Find candidate regions for conics
     candidates.clear();
     FindCandidateConicsFromLabels(
-                I.size(),labels,candidates,
+                w,h,labels,candidates,
                 conic_min_area,conic_max_area,conic_min_density, conic_min_aspect
                 );
 
     // Find conic parameters
     conics.clear();
-    FindConics( candidates,dI,conics );
+    FindConics(w,h,candidates,dI,conics );
 
     // Generate map and point structures
     conics_target_map.clear();

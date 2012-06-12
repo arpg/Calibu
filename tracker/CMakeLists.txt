@@ -37,5 +37,6 @@ TARGET_LINK_LIBRARIES(
   ${DC1394_LIBRARY}
   ${Boost_LIBRARIES}
   ${OpenCV_LIBS}
-  lapack toontag
+  ${CVD_LIBRARY}
+  lapack
 )

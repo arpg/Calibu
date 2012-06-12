@@ -1,14 +1,14 @@
 #include "pnp.h"
 
 #include <opencv/cv.h>
-#include <tag/fourpointpose.h>
-#include <tag/ransac.h>
-
 #include "utils.h"
 
 using namespace std;
 using namespace Eigen;
-using namespace tag;
+
+//#include <tag/fourpointpose.h>
+//#include <tag/ransac.h>
+//using namespace tag;
 
 void PoseFromPointsLeastSq(
     const LinearCamera& cam,
@@ -74,35 +74,39 @@ Sophus::SE3 FindPose(
     double robust_inlier_tol,
     size_t robust_iterations
 ) {
-    std::vector<Correspondence2D3D> observations;
-    for( int i=0; i< map2d_3d.size(); ++i )
-    {
-        const int pt3d = map2d_3d[i];
-        if( pt3d >= 0 )
-        {
-            observations.push_back( (Correspondence2D3D){
-              toTooN<double,2>(cam.unmap(pts2d[i])), toTooN<double,3>(pts3d[pt3d]), i, pt3d }
-            );
-        }
-    }
+    Sophus::SE3 T;
+    PoseFromPointsLeastSq(cam,pts3d,pts2d,map2d_3d,T,false);
+    return T;
 
-    if( observations.size() >= Point4SE3Estimation<>::hypothesis_size )
-    {
-        Point4SE3Estimation<> est;
+//    std::vector<Correspondence2D3D> observations;
+//    for( int i=0; i< map2d_3d.size(); ++i )
+//    {
+//        const int pt3d = map2d_3d[i];
+//        if( pt3d >= 0 )
+//        {
+//            observations.push_back( (Correspondence2D3D){
+//              toTooN<double,2>(cam.unmap(pts2d[i])), toTooN<double,3>(pts3d[pt3d]), i, pt3d }
+//            );
+//        }
+//    }
 
-        std::vector<bool> inliers(observations.size());
-        tag::find_MSAC_inliers<Correspondence2D3D,Point4SE3Estimation<>,double>(
-            observations, robust_inlier_tol, robust_iterations, est, inliers, Point4SE3Estimation<>::hypothesis_size
-        );
+//    if( observations.size() >= Point4SE3Estimation<>::hypothesis_size )
+//    {
+//        Point4SE3Estimation<> est;
 
-        for( int i=0; i<observations.size(); ++i )
-            if( !inliers[i] ) map2d_3d[observations[i].pt2d] = -1;
+//        std::vector<bool> inliers(observations.size());
+//        tag::find_MSAC_inliers<Correspondence2D3D,Point4SE3Estimation<>,double>(
+//            observations, robust_inlier_tol, robust_iterations, est, inliers, Point4SE3Estimation<>::hypothesis_size
+//        );
 
-        Sophus::SE3 T = toEigen(est.T);
-        PoseFromPointsLeastSq(cam,pts3d,pts2d,map2d_3d,T,true);
-        return T;
-    }
-    return Sophus::SE3();
+//        for( int i=0; i<observations.size(); ++i )
+//            if( !inliers[i] ) map2d_3d[observations[i].pt2d] = -1;
+
+//        Sophus::SE3 T = toEigen(est.T);
+//        PoseFromPointsLeastSq(cam,pts3d,pts2d,map2d_3d,T,true);
+//        return T;
+//    }
+//    return Sophus::SE3();
 }
 
 double ReprojectionErrorRMS(

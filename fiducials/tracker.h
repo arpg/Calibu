@@ -1,10 +1,9 @@
 #ifndef TRACKER_H
 #define TRACKER_H
 
+#include <memory>
 #include <sophus/se3.h>
 #include <ctime>
-#include <cvd/image.h>
-#include <cvd/rgb.h>
 
 #include "label.h"
 #include "conics.h"
@@ -13,10 +12,10 @@
 struct Tracker
 {
 //public:
-    Tracker(const CVD::ImageRef& video_size);
+    Tracker(int w, int h);
 
-    bool ProcessFrame(LinearCamera& cam, CVD::Image<CVD::byte>& I);
-    bool ProcessFrame(LinearCamera& cam, CVD::Image<CVD::byte>& I, CVD::Image<float[2]>& dI, CVD::Image<float>& intI);
+    bool ProcessFrame(LinearCamera& cam, unsigned char *I);
+    bool ProcessFrame(LinearCamera& cam, unsigned char* I, std::array<float, 2>* dI, float* intI);
 
 //protected:
     // Fiducial Target
@@ -24,10 +23,10 @@ struct Tracker
 
     // Images
     int w, h;
-    CVD::Image<float> intI;
-    CVD::Image<float[2]> dI;
-    CVD::Image<short> lI;
-    CVD::Image<CVD::byte> tI;
+    std::unique_ptr<float> intI;
+    std::unique_ptr<std::array<float,2> > dI;
+    std::unique_ptr<short> lI;
+    std::unique_ptr<unsigned char> tI;
 
     // Hypothesis conics
     std::vector<PixelClass> candidates;

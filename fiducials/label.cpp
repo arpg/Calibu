@@ -31,7 +31,6 @@
 
 using namespace std;
 using namespace Eigen;
-using namespace CVD;
 
 inline short RootLabel(vector<PixelClass>& labels, short label )
 {
@@ -43,60 +42,60 @@ inline short RootLabel(vector<PixelClass>& labels, short label )
   return label;
 }
 
-inline void AssignLabel( const BasicImage<byte>& I, BasicImage<short>& label, vector<PixelClass>& labels, int r, int c )
+inline void AssignLabel( const int w, const int h, const unsigned char* I, short* label, vector<PixelClass>& labels, int r, int c )
 {
-  const bool v = I[r][c] < 128;
+  const bool v = I[r*w+c] < 128;
   if( v )
   {
-    const short lup = r>0? RootLabel(labels,label[r-1][c]) : -1;
-    const short lleft = c>0? RootLabel(labels,label[r][c-1]) : -1;
+    short* labelr = label + r*w;
+    short* labelrm1 = labelr - w;
+
+    const short lup = r>0? RootLabel(labels,labelrm1[c]) : -1;
+    const short lleft = c>0? RootLabel(labels,labelr[c-1]) : -1;
 
     if( lup >= 0 && lleft >= 0 && lup != lleft )
     {
       // merge
-      label[r][c] = lup;
+      labelr[c] = lup;
       labels[lup].size += labels[lleft].size + 1;
       labels[lleft].equiv = lup;
       labels[lup].bbox.Insert(labels[lleft].bbox);
     }else if( lup >= 0 )
     {
       // assign to lup
-      label[r][c] = lup;
+      labelr[c] = lup;
       ++labels[lup].size;
       labels[lup].bbox.Insert(c,r);
     }else if( lleft >= 0 )
     {
       // assign to lleft
-      label[r][c] = lleft;
+      labelr[c] = lleft;
       ++labels[lleft].size;
       labels[lleft].bbox.Insert(c,r);
     }else{
       // new label
       labels.push_back( (PixelClass){-1,IRectangle(c,r,c,r),1 } );
-      label[r][c] = labels.size()-1;
+      labelr[c] = labels.size()-1;
     }
   }
 }
 
-void Label( const BasicImage<byte>& I, BasicImage<short>& label, vector<PixelClass>& labels )
+void Label( int w, int h, const unsigned char* I, short* label, vector<PixelClass>& labels )
 {
-  const int w = I.size().x;
-  const int h = I.size().y;
-
-  label.fill(-1);
+  std::fill(label,label+w*h, -1);
 
   for( int d=0; d < max(w,h); ++d )
   {
     if( d<w )
     {
       for( int r=0; r< std::min(d,h); ++r )
-        AssignLabel(I,label,labels,r,d);
+        AssignLabel(w,h,I,label,labels,r,d);
     }
 
     if( d<h )
     {
       for( int c=0; c<= std::min(d,w); ++c )
-        AssignLabel(I,label,labels,d,c);
+        AssignLabel(w,h,I,label,labels,d,c);
     }
   }
 

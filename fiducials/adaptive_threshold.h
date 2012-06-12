@@ -29,16 +29,12 @@
 #define ADAPTIVE_THRESHOLD_H
 
 #include <algorithm>
-#include <cvd/image.h>
 
 template<typename TI,typename TintI,typename Tout>
-void AdaptiveThreshold( const CVD::BasicImage<TI>& I, const CVD::BasicImage<TintI>& intI, CVD::BasicImage<Tout>& out, float threshold, int s, Tout pass, Tout fail )
+void AdaptiveThreshold( int w, int h, const TI* I, const TintI* intI, Tout* out, float threshold, int s, Tout pass, Tout fail )
 {
   // Adaptive Thresholding Using the Integral Image
   // Derek Bradley, Gerhard Roth
-
-  const int w = I.size().x;
-  const int h = I.size().y;
 
   for ( int j=0; j<h; ++j )
   {
@@ -50,8 +46,13 @@ void AdaptiveThreshold( const CVD::BasicImage<TI>& I, const CVD::BasicImage<Tint
       const int x1 = std::max(1,i-s);
       const int x2 = std::min(w-1,i+s);
       const int count = (x2-x1)*(y2-y1);
-      const TintI sum = intI[y2][x2] - intI[y1-1][x2] - intI[y2][x1-1] + intI[y1-1][x1-1];
-      out[j][i] = (I[j][i]*count <= sum*threshold) ? pass : fail;
+      const TintI* intIy2 = intI + y2*w;
+      const TintI* intIy1m1 = intI + (y1-1)*w;
+      const TintI sum = intIy2[x2] - intIy1m1[x2] - intIy2[x1-1] + intIy1m1[x1-1];
+      unsigned id = j*w+i;
+      out[id] = (I[id]*count <= sum*threshold) ? pass : fail;
+//      const TintI sum = intI[y2][x2] - intI[y1-1][x2] - intI[y2][x1-1] + intI[y1-1][x1-1];
+//      out[j][i] = (I[j][i]*count <= sum*threshold) ? pass : fail;
     }
   }
 }
