@@ -57,3 +57,8 @@ LINK_LIBRARIES(
 )
 
 ADD_LIBRARY(${LIBRARY_NAME} SHARED ${SOURCES})
+
+# Export config file for easy inclusion into other projects: FIND_PACKAGE( Fiducials )
+CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/FiducialsConfig.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/FiducialsConfig.cmake @ONLY IMMEDIATE )
+EXPORT( PACKAGE Fiducials )
