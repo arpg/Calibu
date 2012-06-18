@@ -72,6 +72,10 @@ protected:
 class LinearCamera : public AbstractCamera
 {
 public:
+  LinearCamera()
+      : AbstractCamera(1,1), _K(Eigen::Matrix3d::Identity()), _Kinv(Eigen::Matrix3d::Identity())
+  {
+  }
 
   LinearCamera(int w, int h, double fu, double fv, double u0, double v0)
     :AbstractCamera(w,h), _pp(Eigen::Vector2d(u0,v0)), _f(Eigen::Vector2d(fu,fv)),
@@ -189,6 +193,11 @@ protected:
 class MatlabCamera : public LinearCamera
 {
 public:
+
+  MatlabCamera()
+      : _k1(0), _k2(0), _p1(0), _p2(0), _k3(0)
+  {
+  }
 
   MatlabCamera(int w, int h, double fu, double fv, double u0, double v0, double k1, double k2, double p1, double p2, double k3)
       :LinearCamera(w,h,fu,fv,u0,v0), _k1(k1), _k2(k2), _p1(p1), _p2(p2), _k3(k3)

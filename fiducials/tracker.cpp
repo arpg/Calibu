@@ -140,3 +140,61 @@ bool Tracker::ProcessFrame(LinearCamera& cam, unsigned char* I, std::array<float
 
     return good_frames >= 5;
 }
+
+int Tracker::NumVisibleFeatures() const
+{
+    int seen = 0;
+    for(int i=0; i< conics_target_map.size(); ++i )
+    {
+        if(conics_target_map[i] >= 0 ) {
+            seen++;
+        }
+    }
+    return seen;
+}
+
+
+Eigen::Matrix<double,3,Eigen::Dynamic> Tracker::TargetPattern3D() const
+{
+    Eigen::MatrixXd pattern3d = Eigen::MatrixXd(3, target.circles().size() );
+    for(size_t i=0; i < target.circles().size(); ++i )
+    {
+        pattern3d.col(i) = target.circles3D()[i];
+    }
+    return pattern3d;
+}
+
+Eigen::Matrix<double,2,Eigen::Dynamic> Tracker::TargetPatternObservations() const
+{
+    // Reverse map (target -> conic from conic -> target)
+    vector<int> target_conics_map(target.circles().size(), -1);
+    for( int i=0; i < conics_target_map.size(); ++i ) {
+        if(conics_target_map[i] >= 0) {
+            target_conics_map[conics_target_map[i]] = i;
+        }
+    }
+
+    // Generate list of visible indices
+    int unseen = 0;
+    std::vector<short int> visibleCircles;
+    for( int i=0; i < target_conics_map.size(); ++i ) {
+        if( target_conics_map[i] != -1 ) {
+            visibleCircles.push_back(i);
+        }else{
+            ++unseen;
+        }
+    }
+
+    Eigen::Matrix<double,2,Eigen::Dynamic> obs = Eigen::MatrixXd(2, target.circles().size() );
+    for(size_t i=0; i < target.circles().size(); ++i ) {
+        const int c = target_conics_map[i];
+        if(c >= 0 ) {
+            Eigen::Vector2d circ = conics[c].center;
+            obs.col(i) <<  circ[0] , circ[1];
+        }else{
+            obs.col(i) << NAN, NAN;
+        }
+    }
+    return obs;
+}
+

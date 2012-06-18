@@ -17,6 +17,19 @@ struct Tracker
     bool ProcessFrame(LinearCamera& cam, unsigned char *I);
     bool ProcessFrame(LinearCamera& cam, unsigned char* I, std::array<float, 2>* dI, float* intI);
 
+    // Return number of visible features
+    int NumVisibleFeatures() const;
+
+    // Return indices of visible features
+    std::vector<short int> VisibleFeatures() const;
+
+    // Return matrix containing 3D points of pattern, a column per circle.
+    Eigen::Matrix<double,3,Eigen::Dynamic> TargetPattern3D() const;
+
+    // Return matrix containing 2D observations, a column per circle.in target pattern
+    // Unobserved circles contain (NaN,NaN)'
+    Eigen::Matrix<double,2,Eigen::Dynamic> TargetPatternObservations() const;
+
 //protected:
     // Fiducial Target
     Target target;
@@ -40,9 +53,6 @@ struct Tracker
 
     // Pose hypothesis
     Sophus::SE3 T_hw;
-
-    // Tracking Settings
-
 };
 
 #endif // TRACKER_H

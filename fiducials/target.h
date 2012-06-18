@@ -54,6 +54,7 @@ public:
 
   double Radius() const;
 
+  int NumCircles() const;
   const std::vector<Eigen::Vector2d >& circles() const;
   const std::vector<Eigen::Vector3d >& circles3D() const;
 
@@ -107,6 +108,11 @@ void SortRows(Eigen::Matrix<P,R,C>& M);
 inline Eigen::Vector2d Target::Size() const
 {
   return size;
+}
+
+inline int Target::NumCircles() const
+{
+  return tpts3d.size();
 }
 
 inline const std::vector<Eigen::Vector2d >& Target::circles() const

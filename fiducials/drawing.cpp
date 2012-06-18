@@ -29,7 +29,6 @@
 
 using namespace std;
 using namespace Eigen;
-using namespace pangolin;
 
 void DrawRectangle( const IRectangle& r )
 {
@@ -94,7 +93,7 @@ void DrawTarget( const Target& t, const Vector2d& offset, double scale, double s
   for( unsigned int i=0; i<t.circles().size(); ++i )
   {
     const Vector2d p = t.circles()[i] * scale + offset;
-    glColorBin(i,t.circles().size(),sat,val);
+    glBinColor(i,t.circles().size(),sat,val);
     DrawCircle(p,r);
   }
 }
@@ -109,7 +108,7 @@ void DrawTarget( const vector<int>& map, const Target& target, const Vector2d& o
     if( t >= 0 )
     {
       const Vector2d p = target.circles()[t] * scale + offset;
-      glColorBin(t,target.circles().size(),sat,val);
+      glBinColor(t,target.circles().size(),sat,val);
       DrawCircle(p,r);
     }
   }

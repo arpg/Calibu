@@ -371,11 +371,7 @@ int main( int /*argc*/, char* argv[] )
 
     Var<Sophus::SE3> vicon_T_wf("vicon.T_wf");
 
-    Eigen::MatrixXd pattern = Eigen::MatrixXd(3, tracker.target.circles().size() );
-    for(size_t i=0; i < tracker.target.circles().size(); ++i )
-    {
-        pattern.col(i) = tracker.target.circles3D()[i];
-    }
+    Eigen::MatrixXd pattern = tracker.TargetPattern3D();
     
     GridCalibrator calibrator(
                 //      "Arctan", size.x, size.y, pattern
@@ -426,52 +422,29 @@ int main( int /*argc*/, char* argv[] )
         }
         
         if( Pushed(add_image) ) {
-            // Reverse map (target -> conic from conic -> target)
-            vector<int> target_conics_map(tracker.target.circles().size(), -1);
-            for( int i=0; i < tracker.conics_target_map.size(); ++i ) {
-                if(tracker.conics_target_map[i] >= 0) {
-                    target_conics_map[tracker.conics_target_map[i]] = i;
-                }
-            }
-            
-            // Generate list of visible indices
-            int unseen = 0;
-            std::vector<short int> visibleCircles;
-            for( int i=0; i < target_conics_map.size(); ++i ) {
-                if( target_conics_map[i] != -1 ) {
-                    visibleCircles.push_back(i);
-                }else{
-                    ++unseen;
-                }
-            }
-            
-            // Add observations to calibrator if most of circles are visable
-            if( unseen < 10 ) {
-                cout << "Adding Observations (unseen: " << unseen << ")" << endl;
-                Eigen::MatrixXd obs = Eigen::MatrixXd(2, tracker.target.circles().size() );
-                for(size_t i=0; i < tracker.target.circles().size(); ++i ) {
-                    const int c = target_conics_map[i];
-                    if(c >= 0 ) {
-                        Eigen::Vector2d circ = tracker.conics[c].center;
-                        obs.col(i) <<  circ[0] , circ[1];
-                    }else{
-                        obs.col(i) << NAN, NAN;
-                    }
-                }
-                
-                calibrator.add_view(obs, visibleCircles);
+            if( tracker.NumVisibleFeatures() > tracker.target.NumCircles() - 10 )
+            {
+              const Eigen::MatrixXd obs = tracker.TargetPatternObservations();
+
+              // Generate visible list
+              std::vector<short int> visibleCircles;
+              for(int i=0; i< obs.cols(); ++i ) {
+                  if( isfinite(obs(0,0)) ) {
+                      visibleCircles.push_back(i);
+                  }
+              }
+
+              calibrator.add_view(obs, visibleCircles);
 
 #ifdef USE_VICON
-                vicon_obs.push_back((Observation){obs,((Sophus::SE3)vicon_T_wf).inverse() });
-            if(vicon_obs.size() == 1 ) {
-                T_wt = (Sophus::SE3)vicon_T_wf * T_cf.inverse() * tracker.T_gw;
-                T_cf = Sophus::SE3();
-            }
-            cout << err(cam, tracker.target, vicon_obs, T_cf, T_wt) << endl;
-
+              vicon_obs.push_back((Observation){obs,((Sophus::SE3)vicon_T_wf).inverse() });
+              if(vicon_obs.size() == 1 ) {
+                  T_wt = (Sophus::SE3)vicon_T_wf * T_cf.inverse() * tracker.T_gw;
+                  T_cf = Sophus::SE3();
+              }
+              cout << err(cam, tracker.target, vicon_obs, T_cf, T_wt) << endl;
 #endif // USE_VICON
             }
-            
         }
         
         if(Pushed(minimise)) {
