@@ -77,33 +77,39 @@ public:
   {
   }
 
-  LinearCamera(int w, int h, double fu, double fv, double u0, double v0)
-    :AbstractCamera(w,h), _pp(Eigen::Vector2d(u0,v0)), _f(Eigen::Vector2d(fu,fv)),
-      _K(Eigen::Matrix3d::Identity()), _Kinv(Eigen::Matrix3d::Identity())
+  LinearCamera(int w, int h, Eigen::VectorXd& params)
+    :AbstractCamera(w,h), _K(Eigen::Matrix3d::Identity()), _Kinv(Eigen::Matrix3d::Identity())
   {
-    _K(0,0) = _f[0];
-    _K(1,1) = _f[1];
-    _K(0,2) = _pp[0];
-    _K(1,2) = _pp[1];
-    _Kinv(0,0) = 1.0/_f[0];
-    _Kinv(1,1) = 1.0/_f[1];
-    _Kinv(0,2) = -_pp[0] / _f[0];
-    _Kinv(1,2) = -_pp[1] / _f[1];
+    _K(0,0) = params(0) * w;
+    _K(1,1) = params(1) * h;
+    _K(0,2) = params(2) * w;
+    _K(1,2) = params(3) * h;
+    UpdateKinvFromK();
+  }
+
+  LinearCamera(int w, int h, double fu, double fv, double u0, double v0)
+    :AbstractCamera(w,h), _K(Eigen::Matrix3d::Identity()), _Kinv(Eigen::Matrix3d::Identity())
+  {
+    _K(0,0) = fu;;
+    _K(1,1) = fv;
+    _K(0,2) = u0;
+    _K(1,2) = v0;
+    UpdateKinvFromK();
   }
 
   inline virtual Eigen::Vector2d map(const Eigen::Vector2d& cam) const
   {
     return Eigen::Vector2d(
-      _f[0] * cam[0] + _pp[0],
-      _f[1] * cam[1] + _pp[1]
+      _K(0,0) * cam[0] + _K(0,2),
+      _K(1,1) * cam[1] + _K(1,2)
     );
   }
 
   inline virtual Eigen::Vector2d unmap(const Eigen::Vector2d& img) const
   {
     return Eigen::Vector2d(
-      (img[0] - _pp[0]) / _f[0],
-      (img[1] - _pp[1]) / _f[1]
+      (img[0] - _K(0,2)) / _K(0,0),
+      (img[1] - _K(1,2)) / _K(1,1)
     );
   }
 
@@ -117,9 +123,31 @@ public:
     return _Kinv;
   }
 
+  inline Eigen::Matrix3d& K()
+  {
+    return _K;
+  }
+
+  inline Eigen::Matrix3d& Kinv()
+  {
+    return _Kinv;
+  }
+
+  inline void SetK(const Eigen::Matrix3d& K)
+  {
+      _K = K;
+      UpdateKinvFromK();
+  }
+
 protected:
-  Eigen::Vector2d _pp;
-  Eigen::Vector2d _f;
+  inline void UpdateKinvFromK()
+  {
+      _Kinv(0,0) = 1.0/_K(0,0);
+      _Kinv(1,1) = 1.0/_K(1,1);
+      _Kinv(0,2) = - _K(0,2) / _K(0,0);
+      _Kinv(1,2) = - _K(1,2) / _K(1,1);
+  }
+
   Eigen::Matrix3d _K;
   Eigen::Matrix3d _Kinv;
 };
@@ -162,8 +190,8 @@ public:
     const double fac = rtrans_factor(cam.norm());
 
     return Eigen::Vector2d(
-      fac * _f[0] * cam[0] + _pp[0],
-      fac * _f[1] * cam[1] + _pp[1]
+      fac * _K(0,0) * cam[0] + _K(0,2),
+      fac * _K(1,1) * cam[1] + _K(1,2)
     );
 
   }
@@ -171,8 +199,8 @@ public:
   inline Eigen::Vector2d unmap(const Eigen::Vector2d& img) const
   {
       const Eigen::Vector2d distCam = Eigen::Vector2d(
-        (img[0] - _pp[0]) / _f[0],
-        (img[1] - _pp[1]) / _f[1]
+        (img[0] - _K(0,2)) / _K(0,0),
+        (img[1] - _K(1,2)) / _K(1,1)
       );
       const double distR = distCam.norm();
       const double R = invrtrans(distR);
@@ -199,7 +227,18 @@ public:
   {
   }
 
-  MatlabCamera(int w, int h, double fu, double fv, double u0, double v0, double k1, double k2, double p1, double p2, double k3)
+  MatlabCamera(int w, int h, Eigen::VectorXd& params)
+      :LinearCamera(w,h,params), _k1(0), _k2(0), _p1(0), _p2(0), _k3(0)
+  {
+      if(params.size() >= 5 ) {
+          _k1 = params(4);
+          if(params.size() >= 6 ) {
+              _k2 = params(5);
+          }
+      }
+  }
+
+  MatlabCamera(int w, int h, double fu, double fv, double u0, double v0, double k1, double k2 = 0, double p1 = 0, double p2 = 0, double k3 = 0)
       :LinearCamera(w,h,fu,fv,u0,v0), _k1(k1), _k2(k2), _p1(p1), _p2(p2), _k3(k3)
   {
   }
@@ -222,14 +261,23 @@ public:
           double rd = md.norm();
           const double rd2 = rd*rd;
           const double rd4 = rd2*rd2;
-          const double radial =  1 + _k1*rd2 + _k2*rd2*rd2 + _k3*rd4*rd2;
+          const double radial =  1 + _k1*rd2 + _k2*rd4 + _k3*rd4*rd2;
           md = u/radial;
       }
       return md;
   }
 
-protected:
+  friend std::ostream& operator<< (std::ostream &out, const MatlabCamera &cam);
+
+//protected:
   double _k1, _k2, _p1, _p2, _k3;
 };
+
+inline std::ostream& operator<<(std::ostream& out, const MatlabCamera &cam)
+{
+    out << cam._K(0,0) / cam.width() << ", " << cam._K(1,1) / cam.height() << ", " << cam._K(0,2) / cam.width() << ", " << cam._K(1,2) / cam.height()
+        << ", " << cam._k1 << ", " << cam._k2;
+    return out;
+}
 
 #endif // CAMERA_H
