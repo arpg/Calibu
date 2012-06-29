@@ -30,6 +30,8 @@
 
 #include <Eigen/Dense>
 #include <sophus/se3.h>
+
+#ifdef HAVE_TOON
 #include <TooN/se3.h>
 
 template<typename T, unsigned s>
@@ -62,7 +64,7 @@ inline Sophus::SE3 toEigen(const TooN::SE3<double>& T)
     return Sophus::SE3::exp(se3);
 }
 
-
+#endif // HAVE_TOON
 
 template<typename Derived>
 bool is_nan(const Eigen::MatrixBase<Derived>& x)

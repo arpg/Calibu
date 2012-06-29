@@ -56,15 +56,13 @@ void PoseFromPointsLeastSq(
   }
 }
 
-struct Correspondence2D3D
-{
-    TooN::Vector<2> pixel;
-    TooN::Vector<3> position;
-    int pt2d;
-    int pt3d;
-};
-
-
+//struct Correspondence2D3D
+//{
+//    TooN::Vector<2> pixel;
+//    TooN::Vector<3> position;
+//    int pt2d;
+//    int pt3d;
+//};
 
 Sophus::SE3 FindPose(
     const LinearCamera& cam,
