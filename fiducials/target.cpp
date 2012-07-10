@@ -636,22 +636,24 @@ void Target::FindTarget(
         // find closest point
         const Vector2d m_t = T_tm * mpts[i];
         const int t = ClosestPoint(tpts, m_t );
+        if( t >= 0 ) {
+            assert( t >= 0 && t < (int)tpts.size() );
 
-        assert( t >= 0 && t < (int)tpts.size() );
+            const double d = (m_t - tpts[t]).norm();
 
-        const double d = (m_t - tpts[t]).norm();
-
-        // check error is small
-        if( d < ransac_max_fit_error )
-        {
-          // check target circle hasn't already been matched
-          if( find(conics_target_map.begin(),conics_target_map.end(),t) == conics_target_map.end() )
-          {
-            conics_target_map[i] = t;
-          }
+            // check error is small
+            if( d < ransac_max_fit_error )
+            {
+              // check target circle hasn't already been matched
+              if( find(conics_target_map.begin(),conics_target_map.end(),t) == conics_target_map.end() )
+              {
+                conics_target_map[i] = t;
+              }
+            }
         }
       }
     }
+
   }
 
 }
