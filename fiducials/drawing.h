@@ -163,7 +163,7 @@ Sophus::SO3 Rotation(const Eigen::Vector3d& a, const Eigen::Vector3d& b)
     if(n.squaredNorm() == 0) {
         //check that the vectors are in the same direction if cross product is 0. If not,
         //this means that the rotation is 180 degrees, which leads to an ambiguity in the rotation axis.
-        assert(a.dot(b)>=0);
+//        assert(a.dot(b)>=0);
         return Sophus::SO3();
     }
 
@@ -182,11 +182,20 @@ Sophus::SO3 Rotation(const Eigen::Vector3d& a, const Eigen::Vector3d& b)
     return Sophus::SO3(M);
 }
 
-inline Sophus::SE3 PlaneBasis_wp(const Eigen::Vector4d& N_w)
+// TODO: Check this works.
+//inline Sophus::SE3 PlaneBasis_wp(const Eigen::Vector4d& N_w)
+//{
+//    const Eigen::Vector3d n = N_w.head<3>();
+//    const Sophus::SO3 R_wn = Rotation(Eigen::Vector3d(0,0,-1),n);
+//    return Sophus::SE3(R_wn, -N_w[3]*n);
+//}
+
+inline Sophus::SE3 PlaneBasis_wp(const Eigen::Vector3d& nd_w)
 {
-    const Eigen::Vector3d n = N_w.head<3>();
+    const double d = 1.0 / nd_w.norm();
+    const Eigen::Vector3d n = d * nd_w;
     const Sophus::SO3 R_wn = Rotation(Eigen::Vector3d(0,0,-1),n);
-    return Sophus::SE3(R_wn, -N_w[3]*n);
+    return Sophus::SE3(R_wn, -d*n);
 }
 
 inline void Draw_z0(float scale, int grid)
@@ -203,12 +212,19 @@ inline void Draw_z0(float scale, int grid)
     glEnd();
 }
 
-inline void DrawPlane(const Eigen::Vector4d& N_w, float scale, int grid)
+inline void DrawPlane(const Eigen::Vector3d& nd_w, float scale, int grid)
 {
-    const Sophus::SE3 T_wn = PlaneBasis_wp(N_w);
+    const Sophus::SE3 T_wn = PlaneBasis_wp(nd_w);
     glSetFrameOfReferenceF(T_wn);
     Draw_z0(scale,grid);
     glUnsetFrameOfReference();
+}
+
+inline void DrawPlane(const Eigen::Vector4d& N_w, float scale, int grid)
+{
+    // TODO: Verify that this works.
+    const Eigen::Vector3d nd_w = N_w.head<3>() / N_w(3);
+    DrawPlane(nd_w, scale, grid);
 }
 
 #endif // DRAWING_H
