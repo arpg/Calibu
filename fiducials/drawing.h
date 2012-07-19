@@ -64,7 +64,9 @@ void DrawTarget( const std::vector<int>& map, const Target& target, const Eigen:
 
 void SetPixelTransferScale( float scale );
 
-void glDrawAxis(float s);
+void glDrawAxis(float s = 1.0);
+
+void glDrawAxis( const Sophus::SE3& T_wf, float scale = 1.0 );
 
 void glDrawFrustrum(
   const Eigen::Matrix3d& Kinv, int w, int h, float scale

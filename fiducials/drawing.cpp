@@ -129,6 +129,13 @@ void glDrawAxis(float s)
   glEnd();
 }
 
+void glDrawAxis( const Sophus::SE3& T_wf, float scale )
+{
+  glSetFrameOfReferenceF(T_wf);
+  glDrawAxis(scale);
+  glUnsetFrameOfReference();
+}
+
 void glDrawFrustrum( const Matrix3d& Kinv, int w, int h, float scale )
 {
   glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
