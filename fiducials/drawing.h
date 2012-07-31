@@ -64,19 +64,19 @@ void DrawTarget( const std::vector<int>& map, const Target& target, const Eigen:
 
 void SetPixelTransferScale( float scale );
 
-void glDrawAxis(float s = 1.0);
+void DrawAxis(float s = 1.0);
 
-void glDrawAxis( const Sophus::SE3& T_wf, float scale = 1.0 );
+void DrawAxis( const Sophus::SE3& T_wf, float scale = 1.0 );
 
-void glDrawFrustrum(
+void DrawFrustrum(
   const Eigen::Matrix3d& Kinv, int w, int h, float scale
 );
 
-void glDrawFrustrum(
+void DrawFrustrum(
   const Eigen::Matrix3d& Kinv, int w, int h, const Sophus::SE3& T_wf, float scale
 );
 
-void glDrawGrid(float num_lines = 30, float line_delta = 2);
+void DrawGrid(float num_lines = 30, float line_delta = 2);
 
 // Inlines
 

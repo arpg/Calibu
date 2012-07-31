@@ -47,8 +47,8 @@ public:
   void GenerateEmptyCircle(unsigned int max_circles, double radius, double min_distance, double border, double clear_radius, const Eigen::Vector2d& size );
   void GenerateRandom(unsigned int max_circles, double radius, double min_distance, double border, const Eigen::Vector2d& size );
   void LoadPattern( std::string filename, double radius, double scale = 1.0 );
-  void SaveEPS( std::string filename );
-  void SaveRotatedEPS( std::string filename);
+  void SaveEPS( std::string filename, float points_per_unit =1 );
+  void SaveRotatedEPS( std::string filename, float points_per_unit=1);
 
   Eigen::Vector2d Size() const;
 

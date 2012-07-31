@@ -114,7 +114,7 @@ void DrawTarget( const vector<int>& map, const Target& target, const Vector2d& o
   }
 }
 
-void glDrawAxis(float s)
+void DrawAxis(float s)
 {
   glBegin(GL_LINES);
   glColor3f(1,0,0);
@@ -129,14 +129,14 @@ void glDrawAxis(float s)
   glEnd();
 }
 
-void glDrawAxis( const Sophus::SE3& T_wf, float scale )
+void DrawAxis( const Sophus::SE3& T_wf, float scale )
 {
   glSetFrameOfReferenceF(T_wf);
-  glDrawAxis(scale);
+  DrawAxis(scale);
   glUnsetFrameOfReference();
 }
 
-void glDrawFrustrum( const Matrix3d& Kinv, int w, int h, float scale )
+void DrawFrustrum( const Matrix3d& Kinv, int w, int h, float scale )
 {
   glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
   glBegin(GL_TRIANGLE_FAN);
@@ -150,14 +150,14 @@ void glDrawFrustrum( const Matrix3d& Kinv, int w, int h, float scale )
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
-void glDrawFrustrum( const Matrix3d& Kinv, int w, int h, const Sophus::SE3& T_wf, float scale )
+void DrawFrustrum( const Matrix3d& Kinv, int w, int h, const Sophus::SE3& T_wf, float scale )
 {
   glSetFrameOfReferenceF(T_wf);
-  glDrawFrustrum(Kinv,w,h,scale);
+  DrawFrustrum(Kinv,w,h,scale);
   glUnsetFrameOfReference();
 }
 
-void glDrawGrid(float num_lines, float line_delta)
+void DrawGrid(float num_lines, float line_delta)
 {
     glBegin(GL_LINES);
 

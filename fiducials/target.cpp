@@ -254,23 +254,24 @@ void Target::GenerateRandom(unsigned int max_circles, double radius, double min_
   InitialiseFrom2DPts();
 }
 
-void Target::SaveEPS(string filename)
+void Target::SaveEPS(string filename, float points_per_unit)
 {
+  const float ppu = points_per_unit;
   ofstream f;
   f.open(filename.c_str());
   f << "%!PS-Adobe EPSF-3.0" << endl;
   f << "%%Creator: FiducialCalibrationTarget" << endl;
   f << "%%Title: Calibration Target" << endl;
   f << "%%Origin: 0 0" << endl;
-  f << "%%BoundingBox: 0 0 " << size[0] << " " << size[1] << endl;
+  f << "%%BoundingBox: 0 0 " << size[0]*ppu << " " << size[1]*ppu << endl;
   f << "% seed: " << seed << endl;
-  f << "% radius: " << radius << endl;
+  f << "% radius: " << radius*ppu << endl;
   f << endl;
 
   for( unsigned int i=0; i<tpts.size(); ++i )
   {
     Vector2d& p = tpts[i];
-    f << p[0] << " " << size[1] - p[1] << " " << radius << " 0 360 arc closepath" << endl
+    f << p[0]*ppu << " " << size[1]*ppu - p[1]*ppu << " " << radius*ppu << " 0 360 arc closepath" << endl
       << "0.0 setgray fill" << endl
       << endl;
   }
@@ -278,8 +279,9 @@ void Target::SaveEPS(string filename)
   f.close();
 }
 
-void Target::SaveRotatedEPS(string filename)
+void Target::SaveRotatedEPS(string filename, float points_per_unit)
 {
+  const float ppu = points_per_unit;
   ofstream f;
   f.open(filename.c_str());
   f << "%!PS-Adobe EPSF-3.0" << endl;
@@ -294,7 +296,7 @@ void Target::SaveRotatedEPS(string filename)
   for( unsigned int i=0; i<tpts.size(); ++i )
   {
     Vector2d& p = tpts[i];
-    f << p[1] << " " << p[0] << " " << radius << " 0 360 arc closepath" << endl
+    f << p[1]*ppu << " " << p[0]*ppu << " " << radius*ppu << " 0 360 arc closepath" << endl
       << "0.0 setgray fill" << endl
       << endl;
   }
