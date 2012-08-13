@@ -27,7 +27,7 @@ FIND_PACKAGE(Boost COMPONENTS thread filesystem REQUIRED QUIET)
 ## Apply required dependencies settings
 LIST(APPEND LINK_LIBS "${OPENGL_LIBRARIES};${Boost_LIBRARIES}" )
 LIST(APPEND LIB_DIRS  "${OPENGL_LIBRARY_DIR};${Boost_LIBRARY_DIRS};${PROJECT_BINARY_DIR}/fiducials" )
-LIST(APPEND USER_INC  "${OPENGL_INCLUDE_DIR};${Boost_INCLUDE_DIRS};${CMAKE_CURRENT_SOURCE_DIR}/.." )
+LIST(APPEND USER_INC  "${OPENGL_INCLUDE_DIR};${Boost_INCLUDE_DIRS};${CMAKE_CURRENT_SOURCE_DIR}/..";${PROJECT_BINARY_DIR} )
 
 # git://github.com/stevenlovegrove/Sophus.git
 FIND_PACKAGE(Sophus REQUIRED)
@@ -49,7 +49,21 @@ LINK_DIRECTORIES(${LIB_DIRS})
 
 ADD_LIBRARY(${LIBRARY_NAME} SHARED ${SOURCES})
 
-# Export config file for easy inclusion into other projects: FIND_PACKAGE( Fiducials )
+#######################################################
+## Create configure file for inclusion in library
+
+IF(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+   SET(_OSX_ 1)
+ENDIF()
+
+CONFIGURE_FILE(
+  "${CMAKE_CURRENT_SOURCE_DIR}/config.h.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/config.h"
+)
+
+#######################################################
+## Export config file for easy inclusion into other projects: FIND_PACKAGE( Fiducials )
+
 CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/FiducialsConfig.cmake.in
     ${CMAKE_CURRENT_BINARY_DIR}/FiducialsConfig.cmake @ONLY IMMEDIATE )
 EXPORT( PACKAGE Fiducials )

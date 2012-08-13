@@ -28,12 +28,19 @@
 #ifndef DRAWING_H
 #define DRAWING_H
 
+#include <fiducials/config.h>
+
 #ifdef _WIN_
 #include <Windows.h>
 #endif
 
 #include <GL/glew.h>
-#include <GL/gl.h>
+
+#ifdef _OSX_
+  #include <OpenGL/gl.h>
+#else
+  #include <GL/gl.h>
+#endif
 
 #include <Eigen/Dense>
 
