@@ -1,0 +1,7 @@
+#ifndef FIDUCIALS_CONFIG_H
+#define FIDUCIALS_CONFIG_H
+
+/// Platform
+#cmakedefine _OSX_
+
+#endif //FIDUCIALS_CONFIG_H
