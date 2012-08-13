@@ -1,7 +1,7 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
-#include <array>
+#include <boost/array.hpp>
 #include <Eigen/Dense>
 
 template<typename T, int Opt, int MaxRows, int MaxCols>
@@ -66,7 +66,7 @@ public:
   }
 
 protected:
-  std::array<unsigned,2> size;
+  boost::array<unsigned,2> size;
 };
 
 class LinearCamera : public AbstractCamera

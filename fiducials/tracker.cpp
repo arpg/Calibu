@@ -11,7 +11,7 @@ using namespace Eigen;
 
 Tracker::Tracker(int w, int h)
     : w(w), h(w),
-      intI(new float[w*h]), dI(new std::array<float,2>[w*h]), lI(new short[w*h]), tI(new unsigned char[w*h]),
+      intI(new float[w*h]), dI(new boost::array<float,2>[w*h]), lI(new short[w*h]), tI(new unsigned char[w*h]),
     last_good(0), good_frames(0)
 {
 
@@ -24,7 +24,7 @@ bool Tracker::ProcessFrame(LinearCamera& cam, unsigned char* I)
     return ProcessFrame(cam, I, dI.get(), intI.get());
 }
 
-bool Tracker::ProcessFrame(LinearCamera& cam, unsigned char* I, std::array<float,2>* dI, float* intI)
+bool Tracker::ProcessFrame(LinearCamera& cam, unsigned char* I, boost::array<float,2>* dI, float* intI)
 {
     const int w = cam.width();
     const int h = cam.height();

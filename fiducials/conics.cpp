@@ -80,7 +80,7 @@ double Cost( const pair<Vector3d,Matrix3d >& plane, const vector<Conic>& conics,
   return sum / n;
 }
 
-array<pair<Vector3d,Matrix3d >, 2 > PlaneFromConic(const Conic& c, double plane_circle_radius, const Matrix3d& K )
+boost::array<pair<Vector3d,Matrix3d >, 2 > PlaneFromConic(const Conic& c, double plane_circle_radius, const Matrix3d& K )
 {
   const Matrix3d Cn = K.transpose() * c.C *K;
   Eigen::JacobiSVD<Matrix3d> svd(Cn, ComputeFullU );
@@ -88,7 +88,7 @@ array<pair<Vector3d,Matrix3d >, 2 > PlaneFromConic(const Conic& c, double plane_
   const Vector3d l = svd.singularValues();
   const double t = atan( sqrt( (l[1]-l[0]) / (l[2]-l[1]) ) );
 
-  std::array<pair<Vector3d,Matrix3d >, 2> r;
+  boost::array<pair<Vector3d,Matrix3d >, 2> r;
 
   for( int i=0; i < 2; ++i )
   {
@@ -114,7 +114,7 @@ pair<Vector3d,Matrix3d > PlaneFromConics( vector<Conic>& conics, double plane_ci
   // Find transformation with lowest score over all conics
   for( unsigned int i=0; i < conics.size(); ++i )
   {
-    const std::array<pair<Vector3d,Matrix3d >, 2> nds = PlaneFromConic(conics[i],plane_circle_radius,K );
+    const boost::array<pair<Vector3d,Matrix3d >, 2> nds = PlaneFromConic(conics[i],plane_circle_radius,K );
     for( int j=0; j<2; ++j )
     {
       const double cost = Cost(nds[j],conics,K,inlier_threshold);

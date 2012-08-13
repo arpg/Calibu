@@ -15,7 +15,7 @@ struct Tracker
     Tracker(int w, int h);
 
     bool ProcessFrame(LinearCamera& cam, unsigned char *I);
-    bool ProcessFrame(LinearCamera& cam, unsigned char* I, std::array<float, 2>* dI, float* intI);
+    bool ProcessFrame(LinearCamera& cam, unsigned char* I, boost::array<float, 2>* dI, float* intI);
 
     // Return number of visible features
     int NumVisibleFeatures() const;
@@ -36,10 +36,10 @@ struct Tracker
 
     // Images
     int w, h;
-    std::unique_ptr<float> intI;
-    std::unique_ptr<std::array<float,2> > dI;
-    std::unique_ptr<short> lI;
-    std::unique_ptr<unsigned char> tI;
+    std::auto_ptr<float> intI;
+    std::auto_ptr<boost::array<float,2> > dI;
+    std::auto_ptr<short> lI;
+    std::auto_ptr<unsigned char> tI;
 
     // Hypothesis conics
     std::vector<PixelClass> candidates;

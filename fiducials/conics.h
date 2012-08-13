@@ -29,7 +29,7 @@
 #define CONICS_H
 
 #include <vector>
-#include <array>
+#include <boost/array.hpp>
 #include <Eigen/Dense>
 
 #include "rectangle.h"
@@ -45,7 +45,7 @@ struct Conic
 
 double Distance( const Conic& c1, const Conic& c2, double circle_radius );
 
-std::array<std::pair<Eigen::Vector3d,Eigen::Matrix3d >, 2 > PlaneFromConic(
+boost::array<std::pair<Eigen::Vector3d,Eigen::Matrix3d >, 2 > PlaneFromConic(
   const Conic& c, double plane_circle_radius, const Eigen::Matrix3d& K
 );
 
