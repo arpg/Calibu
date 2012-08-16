@@ -312,7 +312,7 @@ int main( int /*argc*/, char* argv[] )
 
         // Draw Camera
         glColor3f(1,0,0);
-        glDrawFrustrum(cam.Kinv(),w,h,T_gw.inverse(),10);
+        DrawFrustrum(cam.Kinv(),w,h,T_gw.inverse(),10);
 
         Vector3d r_w = Vector3d::Zero();
 
@@ -369,7 +369,7 @@ int main( int /*argc*/, char* argv[] )
                 glMatrixMode(GL_MODELVIEW);
                 glPushMatrix();
                 glMultMatrix( T_wr );
-                glDrawFrustrum(cam.Kinv(),w,h,30);
+                DrawFrustrum(cam.Kinv(),w,h,30);
                 glPopMatrix();
             }
 
@@ -394,7 +394,7 @@ int main( int /*argc*/, char* argv[] )
         // Keyframes
         glColor3f(0.5,0.5,0.5);
 //        foreach (Keyframe& kf, keyframes) {
-//            glDrawFrustrum(cam.Kinv(),w,h,kf.T_kw.inverse(),30);
+//            DrawFrustrum(cam.Kinv(),w,h,kf.T_kw.inverse(),30);
 //        }
         if(keyframes.size() > 0 )
         {
@@ -403,7 +403,7 @@ int main( int /*argc*/, char* argv[] )
           glUnsetFrameOfReference();
 
           glColor3f(1,0.5,0.5);
-          glDrawFrustrum(cam.Kinv(),w,h,keyframes[0].T_kw.inverse(),30);
+          DrawFrustrum(cam.Kinv(),w,h,keyframes[0].T_kw.inverse(),30);
         }
 
         if(pangolin::Pushed(record)) {

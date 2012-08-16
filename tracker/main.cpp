@@ -125,7 +125,7 @@ int main( int /*argc*/, char* argv[] )
     {
         // Draw Camera
         glColor3f(1,0,0);
-        glDrawFrustrum(cam.Kinv(),w,h,tracker.T_gw.inverse(),10);
+        DrawFrustrum(cam.Kinv(),w,h,tracker.T_gw.inverse(),10);
     }
 
     vPanel.Render();
