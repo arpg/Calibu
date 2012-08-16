@@ -522,7 +522,7 @@ int main( int /*argc*/, char* argv[] )
         {
             // Draw Camera
             glColor3f(1,0,0);
-            glDrawFrustrum(cam.Kinv(),w,h,tracker.T_gw.inverse(),0.1);
+            DrawFrustrum(cam.Kinv(),w,h,tracker.T_gw.inverse(),0.1);
         }
 
 #ifdef USE_VICON
@@ -540,7 +540,7 @@ int main( int /*argc*/, char* argv[] )
         // Draw Vicon
         glSetFrameOfReferenceF(vicon_T_wf);
         glDrawAxis(0.1);
-        glDrawFrustrum(cam.Kinv(),w,h,T_cf.inverse(),0.1);
+        DrawFrustrum(cam.Kinv(),w,h,T_cf.inverse(),0.1);
         glUnsetFrameOfReference();
 
         // Draw Target
@@ -550,7 +550,7 @@ int main( int /*argc*/, char* argv[] )
             DrawTarget(tracker.target,Vector2d(0,0),1,0.2,0.2);
             DrawTarget(tracker.conics_target_map,tracker.target,Vector2d(0,0),1);
             glColor3f(1,0,0);
-            glDrawFrustrum(cam.Kinv(),w,h,tracker.T_gw.inverse(),0.1);
+            DrawFrustrum(cam.Kinv(),w,h,tracker.T_gw.inverse(),0.1);
         }
 
         glUnsetFrameOfReference();
