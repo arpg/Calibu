@@ -4,4 +4,9 @@
 /// Platform
 #cmakedefine _OSX_
 
+#ifdef _OSX_
+  // This alias is for libcvd
+  #define _OSX
+#endif
+
 #endif //FIDUCIALS_CONFIG_H

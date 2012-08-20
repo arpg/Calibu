@@ -3,12 +3,12 @@
 #include <pangolin/video_record_repeat.h>
 #include <pangolin/input_record_repeat.h>
 
-#include <cvd/image_convert.h>
-#include <cvd/gl_helpers.h>
-
 #include <fiducials/tracker.h>
 #include <fiducials/drawing.h>
 #include <fiducials/utils.h>
+
+#include <cvd/image_convert.h>
+#include <cvd/gl_helpers.h>
 
 #include <CameraModel.h>
 #include <CCameraModel/GridCalibrator.h>
@@ -314,8 +314,8 @@ int main( int /*argc*/, char* argv[] )
 
     // Pangolin 3D Render state
     pangolin::OpenGlRenderState s_cam;
-    s_cam.Set(ProjectionMatrixRDF_TopLeft(640,480,420,420,320,240,1E-3,1E6));
-    s_cam.Set(FromTooN(toTooN(Sophus::SE3(Sophus::SO3(),Vector3d(-tracker.target.Size()[0]/2,-tracker.target.Size()[1]/2,tracker.target.Size()[0]*4) ))));
+    s_cam.SetProjectionMatrix(ProjectionMatrixRDF_TopLeft(640,480,420,420,320,240,1,1E6));
+    s_cam.SetModelViewMatrix(Sophus::SE3(Sophus::SO3(),Vector3d(-tracker.target.Size()[0]/2,-tracker.target.Size()[1]/2,500) ).matrix());
     pangolin::Handler3D handler(s_cam);
     
     // Create viewport for video with fixed aspect
@@ -480,9 +480,8 @@ int main( int /*argc*/, char* argv[] )
         
         //    calibrator.iterate(rms);
         
-        if( lock_to_cam )
-            s_cam.Set(FromTooN(toTooN(tracker.T_gw)));
-        
+        s_cam.Follow(tracker.T_gw.matrix(), lock_to_cam);
+
         // Display Live Image
         glColor3f(1,1,1);
         vVideo.ActivateScissorAndClear();
@@ -529,11 +528,11 @@ int main( int /*argc*/, char* argv[] )
         v3D2.ActivateScissorAndClear(s_cam);
 
         glColor3f(0.5,0.5,0.5);
-        glDrawGrid(20,0.25);
+        DrawGrid(20,0.25);
 
         glDisable(GL_DEPTH_TEST);
         glColor3f(0.8,0.8,0.8);
-        glDrawGrid(5,1.0);
+        DrawGrid(5,1.0);
         glDrawAxis(1);
         glEnable(GL_DEPTH_TEST);
 
@@ -557,13 +556,7 @@ int main( int /*argc*/, char* argv[] )
 
 #endif // USE_VICON
 
-        vPanel.Render();
-        
-        // Swap back buffer with front
-        glutSwapBuffers();
-        
-        // Process window events via GLUT
-        glutMainLoopEvent();
+        pangolin::FinishGlutFrame();
     }
     
     return 0;
