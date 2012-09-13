@@ -341,6 +341,8 @@ void Target::LoadEPS( std::string filename, float points_per_unit )
         f.close();
     }
 
+    InitialiseFrom2DPts();
+
     cout << "Loaded " << this->NumCircles() << " circles (radius: " << Radius() << ")" << endl;
 }
 
