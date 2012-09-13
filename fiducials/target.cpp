@@ -304,7 +304,45 @@ void Target::SaveRotatedEPS(string filename, float points_per_unit)
   f.close();
 }
 
+void Target::LoadEPS( std::string filename, float points_per_unit )
+{
+    Clear();
 
+    size[0] = numeric_limits<double>::min();
+    size[1] = numeric_limits<double>::min();
+
+    std::ifstream f;
+    f.open(filename.c_str());
+
+    if (f.is_open()) {
+        while ( f.good() ) {
+          std::string line;
+          std::getline(f,line);
+          if(line[0] == '%') {
+              // comment
+          }else if(line.size() > 2) {
+              std::stringstream ss(line);
+              float px, py, pr;
+              ss >> px;
+              ss >> py;
+              ss >> pr;
+
+              // Extract circle
+              this->radius = pr / points_per_unit;
+              const Vector2d p = Vector2d(px/points_per_unit, py/points_per_unit);
+              size[0] = max(size[0],p[0]);
+              size[1] = max(size[1],p[1]);
+              tpts.push_back(p);
+
+              // Consume colour line
+              std::getline(f,line);
+          }
+        }
+        f.close();
+    }
+
+    cout << "Loaded " << this->NumCircles() << " circles (radius: " << Radius() << ")" << endl;
+}
 
 struct RansacMatchData
 {
