@@ -235,6 +235,7 @@ std::istream& operator>> (std::istream& is, Eigen::Matrix<T,R,C>& o){
 }
 
 
+namespace Sophus {
 template<typename T>
 std::ostream& operator<< (std::ostream& os, const Eigen::Quaternion<T>& o){
     os << o.w() << " " << o.x() << " " << o.y() << " " << o.z() << endl;
@@ -263,6 +264,7 @@ std::istream& operator>> (std::istream& is, Sophus::SE3& o){
     is >> q;
     o.setQuaternion(q);
     return is;
+}
 }
 
 int main( int /*argc*/, char* argv[] )
