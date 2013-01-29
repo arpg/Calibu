@@ -28,6 +28,7 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+#include <vector>
 #include <Eigen/Dense>
 #include <sophus/se3.h>
 

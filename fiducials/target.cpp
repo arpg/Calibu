@@ -304,7 +304,7 @@ void Target::SaveRotatedEPS(string filename, float points_per_unit)
   f.close();
 }
 
-void Target::LoadEPS( std::string filename, float points_per_unit )
+bool Target::LoadEPS( std::string filename, float points_per_unit )
 {
     Clear();
 
@@ -339,11 +339,13 @@ void Target::LoadEPS( std::string filename, float points_per_unit )
           }
         }
         f.close();
+
+        InitialiseFrom2DPts();
+        cout << "Loaded " << this->NumCircles() << " circles (radius: " << Radius() << ")" << endl;    
+        return true;
+    }else{
+        return false;
     }
-
-    InitialiseFrom2DPts();
-
-    cout << "Loaded " << this->NumCircles() << " circles (radius: " << Radius() << ")" << endl;
 }
 
 struct RansacMatchData
