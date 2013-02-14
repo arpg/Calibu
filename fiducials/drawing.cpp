@@ -129,7 +129,7 @@ void DrawAxis(float s)
   glEnd();
 }
 
-void DrawAxis( const Sophus::SE3& T_wf, float scale )
+void DrawAxis( const Sophus::SE3d& T_wf, float scale )
 {
   glSetFrameOfReferenceF(T_wf);
   DrawAxis(scale);
@@ -150,7 +150,7 @@ void DrawFrustrum( const Matrix3d& Kinv, int w, int h, float scale )
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
-void DrawFrustrum( const Matrix3d& Kinv, int w, int h, const Sophus::SE3& T_wf, float scale )
+void DrawFrustrum( const Matrix3d& Kinv, int w, int h, const Sophus::SE3d& T_wf, float scale )
 {
   glSetFrameOfReferenceF(T_wf);
   DrawFrustrum(Kinv,w,h,scale);

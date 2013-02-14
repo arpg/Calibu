@@ -10,7 +10,7 @@
 #include <pangolin/video_record_repeat.h>
 #include <pangolin/input_record_repeat.h>
 
-#include <sophus/se3.h>
+#include <sophus/se3.hpp>
 
 #include <fiducials/config.h>
 #include <cvd/image.h>
@@ -39,7 +39,7 @@ const int PANEL_WIDTH = 200;
 
 struct Keyframe
 {
-    Sophus::SE3 T_kw;
+    Sophus::SE3d T_kw;
     vector<Conic> conics;
     vector<int> conics_target_map;
 };
@@ -102,7 +102,7 @@ int main( int /*argc*/, char* argv[] )
     // Pangolin 3D Render state
     pangolin::OpenGlRenderState s_cam;
     s_cam.SetProjectionMatrix(ProjectionMatrixRDF_TopLeft(640,480,420,420,320,240,1,1E6));
-    s_cam.SetModelViewMatrix(Sophus::SE3(Sophus::SO3(),Vector3d(-target.Size()[0]/2,-target.Size()[1]/2,500) ).matrix() );
+    s_cam.SetModelViewMatrix(Sophus::SE3d(Sophus::SO3d(),Vector3d(-target.Size()[0]/2,-target.Size()[1]/2,500) ).matrix() );
     pangolin::Handler3D handler(s_cam);
 
     // Create viewport for video with fixed aspect
@@ -139,15 +139,15 @@ int main( int /*argc*/, char* argv[] )
     FovCamera cam( w,h, w*cam_params[0],h*cam_params[1], w*cam_params[2],h*cam_params[3], cam_params[4] );
 
     // Last good pose
-    Sophus::SE3 T_gw;
+    Sophus::SE3d T_gw;
     std::clock_t last_good;
     int good_frames;
 
     // Pose hypothesis
-    Sophus::SE3 T_hw;
+    Sophus::SE3d T_hw;
 
     // Fixed mirrored pose
-    Sophus::SE3 T_0w;
+    Sophus::SE3d T_0w;
 
     // Stored keyframes
     boost::ptr_vector<Keyframe> keyframes;
@@ -323,13 +323,13 @@ int main( int /*argc*/, char* argv[] )
             // Rui Rodrigues, Joao Barreto, Urbano Nunes
 
             const unsigned Nkf = keyframes.size() -1;
-            const Sophus::SE3 T_w0 = keyframes[0].T_kw.inverse();
+            const Sophus::SE3d T_w0 = keyframes[0].T_kw.inverse();
 
             MatrixXd As(Nkf*3,4);
             As.setZero();
             for( int i=0; i<Nkf; ++i )
             {
-                const Sophus::SE3 T_iw = keyframes[i+1].T_kw * T_w0;
+                const Sophus::SE3d T_iw = keyframes[i+1].T_kw * T_w0;
                 const Vector3d t = T_iw.translation();
                 const Vector3d theta_omega = T_iw.so3().log();
                 const double theta = theta_omega.norm();

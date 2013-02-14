@@ -15,7 +15,7 @@ void PoseFromPointsLeastSq(
     const vector<Vector3d >& pts3d,
     const vector<Vector2d >& pts2d,
     const vector<int>& map2d_3d,
-    Sophus::SE3& T_cw,
+    Sophus::SE3d& T_cw,
     bool use_guess
 ) {
   // Attempt to compute pose
@@ -51,7 +51,7 @@ void PoseFromPointsLeastSq(
         cv_matched_3d, cv_matched_obs,
         cv_K, cv_dist, cv_rot, cv_trans, use_guess
       );
-      T_cw = Sophus::SE3(Sophus::SO3::exp(rot_vec),trans);
+      T_cw = Sophus::SE3d(Sophus::SO3d::exp(rot_vec),trans);
     }
   }
 }
@@ -61,7 +61,7 @@ void PoseFromPointsLeastSqRansac(
     const vector<Vector3d >& pts3d,
     const vector<Vector2d >& pts2d,
     vector<int>& map2d_3d,
-    Sophus::SE3& T_cw,
+    Sophus::SE3d& T_cw,
     float robust_iterations,
     float robust_inlier_tol
 ) {
@@ -114,7 +114,7 @@ void PoseFromPointsLeastSqRansac(
                 map2d_3d[i] = -1;
             }
         }
-        T_cw = Sophus::SE3(Sophus::SO3::exp(rot_vec),trans);
+        T_cw = Sophus::SE3d(Sophus::SO3d::exp(rot_vec),trans);
       }
     }
 }
@@ -127,7 +127,7 @@ void PoseFromPointsLeastSqRansac(
 //    int pt3d;
 //};
 
-Sophus::SE3 FindPose(
+Sophus::SE3d FindPose(
     const LinearCamera& cam,
     const vector<Vector3d >& pts3d,
     const vector<Vector2d >& pts2d,
@@ -135,7 +135,7 @@ Sophus::SE3 FindPose(
     double robust_inlier_tol,
     size_t robust_iterations
 ) {
-    Sophus::SE3 T;
+    Sophus::SE3d T;
 //    PoseFromPointsLeastSq(cam,pts3d,pts2d,map2d_3d,T,false);
     PoseFromPointsLeastSqRansac(cam,pts3d,pts2d,map2d_3d,T,robust_iterations,robust_inlier_tol);
     return T;
@@ -165,16 +165,16 @@ Sophus::SE3 FindPose(
 //        for( int i=0; i<observations.size(); ++i )
 //            if( !inliers[i] ) map2d_3d[observations[i].pt2d] = -1;
 
-//        Sophus::SE3 T = toEigen(est.T);
+//        Sophus::SE3d T = toEigen(est.T);
 //        PoseFromPointsLeastSq(cam,pts3d,pts2d,map2d_3d,T,true);
 //        return T;
 //    }
-//    return Sophus::SE3();
+//    return Sophus::SE3d();
 }
 
 double ReprojectionErrorRMS(
   const AbstractCamera& cam,
-  const Sophus::SE3& T_cw,
+  const Sophus::SE3d& T_cw,
   const vector<Vector3d >& pts3d,
   const vector<Vector2d >& pts2d,
   const vector<int>& map2d_3d

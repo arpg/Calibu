@@ -32,7 +32,7 @@
 #include <iostream>
 #include <fstream>
 
-#include <sophus/se2.h>
+#include <sophus/se2.hpp>
 
 #include "hungarian.h"
 #include "conics.h"
@@ -359,13 +359,13 @@ struct RansacMatchData
   vector<int>& mpts_label;
 };
 
-double RansacMatchCostFunction( const Sophus::SE2& T, int i, RansacMatchData* data )
+double RansacMatchCostFunction( const Sophus::SE2d& T, int i, RansacMatchData* data )
 {
   const Vector2d p = T * data->mpts[i];
   return (data->tpts[data->mpts_label[i]] - p).norm();
 }
 
-Sophus::SE2 PoseFromCorrespondences(const vector<const Eigen::Vector2d *>& a, const vector<const Eigen::Vector2d *>& b)
+Sophus::SE2d PoseFromCorrespondences(const vector<const Eigen::Vector2d *>& a, const vector<const Eigen::Vector2d *>& b)
 {
   int n = a.size();
   double x1 = 0.0, x2 = 0.0, y1 = 0.0, y2 = 0.0, xx = 0.0, yy = 0.0, xy = 0.0, yx = 0.0;
@@ -400,8 +400,8 @@ Sophus::SE2 PoseFromCorrespondences(const vector<const Eigen::Vector2d *>& a, co
   double yaw = atan2(Sxy-Syx, Sxx+Syy);
 
   // calculate pose
-  return Sophus::SE2(
-    Sophus::SO2(yaw),
+  return Sophus::SE2d(
+    Sophus::SO2d(yaw),
     Eigen::Vector2d(
       xm2 - (xm1*cos(yaw) - ym1*sin(yaw)),
       ym2 - (xm1*sin(yaw) + ym1*cos(yaw))
@@ -409,7 +409,7 @@ Sophus::SE2 PoseFromCorrespondences(const vector<const Eigen::Vector2d *>& a, co
   );
 }
 
-Sophus::SE2 RansacMatchModelFunction( const std::vector<int>& indices, RansacMatchData* data )
+Sophus::SE2d RansacMatchModelFunction( const std::vector<int>& indices, RansacMatchData* data )
 {
   vector<const Vector2d* > mp;
   vector<const Vector2d* > tp;
@@ -422,7 +422,7 @@ Sophus::SE2 RansacMatchModelFunction( const std::vector<int>& indices, RansacMat
   return PoseFromCorrespondences(mp,tp);
 }
 
-Sophus::SE2 RansacMatchCorrespondences(
+Sophus::SE2d RansacMatchCorrespondences(
   const vector<Vector2d >& measurement,
   const vector<Vector2d >& target,
   vector<int>& measurement_label,
@@ -431,10 +431,10 @@ Sophus::SE2 RansacMatchCorrespondences(
   int min_consensus_size
 ) {
   RansacMatchData rmd(measurement,target,measurement_label);
-  Ransac<Sophus::SE2,2,RansacMatchData*> ransac( &RansacMatchModelFunction, &RansacMatchCostFunction, &rmd);
+  Ransac<Sophus::SE2d,2,RansacMatchData*> ransac( &RansacMatchModelFunction, &RansacMatchCostFunction, &rmd);
 
   vector<int> inliers;
-  Sophus::SE2 T = ransac.Compute(
+  Sophus::SE2d T = ransac.Compute(
     measurement.size(),inliers,iterations,
     max_point_fit_error,min_consensus_size
   );
@@ -568,7 +568,7 @@ Matrix3d RansacHomogModelFunction( const std::vector<int>& indices, RansacMatchD
 }
 
 void Target::FindTarget(
-  const Sophus::SE3& T_cw,
+  const Sophus::SE3d& T_cw,
   const AbstractCamera& cam,
   vector<Conic>& conics,
   vector<int>& conics_target_map
@@ -600,14 +600,14 @@ void Target::FindTarget(
     conics_target_map[i] = m_map[i] >= 0 ? vis_t_map[m_map[i]] : -1;
 }
 
-Vector3d nd_b(const Sophus::SE3& T_ba, const Vector3d& n_a)
+Vector3d nd_b(const Sophus::SE3d& T_ba, const Vector3d& n_a)
 {
   const Vector3d n_b = T_ba.so3() * n_a;
   const double d_b = 1 - T_ba.translation().dot(n_b);
   return n_b / d_b;
 }
 
-Eigen::Vector3d IntersectCamFeaturePlane( const Eigen::Vector2d& p, const AbstractCamera & cam, const Sophus::SE3& T_wk, const Eigen::Vector4d& N_w)
+Eigen::Vector3d IntersectCamFeaturePlane( const Eigen::Vector2d& p, const AbstractCamera & cam, const Sophus::SE3d& T_wk, const Eigen::Vector4d& N_w)
 {
   const Vector3d nd_k = nd_b(T_wk.inverse(),project(N_w));
   const Vector3d kinvp = cam.unmap_unproject(p);
@@ -647,7 +647,7 @@ void Target::FindTarget(
   for( unsigned int i=0; i< conics.size(); ++i )
   {
     const Vector2d ud = conics[i].center;
-    const Vector3d p3d = IntersectCamFeaturePlane(ud,cam,Sophus::SE3(),N_w);
+    const Vector3d p3d = IntersectCamFeaturePlane(ud,cam,Sophus::SE3d(),N_w);
     const Vector2d pnorm = (plane.second.transpose() * p3d).head<2>();
     mpts.push_back(pnorm);
   }
@@ -660,7 +660,7 @@ void Target::FindTarget(
     // Match using Hungarian method
     Match(ellipse_dm,conics_target_map,match_neighbours);
 
-    Sophus::SE2 T_tm;
+    Sophus::SE2d T_tm;
 
     // Perform RANSAC to remove outliers
     if( ransac_iterations )

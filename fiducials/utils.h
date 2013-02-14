@@ -30,7 +30,7 @@
 
 #include <vector>
 #include <Eigen/Dense>
-#include <sophus/se3.h>
+#include <sophus/se3.hpp>
 
 #ifdef HAVE_TOON
 #include <TooN/se3.h>
@@ -53,16 +53,16 @@ Eigen::Matrix<T,s,1> toEigen(const TooN::Vector<s,T>& v)
     return ret;
 }
 
-inline TooN::SE3<double> toTooN(const Sophus::SE3& T)
+inline TooN::SE3<double> toTooN(const Sophus::SE3d& T)
 {
     TooN::Vector<6> se3 = toTooN<double,6>(T.log());
     return TooN::SE3<double>(se3);
 }
 
-inline Sophus::SE3 toEigen(const TooN::SE3<double>& T)
+inline Sophus::SE3d toEigen(const TooN::SE3<double>& T)
 {
     Sophus::Vector6d se3 = toEigen<double,6>(T.ln());
-    return Sophus::SE3::exp(se3);
+    return Sophus::SE3d::exp(se3);
 }
 
 #endif // HAVE_TOON
@@ -84,14 +84,14 @@ Eigen::Matrix3d EstimateH_ba(
   const std::vector<Eigen::Vector2d >& b
 );
 
-//inline Sophus::SE3 FromMatrix(Eigen::Matrix4d T_wa)
+//inline Sophus::SE3d FromMatrix(Eigen::Matrix4d T_wa)
 //{
-//  const Sophus::SO3 R(T_wa.slice<0,0,3,3>());
-//  return Sophus::SE3(R, T_wa.T()[3].slice<0,3>() );
+//  const Sophus::SO3d R(T_wa.slice<0,0,3,3>());
+//  return Sophus::SE3d(R, T_wa.T()[3].slice<0,3>() );
 //}
 
 //template<typename P>
-//inline Eigen::Matrix<P,4,4> T_4x4(const Sophus::SE3<P>& T)
+//inline Eigen::Matrix<P,4,4> T_4x4(const Sophus::SE3d<P>& T)
 //{
 //  Eigen::Matrix<P,4,4> ret = Eigen::Identity;
 //  ret.template slice<0,0,3,3>() = T.get_rotation().get_matrix();

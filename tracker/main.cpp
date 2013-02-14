@@ -43,7 +43,7 @@ int main( int /*argc*/, char* argv[] )
   // Pangolin 3D Render state
   pangolin::OpenGlRenderState s_cam;
   s_cam.SetProjectionMatrix(ProjectionMatrixRDF_TopLeft(640,480,420,420,320,240,1,1E6));
-  s_cam.SetModelViewMatrix(Sophus::SE3(Sophus::SO3(),Vector3d(-tracker.target.Size()[0]/2,-tracker.target.Size()[1]/2,500) ).matrix());
+  s_cam.SetModelViewMatrix(Sophus::SE3d(Sophus::SO3d(),Vector3d(-tracker.target.Size()[0]/2,-tracker.target.Size()[1]/2,500) ).matrix());
   pangolin::Handler3D handler(s_cam);
 
   // Create viewport for video with fixed aspect

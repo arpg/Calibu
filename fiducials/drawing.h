@@ -73,14 +73,14 @@ void SetPixelTransferScale( float scale );
 
 void DrawAxis(float s = 1.0);
 
-void DrawAxis( const Sophus::SE3& T_wf, float scale = 1.0 );
+void DrawAxis( const Sophus::SE3d& T_wf, float scale = 1.0 );
 
 void DrawFrustrum(
   const Eigen::Matrix3d& Kinv, int w, int h, float scale
 );
 
 void DrawFrustrum(
-  const Eigen::Matrix3d& Kinv, int w, int h, const Sophus::SE3& T_wf, float scale
+  const Eigen::Matrix3d& Kinv, int w, int h, const Sophus::SE3d& T_wf, float scale
 );
 
 void DrawGrid(float num_lines = 30, float line_delta = 2);
@@ -121,7 +121,7 @@ inline void glBinColor( int bin, int max_bins, double sat = 1.0, double val = 1.
   }
 }
 
-inline void glSetFrameOfReferenceF( const Sophus::SE3& T_wf )
+inline void glSetFrameOfReferenceF( const Sophus::SE3d& T_wf )
 {
   glMatrixMode(GL_MODELVIEW);
   glPushMatrix();
@@ -140,7 +140,7 @@ inline void SetPixelTransferScale( float scale )
   glPixelTransferf(GL_BLUE_SCALE, scale);
 }
 
-//inline Sophus::SO3 RotationRHSBasis_wz(const Eigen::Vector3d& z_w, const Eigen::Vector3d& up_w)
+//inline Sophus::SO3d RotationRHSBasis_wz(const Eigen::Vector3d& z_w, const Eigen::Vector3d& up_w)
 //{
 //    const Eigen::Vector3d n = z_w;
 //    const Eigen::Vector3d r  = n ^ up_w;
@@ -153,7 +153,7 @@ inline void SetPixelTransferScale( float scale )
 
 
 //    Matrix is correct - converting to SO3 breaks!
-//    Sophus::SO3 Eigen_R_wn(R_wn);
+//    Sophus::SO3d Eigen_R_wn(R_wn);
 //    std::cout << R_wn << std::endl;
 //    std::cout << Eigen_R_wn << std::endl;
 //    return Eigen_R_wn;
@@ -165,7 +165,7 @@ inline void SetPixelTransferScale( float scale )
 /// An assertion will fail if Vector a and Vector b are in exactly opposite directions.
 /// @param a source Vector
 /// @param b target Vector
-Sophus::SO3 Rotation(const Eigen::Vector3d& a, const Eigen::Vector3d& b)
+Sophus::SO3d Rotation(const Eigen::Vector3d& a, const Eigen::Vector3d& b)
 {
     Eigen::Vector3d n = a.cross(b);
 
@@ -173,7 +173,7 @@ Sophus::SO3 Rotation(const Eigen::Vector3d& a, const Eigen::Vector3d& b)
         //check that the vectors are in the same direction if cross product is 0. If not,
         //this means that the rotation is 180 degrees, which leads to an ambiguity in the rotation axis.
 //        assert(a.dot(b)>=0);
-        return Sophus::SO3();
+        return Sophus::SO3d();
     }
 
     n.normalize();
@@ -188,23 +188,23 @@ Sophus::SO3 Rotation(const Eigen::Vector3d& a, const Eigen::Vector3d& b)
     M.col(2) = n.cross(M.col(0));
     M = M * R1.transpose();
 
-    return Sophus::SO3(M);
+    return Sophus::SO3d(M);
 }
 
 // TODO: Check this works.
-//inline Sophus::SE3 PlaneBasis_wp(const Eigen::Vector4d& N_w)
+//inline Sophus::SE3d PlaneBasis_wp(const Eigen::Vector4d& N_w)
 //{
 //    const Eigen::Vector3d n = N_w.head<3>();
-//    const Sophus::SO3 R_wn = Rotation(Eigen::Vector3d(0,0,-1),n);
-//    return Sophus::SE3(R_wn, -N_w[3]*n);
+//    const Sophus::SO3d R_wn = Rotation(Eigen::Vector3d(0,0,-1),n);
+//    return Sophus::SE3d(R_wn, -N_w[3]*n);
 //}
 
-inline Sophus::SE3 PlaneBasis_wp(const Eigen::Vector3d& nd_w)
+inline Sophus::SE3d PlaneBasis_wp(const Eigen::Vector3d& nd_w)
 {
     const double d = 1.0 / nd_w.norm();
     const Eigen::Vector3d n = d * nd_w;
-    const Sophus::SO3 R_wn = Rotation(Eigen::Vector3d(0,0,-1),n);
-    return Sophus::SE3(R_wn, -d*n);
+    const Sophus::SO3d R_wn = Rotation(Eigen::Vector3d(0,0,-1),n);
+    return Sophus::SE3d(R_wn, -d*n);
 }
 
 inline void Draw_z0(float scale, int grid)
@@ -223,7 +223,7 @@ inline void Draw_z0(float scale, int grid)
 
 inline void DrawPlane(const Eigen::Vector3d& nd_w, float scale, int grid)
 {
-    const Sophus::SE3 T_wn = PlaneBasis_wp(nd_w);
+    const Sophus::SE3d T_wn = PlaneBasis_wp(nd_w);
     glSetFrameOfReferenceF(T_wn);
     Draw_z0(scale,grid);
     glUnsetFrameOfReference();

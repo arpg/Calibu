@@ -81,7 +81,7 @@ struct ViconTracking
 //        double local_timestamp = Tic();
 //        double vicon_timestamp = tData.msg_time.tv_sec + (1e-6 * tData.msg_time.tv_usec);
 
-        T_wf = Sophus::SE3( Sophus::SO3(Quaterniond(tData.quat)),
+        T_wf = Sophus::SE3d( Sophus::SO3d(Quaterniond(tData.quat)),
             Vector3d(tData.pos[0], tData.pos[1], tData.pos[2])
         );
     }
@@ -92,7 +92,7 @@ struct ViconTracking
         self->TrackingEvent(tData);
     }
 
-    Sophus::SE3 T_wf;
+    Sophus::SE3d T_wf;
 
     bool m_run;
     vrpn_Tracker_Remote* m_object;
@@ -102,7 +102,7 @@ struct ViconTracking
 struct Observation
 {
     Eigen::MatrixXd obs;
-    Sophus::SE3 T_fw;
+    Sophus::SE3d T_fw;
 };
 
 Eigen::Matrix<double,2,3> dpi_dx(const Eigen::Vector3d& x)
@@ -135,8 +135,8 @@ double err(
         const MatlabCamera& cam,
         const Target& target,
         const std::vector<Observation>& vicon_obs,
-        const Sophus::SE3& T_cf,
-        const Sophus::SE3& T_wt
+        const Sophus::SE3d& T_cf,
+        const Sophus::SE3d& T_wt
 ) {
     int num_seen = 0;
     double sumsqerr = 0;
@@ -165,8 +165,8 @@ void OptimiseTargetVicon(
     const MatlabCamera& cam,
     const Target& target,
     const std::vector<Observation>& vicon_obs,
-    Sophus::SE3& T_cf,
-    Sophus::SE3& T_wt
+    Sophus::SE3d& T_cf,
+    Sophus::SE3d& T_wt
 ) {
     int num_seen;
     double sumsqerr;
@@ -218,8 +218,8 @@ void OptimiseTargetVicon(
 
         JTJ.ldlt().solveInPlace(JTy);
 
-        T_cf = T_cf * Sophus::SE3::exp(-1.0 * JTy.segment<6>(0));
-        T_wt = T_wt * Sophus::SE3::exp(-1.0 * JTy.segment<6>(6));
+        T_cf = T_cf * Sophus::SE3d::exp(-1.0 * JTy.segment<6>(0));
+        T_wt = T_wt * Sophus::SE3d::exp(-1.0 * JTy.segment<6>(6));
     }
 }
 #endif
@@ -250,13 +250,13 @@ std::istream& operator>> (std::istream& is, Eigen::Quaternion<T>& o){
     return is;
 }
 
-std::ostream& operator<< (std::ostream& os, const Sophus::SE3& o){
+std::ostream& operator<< (std::ostream& os, const Sophus::SE3d& o){
     const Eigen::Vector3d& t = o.translation();
     os << t(0) << " " << t(1) << " " << t(2) << " " << o.unit_quaternion();
     return os;
 }
 
-std::istream& operator>> (std::istream& is, Sophus::SE3& o){
+std::istream& operator>> (std::istream& is, Sophus::SE3d& o){
     Eigen::Quaterniond q;
     is >> o.translation()(0);
     is >> o.translation()(1);
@@ -272,8 +272,8 @@ int main( int /*argc*/, char* argv[] )
 #ifdef USE_VICON
     ViconTracking vicon("KINECT","192.168.10.1");
     std::vector<Observation> vicon_obs;
-    Sophus::SE3 T_cf;
-    Sophus::SE3 T_wt;
+    Sophus::SE3d T_cf;
+    Sophus::SE3d T_wt;
 #endif
 
     // Load configuration data
@@ -317,7 +317,7 @@ int main( int /*argc*/, char* argv[] )
     // Pangolin 3D Render state
     pangolin::OpenGlRenderState s_cam;
     s_cam.SetProjectionMatrix(ProjectionMatrixRDF_TopLeft(640,480,420,420,320,240,1,1E6));
-    s_cam.SetModelViewMatrix(Sophus::SE3(Sophus::SO3(),Vector3d(-tracker.target.Size()[0]/2,-tracker.target.Size()[1]/2,500) ).matrix());
+    s_cam.SetModelViewMatrix(Sophus::SE3d(Sophus::SO3d(),Vector3d(-tracker.target.Size()[0]/2,-tracker.target.Size()[1]/2,500) ).matrix());
     pangolin::Handler3D handler(s_cam);
     
     // Create viewport for video with fixed aspect
@@ -371,7 +371,7 @@ int main( int /*argc*/, char* argv[] )
     Var<bool> minimise_vicon("ui.minimise vicon",false,false);
     Var<bool> reset("ui.reset",false,false);
 
-    Var<Sophus::SE3> vicon_T_wf("vicon.T_wf");
+    Var<Sophus::SE3d> vicon_T_wf("vicon.T_wf");
 
     Eigen::MatrixXd pattern = tracker.TargetPattern3D();
     
@@ -439,10 +439,10 @@ int main( int /*argc*/, char* argv[] )
               calibrator.add_view(obs, visibleCircles);
 
 #ifdef USE_VICON
-              vicon_obs.push_back((Observation){obs,((Sophus::SE3)vicon_T_wf).inverse() });
+              vicon_obs.push_back((Observation){obs,((Sophus::SE3d)vicon_T_wf).inverse() });
               if(vicon_obs.size() == 1 ) {
-                  T_wt = (Sophus::SE3)vicon_T_wf * T_cf.inverse() * tracker.T_gw;
-                  T_cf = Sophus::SE3();
+                  T_wt = (Sophus::SE3d)vicon_T_wf * T_cf.inverse() * tracker.T_gw;
+                  T_cf = Sophus::SE3d();
               }
               cout << err(cam, tracker.target, vicon_obs, T_cf, T_wt) << endl;
 #endif // USE_VICON
@@ -465,8 +465,8 @@ int main( int /*argc*/, char* argv[] )
         }
 
         if(Pushed(guess)) {
-            T_cf = Sophus::SE3();
-            T_wt = (Sophus::SE3)vicon_T_wf * T_cf.inverse() * tracker.T_gw;
+            T_cf = Sophus::SE3d();
+            T_wt = (Sophus::SE3d)vicon_T_wf * T_cf.inverse() * tracker.T_gw;
 
             cout << err(cam, tracker.target, vicon_obs, T_cf, T_wt) << endl;
         }
@@ -476,8 +476,8 @@ int main( int /*argc*/, char* argv[] )
         }
 
         if(Pushed(reset)) {
-            T_cf = Sophus::SE3();
-            T_wt = Sophus::SE3();
+            T_cf = Sophus::SE3d();
+            T_wt = Sophus::SE3d();
         }
         
         //    calibrator.iterate(rms);

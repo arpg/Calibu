@@ -2,7 +2,7 @@
 #define TRACKER_H
 
 #include <memory>
-#include <sophus/se3.h>
+#include <sophus/se3.hpp>
 #include <ctime>
 
 #include "label.h"
@@ -47,12 +47,12 @@ struct Tracker
     std::vector<int> conics_target_map;
 
     // Last good pose
-    Sophus::SE3 T_gw;
+    Sophus::SE3d T_gw;
     std::clock_t last_good;
     int good_frames;
 
     // Pose hypothesis
-    Sophus::SE3 T_hw;
+    Sophus::SE3d T_hw;
 };
 
 #endif // TRACKER_H

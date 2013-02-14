@@ -32,7 +32,7 @@
 #include <algorithm>
 
 #include <Eigen/Dense>
-#include <sophus/se3.h>
+#include <sophus/se3.hpp>
 
 #include "conics.h"
 #include "camera.h"
@@ -60,7 +60,7 @@ public:
   const std::vector<Eigen::Vector3d >& circles3D() const;
 
   void FindTarget(
-    const Sophus::SE3& T_cw,
+    const Sophus::SE3d& T_cw,
     const AbstractCamera& cam,
     std::vector<Conic>& conics,
     std::vector<int>& ellipse_target_map

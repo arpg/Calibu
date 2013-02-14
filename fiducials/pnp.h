@@ -2,10 +2,10 @@
 #define PNP_H
 
 #include <vector>
-#include <sophus/se3.h>
+#include <sophus/se3.hpp>
 #include "camera.h"
 
-Sophus::SE3 FindPose(
+Sophus::SE3d FindPose(
     const LinearCamera& cam,
     const std::vector<Eigen::Vector3d >& pts3d,
     const std::vector<Eigen::Vector2d >& pts2d,
@@ -19,13 +19,13 @@ void PoseFromPointsLeastSq(
     const std::vector<Eigen::Vector3d >& pts3d,
     const std::vector<Eigen::Vector2d >& pts2d,
     const std::vector<int>& map2d_3d,
-    Sophus::SE3& T_cw,
+    Sophus::SE3d& T_cw,
     bool use_guess = false
     );
 
 double ReprojectionErrorRMS(
     const AbstractCamera& cam,
-    const Sophus::SE3& T_cw,
+    const Sophus::SE3d& T_cw,
     const std::vector<Eigen::Vector3d >& pts3d,
     const std::vector<Eigen::Vector2d >& pts2d,
     const std::vector<int>& map2d_3d
