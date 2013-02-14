@@ -56,6 +56,69 @@ void PoseFromPointsLeastSq(
   }
 }
 
+void PoseFromPointsLeastSqRansac(
+    const LinearCamera& cam,
+    const vector<Vector3d >& pts3d,
+    const vector<Vector2d >& pts2d,
+    vector<int>& map2d_3d,
+    Sophus::SE3& T_cw,
+    float robust_iterations,
+    float robust_inlier_tol
+) {
+    if( pts2d.size() >= 4 )
+    {
+      vector<cv::Point2f> cvimg;
+      vector<cv::Point3f> cvpts;
+      for( unsigned int i=0; i < pts2d.size(); ++ i)
+      {
+        const int ti = map2d_3d[i];
+        if( 0 <= ti)
+        {
+          assert( ti < (int)pts3d.size() );
+          const Vector2d m = cam.unmap(pts2d[i]);
+          const Vector3d t = pts3d[ti];
+          cvimg.push_back( cv::Point2f( m[0],m[1] ) );
+          cvpts.push_back( cv::Point3f( t[0], t[1], t[2] ) );
+        }
+      }
+      
+      if( cvimg.size() >= 4 )
+      {
+        cv::Mat cv_matched_3d(cvpts);
+        cv::Mat cv_matched_obs(cvimg);
+        cv::Mat cv_K(3,3,CV_64FC1);
+        cv::setIdentity(cv_K);
+        cv::Mat cv_dist(4,1,CV_64FC1,0.0);
+  
+        Vector3d rot_vec;
+        Vector3d trans;
+        cv::Mat cv_rot(3,1,CV_64FC1, &(rot_vec(0)) );
+        cv::Mat cv_trans(3,1,CV_64FC1, &(trans(0)) );
+        
+        std::vector<int> inliers;
+        cv::solvePnPRansac(
+          cv_matched_3d, cv_matched_obs,
+          cv_K, cv_dist, cv_rot, cv_trans, false, robust_iterations,
+          robust_inlier_tol, 10, inliers
+        );
+        for( unsigned int i=0; i < pts2d.size(); ++ i)
+        {
+            bool inlier = false;
+            for(unsigned int j=0; j < inliers.size(); ++j) {
+                if( inliers[j] = i ) {
+                    inlier = true;
+                    break;
+                }
+            }
+            if(!inlier) {
+                map2d_3d[i] = -1;
+            }
+        }
+        T_cw = Sophus::SE3(Sophus::SO3::exp(rot_vec),trans);
+      }
+    }
+}
+
 //struct Correspondence2D3D
 //{
 //    TooN::Vector<2> pixel;
@@ -73,9 +136,11 @@ Sophus::SE3 FindPose(
     size_t robust_iterations
 ) {
     Sophus::SE3 T;
-    PoseFromPointsLeastSq(cam,pts3d,pts2d,map2d_3d,T,false);
+//    PoseFromPointsLeastSq(cam,pts3d,pts2d,map2d_3d,T,false);
+    PoseFromPointsLeastSqRansac(cam,pts3d,pts2d,map2d_3d,T,robust_iterations,robust_inlier_tol);
     return T;
 
+//    TooN::Tag version
 //    std::vector<Correspondence2D3D> observations;
 //    for( int i=0; i< map2d_3d.size(); ++i )
 //    {

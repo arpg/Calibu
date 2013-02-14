@@ -40,8 +40,8 @@ bool Tracker::ProcessFrame(LinearCamera& cam, unsigned char* I, boost::array<flo
     const int target_ransac_min_pts = 5;
     const float target_ransac_max_inlier_err_mm = 15;
     const float target_plane_inlier_thresh = 1.5;
-    const double robust_4pt_inlier_tol = 0.006;
-    const int robust_4pt_its = 200;
+    const double robust_4pt_inlier_tol = 0.1;
+    const int robust_4pt_its = 100;
 
     const double max_rms = 1.2;
     const double max_mmps = 1500;
