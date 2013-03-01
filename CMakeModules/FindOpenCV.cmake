@@ -38,7 +38,6 @@ ELSE(WIN32)
         /usr                                            # Linux
         /opt/local                                      # OS X: default MacPorts location
 	)
-    MESSAGE(STATUS ${OpenCV2_POSSIBLE_ROOT_DIRS})
 ENDIF(WIN32)
 
 
