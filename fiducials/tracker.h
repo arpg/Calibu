@@ -37,9 +37,6 @@
 #include "conics.h"
 #include "target.h"
 
-#include <opencv2/opencv.hpp>
-
-
 struct TrackerParams
 {
   TrackerParams () :
