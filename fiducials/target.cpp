@@ -288,7 +288,7 @@ void Target::SaveRotatedEPS(string filename, float points_per_unit)
   f << "%%Creator: FiducialCalibrationTarget" << endl;
   f << "%%Title: Calibration Target" << endl;
   f << "%%Origin: 0 0" << endl;
-  f << "%%BoundingBox: 0 0 " << size[1] << " " << size[0] << endl;
+  f << "%%BoundingBox: 0 0 " << size[1]*ppu << " " << size[0]*ppu << endl;  
   f << "% seed: " << seed << endl;
   f << "% radius: " << radius << endl;
   f << endl;

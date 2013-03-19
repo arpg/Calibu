@@ -30,15 +30,15 @@ int main( int /*argc*/, char* argv[] )
 
   // Setup Tracker and associated target
   Tracker tracker(w,h);
-
-  Vector2d target_size_in_meters = Vector2d(11, 8.5)*0.0254;
-  double radius = 0.0075;//target_size_in_meters[0]/40;
-
-
-  tracker.target.GenerateRandom(60, radius, 3*radius, radius, target_size_in_meters);
-
-  tracker.target.SaveRotatedEPS("target_to_print.eps", 72./0.0254);
-
+  
+  if(!tracker.target.LoadEPS("target.eps", 72/0.0254)) {
+      Vector2d target_size_in_meters = Vector2d(11, 8.5)*0.0254;
+      double radius = 0.0075;//target_size_in_meters[0]/40;
+      tracker.target.GenerateRandom(60, radius, 3*radius, radius, target_size_in_meters);
+      tracker.target.SaveEPS("target.eps", 72/0.0254);
+      tracker.target.SaveRotatedEPS("target_to_print.eps", 72/0.0254);
+  }
+  
   // Create Glut window
   pangolin::CreateGlutWindowAndBind("Main",2*w+PANEL_WIDTH,h);
   glEnable (GL_BLEND);
@@ -74,27 +74,31 @@ int main( int /*argc*/, char* argv[] )
   LinearCamera cam(w, h, 525 , 525, w/2, h/2);
 
   // Variables
+  Var<bool> step("ui.step", false, false);
+  Var<bool> run("ui.run", false, true);
+  
   Var<bool> disp_thresh("ui.Display Thresh",false);
   Var<bool> lock_to_cam("ui.AR",false);
 
+  bool tracking_good = false;  
+  
   for(int frame=0; !pangolin::ShouldQuit(); ++frame)
   {
+    bool go = frame==0 || run || Pushed(step);
+          
+    if(go) {
+        if (video.GrabNewest((byte*)Irgb.data(),true)) {
+            rgb_to_grey.convert(Irgb,I);
+            
+            TrackerParams params;
+            tracking_good = tracker.ProcessFrame(params, cam, I.data());
+        }else{
+            run = false;
+        }
+    }
+    
     Viewport::DisableScissor();
-    glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-
-
-    if (video.GrabNewest((byte*)Irgb.data(),true)==false)
-        return 0;
-    rgb_to_grey.convert(Irgb,I);
-
-    TrackerParams params;
-
-    const bool tracking_good =
-        tracker.ProcessFrame(params,
-                             cam,
-                             I.data());
-
-    s_cam.Follow(tracker.T_gw.matrix(), lock_to_cam);
+    glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);    
 
     // Display Live Image
     glColor3f(1,1,1);
@@ -108,24 +112,35 @@ int main( int /*argc*/, char* argv[] )
         tex.Upload(tracker.tI.get(),GL_LUMINANCE,GL_UNSIGNED_BYTE);
         tex.RenderToViewportFlipY();
     }
-
+    
     // Display detected ellipses
     glOrtho(-0.5,w-0.5,h-0.5,-0.5,0,1.0);
     for( int i=0; i<tracker.conics.size(); ++i ) {
       glColorBin(tracker.conics_target_map[i],tracker.target.circles3D().size());
       DrawCross(tracker.conics[i].center,2);
     }
+    
+    if(lock_to_cam) {
+        s_cam.SetModelViewMatrix(tracker.T_gw.matrix());
+    }        
 
     // Display 3D Vis
     glEnable(GL_DEPTH_TEST);
     v3D.ActivateScissorAndClear(s_cam);
+        
     glDepthFunc(GL_LEQUAL);
     glDrawAxis(0.3);
     DrawTarget(tracker.target,Vector2d(0,0),1,0.2,0.2);
+    
+    if( tracking_good )
+    {
+        // Draw Camera
+        glColor3f(1,0,0);
+        DrawFrustrum(cam.Kinv(),w,h,tracker.T_gw.inverse(),0.05);
+    }
 
     // Process window events via GLUT
     pangolin::FinishGlutFrame();
-    sleep(1);
   }
 
   return 0;
