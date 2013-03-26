@@ -1,5 +1,5 @@
-SET( Fiducials_LIBRARIES    "@LIBRARY_NAME@;@LINK_LIBS@" )
-SET( Fiducials_LIBRARY      "@LIBRARY_NAME@;@LINK_LIBS@" )
+SET( Fiducials_LIBRARIES    "@LIB_LOC@;@LINK_LIBS@" )
+SET( Fiducials_LIBRARY      "@LIB_LOC@;@LINK_LIBS@" )
 
 SET( Fiducials_INCLUDE_DIRS "@USER_INC@" )
 SET( Fiducials_INCLUDE_DIR  "@USER_INC@" )

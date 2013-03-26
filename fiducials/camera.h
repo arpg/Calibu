@@ -157,8 +157,15 @@ class FovCamera : public LinearCamera
 public:
 
   FovCamera(int w, int h, double fu, double fv, double u0, double v0, double W)
-      :LinearCamera(w,h,fu,fv,u0,v0), _W(W)
+      :LinearCamera(w,h,fu,fv,u0,v0)
   {
+      updateW(W);
+  }
+  
+  inline void updateW(double W)
+  {
+      _W = W;
+      
       if( _W != 0.0 )
       {
         _2tan = 2.0 * tan(_W / 2.0 );
@@ -167,6 +174,7 @@ public:
       }else{
         _Winv = 0.0;
         _2tan = 0.0;
+        _1over2tan = 0.0;
       }
   }
 

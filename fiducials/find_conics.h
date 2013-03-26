@@ -34,10 +34,10 @@
 
 template<typename TdI>
 Eigen::Matrix3d FindEllipse(
-  const int w, const int h,
+  const int w, const int /*h*/,
   const TdI* dI,
   const IRectangle& r,
-  double& residual
+  double& /*residual*/
 ) {
   //Precise ellipse estimation without contour point extraction
   //Jean-Nicolas Ouellet, Patrick Hebert
@@ -122,7 +122,7 @@ void FindCandidateConicsFromLabels(
     {
       const IRectangle& r = labels[i].bbox;
       // reject rectangles clipped by camera view
-      if( r.x1 >= border && r.y1 >= border && r.x2 < w-border && r.y2 < h-border)
+      if( r.x1 >= border && r.y1 >= border && r.x2 < (int)w-border && r.y2 < (int)h-border)
       {
         const int area = r.Width() * r.Height();
         if( min_area <= area && area <= max_area )

@@ -39,7 +39,7 @@ template<typename T, unsigned s>
 TooN::Vector<s,T> toTooN(const Eigen::Matrix<T,s,1>& v)
 {
     TooN::Vector<s,T> ret;
-    for(int i=0; i<s; ++i)
+    for(unsigned i=0; i<s; ++i)
         ret[i] = v(i);
     return ret;
 }
@@ -48,7 +48,7 @@ template<typename T, unsigned s>
 Eigen::Matrix<T,s,1> toEigen(const TooN::Vector<s,T>& v)
 {
     Eigen::Matrix<T,s,1> ret;
-    for(int i=0; i<s; ++i)
+    for(unsigned i=0; i<s; ++i)
         ret(i) = v[i];
     return ret;
 }

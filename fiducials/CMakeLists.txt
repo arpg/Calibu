@@ -25,7 +25,7 @@ FIND_PACKAGE(Boost COMPONENTS thread filesystem REQUIRED QUIET)
 
 ## Apply required dependencies settings
 LIST(APPEND LINK_LIBS "${OPENGL_LIBRARIES};${Boost_LIBRARIES}" )
-LIST(APPEND LIB_DIRS  "${OPENGL_LIBRARY_DIR};${Boost_LIBRARY_DIRS};${PROJECT_BINARY_DIR}/fiducials" )
+LIST(APPEND LIB_DIRS  "${OPENGL_LIBRARY_DIR};${Boost_LIBRARY_DIRS}" )
 LIST(APPEND USER_INC  "${OPENGL_INCLUDE_DIR};${Boost_INCLUDE_DIRS};${CMAKE_CURRENT_SOURCE_DIR}/..";${PROJECT_BINARY_DIR} )
 
 # git://github.com/stevenlovegrove/Sophus.git
@@ -63,6 +63,7 @@ CONFIGURE_FILE(
 #######################################################
 ## Export config file for easy inclusion into other projects: FIND_PACKAGE( Fiducials )
 
+get_target_property( LIB_LOC ${LIBRARY_NAME} LOCATION )
 CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/FiducialsConfig.cmake.in
     ${CMAKE_CURRENT_BINARY_DIR}/FiducialsConfig.cmake @ONLY IMMEDIATE )
 EXPORT( PACKAGE Fiducials )

@@ -383,6 +383,8 @@ int main( int /*argc*/, char* argv[] )
     double rms = 0;
     Var<double> var_rms("ui.rms");
     
+    TrackerParams trackerParams;
+    
     for(int frame=0; !pangolin::ShouldQuit(); ++frame)
     {
         var_rms = rms;
@@ -404,7 +406,7 @@ int main( int /*argc*/, char* argv[] )
         }
 
         const bool tracking_good =
-                tracker.ProcessFrame(cam,I.data());
+                tracker.ProcessFrame(trackerParams,cam,I.data());
 
         if(pangolin::Pushed(record)) {
             video.Record();
