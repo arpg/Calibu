@@ -112,6 +112,11 @@ public:
   {
     return std::max(0,y2-y1);
   }
+  
+  int Area() const
+  {
+      return Width()*Height();
+  }
 
   bool IntersectsWith(const IRectangle & other) const
   {
