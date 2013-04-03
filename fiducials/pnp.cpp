@@ -8,7 +8,7 @@ using namespace std;
 using namespace Eigen;
 
 vector<int> PosePnPRansac(
-    const LinearCamera& cam,
+    const AbstractCamera& cam,
     const std::vector<Vector2d> &img_pts,
     const vector<Vector3d> & ideal_pts,
     const vector<int> & candidate_map,
@@ -25,14 +25,16 @@ vector<int> PosePnPRansac(
   cv::Mat cv_trans(3,1,CV_64F);
   cv::Mat cv_K(3,3,CV_64F);
 
-  cv::eigen2cv(cam.K(), cv_K);
+//  cv::eigen2cv(cam.K(), cv_K);
+  cv::setIdentity(cv_K);
 
   for (size_t i = 0; i<img_pts.size(); ++i)
   {
     int ideal_point_id = candidate_map[i];
     if (ideal_point_id>=0)
     {
-        const Eigen::Vector2d & center = img_pts[i];
+//        const Eigen::Vector2d & center = img_pts[i];
+        const Eigen::Vector2d center = cam.unmap(img_pts[i]);
         const Eigen::Vector3d & c3d = ideal_pts[ideal_point_id];
         cv_img.push_back(cv::Point2f(center.x(), center.y()));
         cv_obj.push_back(cv::Point3f(c3d.x(), c3d.y(), c3d.z()));
@@ -41,8 +43,17 @@ vector<int> PosePnPRansac(
   }
 
   std::vector<int> cv_inliers;
-  cv::solvePnPRansac(cv_obj, cv_img, cv_K, cv_coeff, cv_rot, cv_trans,
-                     false, robust_3pt_its, robust_3pt_tol, 60, cv_inliers);
+  
+  if(cv_img.size() < 4)
+      return cv_inliers;
+  
+  if(robust_3pt_its > 0) {
+      cv::solvePnPRansac(cv_obj, cv_img, cv_K, cv_coeff, cv_rot, cv_trans,
+                         false, robust_3pt_its, robust_3pt_tol, 60, cv_inliers);
+  }else{
+      cv::solvePnP(cv_obj, cv_img, cv_K, cv_coeff, cv_rot, cv_trans, false);
+  }
+  
   Vector3d rot, trans;
   cv::cv2eigen(cv_rot, rot);
   cv::cv2eigen(cv_trans, trans);
@@ -73,7 +84,7 @@ int CountInliers(const vector<int> & conics_target_map)
   return inliers;
 }
 
-double ReprojectionErrorRMS(const LinearCamera& cam,
+double ReprojectionErrorRMS(const AbstractCamera& cam,
                             const Sophus::SE3d& T_cw,
                             const vector<Vector3d>& pts3d,
                             const vector<Vector2d>& pts2d,

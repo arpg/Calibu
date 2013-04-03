@@ -156,6 +156,12 @@ class FovCamera : public LinearCamera
 {
 public:
 
+  FovCamera()
+  {
+      updateW(0);
+  }
+    
+    
   FovCamera(int w, int h, double fu, double fv, double u0, double v0, double W)
       :LinearCamera(w,h,fu,fv,u0,v0)
   {

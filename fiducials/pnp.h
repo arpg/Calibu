@@ -3,7 +3,7 @@
 #include "camera.h"
 
 std::vector<int> PosePnPRansac(
-    const LinearCamera& cam,
+    const AbstractCamera& cam,
     const std::vector<Eigen::Vector2d> & img_pts,
     const std::vector<Eigen::Vector3d> & ideal_pts,
     const std::vector<int> & candidate_map,
@@ -15,7 +15,7 @@ std::vector<int> PosePnPRansac(
 int CountInliers(const std::vector<int> & conics_target_map);
 
 double ReprojectionErrorRMS(
-    const LinearCamera& cam,
+    const AbstractCamera& cam,
     const Sophus::SE3d& T_cw,
     const std::vector<Eigen::Vector3d>& pts3d,
     const std::vector<Eigen::Vector2d>& pts2d,
