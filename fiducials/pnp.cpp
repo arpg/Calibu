@@ -8,7 +8,7 @@ using namespace std;
 using namespace Eigen;
 
 vector<int> PosePnPRansac(
-    const AbstractCamera& cam,
+    const LinearCamera& cam,
     const std::vector<Vector2d> &img_pts,
     const vector<Vector3d> & ideal_pts,
     const vector<int> & candidate_map,
@@ -49,7 +49,7 @@ vector<int> PosePnPRansac(
   
   if(robust_3pt_its > 0) {
       cv::solvePnPRansac(cv_obj, cv_img, cv_K, cv_coeff, cv_rot, cv_trans,
-                         false, robust_3pt_its, robust_3pt_tol, 60, cv_inliers);
+                         false, robust_3pt_its, robust_3pt_tol / cam.K()(0,0), 60, cv_inliers);
   }else{
       cv::solvePnP(cv_obj, cv_img, cv_K, cv_coeff, cv_rot, cv_trans, false);
   }

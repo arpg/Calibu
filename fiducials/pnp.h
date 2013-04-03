@@ -3,7 +3,7 @@
 #include "camera.h"
 
 std::vector<int> PosePnPRansac(
-    const AbstractCamera& cam,
+    const LinearCamera& cam,
     const std::vector<Eigen::Vector2d> & img_pts,
     const std::vector<Eigen::Vector3d> & ideal_pts,
     const std::vector<int> & candidate_map,
