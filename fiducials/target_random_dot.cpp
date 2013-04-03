@@ -664,7 +664,7 @@ bool TargetRandomDot::FindTarget(
     mpts.push_back(pnorm);
   }
 
-  if( conics.size() >= 2 )
+  if( mpts.size() >= 2 )
   {
     Matrix<double,Dynamic,Dynamic,RowMajor> ellipse_dm = DistanceMatrix(mpts);
     SortRows(ellipse_dm);

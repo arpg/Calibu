@@ -34,7 +34,7 @@ namespace fiducials {
 
 void glVertex( const Eigen::Vector3d& p )
 {
-    glVertex2dv(p.data());
+    glVertex3dv(p.data());
 }
 
 void DrawRectangle( const IRectangle& r )

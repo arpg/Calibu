@@ -414,10 +414,12 @@ bool TargetGridDot::FindTarget(
     
     bool tracking_good = idxCrossConic != -1;
 
+    ellipse_target_map.clear();
+
     if(tracking_good) {
         PropagateGrid(ellipses,idxCrossConic);
         
-        std::vector<int> ellipse_target_map(ellipses.size(), -1);
+        ellipse_target_map.resize(ellipses.size(), -1);
         for(size_t p=0; p < ellipses.size(); ++p) {
             const Eigen::Vector2i pgz = grid[p] + grid_center;
             if( 0<= pgz(0) && pgz(0) < grid_size(0) &&  0<= pgz(1) && pgz(1) < grid_size(1) )
