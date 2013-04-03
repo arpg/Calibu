@@ -108,7 +108,7 @@ boost::array<pair<Vector3d,Matrix3d >, 2 > PlaneFromConic(const Conic& c, double
   return r;
 }
 
-pair<Vector3d,Matrix3d > PlaneFromConics( vector<Conic>& conics, double plane_circle_radius, const Matrix3d& K, double inlier_threshold)
+pair<Vector3d,Matrix3d > PlaneFromConics( const vector<Conic>& conics, double plane_circle_radius, const Matrix3d& K, double inlier_threshold)
 {
   double best_score = numeric_limits<double>::max();
   pair<Vector3d,Matrix3d > best;
@@ -128,13 +128,13 @@ pair<Vector3d,Matrix3d > PlaneFromConics( vector<Conic>& conics, double plane_ci
     }
   }
 
-  // Given best transformation, perform outlier rejection
-  for( int i = conics.size()-1; i >= 0; --i )
-  {
-    const double cost = Cost( best, conics[i],K);
-    if( cost > inlier_threshold )
-      conics.erase(conics.begin()+i);
-  }
+//  // Given best transformation, perform outlier rejection
+//  for( int i = conics.size()-1; i >= 0; --i )
+//  {
+//    const double cost = Cost( best, conics[i],K);
+//    if( cost > inlier_threshold )
+//      conics.erase(conics.begin()+i);
+//  }
 
   return best;
 }

@@ -6,11 +6,12 @@ SET(
   hungarian.h hungarian.cpp
   camera.h camera.cpp
   conics.h conics.cpp
-  find_conics.h
+  find_conics.h find_conics.cpp
   ransac.h
   rectangle.h
   adaptive_threshold.h
   label.h label.cpp
+  conic_finder.h conic_finder.cpp
   target_random_dot.h target_random_dot.cpp
 #  target_grid_dot.h target_grid_dot.cpp
   utils.h utils.cpp

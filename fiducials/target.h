@@ -49,20 +49,20 @@ public:
     virtual bool FindTarget(
         const Sophus::SE3d& T_cw,            
         const LinearCamera& cam,
-        std::vector<Conic>& conics,
+        const std::vector<Conic>& conics,
         std::vector<int>& conics_target_map
     ) const = 0;
 
     // Assume approximately known camera
     virtual bool FindTarget(
         const LinearCamera& cam,
-        std::vector<Conic>& conics,
+        const std::vector<Conic>& conics,
         std::vector<int>& conics_target_map
     ) const = 0;
 
     // Only observations known
     virtual bool FindTarget(
-        std::vector<Conic>& conics,
+        const std::vector<Conic>& conics,
         std::vector<int>& conics_target_map
     ) const = 0;
     

@@ -111,15 +111,15 @@ int main( int /*argc*/, char* argv[] )
       texRGB.Upload(I.data(),GL_LUMINANCE,GL_UNSIGNED_BYTE);
       texRGB.RenderToViewportFlipY();
     }else{
-        tex.Upload(tracker.ImageThresholded(),GL_LUMINANCE,GL_UNSIGNED_BYTE);
+        tex.Upload(tracker.GetConicFinder().ImageThresholded(),GL_LUMINANCE,GL_UNSIGNED_BYTE);
         tex.RenderToViewportFlipY();
     }
     
     // Display detected ellipses
     glOrtho(-0.5,w-0.5,h-0.5,-0.5,0,1.0);
-    for( size_t i=0; i<tracker.Conics().size(); ++i ) {
+    for( size_t i=0; i<tracker.GetConicFinder().Conics().size(); ++i ) {
       glColorBin(tracker.ConicsTargetMap()[i], target.Circles3D().size());
-      DrawCross(tracker.Conics()[i].center,2);
+      DrawCross(tracker.GetConicFinder().Conics()[i].center,2);
     }
     
     if(lock_to_cam) {

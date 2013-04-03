@@ -42,8 +42,7 @@ using namespace Eigen;
 namespace fiducials {
 
 Tracker::Tracker(const TargetInterface& target, int w, int h)
-    : target(target), w(w), h(w),
-      intI(new float[w*h]), dI(new boost::array<float,2>[w*h]), lI(new short[w*h]), tI(new unsigned char[w*h]),
+    : target(target), conic_finder(w,h),
     last_good(0), good_frames(0)
 {
 
@@ -52,36 +51,10 @@ Tracker::Tracker(const TargetInterface& target, int w, int h)
 bool Tracker::ProcessFrame(
     LinearCamera& cam, unsigned char* I
 ) {
-    gradient<>(cam.width(), cam.height(), I, dI.get() );
-    integral_image(cam.width(), cam.height(), I, intI.get() );
-    return ProcessFrame(cam, I, dI.get(), intI.get());
-}
-
-bool Tracker::ProcessFrame(
-    LinearCamera& cam, unsigned char* I, boost::array<float,2>* dI, float* intI
-) {
-  const int w = cam.width();
-  const int h = cam.height();
-
   double rms = 0;
-
-  // Threshold and label image
-  AdaptiveThreshold(w, h, I, intI, tI.get(), params.at_threshold,
-                    w/params.at_window_ratio,
-                    (unsigned char)0, (unsigned char)255);
-
-  vector<PixelClass> labels;
-  Label(w,h,tI.get(),lI.get(),labels);
-
-  // Find candidate regions for conics
-  candidates.clear();
-  FindCandidateConicsFromLabels(w, h, labels, candidates,
-                                params.conic_min_area, params.conic_max_area,
-                                params.conic_min_density,
-                                params.conic_min_aspect);
- // Find conic parameters
-  conics.clear();
-  FindConics(w,h,candidates,dI,conics );
+  
+  conic_finder.Find(I);
+  const std::vector<Conic>& conics = conic_finder.Conics();
 
   // Generate map and point structures
   conics_target_map.clear();

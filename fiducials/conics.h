@@ -57,7 +57,7 @@ boost::array<std::pair<Eigen::Vector3d,Eigen::Matrix3d >, 2 > PlaneFromConic(
 );
 
 std::pair<Eigen::Vector3d,Eigen::Matrix3d > PlaneFromConics(
-  std::vector<Conic>& conics, double plane_circle_radius,
+  const std::vector<Conic>& conics, double plane_circle_radius,
   const Eigen::Matrix3d& K, double inlier_threshold
 );
 

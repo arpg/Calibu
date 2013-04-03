@@ -33,31 +33,18 @@
 #include <ctime>
 
 #include "target.h"
-#include "label.h"
-#include "conics.h"
+#include "conic_finder.h"
 
 namespace fiducials {
 
-struct TrackerParams
+struct ParamsTracker
 {
-  TrackerParams () :
-    at_threshold(0.7),
-    at_window_ratio(3),
-    conic_min_area(25),
-    conic_max_area(4E4),
-    conic_min_density(0.4),
-    conic_min_aspect(0.1),
+  ParamsTracker () :
     robust_3pt_inlier_tol(1.5),
     robust_3pt_its(100),
     inlier_num_required(10),
     max_rms(3.0) {}
 
-  float at_threshold;
-  int at_window_ratio;
-  float conic_min_area;
-  float conic_max_area;
-  float conic_min_density;
-  float conic_min_aspect;
   double robust_3pt_inlier_tol;
   int robust_3pt_its;
   int inlier_num_required;
@@ -71,24 +58,19 @@ public:
     Tracker(const TargetInterface& target, int w, int h);
 
     bool ProcessFrame(LinearCamera& cam, unsigned char *I);
-    bool ProcessFrame(LinearCamera& cam, unsigned char* I, boost::array<float, 2>* dI, float* intI);
 
     const TargetInterface& Target() const {
         return target;
     }
     
-    const std::vector<Conic>& Conics() const{
-        return conics;
+    const ConicFinder& GetConicFinder() const {
+        return conic_finder;
     }
-    
+        
     const std::vector<int>& ConicsTargetMap() const{
         return conics_target_map;
     }
-    
-    const unsigned char* ImageThresholded() const {
-        return tI.get();
-    }
-    
+        
     const Sophus::SE3d& PoseT_gw() const
     {
         return T_gw;
@@ -97,17 +79,9 @@ public:
 protected:
     // Fiducial Target
     const TargetInterface& target;
-
-    // Images
-    int w, h;
-    std::auto_ptr<float> intI;
-    std::auto_ptr<boost::array<float,2> > dI;
-    std::auto_ptr<short> lI;
-    std::auto_ptr<unsigned char> tI;
-
+    ConicFinder conic_finder;
+    
     // Hypothesis conics
-    std::vector<PixelClass> candidates;
-    std::vector<Conic> conics;
     std::vector<int> conics_target_map;
     std::vector<int> conics_candidate_map_first_pass;
     std::vector<int> conics_candidate_map_second_pass;
@@ -120,7 +94,7 @@ protected:
     // Pose hypothesis
     Sophus::SE3d T_hw;
     
-    TrackerParams params;
+    ParamsTracker params;
 };
 
 }
