@@ -32,9 +32,9 @@
 #include <sophus/se3.hpp>
 #include <ctime>
 
+#include "target.h"
 #include "label.h"
 #include "conics.h"
-#include "random_dot_target.h"
 
 namespace fiducials {
 
@@ -65,33 +65,38 @@ struct TrackerParams
 };
 
 
-struct Tracker
+class Tracker
 {
-//public:
-    Tracker(int w, int h);
+public:
+    Tracker(const TargetInterface& target, int w, int h);
 
-  bool ProcessFrame(const TrackerParams & params, LinearCamera& cam,
-                    unsigned char *I);
-  bool ProcessFrame(const TrackerParams & params, LinearCamera& cam,
-                    unsigned char* I,
-                    boost::array<float, 2>* dI, float* intI);
+    bool ProcessFrame(LinearCamera& cam, unsigned char *I);
+    bool ProcessFrame(LinearCamera& cam, unsigned char* I, boost::array<float, 2>* dI, float* intI);
 
-    // Return number of visible features
-    int NumVisibleFeatures() const;
-
-    // Return indices of visible features
-    std::vector<short int> VisibleFeatures() const;
-
-    // Return matrix containing 3D points of pattern, a column per circle.
-    Eigen::Matrix<double,3,Eigen::Dynamic> TargetPattern3D() const;
-
-    // Return matrix containing 2D observations, a column per circle.in target pattern
-    // Unobserved circles contain (NaN,NaN)'
-    Eigen::Matrix<double,2,Eigen::Dynamic> TargetPatternObservations() const;
-
-//protected:
+    const TargetInterface& Target() const {
+        return target;
+    }
+    
+    const std::vector<Conic>& Conics() const{
+        return conics;
+    }
+    
+    const std::vector<int>& ConicsTargetMap() const{
+        return conics_target_map;
+    }
+    
+    const unsigned char* ImageThresholded() const {
+        return tI.get();
+    }
+    
+    const Sophus::SE3d& PoseT_gw() const
+    {
+        return T_gw;
+    }
+    
+protected:
     // Fiducial Target
-    RandomDotTarget target;
+    const TargetInterface& target;
 
     // Images
     int w, h;
@@ -114,6 +119,8 @@ struct Tracker
 
     // Pose hypothesis
     Sophus::SE3d T_hw;
+    
+    TrackerParams params;
 };
 
 }

@@ -75,18 +75,18 @@ public:
     const LinearCamera& cam,
     std::vector<Conic>& conics,
     std::vector<int>& ellipse_target_map
-  );
+  ) const;
 
   bool FindTarget(
     const LinearCamera& cam,
     std::vector<Conic>& conics,
     std::vector<int>& ellipse_target_map
-  );
+  ) const;
 
   bool FindTarget(
     std::vector<Conic>& conics,
     std::vector<int>& ellipse_target_map
-  );
+  ) const;
   
   ////////////////////////////////////////////////////////////////////////////
 
@@ -114,8 +114,8 @@ protected:
   void Match(
     const Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>& sorted_measurement_distance_matrix,
     std::vector<int>& measurement_label, int match_neighbours
-  );
-  void Match( const std::vector<Eigen::Vector2d >& measurement, std::vector<int>& measurement_label, int match_neighbours  );
+  ) const;
+  void Match( const std::vector<Eigen::Vector2d >& measurement, std::vector<int>& measurement_label, int match_neighbours  ) const;
 
   unsigned int seed;
   Eigen::Vector2d size;

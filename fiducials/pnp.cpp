@@ -63,7 +63,7 @@ vector<int> PosePnPRansac(
   if(std::isnan(rot[0]) || std::isnan(rot[1]) || std::isnan(rot[2]))
     return inlier_map;
 
-  for (int i = 0; i<cv_inliers.size(); ++i)
+  for (size_t i = 0; i<cv_inliers.size(); ++i)
   {
     int idx = cv_inliers[i];
     inlier_map.at(idx_vec.at(idx)) = candidate_map.at(idx_vec.at(idx));

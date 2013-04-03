@@ -44,13 +44,6 @@
 
 #include <Eigen/Dense>
 
-// TODO: Work out why this is required to build in Debug
-#undef GL_VERSION_2_0
-#undef GL_VERSION_2_1
-#undef GL_VERSION_3_0
-#undef GL_ARB_gpu_shader_fp64
-#include <unsupported/Eigen/OpenGLSupport>
-
 #include "rectangle.h"
 #include "random_dot_target.h"
 #include "utils.h"
@@ -127,7 +120,7 @@ inline void glSetFrameOfReferenceF( const Sophus::SE3d& T_wf )
 {
   glMatrixMode(GL_MODELVIEW);
   glPushMatrix();
-  glMultMatrix( T_wf.matrix() );
+  glMultMatrixd( T_wf.matrix().data() );
 }
 
 inline void glUnsetFrameOfReference()

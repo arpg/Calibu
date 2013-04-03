@@ -41,29 +41,25 @@ using namespace Eigen;
 
 namespace fiducials {
 
-Tracker::Tracker(int w, int h)
-    : w(w), h(w),
+Tracker::Tracker(const TargetInterface& target, int w, int h)
+    : target(target), w(w), h(w),
       intI(new float[w*h]), dI(new boost::array<float,2>[w*h]), lI(new short[w*h]), tI(new unsigned char[w*h]),
     last_good(0), good_frames(0)
 {
 
 }
 
-bool Tracker::ProcessFrame(const TrackerParams & params,
-                           LinearCamera& cam,
-                           unsigned char* I)
-{
+bool Tracker::ProcessFrame(
+    LinearCamera& cam, unsigned char* I
+) {
     gradient<>(cam.width(), cam.height(), I, dI.get() );
     integral_image(cam.width(), cam.height(), I, intI.get() );
-    return ProcessFrame(params, cam, I, dI.get(), intI.get());
+    return ProcessFrame(cam, I, dI.get(), intI.get());
 }
 
-bool Tracker::ProcessFrame(const TrackerParams & params,
-                           LinearCamera& cam,
-                           unsigned char* I,
-                           boost::array<float,2>* dI,
-                           float* intI)
-{
+bool Tracker::ProcessFrame(
+    LinearCamera& cam, unsigned char* I, boost::array<float,2>* dI, float* intI
+) {
   const int w = cam.width();
   const int h = cam.height();
 
@@ -138,63 +134,6 @@ bool Tracker::ProcessFrame(const TrackerParams & params,
     return true;
   }
   return false;
-}
-
-int Tracker::NumVisibleFeatures() const
-{
-    int seen = 0;
-    for(size_t i=0; i< conics_target_map.size(); ++i )
-    {
-        if(conics_target_map[i] >= 0 ) {
-            seen++;
-        }
-    }
-    return seen;
-}
-
-
-Eigen::Matrix<double,3,Eigen::Dynamic> Tracker::TargetPattern3D() const
-{
-    Eigen::MatrixXd pattern3d = Eigen::MatrixXd(3, target.Circles2D().size() );
-    for(size_t i=0; i < target.Circles2D().size(); ++i )
-    {
-        pattern3d.col(i) = target.Circles3D()[i];
-    }
-    return pattern3d;
-}
-
-Eigen::Matrix<double,2,Eigen::Dynamic> Tracker::TargetPatternObservations() const
-{
-    // Reverse map (target -> conic from conic -> target)
-    vector<int> target_conics_map(target.Circles2D().size(), -1);
-    for( size_t i=0; i < conics_target_map.size(); ++i ) {
-        if(conics_target_map[i] >= 0) {
-            target_conics_map[conics_target_map[i]] = i;
-        }
-    }
-
-    // Generate list of visible indices
-    int unseen = 0;
-    std::vector<short int> visibleCircles;
-    for( size_t i=0; i < target_conics_map.size(); ++i ) {
-        if( target_conics_map[i] != -1 ) {
-            visibleCircles.push_back(i);
-        }else{
-            ++unseen;
-        }
-    }
-
-    Eigen::Matrix<double,2,Eigen::Dynamic> obs = Eigen::MatrixXd(2, target.Circles2D().size() );
-    for(size_t i=0; i < target.Circles2D().size(); ++i ) {
-        const int c = target_conics_map[i];
-        if(c >= 0 ) {
-            Eigen::Vector2d circ = conics[c].center;
-            obs.col(i) <<  circ[0] , circ[1];
-        }else{
-            obs.col(i) << NAN, NAN;
-        }
-    }
-    return obs;
 }
 
 }

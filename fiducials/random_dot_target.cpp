@@ -506,15 +506,19 @@ void MutualClosest( const vector<Vector2d >& a, const vector<Vector2d >& b, vect
   }
 }
 
-void RandomDotTarget::Match( const vector<Vector2d >& measurement, vector<int>& measurement_label, int match_neighbours  )
-{
+void RandomDotTarget::Match(
+    const vector<Vector2d >& measurement,
+    vector<int>& measurement_label, int match_neighbours
+) const {
   Matrix<double,Dynamic,Dynamic,RowMajor> dm = DistanceMatrix(measurement);
   SortRows(dm);
   Match(dm,measurement_label,match_neighbours);
 }
 
-void RandomDotTarget::Match( const Matrix<double,Dynamic,Dynamic,RowMajor>& sorted_measurement_distance_matrix, std::vector<int>& measurement_label, int match_neighbours )
-{
+void RandomDotTarget::Match(
+    const Matrix<double,Dynamic,Dynamic,RowMajor>& sorted_measurement_distance_matrix,
+    std::vector<int>& measurement_label, int match_neighbours
+) const {
   const Matrix<double,Dynamic,Dynamic,RowMajor>& dm = sorted_measurement_distance_matrix;
   const size_t msize = dm.rows();
 
@@ -585,7 +589,7 @@ bool RandomDotTarget::FindTarget(
   const LinearCamera& cam,
   vector<Conic>& conics,
   vector<int>& conics_target_map
-) {
+) const {
   // We have conic centers, and projected centers. Try to match
 
   const IRectangle img_rect( 0,0,cam.width(),cam.height());
@@ -611,6 +615,8 @@ bool RandomDotTarget::FindTarget(
 
   for(unsigned i=0; i<m.size(); ++i )
     conics_target_map[i] = m_map[i] >= 0 ? vis_t_map[m_map[i]] : -1;
+  
+  return true;
 }
 
 Vector3d nd_b(const Sophus::SE3d& T_ba, const Vector3d& n_a)
@@ -639,7 +645,7 @@ bool RandomDotTarget::FindTarget(
   const LinearCamera& cam,
   vector<Conic>& conics,
   vector<int>& conics_target_map
-) {
+) const {
   // Compute metric positions in 2D
   const vector<Eigen::Vector2d >& tpts = this->tpts;
   vector<Vector2d >  mpts;
@@ -712,7 +718,7 @@ bool RandomDotTarget::FindTarget(
 bool RandomDotTarget::FindTarget(
   std::vector<Conic>& conics,
   std::vector<int>& ellipse_target_map
-) {
+) const {
     return false;
 }
 

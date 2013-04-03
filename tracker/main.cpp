@@ -4,6 +4,7 @@
 #include <cvd/image_convert.h>
 
 #include <fiducials/tracker.h>
+#include <fiducials/random_dot_target.h>
 #include <fiducials/drawing.h>
 
 #include <fiducials/utils.h>
@@ -30,15 +31,16 @@ int main( int /*argc*/, char* argv[] )
   CVD::ImageRef size(w,h);
 
   // Setup Tracker and associated target
-  Tracker tracker(w,h);
-  
-  if(!tracker.target.LoadEPS("target.eps", 72/0.0254)) {
+  RandomDotTarget target;  
+  if(!target.LoadEPS("target.eps", 72/0.0254)) {
       Vector2d target_size_in_meters = Vector2d(11, 8.5)*0.0254;
       double radius = 0.0075;//target_size_in_meters[0]/40;
-      tracker.target.GenerateRandom(60, radius, 3*radius, radius, target_size_in_meters);
-      tracker.target.SaveEPS("target.eps", 72/0.0254);
-      tracker.target.SaveRotatedEPS("target_to_print.eps", 72/0.0254);
+      target.GenerateRandom(60, radius, 3*radius, radius, target_size_in_meters);
+      target.SaveEPS("target.eps", 72/0.0254);
+      target.SaveRotatedEPS("target_to_print.eps", 72/0.0254);
   }
+  
+  Tracker tracker(target,w,h);  
   
   // Create Glut window
   pangolin::CreateGlutWindowAndBind("Main",2*w+PANEL_WIDTH,h);
@@ -48,11 +50,11 @@ int main( int /*argc*/, char* argv[] )
   // Pangolin 3D Render state
   pangolin::OpenGlRenderState s_cam;
   s_cam.SetProjectionMatrix(ProjectionMatrixRDF_TopLeft(640,480,420,420,320,240,0.01,1E6));
-  s_cam.SetModelViewMatrix(Sophus::SE3d(Sophus::SO3d(),Vector3d(-tracker.target.Size()[0]/2,-tracker.target.Size()[1]/2,0.5) ).matrix());
+  s_cam.SetModelViewMatrix(Sophus::SE3d(Sophus::SO3d(),Vector3d(-target.Size()[0]/2,-target.Size()[1]/2,0.5) ).matrix());
   pangolin::Handler3D handler(s_cam);
 
   // Create viewport for video with fixed aspect
-  View& vPanel = pangolin::CreatePanel("ui").SetBounds(1.0,0.0,0,Attach::Pix(PANEL_WIDTH));
+  pangolin::CreatePanel("ui").SetBounds(1.0,0.0,0,Attach::Pix(PANEL_WIDTH));
   View& vVideo = pangolin::Display("Video").SetAspect((float)w/h);
   View& v3D    = pangolin::Display("3D").SetAspect((float)w/h).SetHandler(&handler);
 
@@ -91,8 +93,7 @@ int main( int /*argc*/, char* argv[] )
         if (video.GrabNewest((byte*)Irgb.data(),true)) {
             rgb_to_grey.convert(Irgb,I);
             
-            TrackerParams params;
-            tracking_good = tracker.ProcessFrame(params, cam, I.data());
+            tracking_good = tracker.ProcessFrame(cam, I.data());
         }else{
             run = false;
         }
@@ -110,19 +111,19 @@ int main( int /*argc*/, char* argv[] )
       texRGB.Upload(I.data(),GL_LUMINANCE,GL_UNSIGNED_BYTE);
       texRGB.RenderToViewportFlipY();
     }else{
-        tex.Upload(tracker.tI.get(),GL_LUMINANCE,GL_UNSIGNED_BYTE);
+        tex.Upload(tracker.ImageThresholded(),GL_LUMINANCE,GL_UNSIGNED_BYTE);
         tex.RenderToViewportFlipY();
     }
     
     // Display detected ellipses
     glOrtho(-0.5,w-0.5,h-0.5,-0.5,0,1.0);
-    for( int i=0; i<tracker.conics.size(); ++i ) {
-      glColorBin(tracker.conics_target_map[i],tracker.target.Circles3D().size());
-      DrawCross(tracker.conics[i].center,2);
+    for( size_t i=0; i<tracker.Conics().size(); ++i ) {
+      glColorBin(tracker.ConicsTargetMap()[i], target.Circles3D().size());
+      DrawCross(tracker.Conics()[i].center,2);
     }
     
     if(lock_to_cam) {
-        s_cam.SetModelViewMatrix(tracker.T_gw.matrix());
+        s_cam.SetModelViewMatrix(tracker.PoseT_gw().matrix());
     }        
 
     // Display 3D Vis
@@ -131,13 +132,13 @@ int main( int /*argc*/, char* argv[] )
         
     glDepthFunc(GL_LEQUAL);
     glDrawAxis(0.3);
-    DrawTarget(tracker.target,Vector2d(0,0),1,0.2,0.2);
+    DrawTarget(target,Vector2d(0,0),1,0.2,0.2);
     
     if( tracking_good )
     {
         // Draw Camera
         glColor3f(1,0,0);
-        DrawFrustrum(cam.Kinv(),w,h,tracker.T_gw.inverse(),0.05);
+        DrawFrustrum(cam.Kinv(),w,h,tracker.PoseT_gw().inverse(),0.05);
     }
 
     // Process window events via GLUT

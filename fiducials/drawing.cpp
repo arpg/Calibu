@@ -32,6 +32,11 @@ using namespace Eigen;
 
 namespace fiducials {
 
+void glVertex( const Eigen::Vector3d& p )
+{
+    glVertex2dv(p.data());
+}
+
 void DrawRectangle( const IRectangle& r )
 {
   glBegin(GL_LINE_STRIP);
