@@ -4,7 +4,7 @@
 #include <cvd/image_convert.h>
 
 #include <fiducials/tracker.h>
-#include <fiducials/random_dot_target.h>
+#include <fiducials/target_random_dot.h>
 #include <fiducials/drawing.h>
 
 #include <fiducials/utils.h>
@@ -31,7 +31,7 @@ int main( int /*argc*/, char* argv[] )
   CVD::ImageRef size(w,h);
 
   // Setup Tracker and associated target
-  RandomDotTarget target;  
+  TargetRandomDot target;  
   if(!target.LoadEPS("target.eps", 72/0.0254)) {
       Vector2d target_size_in_meters = Vector2d(11, 8.5)*0.0254;
       double radius = 0.0075;//target_size_in_meters[0]/40;

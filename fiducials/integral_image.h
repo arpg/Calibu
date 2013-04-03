@@ -30,7 +30,7 @@
 
 namespace fiducials {
 
-// Based on libCVD integral_image
+// Influenced by libCVD integral_image
 template<typename TI, typename TO>
 void integral_image(const int w, const int h, const TI* in, TO* out)
 {

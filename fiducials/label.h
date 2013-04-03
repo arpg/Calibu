@@ -1,7 +1,7 @@
 /* This file is part of the fiducials Project.
  * https://github.com/stevenlovegrove/fiducials
  *
- * Copyright (C) 2010  Steven Lovegrove, Richard Newcombe, Hauke Strasdat
+ * Copyright (C) 2010  Steven Lovegrove
  *                     Imperial College London
  *
  * Permission is hereby granted, free of charge, to any person

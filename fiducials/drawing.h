@@ -45,7 +45,7 @@
 #include <Eigen/Dense>
 
 #include "rectangle.h"
-#include "random_dot_target.h"
+#include "target_random_dot.h"
 #include "utils.h"
 
 namespace fiducials {
@@ -60,9 +60,9 @@ void DrawCross( const Eigen::Vector3d& p, int r = 5 );
 
 void DrawCircle( const Eigen::Vector2d& p, double radius = 5 );
 
-void DrawTarget( const RandomDotTarget& t, const Eigen::Vector2d& offset, double scale = 1.0, double sat = 1.0, double val = 1.0 );
+void DrawTarget( const TargetRandomDot& t, const Eigen::Vector2d& offset, double scale = 1.0, double sat = 1.0, double val = 1.0 );
 
-void DrawTarget( const std::vector<int>& map, const RandomDotTarget& target, const Eigen::Vector2d& offset, double scale = 1.0, double sat = 1.0, double val = 1.0 );
+void DrawTarget( const std::vector<int>& map, const TargetRandomDot& target, const Eigen::Vector2d& offset, double scale = 1.0, double sat = 1.0, double val = 1.0 );
 
 void SetPixelTransferScale( float scale );
 

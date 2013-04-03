@@ -9,7 +9,7 @@ OPTION(BUILD_EXAMPLES "Build Examples" ON)
 
 IF(CMAKE_COMPILER_IS_GNUCXX )
    ADD_DEFINITIONS("-Wall")
-#  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 ENDIF()
 
 # Overide with cmake -DCMAKE_BUILD_TYPE=Debug {dir}

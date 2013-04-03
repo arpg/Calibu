@@ -34,9 +34,9 @@
 
 namespace fiducials {
 
-struct RandomDotParams
+struct ParamsRandomDot
 {
-    RandomDotParams()
+    ParamsRandomDot()
         : match_neighbours(10),
           ransac_its(100),
           ransac_min_pts(5),
@@ -52,11 +52,11 @@ struct RandomDotParams
     float plane_inlier_thresh;    
 };
 
-class RandomDotTarget
+class TargetRandomDot
     : public TargetInterface
 {
 public:
-  RandomDotTarget();
+  TargetRandomDot();
 
   ////////////////////////////////////////////////////////////////////////////
   void SetSeed(int s );
@@ -125,7 +125,7 @@ protected:
   std::vector<Eigen::Vector3d > tpts3d;
   Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>* dt;
   
-  RandomDotParams params;
+  ParamsRandomDot params;
 };
 
 }

@@ -11,7 +11,8 @@ SET(
   rectangle.h
   adaptive_threshold.h
   label.h label.cpp
-  random_dot_target.h random_dot_target.cpp
+  target_random_dot.h target_random_dot.cpp
+#  target_grid_dot.h target_grid_dot.cpp
   utils.h utils.cpp
   drawing.h drawing.cpp
   tracker.h tracker.cpp

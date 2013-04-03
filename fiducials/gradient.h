@@ -30,6 +30,7 @@
 
 namespace fiducials {
 
+// Influenced by libCVD gradient method
 template<typename TI, typename TD>
 void gradient(const int w, const int h, const TI* I, TD* grad) {
   const TI* pI = I + w + 1;

@@ -93,7 +93,7 @@ void DrawCircle( const Vector2d& p, double radius )
   glEnd();
 }
 
-void DrawTarget( const RandomDotTarget& t, const Vector2d& offset, double scale, double sat, double val )
+void DrawTarget( const TargetRandomDot& t, const Vector2d& offset, double scale, double sat, double val )
 {
   const double r = t.Radius() * scale;
 
@@ -105,7 +105,7 @@ void DrawTarget( const RandomDotTarget& t, const Vector2d& offset, double scale,
   }
 }
 
-void DrawTarget( const vector<int>& map, const RandomDotTarget& target, const Vector2d& offset, double scale, double sat, double val )
+void DrawTarget( const vector<int>& map, const TargetRandomDot& target, const Vector2d& offset, double scale, double sat, double val )
 {
   const double r = target.Radius() * scale;
 
