@@ -25,6 +25,7 @@ using namespace std;
 using namespace pangolin;
 using namespace Eigen;
 using namespace CVD;
+using namespace fiducials;
 
 using namespace CCameraModel;
 
@@ -133,7 +134,7 @@ Eigen::Matrix<double,4,4> se3_gen(unsigned i) {
 
 double err(
         const MatlabCamera& cam,
-        const Target& target,
+        const RandomDotTarget& target,
         const std::vector<Observation>& vicon_obs,
         const Sophus::SE3d& T_cf,
         const Sophus::SE3d& T_wt
@@ -143,8 +144,8 @@ double err(
 
     for( int i=0; i< vicon_obs.size(); ++i ) {
         const Observation& sample = vicon_obs[i];
-        for( int j=0; j < target.circles3D().size(); ++j ) {
-            Eigen::Vector3d P_t = target.circles3D()[j];
+        for( int j=0; j < target.Circles3D().size(); ++j ) {
+            Eigen::Vector3d P_t = target.Circles3D()[j];
             Eigen::Vector3d p_c_ = cam.K() * (T_cf * sample.T_fw * T_wt * P_t);
             Eigen::Vector2d p_c = project( (Eigen::Vector3d)(p_c_ ) );
             Eigen::Vector2d obs = project( (Eigen::Vector3d)(cam.K() * cam.unmap_unproject(sample.obs.col(j)) ) );
@@ -163,7 +164,7 @@ double err(
 
 void OptimiseTargetVicon(
     const MatlabCamera& cam,
-    const Target& target,
+    const RandomDotTarget& target,
     const std::vector<Observation>& vicon_obs,
     Sophus::SE3d& T_cf,
     Sophus::SE3d& T_wt
@@ -182,8 +183,8 @@ void OptimiseTargetVicon(
 
         for( int i=0; i< vicon_obs.size(); ++i ) {
             const Observation& sample = vicon_obs[i];
-            for( int j=0; j < target.circles3D().size(); ++j ) {
-                Eigen::Vector3d P_t = target.circles3D()[j];
+            for( int j=0; j < target.Circles3D().size(); ++j ) {
+                Eigen::Vector3d P_t = target.Circles3D()[j];
                 Eigen::Vector3d p_c_ = cam.K() * (T_cf * sample.T_fw * T_wt * P_t);
                 Eigen::Vector2d p_c = project( (Eigen::Vector3d)(p_c_ ) );
                 Eigen::Vector2d obs = project( (Eigen::Vector3d)(cam.K() * cam.unmap_unproject(sample.obs.col(j)) ) );
@@ -426,7 +427,7 @@ int main( int /*argc*/, char* argv[] )
         }
         
         if( Pushed(add_image) ) {
-            if( tracker.NumVisibleFeatures() > tracker.target.NumCircles() - 10 )
+            if( tracker.NumVisibleFeatures() > tracker.target.Circles2D().size() - 10 )
             {
               const Eigen::MatrixXd obs = tracker.TargetPatternObservations();
 
@@ -509,7 +510,7 @@ int main( int /*argc*/, char* argv[] )
         // Display detected ellipses
         glOrtho(-0.5,w-0.5,h-0.5,-0.5,0,1.0);
         for( int i=0; i<tracker.conics.size(); ++i ) {
-            glColorBin(tracker.conics_target_map[i],tracker.target.circles3D().size());
+            glColorBin(tracker.conics_target_map[i],tracker.target.Circles3D().size());
             DrawCross(tracker.conics[i].center,2);
         }
         

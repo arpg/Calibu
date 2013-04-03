@@ -26,7 +26,7 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "target.h"
+#include "random_dot_target.h"
 
 #include <algorithm>
 #include <iostream>
@@ -42,13 +42,26 @@
 using namespace std;
 using namespace Eigen;
 
-Target::Target()
+namespace fiducials {
+
+// Forwards
+Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>
+  DistanceMatrix(const std::vector<Eigen::Vector2d >& pts );
+
+template<int R,int C,typename P>
+void SortRows(Eigen::Matrix<P,R,C,Eigen::RowMajor>& M)
+{
+  for( int r=0; r < M.rows(); ++r )
+    std::sort(&(M(r,0)), &(M(r,M.cols()-1))+1);
+}
+
+RandomDotTarget::RandomDotTarget()
   : seed(0), dt(NULL)
 {
   srand(seed);
 }
 
-void Target::SetSeed(int s )
+void RandomDotTarget::SetSeed(int s )
 {
   seed = s;
   srand(seed);
@@ -63,7 +76,7 @@ Matrix<double,Dynamic,Dynamic,RowMajor> DistanceMatrix(const vector<Vector2d >& 
   return D;
 }
 
-void Target::Clear()
+void RandomDotTarget::Clear()
 {
   // remove existing
   if( dt ) delete dt;
@@ -72,7 +85,7 @@ void Target::Clear()
   tpts3d.clear();
 }
 
-void Target::InitialiseFrom2DPts()
+void RandomDotTarget::InitialiseFrom2DPts()
 {
   for(vector<Vector2d >::const_iterator i = tpts.begin(); i != tpts.end(); ++i )
   {
@@ -89,7 +102,7 @@ void Target::InitialiseFrom2DPts()
 }
 
 
-void Target::LoadPattern( std::string filename, double radius, double scale )
+void RandomDotTarget::LoadPattern( std::string filename, double radius, double scale )
 {
   Clear();
 
@@ -116,7 +129,7 @@ void Target::LoadPattern( std::string filename, double radius, double scale )
   InitialiseFrom2DPts();
 }
 
-void Target::GenerateCircular(unsigned int max_circles, double radius, double min_distance, double border, const Vector2d& size)
+void RandomDotTarget::GenerateCircular(unsigned int max_circles, double radius, double min_distance, double border, const Vector2d& size)
 {
   assert(size[0] == size[1]);
 
@@ -166,7 +179,7 @@ void Target::GenerateCircular(unsigned int max_circles, double radius, double mi
   InitialiseFrom2DPts();
 }
 
-void Target::GenerateEmptyCircle(unsigned int max_circles, double radius, double min_distance, double border, double clear_radius, const Vector2d& size)
+void RandomDotTarget::GenerateEmptyCircle(unsigned int max_circles, double radius, double min_distance, double border, double clear_radius, const Vector2d& size)
 {
   Clear();
 
@@ -212,7 +225,7 @@ void Target::GenerateEmptyCircle(unsigned int max_circles, double radius, double
   InitialiseFrom2DPts();
 }
 
-void Target::GenerateRandom(unsigned int max_circles, double radius, double min_distance, double border, const Vector2d& size)
+void RandomDotTarget::GenerateRandom(unsigned int max_circles, double radius, double min_distance, double border, const Vector2d& size)
 {
   Clear();
 
@@ -254,7 +267,7 @@ void Target::GenerateRandom(unsigned int max_circles, double radius, double min_
   InitialiseFrom2DPts();
 }
 
-void Target::SaveEPS(string filename, float points_per_unit)
+void RandomDotTarget::SaveEPS(string filename, float points_per_unit)
 {
   const float ppu = points_per_unit;
   ofstream f;
@@ -279,7 +292,7 @@ void Target::SaveEPS(string filename, float points_per_unit)
   f.close();
 }
 
-void Target::SaveRotatedEPS(string filename, float points_per_unit)
+void RandomDotTarget::SaveRotatedEPS(string filename, float points_per_unit)
 {
   const float ppu = points_per_unit;
   ofstream f;
@@ -304,7 +317,7 @@ void Target::SaveRotatedEPS(string filename, float points_per_unit)
   f.close();
 }
 
-bool Target::LoadEPS( std::string filename, float points_per_unit )
+bool RandomDotTarget::LoadEPS( std::string filename, float points_per_unit )
 {
     Clear();
 
@@ -341,7 +354,7 @@ bool Target::LoadEPS( std::string filename, float points_per_unit )
         f.close();
 
         InitialiseFrom2DPts();
-        cout << "Loaded " << this->NumCircles() << " circles (radius: " << Radius() << ")" << endl;    
+        cout << "Loaded " << tpts.size() << " circles (radius: " << Radius() << ")" << endl;    
         return true;
     }else{
         return false;
@@ -493,14 +506,14 @@ void MutualClosest( const vector<Vector2d >& a, const vector<Vector2d >& b, vect
   }
 }
 
-void Target::Match( const vector<Vector2d >& measurement, vector<int>& measurement_label, int match_neighbours  )
+void RandomDotTarget::Match( const vector<Vector2d >& measurement, vector<int>& measurement_label, int match_neighbours  )
 {
   Matrix<double,Dynamic,Dynamic,RowMajor> dm = DistanceMatrix(measurement);
   SortRows(dm);
   Match(dm,measurement_label,match_neighbours);
 }
 
-void Target::Match( const Matrix<double,Dynamic,Dynamic,RowMajor>& sorted_measurement_distance_matrix, std::vector<int>& measurement_label, int match_neighbours )
+void RandomDotTarget::Match( const Matrix<double,Dynamic,Dynamic,RowMajor>& sorted_measurement_distance_matrix, std::vector<int>& measurement_label, int match_neighbours )
 {
   const Matrix<double,Dynamic,Dynamic,RowMajor>& dm = sorted_measurement_distance_matrix;
   const size_t msize = dm.rows();
@@ -567,9 +580,9 @@ Matrix3d RansacHomogModelFunction( const std::vector<int>& indices, RansacMatchD
   return EstimateH_ba(mpts,tpts);
 }
 
-void Target::FindTarget(
+bool RandomDotTarget::FindTarget(
   const Sophus::SE3d& T_cw,
-  const AbstractCamera& cam,
+  const LinearCamera& cam,
   vector<Conic>& conics,
   vector<int>& conics_target_map
 ) {
@@ -622,27 +635,20 @@ Eigen::Vector3d IntersectCamFeaturePlane( const Eigen::Vector2d& p, const Abstra
   }
 }
 
-void Target::FindTarget(
+bool RandomDotTarget::FindTarget(
   const LinearCamera& cam,
   vector<Conic>& conics,
-  vector<int>& conics_target_map,
-  int match_neighbours,
-  int ransac_iterations,
-  int ransac_min_ellipses,
-  double ransac_max_fit_error,
-  double plane_inlier_threshold,
-  bool use_mirror
+  vector<int>& conics_target_map
 ) {
-
   // Compute metric positions in 2D
-  const vector<Eigen::Vector2d >& tpts = use_mirror ? tpts_reflected : this->tpts;
+  const vector<Eigen::Vector2d >& tpts = this->tpts;
   vector<Vector2d >  mpts;
 
-  pair<Vector3d,Matrix3d > plane = PlaneFromConics(conics,radius,cam.K(), plane_inlier_threshold);
+  pair<Vector3d,Matrix3d > plane = PlaneFromConics(conics,radius,cam.K(), params.plane_inlier_thresh);
   const Vector4d N_w = unproject(plane.first) / (plane.first).norm();
 
   if( !is_finite(N_w) )
-    return;
+    return false;
 
   for( unsigned int i=0; i< conics.size(); ++i )
   {
@@ -658,16 +664,16 @@ void Target::FindTarget(
     SortRows(ellipse_dm);
 
     // Match using Hungarian method
-    Match(ellipse_dm,conics_target_map,match_neighbours);
+    Match(ellipse_dm,conics_target_map,params.match_neighbours);
 
     Sophus::SE2d T_tm;
 
     // Perform RANSAC to remove outliers
-    if( ransac_iterations )
+    if( params.ransac_its )
     {
       T_tm = RansacMatchCorrespondences(
-        mpts,tpts,conics_target_map,ransac_iterations,
-        ransac_max_fit_error,ransac_min_ellipses
+        mpts,tpts,conics_target_map,params.ransac_its,
+        params.ransac_max_inlier_err_mm, params.ransac_min_pts
       );
     }
 
@@ -686,7 +692,7 @@ void Target::FindTarget(
             const double d = (m_t - tpts[t]).norm();
 
             // check error is small
-            if( d < ransac_max_fit_error )
+            if( d < params.ransac_max_inlier_err_mm )
             {
               // check target circle hasn't already been matched
               if( find(conics_target_map.begin(),conics_target_map.end(),t) == conics_target_map.end() )
@@ -699,5 +705,16 @@ void Target::FindTarget(
     }
 
   }
+
+  return true;
+}
+
+bool RandomDotTarget::FindTarget(
+  std::vector<Conic>& conics,
+  std::vector<int>& ellipse_target_map
+) {
+    return false;
+}
+
 
 }

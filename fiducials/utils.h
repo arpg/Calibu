@@ -1,7 +1,8 @@
 /* This file is part of the fiducials Project.
  * https://github.com/stevenlovegrove/fiducials
  *
- * Copyright (c) 2011 Steven Lovegrove
+ * Copyright (C) 2011  Steven Lovegrove
+ *                     Imperial College London
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -25,8 +26,7 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef UTILS_H
-#define UTILS_H
+#pragma once
 
 #include <vector>
 #include <Eigen/Dense>
@@ -34,7 +34,11 @@
 
 #ifdef HAVE_TOON
 #include <TooN/se3.h>
+#endif // HAVE_TOON
 
+namespace fiducials {
+
+#ifdef HAVE_TOON
 template<typename T, unsigned s>
 TooN::Vector<s,T> toTooN(const Eigen::Matrix<T,s,1>& v)
 {
@@ -124,4 +128,4 @@ inline Eigen::Matrix4d SymmetryTransform( const Eigen::Vector4d& N )
   return S;
 }
 
-#endif // UTILS_H
+}

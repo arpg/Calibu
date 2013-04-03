@@ -32,6 +32,8 @@
 using namespace std;
 using namespace Eigen;
 
+namespace fiducials {
+
 inline short RootLabel(vector<PixelClass>& labels, short label )
 {
   if( label >= 0 )
@@ -98,5 +100,7 @@ void Label( int w, int h, const unsigned char* I, short* label, vector<PixelClas
         AssignLabel(w,h,I,label,labels,d,c);
     }
   }
+
+}
 
 }

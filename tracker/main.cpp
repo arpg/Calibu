@@ -12,6 +12,7 @@ using namespace std;
 using namespace pangolin;
 using namespace Eigen;
 using namespace CVD;
+using namespace fiducials;
 
 const int PANEL_WIDTH = 200;
 
@@ -116,7 +117,7 @@ int main( int /*argc*/, char* argv[] )
     // Display detected ellipses
     glOrtho(-0.5,w-0.5,h-0.5,-0.5,0,1.0);
     for( int i=0; i<tracker.conics.size(); ++i ) {
-      glColorBin(tracker.conics_target_map[i],tracker.target.circles3D().size());
+      glColorBin(tracker.conics_target_map[i],tracker.target.Circles3D().size());
       DrawCross(tracker.conics[i].center,2);
     }
     

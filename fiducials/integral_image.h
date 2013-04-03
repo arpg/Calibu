@@ -1,7 +1,7 @@
 /* This file is part of the fiducials Project.
  * https://github.com/stevenlovegrove/fiducials
  *
- * Copyright (C) 2010  Steven Lovegrove, Richard Newcombe, Hauke Strasdat
+ * Copyright (C) 2010  Steven Lovegrove
  *                     Imperial College London
  *
  * Permission is hereby granted, free of charge, to any person
@@ -28,39 +28,31 @@
 
 #pragma once
 
-#include <vector>
-#include <boost/array.hpp>
-#include <Eigen/Dense>
-
-#include "rectangle.h"
-#include "camera.h"
-
 namespace fiducials {
 
-struct Conic
+// Based on libCVD integral_image
+template<typename TI, typename TO>
+void integral_image(const int w, const int h, const TI* in, TO* out)
 {
-  IRectangle bbox;
-  Eigen::Matrix3d C;      // quadratic form: x'*C*x = 0 with x = (x1,x2,1) are
-                          // points on the ellipse
-  Eigen::Matrix3d Dual;   // l:=C*x is tangent line throught the point x
-                          // The dual of C is adj(C).
-                          // For lines through C it holds: l'*adj(C)*l = 0.
-                          // If C has full rank it holds up to scale:
-                          // adj(C) = C^{-1}
-  Eigen::Vector2d center; // center (c1,c2)
-};
+    out[0] = in[0];
 
-double Distance( const Conic& c1, const Conic& c2, double circle_radius );
+    //Do the first row.
+    for(int x=1; x < w; x++)
+        out[x] =out[x-1] + in[x];
 
-boost::array<std::pair<Eigen::Vector3d,Eigen::Matrix3d >, 2 > PlaneFromConic(
-  const Conic& c, double plane_circle_radius, const Eigen::Matrix3d& K
-);
+    //Do the first column.
+    for(int y=1; y < h; y++)
+        out[y*w] =out[(y-1)*w] + in[y*w];
 
-std::pair<Eigen::Vector3d,Eigen::Matrix3d > PlaneFromConics(
-  std::vector<Conic>& conics, double plane_circle_radius,
-  const Eigen::Matrix3d& K, double inlier_threshold
-);
+    //Do the remainder of the image
+    for(int y=1; y < h; y++) {
+        TO sum = in[y*w];
 
-Conic UnmapConic( const Conic& c, const AbstractCamera& cam );
+        for(int x=1; x < w; x++) {
+            sum += in[y*w+x];
+            out[y*w+x] = sum + out[(y-1)*w+x];
+        }
+    }
+}
 
 }

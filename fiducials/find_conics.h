@@ -1,7 +1,8 @@
 /* This file is part of the fiducials Project.
  * https://github.com/stevenlovegrove/fiducials
  *
- * Copyright (c) 2011 Steven Lovegrove
+ * Copyright (C) 2010  Steven Lovegrove, Richard Newcombe, Hauke Strasdat
+ *                     Imperial College London
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -25,12 +26,12 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef FIND_CONICS_H
-#define FIND_CONICS_H
+#pragma once
 
 #include <Eigen/Dense>
-
 #include "label.h"
+
+namespace fiducials {
 
 template<typename TdI>
 Eigen::Matrix3d FindEllipse(
@@ -170,4 +171,4 @@ void FindConics(
   }
 }
 
-#endif // FIND_CONICS
+}

@@ -30,12 +30,16 @@
 
 #include <iostream>
 #include "adaptive_threshold.h"
+#include "gradient.h"
+#include "integral_image.h"
 #include "label.h"
 #include "find_conics.h"
 #include "pnp.h"
 
 using namespace std;
 using namespace Eigen;
+
+namespace fiducials {
 
 Tracker::Tracker(int w, int h)
     : w(w), h(w),
@@ -101,19 +105,15 @@ bool Tracker::ProcessFrame(const TrackerParams & params,
 
   // Find target given (approximately) undistorted conics
   const static LinearCamera idcam(-1,-1,1,1,0,0);
-  target.FindTarget(idcam, conics_camframe, conics_target_map,
-                    params.target_match_neighbours, params.target_ransac_its,
-                    params.target_ransac_min_pts,
-                    params.target_ransac_max_inlier_err_mm,
-                    params.target_plane_inlier_thresh);
+  target.FindTarget(idcam, conics_camframe, conics_target_map);
   conics_candidate_map_first_pass = conics_target_map;
   int inliers = CountInliers(conics_candidate_map_first_pass);
   if (inliers<params.inlier_num_required)
     return false;
 
-  conics_target_map = PosePnPRansac(cam, ellipses, target.circles3D(), conics_candidate_map_first_pass, params.robust_3pt_its, params.robust_3pt_inlier_tol, &T_hw);
+  conics_target_map = PosePnPRansac(cam, ellipses, target.Circles3D(), conics_candidate_map_first_pass, params.robust_3pt_its, params.robust_3pt_inlier_tol, &T_hw);
 
-  rms = ReprojectionErrorRMS(cam, T_hw, target.circles3D(), ellipses,
+  rms = ReprojectionErrorRMS(cam, T_hw, target.Circles3D(), ellipses,
                              conics_target_map);
   target.FindTarget(T_hw, cam, conics, conics_target_map);
 
@@ -124,9 +124,9 @@ bool Tracker::ProcessFrame(const TrackerParams & params,
   if (inliers<params.inlier_num_required)
     return false;
 
-  conics_target_map = PosePnPRansac(cam, ellipses, target.circles3D(), conics_candidate_map_second_pass, params.robust_3pt_its, params.robust_3pt_inlier_tol, &T_hw);
+  conics_target_map = PosePnPRansac(cam, ellipses, target.Circles3D(), conics_candidate_map_second_pass, params.robust_3pt_its, params.robust_3pt_inlier_tol, &T_hw);
 
-  rms = ReprojectionErrorRMS(cam, T_hw, target.circles3D(), ellipses,
+  rms = ReprojectionErrorRMS(cam, T_hw, target.Circles3D(), ellipses,
                              conics_target_map);
 
 
@@ -155,10 +155,10 @@ int Tracker::NumVisibleFeatures() const
 
 Eigen::Matrix<double,3,Eigen::Dynamic> Tracker::TargetPattern3D() const
 {
-    Eigen::MatrixXd pattern3d = Eigen::MatrixXd(3, target.circles().size() );
-    for(size_t i=0; i < target.circles().size(); ++i )
+    Eigen::MatrixXd pattern3d = Eigen::MatrixXd(3, target.Circles2D().size() );
+    for(size_t i=0; i < target.Circles2D().size(); ++i )
     {
-        pattern3d.col(i) = target.circles3D()[i];
+        pattern3d.col(i) = target.Circles3D()[i];
     }
     return pattern3d;
 }
@@ -166,7 +166,7 @@ Eigen::Matrix<double,3,Eigen::Dynamic> Tracker::TargetPattern3D() const
 Eigen::Matrix<double,2,Eigen::Dynamic> Tracker::TargetPatternObservations() const
 {
     // Reverse map (target -> conic from conic -> target)
-    vector<int> target_conics_map(target.circles().size(), -1);
+    vector<int> target_conics_map(target.Circles2D().size(), -1);
     for( size_t i=0; i < conics_target_map.size(); ++i ) {
         if(conics_target_map[i] >= 0) {
             target_conics_map[conics_target_map[i]] = i;
@@ -184,8 +184,8 @@ Eigen::Matrix<double,2,Eigen::Dynamic> Tracker::TargetPatternObservations() cons
         }
     }
 
-    Eigen::Matrix<double,2,Eigen::Dynamic> obs = Eigen::MatrixXd(2, target.circles().size() );
-    for(size_t i=0; i < target.circles().size(); ++i ) {
+    Eigen::Matrix<double,2,Eigen::Dynamic> obs = Eigen::MatrixXd(2, target.Circles2D().size() );
+    for(size_t i=0; i < target.Circles2D().size(); ++i ) {
         const int c = target_conics_map[i];
         if(c >= 0 ) {
             Eigen::Vector2d circ = conics[c].center;
@@ -197,3 +197,4 @@ Eigen::Matrix<double,2,Eigen::Dynamic> Tracker::TargetPatternObservations() cons
     return obs;
 }
 
+}

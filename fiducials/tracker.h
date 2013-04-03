@@ -26,8 +26,7 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef TRACKER_H
-#define TRACKER_H
+#pragma once
 
 #include <memory>
 #include <sophus/se3.hpp>
@@ -35,7 +34,9 @@
 
 #include "label.h"
 #include "conics.h"
-#include "target.h"
+#include "random_dot_target.h"
+
+namespace fiducials {
 
 struct TrackerParams
 {
@@ -46,11 +47,6 @@ struct TrackerParams
     conic_max_area(4E4),
     conic_min_density(0.4),
     conic_min_aspect(0.1),
-    target_match_neighbours(10),
-    target_ransac_its(100),
-    target_ransac_min_pts(5),
-    target_ransac_max_inlier_err_mm(15),
-    target_plane_inlier_thresh(1.5),
     robust_3pt_inlier_tol(1.5),
     robust_3pt_its(100),
     inlier_num_required(10),
@@ -62,11 +58,6 @@ struct TrackerParams
   float conic_max_area;
   float conic_min_density;
   float conic_min_aspect;
-  int target_match_neighbours;
-  int target_ransac_its;
-  int target_ransac_min_pts;
-  float target_ransac_max_inlier_err_mm;
-  float target_plane_inlier_thresh;
   double robust_3pt_inlier_tol;
   int robust_3pt_its;
   int inlier_num_required;
@@ -100,7 +91,7 @@ struct Tracker
 
 //protected:
     // Fiducial Target
-    Target target;
+    RandomDotTarget target;
 
     // Images
     int w, h;
@@ -125,4 +116,4 @@ struct Tracker
     Sophus::SE3d T_hw;
 };
 
-#endif // TRACKER_H
+}

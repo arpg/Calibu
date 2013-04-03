@@ -32,6 +32,8 @@
 
 using namespace Eigen;
 
+namespace fiducials {
+
 Eigen::Matrix3d EstimateH_ba(
   const std::vector<Eigen::Vector2d >& a,
   const std::vector<Eigen::Vector2d >& b
@@ -69,4 +71,6 @@ Eigen::Matrix3d EstimateH_ba(
   H /= H(2,2);
 
   return H;
+}
+
 }

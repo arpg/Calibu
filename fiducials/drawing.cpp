@@ -30,6 +30,8 @@
 using namespace std;
 using namespace Eigen;
 
+namespace fiducials {
+
 void DrawRectangle( const IRectangle& r )
 {
   glBegin(GL_LINE_STRIP);
@@ -86,19 +88,19 @@ void DrawCircle( const Vector2d& p, double radius )
   glEnd();
 }
 
-void DrawTarget( const Target& t, const Vector2d& offset, double scale, double sat, double val )
+void DrawTarget( const RandomDotTarget& t, const Vector2d& offset, double scale, double sat, double val )
 {
   const double r = t.Radius() * scale;
 
-  for( unsigned int i=0; i<t.circles().size(); ++i )
+  for( unsigned int i=0; i<t.Circles2D().size(); ++i )
   {
-    const Vector2d p = t.circles()[i] * scale + offset;
-    glBinColor(i,t.circles().size(),sat,val);
+    const Vector2d p = t.Circles2D()[i] * scale + offset;
+    glBinColor(i,t.Circles2D().size(),sat,val);
     DrawCircle(p,r);
   }
 }
 
-void DrawTarget( const vector<int>& map, const Target& target, const Vector2d& offset, double scale, double sat, double val )
+void DrawTarget( const vector<int>& map, const RandomDotTarget& target, const Vector2d& offset, double scale, double sat, double val )
 {
   const double r = target.Radius() * scale;
 
@@ -107,8 +109,8 @@ void DrawTarget( const vector<int>& map, const Target& target, const Vector2d& o
     const int t = map[i];
     if( t >= 0 )
     {
-      const Vector2d p = target.circles()[t] * scale + offset;
-      glBinColor(t,target.circles().size(),sat,val);
+      const Vector2d p = target.Circles2D()[t] * scale + offset;
+      glBinColor(t,target.Circles2D().size(),sat,val);
       DrawCircle(p,r);
     }
   }
@@ -178,4 +180,6 @@ void DrawGrid(float num_lines, float line_delta)
 //    glVertex3f( 0.0, -line_delta*num_lines, 0.0);
 
     glEnd();
+}
+
 }

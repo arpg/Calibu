@@ -1,7 +1,8 @@
 /* This file is part of the fiducials Project.
  * https://github.com/stevenlovegrove/fiducials
  *
- * Copyright (c) 2011 Steven Lovegrove
+ * Copyright (C) 2010  Steven Lovegrove, Richard Newcombe, Hauke Strasdat
+ *                     Imperial College London
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -25,8 +26,7 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef DRAWING_H
-#define DRAWING_H
+#pragma once
 
 #include <fiducials/config.h>
 
@@ -52,8 +52,10 @@
 #include <unsupported/Eigen/OpenGLSupport>
 
 #include "rectangle.h"
-#include "target.h"
+#include "random_dot_target.h"
 #include "utils.h"
+
+namespace fiducials {
 
 void DrawRectangle( const IRectangle& r );
 
@@ -65,9 +67,9 @@ void DrawCross( const Eigen::Vector3d& p, int r = 5 );
 
 void DrawCircle( const Eigen::Vector2d& p, double radius = 5 );
 
-void DrawTarget( const Target& t, const Eigen::Vector2d& offset, double scale = 1.0, double sat = 1.0, double val = 1.0 );
+void DrawTarget( const RandomDotTarget& t, const Eigen::Vector2d& offset, double scale = 1.0, double sat = 1.0, double val = 1.0 );
 
-void DrawTarget( const std::vector<int>& map, const Target& target, const Eigen::Vector2d& offset, double scale = 1.0, double sat = 1.0, double val = 1.0 );
+void DrawTarget( const std::vector<int>& map, const RandomDotTarget& target, const Eigen::Vector2d& offset, double scale = 1.0, double sat = 1.0, double val = 1.0 );
 
 void SetPixelTransferScale( float scale );
 
@@ -236,4 +238,4 @@ inline void DrawPlane(const Eigen::Vector4d& N_w, float scale, int grid)
     DrawPlane(nd_w, scale, grid);
 }
 
-#endif // DRAWING_H
+}

@@ -1,7 +1,7 @@
 /* This file is part of the fiducials Project.
  * https://github.com/stevenlovegrove/fiducials
  *
- * Copyright (C) 2010  Steven Lovegrove, Richard Newcombe, Hauke Strasdat
+ * Copyright (C) 2010  Steven Lovegrove
  *                     Imperial College London
  *
  * Permission is hereby granted, free of charge, to any person
@@ -28,39 +28,20 @@
 
 #pragma once
 
-#include <vector>
-#include <boost/array.hpp>
-#include <Eigen/Dense>
-
-#include "rectangle.h"
-#include "camera.h"
-
 namespace fiducials {
 
-struct Conic
-{
-  IRectangle bbox;
-  Eigen::Matrix3d C;      // quadratic form: x'*C*x = 0 with x = (x1,x2,1) are
-                          // points on the ellipse
-  Eigen::Matrix3d Dual;   // l:=C*x is tangent line throught the point x
-                          // The dual of C is adj(C).
-                          // For lines through C it holds: l'*adj(C)*l = 0.
-                          // If C has full rank it holds up to scale:
-                          // adj(C) = C^{-1}
-  Eigen::Vector2d center; // center (c1,c2)
-};
+template<typename TI, typename TD>
+void gradient(const int w, const int h, const TI* I, TD* grad) {
+  const TI* pI = I + w + 1;
+  const TI* pEnd = I + w*h - w - 1;
+  TD* pOut = grad + w + 1;
 
-double Distance( const Conic& c1, const Conic& c2, double circle_radius );
-
-boost::array<std::pair<Eigen::Vector3d,Eigen::Matrix3d >, 2 > PlaneFromConic(
-  const Conic& c, double plane_circle_radius, const Eigen::Matrix3d& K
-);
-
-std::pair<Eigen::Vector3d,Eigen::Matrix3d > PlaneFromConics(
-  std::vector<Conic>& conics, double plane_circle_radius,
-  const Eigen::Matrix3d& K, double inlier_threshold
-);
-
-Conic UnmapConic( const Conic& c, const AbstractCamera& cam );
+  while (pI != pEnd) {
+    (*pOut)[0] = *(pI+1) - *(pI-1);
+    (*pOut)[1] = *(pI+w) - *(pI-w);
+    pI++;
+    pOut++;
+  }
+}
 
 }

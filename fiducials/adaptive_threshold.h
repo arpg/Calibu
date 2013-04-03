@@ -25,10 +25,11 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef ADAPTIVE_THRESHOLD_H
-#define ADAPTIVE_THRESHOLD_H
+#pragma once
 
 #include <algorithm>
+
+namespace fiducials {
 
 template<typename TI,typename TintI,typename Tout>
 void AdaptiveThreshold( int w, int h, const TI* I, const TintI* intI, Tout* out, float threshold, int s, Tout pass, Tout fail )
@@ -57,4 +58,4 @@ void AdaptiveThreshold( int w, int h, const TI* I, const TintI* intI, Tout* out,
   }
 }
 
-#endif // ADAPTIVE_THRESHOLD_H
+}

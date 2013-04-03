@@ -25,12 +25,13 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef RANSAC_H
-#define RANSAC_H
+#pragma once
 
 #include <algorithm>
 #include <vector>
 #include <limits>
+
+namespace fiducials {
 
 template<typename Model, int minimum_set_size, typename Data>
 class Ransac
@@ -121,4 +122,4 @@ inline Model Ransac<Model,minimum_set_size,Data>::Compute(unsigned int num_eleme
   return best_model;
 }
 
-#endif // RANSAC_H
+}

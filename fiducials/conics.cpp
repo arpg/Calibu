@@ -34,6 +34,8 @@
 using namespace std;
 using namespace Eigen;
 
+namespace fiducials {
+
 double Distance( const Conic& c1, const Conic& c2, double circle_radius )
 {
   const Matrix3d Q = c1.Dual * c2.C;
@@ -160,4 +162,6 @@ Conic UnmapConic( const Conic& c, const AbstractCamera& cam )
   ret.Dual = ret.C.inverse();
   ret.center = u[0];
   return ret;
+}
+
 }

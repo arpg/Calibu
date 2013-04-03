@@ -1,8 +1,8 @@
 /* This file is part of the fiducials Project.
  * https://github.com/stevenlovegrove/fiducials
  *
- * Copyright (C) 2010  Steven Lovegrove, Richard Newcombe, Hauke Strasdat
- *                     Imperial College London
+ * Copyright (C) 2013  Steven Lovegrove, 
+ *                     George Washington University
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -26,157 +26,49 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef TARGET_H
-#define TARGET_H
+#pragma once
 
-#include <algorithm>
-
+#include <vector>
 #include <Eigen/Dense>
 #include <sophus/se3.hpp>
 
-#include "conics.h"
 #include "camera.h"
+#include "conics.h"
 
-class Target
+namespace fiducials
+{
+
+class TargetInterface
 {
 public:
-  Target();
+    
+    // Find target given conic observations
+    // Returns true on success, false on failure
+    
+    // Assume approximately known camera and pose
+    virtual bool FindTarget(
+        const Sophus::SE3d& T_cw,            
+        const LinearCamera& cam,
+        std::vector<Conic>& conics,
+        std::vector<int>& conics_target_map
+    ) = 0;
 
-  void SetSeed(int s );
-  void GenerateCircular(unsigned int max_circles, double radius, double min_distance, double border, const Eigen::Vector2d& size );
-  void GenerateEmptyCircle(unsigned int max_circles, double radius, double min_distance, double border, double clear_radius, const Eigen::Vector2d& size );
-  void GenerateRandom(unsigned int max_circles, double radius, double min_distance, double border, const Eigen::Vector2d& size );
-  void LoadPattern( std::string filename, double radius, double scale = 1.0 );
-  bool LoadEPS( std::string filename, float points_per_unit =1 );
-  void SaveEPS( std::string filename, float points_per_unit =1 );
-  void SaveRotatedEPS( std::string filename, float points_per_unit=1);
+    // Assume approximately known camera
+    virtual bool FindTarget(
+        const LinearCamera& cam,
+        std::vector<Conic>& conics,
+        std::vector<int>& conics_target_map
+    ) = 0;
 
-  Eigen::Vector2d Size() const;
-
-  double Radius() const;
-
-  int NumCircles() const;
-  const std::vector<Eigen::Vector2d >& circles() const;
-  const std::vector<Eigen::Vector3d >& circles3D() const;
-
-  void FindTarget(
-    const Sophus::SE3d& T_cw,
-    const AbstractCamera& cam,
-    std::vector<Conic>& conics,
-    std::vector<int>& ellipse_target_map
-  );
-
-  void FindTarget(
-    const LinearCamera& cam,
-    std::vector<Conic>& conics,
-    std::vector<int>& ellipse_target_map,
-    int match_neighbours = 10,
-    int ransac_iterations = 100,
-    int ransac_min_ellipses = 10,
-    double ransac_max_fit_error = 2000,
-    double plane_inlier_threshold = 1.5,
-    bool use_mirror = false
-  );
-
-protected:
-  void Clear();
-  void InitialiseFrom2DPts();
-  void Match(
-    const Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>& sorted_measurement_distance_matrix,
-    std::vector<int>& measurement_label, int match_neighbours
-  );
-  void Match( const std::vector<Eigen::Vector2d >& measurement, std::vector<int>& measurement_label, int match_neighbours  );
-
-  unsigned int seed;
-  Eigen::Vector2d size;
-  double radius;
-  std::vector<Eigen::Vector2d > tpts;
-  std::vector<Eigen::Vector2d > tpts_reflected;
-  std::vector<Eigen::Vector3d > tpts3d;
-  Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>* dt;
+    // Only observations known
+    virtual bool FindTarget(
+        std::vector<Conic>& conics,
+        std::vector<int>& conics_target_map
+    ) = 0;
+    
+    // Return canonical set of known 2D/3D points.
+    virtual const std::vector<Eigen::Vector2d>& Circles2D() const = 0;
+    virtual const std::vector<Eigen::Vector3d>& Circles3D() const = 0;
 };
 
-// Utilities
-
-Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>
-  DistanceMatrix(const std::vector<Eigen::Vector2d >& pts );
-
-template<int R,int C,typename P>
-void SortRows(Eigen::Matrix<P,R,C>& M);
-
-// Inlines
-
-inline Eigen::Vector2d Target::Size() const
-{
-  return size;
 }
-
-inline int Target::NumCircles() const
-{
-  return tpts3d.size();
-}
-
-inline const std::vector<Eigen::Vector2d >& Target::circles() const
-{
-  return tpts;
-}
-
-inline const std::vector<Eigen::Vector3d >& Target::circles3D() const
-{
-  return tpts3d;
-}
-
-inline double Target::Radius() const
-{
-  return radius;
-}
-
-template<int R,int C,typename P>
-void SortRows(Eigen::Matrix<P,R,C,Eigen::RowMajor>& M)
-{
-  for( int r=0; r < M.rows(); ++r )
-    std::sort(&(M(r,0)), &(M(r,M.cols()-1))+1);
-}
-
-// Based on libCVD Gradient::gradient
-template<typename TI, typename TD>
-void gradient(const int w, const int h, const TI* I, TD* grad) {
-  const TI* pI = I + w + 1;
-  const TI* pEnd = I + w*h - w - 1;
-  TD* pOut = grad + w + 1;
-
-  while (pI != pEnd) {
-    (*pOut)[0] = *(pI+1) - *(pI-1);
-    (*pOut)[1] = *(pI+w) - *(pI-w);
-    pI++;
-    pOut++;
-  }
-//  zeroBorders(grad);
-}
-
-// Based on libCVD integral_image
-template<typename TI, typename TO>
-void integral_image(const int w, const int h, const TI* in, TO* out)
-{
-    out[0] = in[0];
-
-    //Do the first row.
-    for(int x=1; x < w; x++)
-        out[x] =out[x-1] + in[x];
-
-    //Do the first column.
-    for(int y=1; y < h; y++)
-        out[y*w] =out[(y-1)*w] + in[y*w];
-
-    //Do the remainder of the image
-    for(int y=1; y < h; y++) {
-        TO sum = in[y*w];
-
-        for(int x=1; x < w; x++) {
-            sum += in[y*w+x];
-            out[y*w+x] = sum + out[(y-1)*w+x];
-        }
-    }
-}
-
-#endif // TARGET_H

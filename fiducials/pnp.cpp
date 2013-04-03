@@ -7,6 +7,8 @@
 using namespace std;
 using namespace Eigen;
 
+namespace fiducials {
+
 vector<int> PosePnPRansac(
     const LinearCamera& cam,
     const std::vector<Vector2d> &img_pts,
@@ -104,4 +106,6 @@ double ReprojectionErrorRMS(const AbstractCamera& cam,
     }
   }
   return sqrt(sse / n);
+}
+
 }

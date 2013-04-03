@@ -1,7 +1,8 @@
 /* This file is part of the fiducials Project.
  * https://github.com/stevenlovegrove/fiducials
  *
- * Copyright (c) 2011 Steven Lovegrove
+ * Copyright (C) 2010  Steven Lovegrove, Richard Newcombe, Hauke Strasdat
+ *                     Imperial College London
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -25,12 +26,12 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef PIXEL_LABEL_H
-#define PIXEL_LABEL_H
+#pragma once
 
 #include <vector>
-
 #include "rectangle.h"
+
+namespace fiducials {
 
 struct PixelClass
 {
@@ -46,4 +47,4 @@ void Label(
   std::vector<PixelClass>& labels
 );
 
-#endif // PIXEL_LABEL_H
+}
