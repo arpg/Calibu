@@ -111,7 +111,7 @@ int main( int /*argc*/, char* argv[] )
       texRGB.Upload(I.data(),GL_LUMINANCE,GL_UNSIGNED_BYTE);
       texRGB.RenderToViewportFlipY();
     }else{
-        tex.Upload(tracker.GetConicFinder().ImageThresholded(),GL_LUMINANCE,GL_UNSIGNED_BYTE);
+        tex.Upload(tracker.Images().ImgThresh(),GL_LUMINANCE,GL_UNSIGNED_BYTE);
         tex.RenderToViewportFlipY();
     }
     

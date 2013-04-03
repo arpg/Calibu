@@ -42,7 +42,7 @@ using namespace Eigen;
 namespace fiducials {
 
 Tracker::Tracker(const TargetInterface& target, int w, int h)
-    : target(target), conic_finder(w,h),
+    : target(target), imgs(w,h),
     last_good(0), good_frames(0)
 {
 
@@ -53,7 +53,9 @@ bool Tracker::ProcessFrame(
 ) {
   double rms = 0;
   
-  conic_finder.Find(I);
+  imgs.Process(I);
+  conic_finder.Find(imgs);
+
   const std::vector<Conic>& conics = conic_finder.Conics();
 
   // Generate map and point structures
@@ -74,7 +76,7 @@ bool Tracker::ProcessFrame(
 
   // Find target given (approximately) undistorted conics
   const static LinearCamera idcam(-1,-1,1,1,0,0);
-  target.FindTarget(idcam, conics_camframe, conics_target_map);
+  target.FindTarget(idcam, imgs, conics_camframe, conics_target_map);
   conics_candidate_map_first_pass = conics_target_map;
   int inliers = CountInliers(conics_candidate_map_first_pass);
   if (inliers<params.inlier_num_required)
@@ -84,7 +86,7 @@ bool Tracker::ProcessFrame(
 
   rms = ReprojectionErrorRMS(cam, T_hw, target.Circles3D(), ellipses,
                              conics_target_map);
-  target.FindTarget(T_hw, cam, conics, conics_target_map);
+  target.FindTarget(T_hw, cam, imgs, conics, conics_target_map);
 
   conics_candidate_map_second_pass = conics_target_map;
 

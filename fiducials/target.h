@@ -33,6 +33,7 @@
 #include <sophus/se3.hpp>
 
 #include "camera.h"
+#include "image_processing.h"
 #include "conics.h"
 
 namespace fiducials
@@ -49,6 +50,7 @@ public:
     virtual bool FindTarget(
         const Sophus::SE3d& T_cw,            
         const LinearCamera& cam,
+        const ImageProcessing& images,
         const std::vector<Conic>& conics,
         std::vector<int>& conics_target_map
     ) const = 0;
@@ -56,12 +58,14 @@ public:
     // Assume approximately known camera
     virtual bool FindTarget(
         const LinearCamera& cam,
+        const ImageProcessing& images,
         const std::vector<Conic>& conics,
         std::vector<int>& conics_target_map
     ) const = 0;
 
     // Only observations known
     virtual bool FindTarget(
+        const ImageProcessing& images,
         const std::vector<Conic>& conics,
         std::vector<int>& conics_target_map
     ) const = 0;

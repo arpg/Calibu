@@ -587,6 +587,7 @@ Matrix3d RansacHomogModelFunction( const std::vector<int>& indices, RansacMatchD
 bool TargetRandomDot::FindTarget(
   const Sophus::SE3d& T_cw,
   const LinearCamera& cam,
+  const ImageProcessing& images,
   const vector<Conic>& conics,
   vector<int>& conics_target_map
 ) const {
@@ -643,6 +644,7 @@ Eigen::Vector3d IntersectCamFeaturePlane( const Eigen::Vector2d& p, const Abstra
 
 bool TargetRandomDot::FindTarget(
   const LinearCamera& cam,
+  const ImageProcessing& images,
   const vector<Conic>& conics,
   vector<int>& conics_target_map
 ) const {
@@ -716,6 +718,7 @@ bool TargetRandomDot::FindTarget(
 }
 
 bool TargetRandomDot::FindTarget(
+  const ImageProcessing& images,
   const std::vector<Conic>& conics,
   std::vector<int>& ellipse_target_map
 ) const {

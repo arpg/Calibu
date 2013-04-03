@@ -66,6 +66,10 @@ public:
     const ConicFinder& GetConicFinder() const {
         return conic_finder;
     }
+    
+    const ImageProcessing& Images() const {
+        return imgs;
+    }
         
     const std::vector<int>& ConicsTargetMap() const{
         return conics_target_map;
@@ -79,6 +83,7 @@ public:
 protected:
     // Fiducial Target
     const TargetInterface& target;
+    ImageProcessing imgs;
     ConicFinder conic_finder;
     
     // Hypothesis conics

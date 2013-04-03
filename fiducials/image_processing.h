@@ -25,35 +25,63 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "conic_finder.h"
+#pragma once
 
-#include "find_conics.h"
+#include <Eigen/Eigen>
+#include "label.h"
 
-#include "adaptive_threshold.h"
-#include "integral_image.h"
-#include "gradient.h"
-
-namespace fiducials {
-
-ConicFinder::ConicFinder()
+namespace fiducials
 {
-}
 
-void ConicFinder::Find(const ImageProcessing& imgs)
+struct ParamsImageProcessing
 {
-    candidates.clear();
-    conics.clear();
+    ParamsImageProcessing() :
+        at_threshold(0.7),
+        at_window_ratio(3),
+        black_on_white(true)
+    {
+        
+    }
+
+    float at_threshold;
+    int at_window_ratio;
+    bool black_on_white;
+};
+
+class ImageProcessing
+{
+public:
+    ImageProcessing(int w, int h);
+    ~ImageProcessing();
     
-    // Find candidate regions for conics
-    FindCandidateConicsFromLabels(
-        imgs.Width(), imgs.Height(), imgs.Labels(), candidates,
-        params.conic_min_area, params.conic_max_area,
-        params.conic_min_density,
-        params.conic_min_aspect
-    );
+    void Process(unsigned char* greyscale_image);
+        
+    inline int Width()  const { return width; }
+    inline int Height() const { return height; }
+
+    inline const unsigned char* Img() const { return I; }    
+    inline const Eigen::Vector2f* ImgDeriv() const { return dI; }
+    inline const unsigned char* ImgThresh() const { return tI; }    
+    inline const std::vector<PixelClass>& Labels() const { return labels; }
     
-    // Find conic parameters
-    FindConics(imgs.Width(), imgs.Height(), candidates, imgs.ImgDeriv(), conics );
-}
+    ParamsImageProcessing& Params() { return params; }
+    
+protected:
+    void AllocateImageData(int w, int h);
+    void DeallocateImageData();
+    
+    int width, height;
+    
+    // Images owned by this class
+    unsigned char* I;
+    float* intI;
+    Eigen::Vector2f* dI;
+    short* lI;
+    unsigned char* tI;
+
+    std::vector<PixelClass> labels;
+    ParamsImageProcessing params;
+};
+
 
 }

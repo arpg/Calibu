@@ -32,64 +32,42 @@
 
 #include "label.h"
 #include "conics.h"
+#include "image_processing.h"
 
 namespace fiducials {
 
 struct ParamsConicFinder
 {
     ParamsConicFinder() :
-        at_threshold(0.7),
-        at_window_ratio(3),
         conic_min_area(25),
         conic_max_area(4E4),
         conic_min_density(0.4),
-        conic_min_aspect(0.1),
-        black_on_white(true)
+        conic_min_aspect(0.1)
     {
         
     }
 
-    float at_threshold;
-    int at_window_ratio;
     float conic_min_area;
     float conic_max_area;
     float conic_min_density;
     float conic_min_aspect;    
-    bool black_on_white;
 };
 
 class ConicFinder
 {
 public:
-    ConicFinder(int width, int height);
-    ~ConicFinder();
-    
-    void Find(unsigned char *I);
+    ConicFinder();
+    void Find(const ImageProcessing& imgs);
     
     inline const std::vector<Conic>& Conics() const {
         return conics;
     }
-    
-    const unsigned char* ImageThresholded() const {
-        return tI;
-    }
-    
+        
     ParamsConicFinder& Params() {
         return params;
     }
     
 protected:    
-    void AllocateImageData(int w, int h);
-    void DeallocateImageData();
-    
-    int width, height;
-    
-    // Images owned by this class
-    float* intI;
-    Eigen::Vector2f* dI;
-    short* lI;
-    unsigned char* tI;    
-    
     // Output of this class
     std::vector<PixelClass> candidates;
     std::vector<Conic> conics; 

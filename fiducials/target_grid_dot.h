@@ -38,6 +38,15 @@ inline bool operator<(const Dist& lhs, const Dist& rhs) { return lhs.dist < rhs.
 
 struct ParamsGridDot
 {
+    ParamsGridDot() :
+        thresh_dist(0.13),
+        thresh_area(0.017),
+        cross_area_threshold(2.0),
+        cross_max_area_threshold(8.9),
+        cross_radius_ratio(0.058),
+        cross_line_ratio(0.036)
+    {}
+    
     double thresh_dist;
     double thresh_area;
     double cross_area_threshold;
@@ -57,17 +66,20 @@ public:
     bool FindTarget(
       const Sophus::SE3d& T_cw,
       const LinearCamera& cam,
+      const ImageProcessing& images,
       std::vector<Conic>& conics,
       std::vector<int>& ellipse_target_map
     ) const;
   
     bool FindTarget(
       const LinearCamera& cam,
+      const ImageProcessing& images,
       std::vector<Conic>& conics,
       std::vector<int>& ellipse_target_map
     ) const;
   
     bool FindTarget(
+      const ImageProcessing& images,
       std::vector<Conic>& conics,
       std::vector<int>& ellipse_target_map
     ) const;

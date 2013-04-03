@@ -11,10 +11,11 @@ SET(
   rectangle.h
   adaptive_threshold.h
   label.h label.cpp
+  image_processing.h image_processing.cpp
   conic_finder.h conic_finder.cpp
   target.h
   target_random_dot.h target_random_dot.cpp
-#  target_grid_dot.h target_grid_dot.cpp
+  target_grid_dot.h target_grid_dot.cpp
   utils.h utils.cpp
   drawing.h drawing.cpp
   tracker.h tracker.cpp

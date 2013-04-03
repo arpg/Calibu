@@ -111,7 +111,7 @@ double LineAngleDist(double a1, double a2)
 double GetCenterCrossScore(const Opposite& op1,
                            const Opposite& op2,
                            const std::vector<Conic>& conics,
-                           unsigned char* img, int w, int h,
+                           const unsigned char* img, int w, int h,
 //                           cv::Mat& image,
                            const double areaThreshold, //< area threshold in percent
                            const double maxAreaThreshold, //< area threshold in percent
@@ -352,20 +352,22 @@ void TargetGridDot::PropagateGrid(const std::vector<Eigen::Vector2d>& pts,const 
 bool TargetGridDot::FindTarget(
   const Sophus::SE3d& T_cw,
   const LinearCamera& cam,
+  const ImageProcessing& images,
   std::vector<Conic>& conics,
   std::vector<int>& ellipse_target_map
 ) const {
     // This target doesn't use position or camera information
-    return FindTarget(conics,ellipse_target_map);
+    return FindTarget(images,conics,ellipse_target_map);
 }
 
 bool TargetGridDot::FindTarget(
   const LinearCamera& cam,
+  const ImageProcessing& images,
   std::vector<Conic>& conics,
   std::vector<int>& ellipse_target_map
 ) const {
     // This target doesn't use position or camera information
-    return FindTarget(conics,ellipse_target_map);
+    return FindTarget(images,conics,ellipse_target_map);
 }
 
 void TargetGridDot::Clear() const
@@ -377,6 +379,7 @@ void TargetGridDot::Clear() const
 }
 
 bool TargetGridDot::FindTarget(
+  const ImageProcessing& images,
   std::vector<Conic>& conics,
   std::vector<int>& ellipse_target_map
 ) const {
@@ -400,7 +403,7 @@ bool TargetGridDot::FindTarget(
         if(pts_neighbours[jj].size() == 2){
             const double score = GetCenterCrossScore(
                 pts_neighbours[jj][0], pts_neighbours[jj][1],
-                conics, I.data, I.cols(), I.rows(),
+                conics, images.Img(), images.Width(), images.Height(),
                 params.cross_area_threshold, params.cross_max_area_threshold,
                 params.cross_radius_ratio, params.cross_line_ratio
             );
