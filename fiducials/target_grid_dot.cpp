@@ -5,7 +5,18 @@ namespace fiducials {
 TargetGridDot::TargetGridDot(double grid_spacing, Eigen::Vector2i grid_size, Eigen::Vector2i grid_center)
     : grid_spacing(grid_spacing), grid_size(grid_size), grid_center(grid_center)
 {
+    // Create cached grid coordinates
     
+    tpts2d.resize(grid_size(0) * grid_size(1));
+    tpts3d.resize(grid_size(0) * grid_size(1));
+    
+    for(int r=0; r< grid_size(1); ++r) {
+        for(int c=0; c< grid_size(0); ++c) {
+            Eigen::Vector2i p = Eigen::Vector2i(c,r) - grid_center;
+            tpts2d[r*grid_size(0)+c] = grid_spacing * Eigen::Vector2d(p(0), p(1));
+            tpts3d[r*grid_size(0)+c] = grid_spacing * Eigen::Vector3d(p(0), p(1), 0);
+        }
+    }    
 }
 
 std::vector<std::vector<Dist> > ClosestPoints( const std::vector<Eigen::Vector2d>& pts)
@@ -353,7 +364,7 @@ bool TargetGridDot::FindTarget(
   const Sophus::SE3d& T_cw,
   const LinearCamera& cam,
   const ImageProcessing& images,
-  std::vector<Conic>& conics,
+  const std::vector<Conic>& conics,
   std::vector<int>& ellipse_target_map
 ) const {
     // This target doesn't use position or camera information
@@ -363,7 +374,7 @@ bool TargetGridDot::FindTarget(
 bool TargetGridDot::FindTarget(
   const LinearCamera& cam,
   const ImageProcessing& images,
-  std::vector<Conic>& conics,
+  const std::vector<Conic>& conics,
   std::vector<int>& ellipse_target_map
 ) const {
     // This target doesn't use position or camera information
@@ -380,7 +391,7 @@ void TargetGridDot::Clear() const
 
 bool TargetGridDot::FindTarget(
   const ImageProcessing& images,
-  std::vector<Conic>& conics,
+  const std::vector<Conic>& conics,
   std::vector<int>& ellipse_target_map
 ) const {
     
@@ -398,7 +409,7 @@ bool TargetGridDot::FindTarget(
     //calcualte the score for each conic and keep a tally
     double bestScore = std::numeric_limits<double>::max();
     
-    int idxCrossConic = -1;
+    idxCrossConic = -1;
     for(size_t jj = 0 ; jj < conics.size() ; jj++){
         if(pts_neighbours[jj].size() == 2){
             const double score = GetCenterCrossScore(

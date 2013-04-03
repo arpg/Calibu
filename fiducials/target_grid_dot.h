@@ -67,20 +67,20 @@ public:
       const Sophus::SE3d& T_cw,
       const LinearCamera& cam,
       const ImageProcessing& images,
-      std::vector<Conic>& conics,
+      const std::vector<Conic>& conics,
       std::vector<int>& ellipse_target_map
     ) const;
   
     bool FindTarget(
       const LinearCamera& cam,
       const ImageProcessing& images,
-      std::vector<Conic>& conics,
+      const std::vector<Conic>& conics,
       std::vector<int>& ellipse_target_map
     ) const;
   
     bool FindTarget(
       const ImageProcessing& images,
-      std::vector<Conic>& conics,
+      const std::vector<Conic>& conics,
       std::vector<int>& ellipse_target_map
     ) const;
     
@@ -92,6 +92,20 @@ public:
     
     const std::vector<Eigen::Vector3d >& Circles3D() const {
         return tpts3d;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    
+    const std::vector<Eigen::Vector2i>& Grid() const {
+        return grid;
+    }
+    
+    const std::list<LineGroup>& LineGroups() const {
+        return line_groups;
+    }
+    
+    int CenterId() const {
+        return idxCrossConic;
     }
     
 protected:
@@ -113,6 +127,7 @@ protected:
     mutable std::vector<std::vector<Opposite> > pts_neighbours;
     mutable std::list<LineGroup> line_groups;
     mutable std::vector<Eigen::Vector2i> grid;
+    mutable int idxCrossConic;
 };
 
 }
