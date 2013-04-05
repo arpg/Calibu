@@ -34,7 +34,19 @@ int main( int argc, char** argv)
         std::cout << "\t" << argv[0] << " video_uri" << std::endl;
         return -1;
     }
+
+    // Setup Video Source
     std::string video_uri = argv[1];
+    pangolin::VideoInput video(video_uri);
+    
+    // Allocate stream buffer and vector of images (that will point into buffer)
+    unsigned char image_buffer[video.SizeBytes()];
+    std::vector<pangolin::Image<unsigned char> > images;
+    
+    // For the moment, assume all N cameras have same resolution
+    const size_t N = video.Streams().size();
+    const size_t w = video.Streams()[0].Width();
+    const size_t h = video.Streams()[0].Height();
     
     // Make grid of 3d points
     const double grid_spacing = 0.02;
@@ -42,20 +54,10 @@ int main( int argc, char** argv)
     const Eigen::Vector2i grid_center(9, 5);
     Calibrator calibrator(grid_spacing);   
     
-    // Setup Video Source
-    pangolin::VideoInput video(video_uri);
-    const pangolin::VideoPixelFormat vid_fmt = video.PixFormat();
-    const unsigned w = video.Width();
-    const unsigned h = video.Height();        
-    const size_t N = 2;
-    
+    // Setup GUI
     const int PANEL_WIDTH = 150;
-    pangolin::CreateGlutWindowAndBind("Main",2*w+PANEL_WIDTH,h);
+    pangolin::CreateGlutWindowAndBind("Main",2*w+PANEL_WIDTH,2*h);
     
-    // TODO: Fix this in pangolin so video recording doesn't assume this alignment.
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glPixelStorei(GL_PACK_ALIGNMENT, 1);        
-
     // Make things look prettier...        
     glEnable(GL_LINE_SMOOTH);
     glHint( GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST );
@@ -65,6 +67,10 @@ int main( int argc, char** argv)
     glDepthFunc( GL_LEQUAL );
     glEnable( GL_DEPTH_TEST );    
     glLineWidth(1.7);
+
+    // TODO: Fix this in pangolin so video recording doesn't assume this alignment.
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glPixelStorei(GL_PACK_ALIGNMENT, 1);        
     
     // Pangolin 3D Render state
     pangolin::OpenGlRenderState stacks;
@@ -72,19 +78,22 @@ int main( int argc, char** argv)
     stacks.SetModelViewMatrix(pangolin::ModelViewLookAtRDF(0,0,-10, 0,0,0, 0, -1, 0) );
     
     // Create viewport for video with fixed aspect
-    pangolin::Handler3D handler(stacks);
     pangolin::CreatePanel("ui").SetBounds(1.0,0.0,0,pangolin::Attach::Pix(PANEL_WIDTH));
-    pangolin::View& vVideo0 = pangolin::CreateDisplay().SetAspect(w/(float)h);
-    pangolin::View& vVideo1 = pangolin::CreateDisplay().SetAspect(w/(float)h);
-    pangolin::View& v3D     = pangolin::CreateDisplay().SetAspect((float)w/h).SetHandler(&handler);
     
     pangolin::View& container = pangolin::CreateDisplay()
             .SetBounds(1.0,0.0, pangolin::Attach::Pix(PANEL_WIDTH),1.0)
-            .SetLayout(pangolin::LayoutEqual)
-            .AddDisplay(vVideo0)
-            .AddDisplay(vVideo1)
-            .AddDisplay(v3D);
+            .SetLayout(pangolin::LayoutEqual);
     
+    // Add view for each camera stream
+    for(size_t c=0; c < N; ++c) {
+        container.AddDisplay( pangolin::CreateDisplay().SetAspect(w/(float)h) );
+    }
+    
+    // Add 3d view, attach input handler
+    pangolin::Handler3D handler(stacks);
+    pangolin::View& v3D = pangolin::CreateDisplay().SetAspect((float)w/h).SetHandler(&handler);
+    container.AddDisplay(v3D);
+        
     // OpenGl Texture for video frame
     pangolin::GlTexture tex(w,h,GL_LUMINANCE8);
             
@@ -95,17 +104,12 @@ int main( int argc, char** argv)
     pangolin::Var<bool> disp_thresh("ui.Display Thresh",false);
     pangolin::Var<bool> disp_lines("ui.Display Lines",false);
                     
-    CameraModel default_cam;
-    default_cam.Width() = w;
-    default_cam.Height() = h;
-    default_cam.Params()(0) = 300;
-    default_cam.Params()(1) = 300;
-    default_cam.Params()(2) = w/2.0;
-    default_cam.Params()(3) = h/2.0;
-    default_cam.Params()(4) = 0.2;
-    
     int calib_cams[N];
     for(size_t i=0; i<N; ++i) {
+        // Add relatively arbitrary starting camera params
+        const pangolin::StreamInfo& si = video.Streams()[i];
+        CameraModel default_cam( si.Width(), si.Height() );
+        default_cam.Params()  << 300, 300, w/2.0, h/2.0, 0.2;
         calib_cams[i] = calibrator.AddCamera(default_cam);
     }
     
@@ -115,10 +119,10 @@ int main( int argc, char** argv)
     pangolin::RegisterKeyPressCallback('[', [&](){calibrator.Start();} );
     pangolin::RegisterKeyPressCallback(']', [&](){calibrator.Stop();} );
     
-    ImageProcessing images(w,h);
-    images.Params().at_threshold = 1.0;
-    images.Params().at_window_ratio = 3.6;
-    images.Params().black_on_white = false;
+    ImageProcessing image_processing(w,h);
+    image_processing.Params().at_threshold = 1.0;
+    image_processing.Params().at_window_ratio = 3.6;
+    image_processing.Params().black_on_white = false;
     
     ConicFinder conic_finder;
     conic_finder.Params().conic_min_area = 3.96;
@@ -141,7 +145,9 @@ int main( int argc, char** argv)
         int calib_frame = -1;
         
         if( go ) {
-            if( Capture(img) ) {
+            
+            
+            if( video.Grab(image_buffer, images, true, true) ) {
                 calib_frame = calibrator.AddFrame(Sophus::SE3d(Sophus::SO3(), Eigen::Vector3d(0,0,1000)) );
             }else{
                 run = false;
@@ -154,15 +160,13 @@ int main( int argc, char** argv)
         
         for(size_t iI = 0; iI < N; ++iI)
         {
-            cv::Mat& I = img[iI];
-                                    
-            images.Process(I.data);
-            conic_finder.Find(images);
+            image_processing.Process( images[iI].ptr, images[iI].pitch );
+            conic_finder.Find(image_processing);
             
             const std::vector<Conic>& conics = conic_finder.Conics();
             std::vector<int> ellipse_target_map;
             
-            tracking_good[iI] = target.FindTarget(images, conic_finder.Conics(), ellipse_target_map);
+            tracking_good[iI] = target.FindTarget(image_processing, conic_finder.Conics(), ellipse_target_map);
             
             if(tracking_good[iI]) {
                 // Generate map and point structures
@@ -200,10 +204,10 @@ int main( int argc, char** argv)
             glColor3f(1,1,1);
             
             if(!disp_thresh) {
-                tex.Upload(I.data,GL_LUMINANCE,GL_UNSIGNED_BYTE);
+                tex.Upload(image_processing.Img(),GL_LUMINANCE,GL_UNSIGNED_BYTE);
                 tex.RenderToViewportFlipY();
             }else{
-                tex.Upload(images.ImgThresh(),GL_LUMINANCE,GL_UNSIGNED_BYTE);
+                tex.Upload(image_processing.ImgThresh(),GL_LUMINANCE,GL_UNSIGNED_BYTE);
                 tex.RenderToViewportFlipY();
             }
 

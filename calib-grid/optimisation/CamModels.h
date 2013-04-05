@@ -331,10 +331,20 @@ public:
     {
     }    
 
+    Camera(int w, int h)
+        : width(w), height(h), params(Eigen::Matrix<double,NUM_PARAMS,1>::Zero())
+    {
+    }    
+    
     Camera(const Eigen::Matrix<double,NUM_PARAMS,1>& params)
         : params(params)
     {
     }    
+    
+    Camera(int w, int h, const Eigen::Matrix<double,NUM_PARAMS,1>& params)
+        : width(w), height(h), params(params)
+    {
+    }        
 
     Camera(double* cam_params)
         : params(Eigen::Map<Eigen::Matrix<double,NUM_PARAMS,1> >(cam_params))

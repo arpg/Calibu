@@ -70,8 +70,8 @@ int main( int /*argc*/, char* argv[] )
 
   // Declare Image buffers
   CVD::ConvertImage<Rgb<byte>,byte> rgb_to_grey;
-  Image<Rgb<byte> > Irgb(size);
-  Image<byte> I(size);
+  CVD::Image<Rgb<byte> > Irgb(size);
+  CVD::Image<byte> I(size);
 
   // Camera parameters
   LinearCamera cam(w, h, 525 , 525, w/2, h/2);

@@ -1,3 +1,5 @@
+cmake_minimum_required(VERSION 2.8)
+
 SET(SAMPLE_NAME "calibgrid")
 
 FIND_PACKAGE(OpenCV REQUIRED)
@@ -19,6 +21,12 @@ FIND_PACKAGE(Pangolin REQUIRED)
 INCLUDE_DIRECTORIES(${Pangolin_INCLUDE_DIRS})
 LINK_DIRECTORIES(${Pangolin_LIBRARY_DIRS})
 LINK_LIBRARIES(${Pangolin_LIBRARIES})
+
+# git clone https://ceres-solver.googlesource.com/ceres-solver
+find_package( CeresSolver REQUIRED)
+INCLUDE_DIRECTORIES(${CeresSolver_INCLUDE_DIRS})
+LINK_LIBRARIES(${CeresSolver_LIBRARIES})
+
 
 INCLUDE_DIRECTORIES(
   ${OpenCV_INCLUDE_DIR}

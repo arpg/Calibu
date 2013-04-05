@@ -54,7 +54,7 @@ public:
     ImageProcessing(int w, int h);
     ~ImageProcessing();
     
-    void Process(unsigned char* greyscale_image);
+    void Process(unsigned char* greyscale_image, size_t pitch);
         
     inline int Width()  const { return width; }
     inline int Height() const { return height; }

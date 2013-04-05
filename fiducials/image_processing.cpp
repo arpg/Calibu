@@ -68,9 +68,15 @@ void ImageProcessing::DeallocateImageData()
     delete[] tI;
 }
 
-void ImageProcessing::Process(unsigned char* greyscale_image)
+void ImageProcessing::Process(unsigned char* greyscale_image, size_t pitch)
 {
-    memcpy(I, greyscale_image, width * height * sizeof(unsigned char) );
+    if(pitch > width*sizeof(unsigned char) ) {
+        for(int y=0; y < height; ++y) {
+            memcpy(I+y*width, greyscale_image+y*pitch, width * sizeof(unsigned char) );
+        }
+    }else{
+        memcpy(I, greyscale_image, width * height * sizeof(unsigned char) );
+    }
     
     // Process image
     gradient<>(width, height, I, dI );

@@ -53,7 +53,7 @@ bool Tracker::ProcessFrame(
 ) {
   double rms = 0;
   
-  imgs.Process(I);
+  imgs.Process(I, imgs.Width() );
   conic_finder.Find(imgs);
 
   const std::vector<Conic>& conics = conic_finder.Conics();
