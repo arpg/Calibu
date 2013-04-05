@@ -19,6 +19,7 @@ SET(
   drawing.h drawing.cpp
   tracker.h tracker.cpp
   pnp.h pnp.cpp
+  CameraModelBase.h CameraModel.h DistortionModel.h ProjectionModel.h
 )
 
 #######################################################
