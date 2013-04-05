@@ -4,7 +4,6 @@
 SET(
   SOURCES
   hungarian.h hungarian.cpp
-  camera.h camera.cpp
   conics.h conics.cpp
   find_conics.h find_conics.cpp
   ransac.h

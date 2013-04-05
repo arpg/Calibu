@@ -32,7 +32,7 @@
 #include <Eigen/Dense>
 #include <sophus/se3.hpp>
 
-#include "camera.h"
+#include "CameraModelBase.h"
 #include "image_processing.h"
 #include "conics.h"
 
@@ -49,7 +49,7 @@ public:
     // Assume approximately known camera and pose
     virtual bool FindTarget(
         const Sophus::SE3d& T_cw,            
-        const LinearCamera& cam,
+        const CameraModelBase& cam,
         const ImageProcessing& images,
         const std::vector<Conic>& conics,
         std::vector<int>& conics_target_map
@@ -57,7 +57,7 @@ public:
 
     // Assume approximately known camera
     virtual bool FindTarget(
-        const LinearCamera& cam,
+        const CameraModelBase& cam,
         const ImageProcessing& images,
         const std::vector<Conic>& conics,
         std::vector<int>& conics_target_map

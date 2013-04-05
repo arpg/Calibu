@@ -5,7 +5,8 @@
 
 #include <Sophus/se3.hpp>
 
-#include "optimisation/CameraModel.h"
+#include <fiducials/CameraModel.h>
+
 #include "optimisation/CostFunctionAndParams.h"
 #include "optimisation/AutoDiffArrayCostFunction.h"
 #include "optimisation/LocalParamSe3.h"

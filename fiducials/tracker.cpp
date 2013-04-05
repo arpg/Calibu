@@ -35,6 +35,7 @@
 #include "label.h"
 #include "find_conics.h"
 #include "pnp.h"
+#include "CameraModel.h"
 
 using namespace std;
 using namespace Eigen;
@@ -49,7 +50,7 @@ Tracker::Tracker(const TargetInterface& target, int w, int h)
 }
 
 bool Tracker::ProcessFrame(
-    LinearCamera& cam, unsigned char* I
+    CameraModelBase& cam, unsigned char* I
 ) {
   double rms = 0;
   
@@ -75,7 +76,8 @@ bool Tracker::ProcessFrame(
   }
 
   // Find target given (approximately) undistorted conics
-  const static LinearCamera idcam(-1,-1,1,1,0,0);
+  const static CameraModel<ProjectionLinearId> idcam;
+  
   target.FindTarget(idcam, imgs, conics_camframe, conics_target_map);
   conics_candidate_map_first_pass = conics_target_map;
   int inliers = CountInliers(conics_candidate_map_first_pass);

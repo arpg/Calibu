@@ -72,14 +72,14 @@ public:
 
   bool FindTarget(
     const Sophus::SE3d& T_cw,
-    const LinearCamera& cam,
+    const CameraModelBase& cam,
     const ImageProcessing& images,
     const std::vector<Conic>& conics,
     std::vector<int>& ellipse_target_map
   ) const;
 
   bool FindTarget(
-    const LinearCamera& cam,
+    const CameraModelBase& cam,
     const ImageProcessing& images,
     const std::vector<Conic>& conics,
     std::vector<int>& ellipse_target_map

@@ -139,7 +139,7 @@ pair<Vector3d,Matrix3d > PlaneFromConics( const vector<Conic>& conics, double pl
   return best;
 }
 
-Conic UnmapConic( const Conic& c, const AbstractCamera& cam )
+Conic UnmapConic( const Conic& c, const CameraModelBase& cam )
 {
   std::vector<Eigen::Vector2d > d;
   std::vector<Eigen::Vector2d > u;
@@ -151,7 +151,7 @@ Conic UnmapConic( const Conic& c, const AbstractCamera& cam )
   d.push_back(Eigen::Vector2d(c.bbox.x2,c.bbox.y2));
 
   for( int i=0; i<5; ++i )
-    u.push_back( cam.unmap(d[i]) );
+    u.push_back( cam.Unmap(d[i]) );
 
   // Distortion locally estimated by homography
   const Matrix3d H_du = EstimateH_ba(u,d);

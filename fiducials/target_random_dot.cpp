@@ -563,7 +563,7 @@ double RansacHomogCostFunction( const Matrix3d& H_tm, int i, RansacMatchData* da
 {
   const Vector2d& m = data->mpts[i];
   const Vector2d& t = data->tpts[data->mpts_label[i]];
-  const Vector2d m_t = project( (Vector3d)(H_tm * unproject(m)) );
+  const Vector2d m_t = Project( (Vector3d)(H_tm * Unproject(m)) );
   return (m_t - t).squaredNorm();
 }
 
@@ -586,20 +586,20 @@ Matrix3d RansacHomogModelFunction( const std::vector<int>& indices, RansacMatchD
 
 bool TargetRandomDot::FindTarget(
   const Sophus::SE3d& T_cw,
-  const LinearCamera& cam,
+  const CameraModelBase& cam,
   const ImageProcessing& images,
   const vector<Conic>& conics,
   vector<int>& conics_target_map
 ) const {
   // We have conic centers, and projected centers. Try to match
 
-  const IRectangle img_rect( 0,0,cam.width(),cam.height());
+  const IRectangle img_rect( 0,0,cam.Width(),cam.Height());
 
   vector<Vector2d > vis_t;
   vector<int> vis_t_map;
   for( unsigned int i=0; i < tpts3d.size(); ++i )
   {
-    const Vector2d t = cam.project_map( T_cw * tpts3d[i] );
+    const Vector2d t = cam.ProjectMap(T_cw * tpts3d[i] );
     if( img_rect.Contains(t) )
     {
       vis_t.push_back(t);
@@ -627,10 +627,10 @@ Vector3d nd_b(const Sophus::SE3d& T_ba, const Vector3d& n_a)
   return n_b / d_b;
 }
 
-Eigen::Vector3d IntersectCamFeaturePlane( const Eigen::Vector2d& p, const AbstractCamera & cam, const Sophus::SE3d& T_wk, const Eigen::Vector4d& N_w)
+Eigen::Vector3d IntersectCamFeaturePlane( const Eigen::Vector2d& p, const CameraModelBase & cam, const Sophus::SE3d& T_wk, const Eigen::Vector4d& N_w)
 {
-  const Vector3d nd_k = nd_b(T_wk.inverse(),project(N_w));
-  const Vector3d kinvp = cam.unmap_unproject(p);
+  const Vector3d nd_k = nd_b(T_wk.inverse(), Project(N_w));
+  const Vector3d kinvp = cam.UnmapUnproject(p);
   const double denom = nd_k.dot(kinvp);
   if( denom !=0 ) {
     const Vector3d r_k = -kinvp / denom;
@@ -643,7 +643,7 @@ Eigen::Vector3d IntersectCamFeaturePlane( const Eigen::Vector2d& p, const Abstra
 }
 
 bool TargetRandomDot::FindTarget(
-  const LinearCamera& cam,
+  const CameraModelBase& cam,
   const ImageProcessing& images,
   const vector<Conic>& conics,
   vector<int>& conics_target_map
@@ -653,7 +653,7 @@ bool TargetRandomDot::FindTarget(
   vector<Vector2d >  mpts;
 
   pair<Vector3d,Matrix3d > plane = PlaneFromConics(conics,radius,cam.K(), params.plane_inlier_thresh);
-  const Vector4d N_w = unproject(plane.first) / (plane.first).norm();
+  const Vector4d N_w = Unproject(plane.first) / (plane.first).norm();
 
   if( !is_finite(N_w) )
     return false;

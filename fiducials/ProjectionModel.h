@@ -37,6 +37,44 @@ namespace fiducials {
 // Linear Projection parametrizations
 //////////////////////////////////////////////////////////////////////////////
 
+// Identity matrix projection
+struct ProjectionLinearId
+{
+    static const unsigned NUM_PARAMS = 0;
+    
+    inline static std::string Name() { return "id"; }
+    
+    template<typename T> inline
+    static Eigen::Matrix<T,2,1> Map(const Eigen::Matrix<T,2,1>& proj, T const* /*params*/)
+    {
+        return proj;
+    }
+    
+    template<typename T> inline
+    static Eigen::Matrix<T,2,1> Unmap(const Eigen::Matrix<T,2,1>& img, T const* /*params*/)
+    {    
+        return img;
+    }
+    
+    template<typename T> inline
+    static Eigen::Matrix<T,3,3> MakeK(T const* /*params*/)
+    {
+        return Eigen::Matrix<T,3,3>::Identity();
+    }
+
+    template<typename T> inline
+    static Eigen::Matrix<T,3,3> MakeKinv(T const* /*params*/)
+    {
+        return Eigen::Matrix<T,3,3>::Identity();
+    }
+    
+    static inline
+    Eigen::Matrix<double,2,2> dMap_dp(const Eigen::Vector2d& p, const double* /*params*/)
+    {
+        return Eigen::Matrix<double,2,2>::Identity();
+    }   
+};
+
 // Four parameters: fu, fv, u0, v0
 template<typename DistortionModel>
 struct ProjectionLinear

@@ -33,7 +33,7 @@
 #include <Eigen/Dense>
 
 #include "rectangle.h"
-#include "camera.h"
+#include "CameraModelBase.h"
 
 namespace fiducials {
 
@@ -61,6 +61,6 @@ std::pair<Eigen::Vector3d,Eigen::Matrix3d > PlaneFromConics(
   const Eigen::Matrix3d& K, double inlier_threshold
 );
 
-Conic UnmapConic( const Conic& c, const AbstractCamera& cam );
+Conic UnmapConic( const Conic& c, const CameraModelBase& cam );
 
 }

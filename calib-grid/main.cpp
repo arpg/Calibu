@@ -98,7 +98,7 @@ int main( int argc, char** argv)
     for(size_t i=0; i<N; ++i) {
         // Add relatively arbitrary starting camera params
         const pangolin::StreamInfo& si = video.Streams()[i];
-        CameraModel default_cam( si.Width(), si.Height() );
+        CameraModel<Fov> default_cam( si.Width(), si.Height() );
         default_cam.Params()  << 300, 300, w/2.0, h/2.0, 0.2;
         calib_cams[i] = calibrator.AddCamera(default_cam);
     }
@@ -141,11 +141,7 @@ int main( int argc, char** argv)
                 run = false;
             }
         }  
-        
-        // Get current camera parameters from optimisation
-        FovCamera fovcam[N];
-        for(size_t i=0; i<N; ++i) fovcam[i] = Convert(calibrator.GetCamera(i).camera);
-        
+                
         for(size_t iI = 0; iI < N; ++iI)
         {
             image_processing.Process( images[iI].ptr, images[iI].pitch );
@@ -165,7 +161,7 @@ int main( int argc, char** argv)
                                     
                 // find camera pose given intrinsics
                 PosePnPRansac(
-                    fovcam[iI], ellipses, target.Circles3D(),
+                    calibrator.GetCamera(iI).camera, ellipses, target.Circles3D(),
                     ellipse_target_map,
                     0, 0, &T_hw[iI]
                 );
@@ -246,19 +242,21 @@ int main( int argc, char** argv)
         pangolin::glDraw_z0(1.0, 10);
         
         for(size_t c=0; c< calibrator.NumCameras(); ++c) {
+            const Eigen::Matrix3d Kinv = calibrator.GetCamera(c).camera.Kinv();
+            
             const CameraAndPose<Fov> cap = calibrator.GetCamera(c);
             const Sophus::SE3d T_ck = cap.T_ck;
 
             // Draw keyframes
             glBinColor(c, 2, 0.2);
             for(size_t k=0; k< calibrator.NumFrames(); ++k) {
-                DrawFrustrum(fovcam[c].Kinv(),w,h,(T_ck * calibrator.GetFrame(k)).inverse(),0.01);
+                DrawFrustrum(Kinv,w,h,(T_ck * calibrator.GetFrame(k)).inverse(),0.01);
             }
             
             // Draw current camera
             if(tracking_good[c]) {
                 glBinColor(c, 2, 0.5);
-                DrawFrustrum(fovcam[c].Kinv(),w,h,T_hw[c].inverse(),0.05);
+                DrawFrustrum(Kinv,w,h,T_hw[c].inverse(),0.05);
             }
         }
                     

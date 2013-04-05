@@ -8,6 +8,7 @@
 #include <fiducials/drawing.h>
 
 #include <fiducials/utils.h>
+#include <fiducials/CameraModel.h>
 
 using namespace std;
 using namespace pangolin;
@@ -74,7 +75,7 @@ int main( int /*argc*/, char* argv[] )
   CVD::Image<byte> I(size);
 
   // Camera parameters
-  LinearCamera cam(w, h, 525 , 525, w/2, h/2);
+  CameraModel<Pinhole> cam(w, h, Eigen::Vector4d(525 , 525, w/2.0, h/2.0) );
 
   // Variables
   Var<bool> step("ui.step", false, false);

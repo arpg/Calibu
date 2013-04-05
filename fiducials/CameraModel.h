@@ -141,38 +141,47 @@ public:
     }
     
     ///////////////////////////////////////////////////////////////////////////
-    // Member functions
+    // Constructors
     ///////////////////////////////////////////////////////////////////////////
 
     CameraModel()
-        : params(Eigen::Matrix<double,NUM_PARAMS,1>::Zero())
+        : CameraModelBase(0,0), params(Eigen::Matrix<double,NUM_PARAMS,1>::Zero())
     {
     }    
 
     CameraModel(int w, int h)
-        : width(w), height(h), params(Eigen::Matrix<double,NUM_PARAMS,1>::Zero())
+        : CameraModelBase(w,h), params(Eigen::Matrix<double,NUM_PARAMS,1>::Zero())
     {
     }    
     
     CameraModel(const Eigen::Matrix<double,NUM_PARAMS,1>& params)
-        : params(params)
+        : CameraModelBase(0,0), params(params)
     {
     }    
     
     CameraModel(int w, int h, const Eigen::Matrix<double,NUM_PARAMS,1>& params)
-        : width(w), height(h), params(params)
+        : CameraModelBase(w,h), params(params)
     {
     }        
 
     CameraModel(double* cam_params)
-        : params(Eigen::Map<Eigen::Matrix<double,NUM_PARAMS,1> >(cam_params))
+        : CameraModelBase(0,0), params(Eigen::Map<Eigen::Matrix<double,NUM_PARAMS,1> >(cam_params))
+    {
+    }    
+
+    CameraModel(int w, int h, double* cam_params)
+        : CameraModelBase(w,h), params(Eigen::Map<Eigen::Matrix<double,NUM_PARAMS,1> >(cam_params))
     {
     }    
     
     CameraModel(const CameraModel& other)
-        : params(other.params)
+        : CameraModelBase(other), params(other.params)
     {
     }    
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Member functions
+    ///////////////////////////////////////////////////////////////////////////
     
     Eigen::Matrix<double,NUM_PARAMS,1>& Params() {
         return params;
@@ -200,15 +209,15 @@ public:
         return Unmap(img, params.data());
     }
     
-    Eigen::Matrix3d MakeK() const
+    inline Eigen::Matrix3d K() const
     {
         return ProjectionModel::MakeK(params.data());
     }
-    
-    Eigen::Matrix3d MakeKinv() const
+
+    inline Eigen::Matrix3d Kinv() const
     {
         return ProjectionModel::MakeKinv(params.data());
-    }    
+    }
     
     inline Eigen::Vector2d ProjectMap(const Eigen::Vector3d& P) const
     {
@@ -230,25 +239,7 @@ public:
         return Transfer<double>(data(), T_ba, pa, rho, in_front);
     }
     
-    inline Eigen::Matrix3d K()
-    {
-        return MakeK(params.data());
-    }
-
-    inline Eigen::Matrix3d Kinv()
-    {
-        return MakeKinv(params.data());
-    }
-    
-    int& Width() { return width; }
-    int Width() const { return width; }
-
-    int& Height() { return height; }
-    int Height() const { return height; }
-    
 protected:
-    int width;
-    int height;
     Eigen::Matrix<double,NUM_PARAMS,1> params;
 };
 

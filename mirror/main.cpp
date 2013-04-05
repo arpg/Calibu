@@ -235,7 +235,7 @@ int main( int /*argc*/, char* argv[] )
                 conics_camframe.push_back(UnmapConic(conics[i],cam));
 
             // Find target given (approximately) undistorted conics
-            const static LinearCamera idcam(-1,-1,1,1,0,0);
+            const static CameraModelBase idcam(-1,-1,1,1,0,0);
             target.FindTarget(
                         idcam,conics_camframe, conics_target_map, target_match_neighbours,
                         target_ransac_its, target_ransac_min_pts, target_ransac_max_inlier_err_mm,

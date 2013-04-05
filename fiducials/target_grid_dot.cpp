@@ -362,7 +362,7 @@ void TargetGridDot::PropagateGrid(const std::vector<Eigen::Vector2d>& pts,const 
 
 bool TargetGridDot::FindTarget(
   const Sophus::SE3d& T_cw,
-  const LinearCamera& cam,
+  const CameraModelBase& cam,
   const ImageProcessing& images,
   const std::vector<Conic>& conics,
   std::vector<int>& ellipse_target_map
@@ -372,7 +372,7 @@ bool TargetGridDot::FindTarget(
 }
 
 bool TargetGridDot::FindTarget(
-  const LinearCamera& cam,
+  const CameraModelBase& cam,
   const ImageProcessing& images,
   const std::vector<Conic>& conics,
   std::vector<int>& ellipse_target_map

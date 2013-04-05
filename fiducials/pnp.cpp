@@ -10,7 +10,7 @@ using namespace Eigen;
 namespace fiducials {
 
 vector<int> PosePnPRansac(
-    const LinearCamera& cam,
+    const CameraModelBase& cam,
     const std::vector<Vector2d> &img_pts,
     const vector<Vector3d> & ideal_pts,
     const vector<int> & candidate_map,
@@ -36,7 +36,7 @@ vector<int> PosePnPRansac(
     if (ideal_point_id>=0)
     {
 //        const Eigen::Vector2d & center = img_pts[i];
-        const Eigen::Vector2d center = cam.unmap(img_pts[i]);
+        const Eigen::Vector2d center = cam.Unmap(img_pts[i]);
         const Eigen::Vector3d & c3d = ideal_pts[ideal_point_id];
         cv_img.push_back(cv::Point2f(center.x(), center.y()));
         cv_obj.push_back(cv::Point3f(c3d.x(), c3d.y(), c3d.z()));
@@ -86,7 +86,7 @@ int CountInliers(const vector<int> & conics_target_map)
   return inliers;
 }
 
-double ReprojectionErrorRMS(const AbstractCamera& cam,
+double ReprojectionErrorRMS(const CameraModelBase& cam,
                             const Sophus::SE3d& T_cw,
                             const vector<Vector3d>& pts3d,
                             const vector<Vector2d>& pts2d,
@@ -99,7 +99,7 @@ double ReprojectionErrorRMS(const AbstractCamera& cam,
     const int ti = map2d_3d[i];
     if( ti >= 0 )
     {
-      const Vector2d t = cam.map(project(T_cw * pts3d[ti]));
+      const Vector2d t = cam.Map(Project(T_cw * pts3d[ti]));
       Vector2d err = t - pts2d[i].head<2>();
       sse += (err).squaredNorm();
       ++n;

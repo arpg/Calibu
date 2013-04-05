@@ -30,12 +30,12 @@
 
 #include <vector>
 #include <sophus/se3.hpp>
-#include "camera.h"
+#include "CameraModelBase.h"
 
 namespace fiducials {
 
 std::vector<int> PosePnPRansac(
-    const LinearCamera& cam,
+    const CameraModelBase& cam,
     const std::vector<Eigen::Vector2d> & img_pts,
     const std::vector<Eigen::Vector3d> & ideal_pts,
     const std::vector<int> & candidate_map,
@@ -47,7 +47,7 @@ std::vector<int> PosePnPRansac(
 int CountInliers(const std::vector<int> & conics_target_map);
 
 double ReprojectionErrorRMS(
-    const AbstractCamera& cam,
+    const CameraModelBase& cam,
     const Sophus::SE3d& T_cw,
     const std::vector<Eigen::Vector3d>& pts3d,
     const std::vector<Eigen::Vector2d>& pts2d,
