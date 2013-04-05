@@ -38,6 +38,12 @@ int main( int argc, char** argv)
     const size_t w = video.Streams()[0].Width();
     const size_t h = video.Streams()[0].Height();
     
+    for(size_t i=0; i<N; ++i) {
+        if( video.Streams()[i].PixFormat().channels != 1) {
+            throw "Video channels must be GRAY8 format. Use Convert:// or fmt=GRAY8 option";
+        }
+    }
+    
     // Make grid of 3d points
     const double grid_spacing = 0.02;
     const Eigen::Vector2i grid_size(19,10);
