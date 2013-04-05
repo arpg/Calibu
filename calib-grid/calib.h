@@ -5,27 +5,28 @@
 
 #include <Sophus/se3.hpp>
 
-#include "optimisation/CamModels.h"
-#include "optimisation/TimedCost.h"
-#include "optimisation/TimedCost.h"
+#include "optimisation/CameraModel.h"
+#include "optimisation/CostFunctionAndParams.h"
 #include "optimisation/AutoDiffArrayCostFunction.h"
 #include "optimisation/LocalParamSe3.h"
 
-typedef Camera<ProjectionLinear,DistortionFov> CameraModel;
+namespace fiducials {
 
+template<typename ProjModel>
 struct CameraAndPose
 {
-    CameraModel camera;
+    CameraModel<ProjModel> camera;
     Sophus::SE3d T_ck;
 };
 
 // Parameter block 0: T_kw // keyframe
 // Parameter block 1: T_ck // keyframe to cam
 // Parameter block 2: fu,fv,u0,v0,w
+template<typename ProjModel>
 struct ReprojectionCost
     : public ceres::AutoDiffArrayCostFunction<
-        CostFunctionAndParams, ReprojectionCost,
-        2,  7,7, CameraModel::NUM_PARAMS>
+        CostFunctionAndParams, ReprojectionCost<ProjModel>,
+        2,  7,7, ProjModel::NUM_PARAMS>
 {
     ReprojectionCost(Eigen::Vector3d Pw, Eigen::Vector2d pc)
         : m_Pw(Pw), m_pc(pc)
@@ -41,7 +42,7 @@ struct ReprojectionCost
         T const* camparam = parameters[2];
         
         const Eigen::Matrix<T,3,1> Pc = T_ck * (T_kw * m_Pw.cast<T>());
-        const Eigen::Matrix<T,2,1> pc = CameraModel::Map<T>(Project<T>(Pc), camparam);
+        const Eigen::Matrix<T,2,1> pc = ProjModel::template Map<T>(Project<T>(Pc), camparam);
         r = pc - m_pc.cast<T>();
         return true;
     }    
@@ -50,9 +51,11 @@ struct ReprojectionCost
     Eigen::Vector2d m_pc;
 };
 
+template<typename ProjModel>
 class Calibrator
 {
 public:
+    
     Calibrator(double grid_spacing)
         : m_grid_spacing(grid_spacing)
     {
@@ -99,10 +102,10 @@ public:
         m_thread.join();        
     }
     
-    int AddCamera(const CameraModel& cam, const Sophus::SE3d T_ck = Sophus::SE3d() )
+    int AddCamera(const CameraModel<ProjModel>& cam, const Sophus::SE3d T_ck = Sophus::SE3d() )
     {
         int id = m_camera.size();
-        CameraAndPose* cp = new CameraAndPose{cam,T_ck};
+        CameraAndPose<ProjModel>* cp = new CameraAndPose<ProjModel>{cam,T_ck};
         m_camera.push_back( cp );        
         return id;
     }
@@ -124,12 +127,12 @@ public:
 
         // new camera pose to bundle adjust
         
-        CameraAndPose& cp = m_camera[camera];
+        CameraAndPose<ProjModel>& cp = m_camera[camera];
         Sophus::SE3d& T_kw = m_T_kw[frame];
         
         // Create cost function
         Eigen::Vector3d P = Eigen::Vector3d(grid(0), grid(1), 0) * m_grid_spacing;
-        CostFunctionAndParams* cost = new ReprojectionCost(P, p_c);
+        CostFunctionAndParams* cost = new ReprojectionCost<ProjModel>(P, p_c);
         cost->Params() = std::vector<double*>{T_kw.data(), cp.T_ck.data(), cp.camera.data()};
         cost->Loss() = nullptr;
         m_costs.push_back(cost);
@@ -152,7 +155,7 @@ public:
         return m_camera.size();
     }
     
-    CameraAndPose GetCamera(size_t i)
+    CameraAndPose<ProjModel> GetCamera(size_t i)
     {
         return m_camera[i];
     }
@@ -210,7 +213,7 @@ protected:
     bool m_running;
     
     boost::ptr_vector< Sophus::SE3d > m_T_kw;
-    boost::ptr_vector< CameraAndPose > m_camera;    
+    boost::ptr_vector< CameraAndPose<ProjModel> > m_camera;    
     boost::ptr_vector< CostFunctionAndParams > m_costs;  
     
     ceres::Problem::Options m_prob_options;
@@ -219,3 +222,5 @@ protected:
     
     double m_grid_spacing;
 };
+
+}

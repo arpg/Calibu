@@ -17,16 +17,6 @@
 
 using namespace fiducials;
 
-FovCamera Convert(const Camera<ProjectionLinear, DistortionFov>& cam)
-{
-    return FovCamera(
-        cam.Width(), cam.Height(),
-        cam.Params()[0], cam.Params()[1],
-        cam.Params()[2], cam.Params()[3],
-        cam.Params()[4]
-    );
-}
-
 int main( int argc, char** argv)
 {    
     if(argc < 2) {
@@ -52,7 +42,7 @@ int main( int argc, char** argv)
     const double grid_spacing = 0.02;
     const Eigen::Vector2i grid_size(19,10);
     const Eigen::Vector2i grid_center(9, 5);
-    Calibrator calibrator(grid_spacing);   
+    Calibrator<Fov> calibrator(grid_spacing);   
     
     // Setup GUI
     const int PANEL_WIDTH = 150;
@@ -145,8 +135,6 @@ int main( int argc, char** argv)
         int calib_frame = -1;
         
         if( go ) {
-            
-            
             if( video.Grab(image_buffer, images, true, true) ) {
                 calib_frame = calibrator.AddFrame(Sophus::SE3d(Sophus::SO3(), Eigen::Vector3d(0,0,1000)) );
             }else{
@@ -258,7 +246,7 @@ int main( int argc, char** argv)
         pangolin::glDraw_z0(1.0, 10);
         
         for(size_t c=0; c< calibrator.NumCameras(); ++c) {
-            const CameraAndPose cap = calibrator.GetCamera(c);
+            const CameraAndPose<Fov> cap = calibrator.GetCamera(c);
             const Sophus::SE3d T_ck = cap.T_ck;
 
             // Draw keyframes
