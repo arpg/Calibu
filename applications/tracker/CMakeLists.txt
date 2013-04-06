@@ -1,0 +1,40 @@
+SET(SAMPLE_NAME "tracker")
+
+FIND_PACkAGE(CVD QUIET)
+
+IF(CVD_FOUND)
+    FIND_PACKAGE(Boost 1.40 COMPONENTS thread filesystem REQUIRED)
+    FIND_PACKAGE(OpenCV REQUIRED)
+    FIND_PACKAGE(Eigen3 REQUIRED)
+
+    find_package(Fiducials REQUIRED)
+    include_directories(${Fiducials_INCLUDE_DIRS})
+    LINK_LIBRARIES( ${LIBRARY_NAME} )
+
+    # git://github.com/stevenlovegrove/Sophus.git
+    FIND_PACKAGE(Sophus REQUIRED)
+    INCLUDE_DIRECTORIES( ${Sophus_INCLUDE_DIR} )
+    LINK_DIRECTORIES( ${Sophus_LIBRARY_DIRS} )
+    LINK_LIBRARIES(${Sophus_LIBRARIES})
+
+    # git://github.com/stevenlovegrove/Pangolin.git
+    FIND_PACKAGE(Pangolin REQUIRED)
+    INCLUDE_DIRECTORIES(${Pangolin_INCLUDE_DIRS})
+    LINK_DIRECTORIES(${Pangolin_LIBRARY_DIRS})
+    LINK_LIBRARIES(${Pangolin_LIBRARIES})
+
+    INCLUDE_DIRECTORIES(
+      ${OpenCV_INCLUDE_DIR}
+      ${CVD_INCLUDE_DIR}
+      ${EIGEN3_INCLUDE_DIR}
+      ${Sophus_INCLUDE_DIR}
+    )
+
+    LINK_LIBRARIES(
+      ${OpenCV_LIBS}
+      ${CVD_LIBRARY}
+      lapack
+    )
+
+    ADD_EXECUTABLE(${SAMPLE_NAME} main.cpp)
+ENDIF(CVD_FOUND)

@@ -1,32 +1,25 @@
-PROJECT("Fiducials")
-SET(FIDUCIALS_VERSION_MAJOR 0)
-SET(FIDUCIALS_VERSION_MINOR 1)
+project("Fiducials")
 
-CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
-SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/CMakeModules/")
+cmake_minimum_required(VERSION 2.8)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/CMakeModules/")
 
-OPTION(BUILD_EXAMPLES "Build Examples" ON)
+option(BUILD_APPLICATIONS "Build Applications" ON)
 
-IF(CMAKE_COMPILER_IS_GNUCXX )
-   ADD_DEFINITIONS("-Wall")
-   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-ENDIF()
+set(CMAKE_CXX_FLAGS "-std=c++0x -Wall ${CMAKE_CXX_FLAGS}" )
 
 # Overide with cmake -DCMAKE_BUILD_TYPE=Debug {dir}
-IF( NOT CMAKE_BUILD_TYPE )
-   MESSAGE("Build type not set (defaults to release)")
-   MESSAGE("-DCMAKE_BUILD_TYPE=Debug for debug")
-   SET( CMAKE_BUILD_TYPE Release )
-ELSE()
+if( NOT CMAKE_BUILD_TYPE )
+   message("Build type not set (defaults to release)")
+   message("-DCMAKE_BUILD_TYPE=Debug for debug")
+   set( CMAKE_BUILD_TYPE Release )
+else()
    MESSAGE("Build type: ${CMAKE_BUILD_TYPE}")
-ENDIF()
+endif()
 
-STRING(TOLOWER ${PROJECT_NAME} LIBRARY_NAME)
+string(TOLOWER ${PROJECT_NAME} LIBRARY_NAME)
 
-ADD_SUBDIRECTORY(${LIBRARY_NAME})
+add_subdirectory(src)
 
-IF( BUILD_EXAMPLES )
-    ADD_SUBDIRECTORY(tracker)
-    ADD_SUBDIRECTORY(calib-grid)
-    #ADD_SUBDIRECTORY(mirror)
-ENDIF()
+if( BUILD_APPLICATIONS )
+    add_subdirectory(applications)
+endif()
