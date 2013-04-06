@@ -2,6 +2,9 @@
 
 #include <ceres/ceres.h>
 
+namespace fiducials
+{
+
 class CostFunctionAndParams
     : public ceres::CostFunction
 {
@@ -24,3 +27,5 @@ protected:
     std::vector<double*> m_params;
     ceres::LossFunction* m_loss_func;
 };
+
+}

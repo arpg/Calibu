@@ -1,3 +1,8 @@
+#pragma once
+
+namespace fiducials
+{
+
 class LocalParamSe3 : public ceres::LocalParameterization {
  public:
   virtual ~LocalParamSe3() {}
@@ -81,3 +86,5 @@ class LocalParamSe3 : public ceres::LocalParameterization {
   virtual int LocalSize() const { return 6; }
 
 };
+
+}
