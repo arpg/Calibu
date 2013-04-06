@@ -11,13 +11,13 @@
 #include <fiducials/calib/AutoDiffArrayCostFunction.h>
 #include <fiducials/calib/LocalParamSe3.h>
 
+namespace fiducials {
+
 template<typename T, typename ...Args>
 std::unique_ptr<T> make_unique( Args&& ...args )
 {
     return std::unique_ptr<T>( new T( std::forward<Args>(args)... ) );
 }
-
-namespace fiducials {
 
 template<typename ProjModel>
 struct CameraAndPose
