@@ -1,7 +1,8 @@
 #pragma once
 
-#include <boost/thread.hpp>
-#include <boost/ptr_container/ptr_vector.hpp>
+#include <thread>
+#include <mutex>
+#include <memory>
 
 #include <Sophus/se3.hpp>
 
@@ -10,11 +11,22 @@
 #include <fiducials/calib/AutoDiffArrayCostFunction.h>
 #include <fiducials/calib/LocalParamSe3.h>
 
+template<typename T, typename ...Args>
+std::unique_ptr<T> make_unique( Args&& ...args )
+{
+    return std::unique_ptr<T>( new T( std::forward<Args>(args)... ) );
+}
+
 namespace fiducials {
 
 template<typename ProjModel>
 struct CameraAndPose
 {
+    CameraAndPose( const CameraModel<ProjModel>& camera, const Sophus::SE3d& T_ck)
+        : camera(camera), T_ck(T_ck)
+    {
+    }
+
     CameraModel<ProjModel> camera;
     Sophus::SE3d T_ck;
 };
@@ -73,8 +85,8 @@ public:
         std::cout << "------------------------------------------" << std::endl;
         for(size_t c=0; c<m_camera.size(); ++c) {
             std::cout << "Camera: " << c << std::endl;
-            std::cout << m_camera[c].camera.Params().transpose() << std::endl;
-            std::cout << m_camera[c].T_ck.matrix3x4() << std::endl << std::endl;
+            std::cout << m_camera[c]->camera.Params().transpose() << std::endl;
+            std::cout << m_camera[c]->T_ck.matrix3x4() << std::endl << std::endl;
         }        
         
     }
@@ -90,7 +102,7 @@ public:
     {
         if(!m_running) {
             m_should_run = true;
-            m_thread = boost::thread(boost::bind( &Calibrator::SolveThread, this )) ;
+            m_thread = std::thread(std::bind( &Calibrator::SolveThread, this )) ;
         }else{
             std::cerr << "Already Running." << std::endl;
         }        
@@ -105,16 +117,14 @@ public:
     int AddCamera(const CameraModel<ProjModel>& cam, const Sophus::SE3d T_ck = Sophus::SE3d() )
     {
         int id = m_camera.size();
-        CameraAndPose<ProjModel>* cp = new CameraAndPose<ProjModel>{cam,T_ck};
-        m_camera.push_back( cp );        
+        m_camera.push_back( make_unique<CameraAndPose<ProjModel> >(cam,T_ck) );
         return id;
     }
     
     int AddFrame(Sophus::SE3d T_kw = Sophus::SE3d())
     {
         int id = m_T_kw.size();
-        Sophus::SE3d* new_T_kw = new Sophus::SE3d(T_kw);
-        m_T_kw.push_back( new_T_kw );
+        m_T_kw.push_back( make_unique<Sophus::SE3d>(T_kw) );
         return id;
     }
     
@@ -127,15 +137,15 @@ public:
 
         // new camera pose to bundle adjust
         
-        CameraAndPose<ProjModel>& cp = m_camera[camera];
-        Sophus::SE3d& T_kw = m_T_kw[frame];
+        CameraAndPose<ProjModel>& cp = *m_camera[camera];
+        Sophus::SE3d& T_kw = *m_T_kw[frame];
         
         // Create cost function
         Eigen::Vector3d P = Eigen::Vector3d(grid(0), grid(1), 0) * m_grid_spacing;
         CostFunctionAndParams* cost = new ReprojectionCost<ProjModel>(P, p_c);
         cost->Params() = std::vector<double*>{T_kw.data(), cp.T_ck.data(), cp.camera.data()};
         cost->Loss() = nullptr;
-        m_costs.push_back(cost);
+        m_costs.push_back(std::unique_ptr<CostFunctionAndParams>(cost));
         
         m_update_mutex.unlock();
     }
@@ -147,7 +157,7 @@ public:
     
     Sophus::SE3d& GetFrame(size_t i)
     {
-        return m_T_kw[i];
+        return *m_T_kw[i];
     }
     
     size_t NumCameras() const
@@ -157,7 +167,7 @@ public:
     
     CameraAndPose<ProjModel> GetCamera(size_t i)
     {
-        return m_camera[i];
+        return *m_camera[i];
     }
     
 protected:
@@ -173,19 +183,19 @@ protected:
             
             // Add parameters
             for(size_t c=0; c<m_camera.size(); ++c) {
-                problem.AddParameterBlock(m_camera[c].T_ck.data(), 7, &m_LocalParamSe3 );
+                problem.AddParameterBlock(m_camera[c]->T_ck.data(), 7, &m_LocalParamSe3 );
                 if(c==0) {
-                    problem.SetParameterBlockConstant(m_camera[c].T_ck.data());
+                    problem.SetParameterBlockConstant(m_camera[c]->T_ck.data());
                 }
             }
             for(size_t p=0; p<m_T_kw.size(); ++p) {
-                problem.AddParameterBlock(m_T_kw[p].data(), 7, &m_LocalParamSe3 );
+                problem.AddParameterBlock(m_T_kw[p]->data(), 7, &m_LocalParamSe3 );
             }
             
             // Add costs
             for(size_t c=0; c<m_costs.size(); ++c)
             {
-                CostFunctionAndParams& cost = m_costs[c];
+                CostFunctionAndParams& cost = *m_costs[c];
                 problem.AddResidualBlock(&cost, cost.Loss(), cost.Params());
             }
             
@@ -207,14 +217,14 @@ protected:
         m_running = false;
     }
     
-    boost::mutex m_update_mutex;    
-    boost::thread m_thread;    
+    std::mutex m_update_mutex;    
+    std::thread m_thread;    
     bool m_should_run;
     bool m_running;
     
-    boost::ptr_vector< Sophus::SE3d > m_T_kw;
-    boost::ptr_vector< CameraAndPose<ProjModel> > m_camera;    
-    boost::ptr_vector< CostFunctionAndParams > m_costs;  
+    std::vector< std::unique_ptr<Sophus::SE3d> > m_T_kw;
+    std::vector< std::unique_ptr<CameraAndPose<ProjModel> > > m_camera;    
+    std::vector< std::unique_ptr<CostFunctionAndParams > > m_costs;  
     
     ceres::Problem::Options m_prob_options;
     ceres::Solver::Options  m_solver_options;

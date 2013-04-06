@@ -40,7 +40,6 @@ SET(
     conics/Conic.cpp
     conics/ConicFinder.cpp
     conics/FindConics.cpp
-    gl/Drawing.cpp
     image/ImageProcessing.cpp
     image/Label.cpp
     pose/Pnp.cpp
@@ -54,34 +53,24 @@ SET(
 #######################################################
 ## Find required dependencies
 
-find_package(OpenGL REQUIRED QUIET)
-find_package(Boost COMPONENTS thread filesystem REQUIRED QUIET)
-
-## Apply required dependencies settings
-list(APPEND USER_INC  "${PROJECT_SOURCE_DIR}/include;${CMAKE_CURRENT_BINARY_DIR}/include" )
-list(APPEND USER_INC  "${OPENGL_INCLUDE_DIR};${Boost_INCLUDE_DIRS};${PROJECT_BINARY_DIR}" )
-list(APPEND LINK_LIBS "${OPENGL_LIBRARIES};${Boost_LIBRARIES}" )
-list(APPEND LIB_DIRS  "${OPENGL_LIBRARY_DIR};${Boost_LIBRARY_DIRS}" )
-
 # git://github.com/stevenlovegrove/Sophus.git
 find_package(Sophus REQUIRED)
-list(APPEND LINK_LIBS ${Sophus_LIBRARIES} )
-list(APPEND USER_INC  ${Sophus_INCLUDE_DIR} )
-list(APPEND LIB_DIRS  ${Sophus_LIBRARY_DIRS} )
-
 find_package(OpenCV REQUIRED)
-list(APPEND LINK_LIBS ${OpenCV2_LIBRARIES} )
-list(APPEND INTERNAL_INC ${OpenCV2_INCLUDE_DIRS} )
 
-find_package(Eigen3 REQUIRED)
-list(APPEND USER_INC  ${EIGEN3_INCLUDE_DIR} )
+
+## Apply project include directories
+list(APPEND USER_INC  "${PROJECT_SOURCE_DIR}/include;${CMAKE_CURRENT_BINARY_DIR}/include" )
+list(APPEND USER_INC   ${Sophus_INCLUDE_DIR} )
+
+list(APPEND LINK_LIBS  ${OpenCV2_LIBRARIES} )
+list(APPEND INTERNAL_INC ${OpenCV2_INCLUDE_DIRS} )
 
 include_directories( ${INTERNAL_INC} )
 include_directories( ${USER_INC} )
 link_libraries(${LINK_LIBS})
 link_directories(${LIB_DIRS})
 
-add_library(${LIBRARY_NAME} SHARED ${SOURCES})
+add_library(${LIBRARY_NAME} SHARED ${HEADERS} ${SOURCES})
 
 #######################################################
 ## Create configure file for inclusion in library

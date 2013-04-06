@@ -29,7 +29,8 @@
 #pragma once
 
 #include <vector>
-#include <boost/array.hpp>
+#include <array>
+
 #include <Eigen/Dense>
 
 #include <fiducials/utils/Rectangle.h>
@@ -52,7 +53,7 @@ struct Conic
 
 double Distance( const Conic& c1, const Conic& c2, double circle_radius );
 
-boost::array<std::pair<Eigen::Vector3d,Eigen::Matrix3d >, 2 > PlaneFromConic(
+std::array<std::pair<Eigen::Vector3d,Eigen::Matrix3d >, 2 > PlaneFromConic(
   const Conic& c, double plane_circle_radius, const Eigen::Matrix3d& K
 );
 

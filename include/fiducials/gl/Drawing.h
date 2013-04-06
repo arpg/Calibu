@@ -50,37 +50,55 @@
 
 namespace fiducials {
 
-void DrawRectangle( const IRectangle& r );
+void glVertex( const Eigen::Vector3d& p )
+{
+    glVertex3dv(p.data());
+}
 
-void DrawCross( float x, float y, int r = 5 );
+void DrawRectangle( const IRectangle& r )
+{
+  glBegin(GL_LINE_STRIP);
+    glVertex2f(r.x1,r.y1);
+    glVertex2f(r.x2,r.y1);
+    glVertex2f(r.x2,r.y2);
+    glVertex2f(r.x1,r.y2);
+    glVertex2f(r.x1,r.y1);
+  glEnd();
+}
 
-void DrawCross( const Eigen::Vector2d& p, int r = 5 );
+void DrawCross( float x, float y, int r )
+{
+  glBegin(GL_LINES);
+    glVertex2f(x,y-r);
+    glVertex2f(x,y+r);
+    glVertex2f(x-r,y);
+    glVertex2f(x+r,y);
+  glEnd();
+}
 
-void DrawCross( const Eigen::Vector3d& p, int r = 5 );
+void DrawCross( float x, float y, float z, int r )
+{
+  glBegin(GL_LINES);
+    glVertex3f(x,y-r,z);
+    glVertex3f(x,y+r,z);
+    glVertex3f(x-r,y,z);
+    glVertex3f(x+r,y,z);
+    glVertex3f(x,y,z-r);
+    glVertex3f(x,y,z+r);
+  glEnd();
+}
 
-void DrawCircle( const Eigen::Vector2d& p, double radius = 5 );
+void DrawCross( const Eigen::Vector2d& p, int r )
+{
+  DrawCross(p[0],p[1],r);
+}
 
-void DrawTarget( const TargetRandomDot& t, const Eigen::Vector2d& offset, double scale = 1.0, double sat = 1.0, double val = 1.0 );
+void DrawCross( const Eigen::Vector3d& p, int r )
+{
+  DrawCross(p[0],p[1],p[2],r);
+}
 
-void DrawTarget( const std::vector<int>& map, const TargetRandomDot& target, const Eigen::Vector2d& offset, double scale = 1.0, double sat = 1.0, double val = 1.0 );
 
-void SetPixelTransferScale( float scale );
-
-void DrawAxis(float s = 1.0);
-
-void DrawAxis( const Sophus::SE3d& T_wf, float scale = 1.0 );
-
-void DrawFrustrum(
-  const Eigen::Matrix3d& Kinv, int w, int h, float scale
-);
-
-void DrawFrustrum(
-  const Eigen::Matrix3d& Kinv, int w, int h, const Sophus::SE3d& T_wf, float scale
-);
-
-void DrawGrid(float num_lines = 30, float line_delta = 2);
-
-// Inlines
 
 // h [0,360)
 // s [0,1]
@@ -135,25 +153,6 @@ inline void SetPixelTransferScale( float scale )
   glPixelTransferf(GL_BLUE_SCALE, scale);
 }
 
-//inline Sophus::SO3d RotationRHSBasis_wz(const Eigen::Vector3d& z_w, const Eigen::Vector3d& up_w)
-//{
-//    const Eigen::Vector3d n = z_w;
-//    const Eigen::Vector3d r  = n ^ up_w;
-//    const Eigen::Vector3d up  = -(r ^ n);
-
-//    Eigen::Matrix3d R_wn;
-//    R_wn.slice<0,0,3,1>() = r.as_col();
-//    R_wn.slice<0,1,3,1>() = up.as_col();
-//    R_wn.slice<0,2,3,1>() = n.as_col();
-
-
-//    Matrix is correct - converting to SO3 breaks!
-//    Sophus::SO3d Eigen_R_wn(R_wn);
-//    std::cout << R_wn << std::endl;
-//    std::cout << Eigen_R_wn << std::endl;
-//    return Eigen_R_wn;
-//}
-
 /// Adapted from From TooN so3.h:
 /// creates an SO3 as a rotation that takes Vector a into the direction of Vector b
 /// with the rotation axis along a ^ b. If |a ^ b| == 0, it creates the identity rotation.
@@ -185,14 +184,6 @@ Sophus::SO3d Rotation(const Eigen::Vector3d& a, const Eigen::Vector3d& b)
 
     return Sophus::SO3d(M);
 }
-
-// TODO: Check this works.
-//inline Sophus::SE3d PlaneBasis_wp(const Eigen::Vector4d& N_w)
-//{
-//    const Eigen::Vector3d n = N_w.head<3>();
-//    const Sophus::SO3d R_wn = Rotation(Eigen::Vector3d(0,0,-1),n);
-//    return Sophus::SE3d(R_wn, -N_w[3]*n);
-//}
 
 inline Sophus::SE3d PlaneBasis_wp(const Eigen::Vector3d& nd_w)
 {
@@ -229,6 +220,104 @@ inline void DrawPlane(const Eigen::Vector4d& N_w, float scale, int grid)
     // TODO: Verify that this works.
     const Eigen::Vector3d nd_w = N_w.head<3>() / N_w(3);
     DrawPlane(nd_w, scale, grid);
+}
+
+void DrawCircle( const Eigen::Vector2d& p, double radius )
+{
+  glBegin(GL_POLYGON);
+  for( double a=0; a< 2*M_PI; a += M_PI/50.0 )
+  {
+    glVertex2d(
+      p[0] + radius * cos(a),
+      p[1] + radius * sin(a)
+    );
+  }
+  glEnd();
+}
+
+void DrawTarget( const TargetRandomDot& t, const Eigen::Vector2d& offset, double scale, double sat, double val )
+{
+  const double r = t.Radius() * scale;
+
+  for( unsigned int i=0; i<t.Circles2D().size(); ++i )
+  {
+    const Eigen::Vector2d p = t.Circles2D()[i] * scale + offset;
+    glBinColor(i,t.Circles2D().size(),sat,val);
+    DrawCircle(p,r);
+  }
+}
+
+void DrawTarget( const std::vector<int>& map, const TargetRandomDot& target, const Eigen::Vector2d& offset, double scale, double sat, double val )
+{
+  const double r = target.Radius() * scale;
+
+  for( unsigned int i=0; i<map.size(); ++i )
+  {
+    const int t = map[i];
+    if( t >= 0 )
+    {
+      const Eigen::Vector2d p = target.Circles2D()[t] * scale + offset;
+      glBinColor(t,target.Circles2D().size(),sat,val);
+      DrawCircle(p,r);
+    }
+  }
+}
+
+void DrawAxis(float s)
+{
+  glBegin(GL_LINES);
+  glColor3f(1,0,0);
+  glVertex3f(0,0,0);
+  glVertex3f(s,0,0);
+  glColor3f(0,1,0);
+  glVertex3f(0,0,0);
+  glVertex3f(0,s,0);
+  glColor3f(0,0,1);
+  glVertex3f(0,0,0);
+  glVertex3f(0,0,s);
+  glEnd();
+}
+
+void DrawAxis( const Sophus::SE3d& T_wf, float scale )
+{
+  glSetFrameOfReferenceF(T_wf);
+  DrawAxis(scale);
+  glUnsetFrameOfReference();
+}
+
+void DrawFrustrum( const Eigen::Matrix3d& Kinv, int w, int h, float scale )
+{
+  glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+  glBegin(GL_TRIANGLE_FAN);
+  glVertex3d(0,0,0);
+  glVertex( scale * Kinv * Eigen::Vector3d(0,0,1) );
+  glVertex( scale * Kinv * Eigen::Vector3d(w,0,1) );
+  glVertex( scale * Kinv * Eigen::Vector3d(w,h,1) );
+  glVertex( scale * Kinv * Eigen::Vector3d(0,h,1) );
+  glVertex( scale * Kinv * Eigen::Vector3d(0,0,1) );
+  glEnd();
+  glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+}
+
+void DrawFrustrum( const Eigen::Matrix3d& Kinv, int w, int h, const Sophus::SE3d& T_wf, float scale )
+{
+  glSetFrameOfReferenceF(T_wf);
+  DrawFrustrum(Kinv,w,h,scale);
+  glUnsetFrameOfReference();
+}
+
+void DrawGrid(float num_lines, float line_delta)
+{
+    glBegin(GL_LINES);
+
+    for(int i = -num_lines; i < num_lines; i++){
+        glVertex3f( line_delta*num_lines, i*line_delta, 0.0);
+        glVertex3f(-line_delta*num_lines, i*line_delta, 0.0);
+
+        glVertex3f(i*line_delta,  line_delta*num_lines, 0.0);
+        glVertex3f(i*line_delta, -line_delta*num_lines, 0.0);
+    }
+    glEnd();
 }
 
 }
