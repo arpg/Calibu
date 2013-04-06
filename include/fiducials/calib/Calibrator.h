@@ -68,8 +68,7 @@ class Calibrator
 {
 public:
     
-    Calibrator(double grid_spacing)
-        : m_grid_spacing(grid_spacing)
+    Calibrator()
     {
         m_prob_options.cost_function_ownership = ceres::DO_NOT_TAKE_OWNERSHIP;
         m_prob_options.local_parameterization_ownership = ceres::DO_NOT_TAKE_OWNERSHIP;
@@ -130,7 +129,7 @@ public:
     
     void AddObservation(
         int frame, int camera,
-        const Eigen::Vector2i& grid,
+        const Eigen::Vector3d& P_c,
         const Eigen::Vector2d& p_c
     ) {
         m_update_mutex.lock();
@@ -141,8 +140,7 @@ public:
         Sophus::SE3d& T_kw = *m_T_kw[frame];
         
         // Create cost function
-        Eigen::Vector3d P = Eigen::Vector3d(grid(0), grid(1), 0) * m_grid_spacing;
-        CostFunctionAndParams* cost = new ReprojectionCost<ProjModel>(P, p_c);
+        CostFunctionAndParams* cost = new ReprojectionCost<ProjModel>(P_c, p_c);
         cost->Params() = std::vector<double*>{T_kw.data(), cp.T_ck.data(), cp.camera.data()};
         cost->Loss() = nullptr;
         m_costs.push_back(std::unique_ptr<CostFunctionAndParams>(cost));
@@ -229,8 +227,6 @@ protected:
     ceres::Problem::Options m_prob_options;
     ceres::Solver::Options  m_solver_options;
     LocalParamSe3  m_LocalParamSe3;    
-    
-    double m_grid_spacing;
 };
 
 }

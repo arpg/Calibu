@@ -118,7 +118,7 @@ int main( int argc, char* argv[] )
         glOrtho(-0.5,w-0.5,h-0.5,-0.5,0,1.0);
         for( size_t i=0; i<tracker.GetConicFinder().Conics().size(); ++i ) {
             glColorBin(tracker.ConicsTargetMap()[i], target.Circles3D().size());
-            DrawCross(tracker.GetConicFinder().Conics()[i].center,2);
+            glDrawCross(tracker.GetConicFinder().Conics()[i].center,2);
         }
         
         if(lock_to_cam) {
@@ -131,13 +131,13 @@ int main( int argc, char* argv[] )
         
         glDepthFunc(GL_LEQUAL);
         glDrawAxis(0.3);
-        DrawTarget(target,Vector2d(0,0),1,0.2,0.2);
+        glDrawTarget(target,Vector2d(0,0),1,0.2,0.2);
         
         if( tracking_good )
         {
             // Draw Camera
             glColor3f(1,0,0);
-            DrawFrustrum(cam.Kinv(),w,h,tracker.PoseT_gw().inverse(),0.05);
+            glDrawFrustrum(cam.Kinv(),w,h,tracker.PoseT_gw().inverse().matrix(),0.05);
         }
         
         // Process window events via GLUT

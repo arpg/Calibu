@@ -33,6 +33,7 @@ set(
     ${INCDIR}/target/TargetRandomDot.h
     ${INCDIR}/utils/Rectangle.h
     ${INCDIR}/utils/Utils.h
+    ${INCDIR}/utils/PlaneBasis.h
 )
 
 SET(

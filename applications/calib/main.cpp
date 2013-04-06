@@ -45,7 +45,7 @@ int main( int argc, char** argv)
     const double grid_spacing = 0.02;
     const Eigen::Vector2i grid_size(19,10);
     const Eigen::Vector2i grid_center(9, 5);
-    Calibrator<Fov> calibrator(grid_spacing);   
+    Calibrator<Fov> calibrator;   
     
     // Setup GUI
     const int PANEL_WIDTH = 150;
@@ -61,10 +61,6 @@ int main( int argc, char** argv)
     glEnable( GL_DEPTH_TEST );    
     glLineWidth(1.7);
 
-    // TODO: Fix this in pangolin so video recording doesn't assume this alignment.
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glPixelStorei(GL_PACK_ALIGNMENT, 1);        
-    
     // Pangolin 3D Render state
     pangolin::OpenGlRenderState stacks;
     stacks.SetProjectionMatrix(pangolin::ProjectionMatrixRDF_TopLeft(640,480,420,420,320,240,0.01,1E6));
@@ -181,7 +177,8 @@ int main( int argc, char** argv)
                         const Eigen::Vector2i pgz = pg + grid_center;
                         if( 0<= pgz(0) && pgz(0) < grid_size(0) &&  0<= pgz(1) && pgz(1) < grid_size(1) )
                         {
-                            calibrator.AddObservation(calib_frame, calib_cams[iI], pg, pc );
+                            const Eigen::Vector3d pg3d = grid_spacing * Eigen::Vector3d(pg(0), pg(1), 0);
+                            calibrator.AddObservation(calib_frame, calib_cams[iI], pg3d, pc );
                         }
                     }
                 }
@@ -213,7 +210,7 @@ int main( int argc, char** argv)
                 if(disp_lines) { 
                     for(std::list<LineGroup>::const_iterator i = target.LineGroups().begin(); i != target.LineGroups().end(); ++i)
                     {
-                        glHsvColor(i->theta*180/M_PI, 1.0, 1.0);
+                        glColorHSV(i->theta*180/M_PI, 1.0, 1.0);
                         glBegin(GL_LINE_STRIP);
                         for(std::list<size_t>::const_iterator el = i->ops.begin(); el != i->ops.end(); ++el)
                         {
@@ -230,8 +227,8 @@ int main( int argc, char** argv)
                         const Eigen::Vector2i pgz = pg + grid_center;
                         if( 0<= pgz(0) && pgz(0) < grid_size(0) &&  0<= pgz(1) && pgz(1) < grid_size(1) )
                         {
-                            glBinColor(std::abs(pg(0)), 20);
-                            DrawCross(pc, 10 );
+                            glColorBin(std::abs(pg(0)), 20);
+                            glDrawCross(pc, 10 );
                         }
                     }
                 }
@@ -251,15 +248,15 @@ int main( int argc, char** argv)
             const Sophus::SE3d T_ck = cap.T_ck;
 
             // Draw keyframes
-            glBinColor(c, 2, 0.2);
+            glColorBin(c, 2, 0.2);
             for(size_t k=0; k< calibrator.NumFrames(); ++k) {
-                DrawFrustrum(Kinv,w,h,(T_ck * calibrator.GetFrame(k)).inverse(),0.01);
+                glDrawFrustrum(Kinv,w,h,(T_ck * calibrator.GetFrame(k)).inverse().matrix(),0.01);
             }
             
             // Draw current camera
             if(tracking_good[c]) {
-                glBinColor(c, 2, 0.5);
-                DrawFrustrum(Kinv,w,h,T_hw[c].inverse(),0.05);
+                glColorBin(c, 2, 0.5);
+                glDrawFrustrum(Kinv,w,h,T_hw[c].inverse().matrix(),0.05);
             }
         }
                     
