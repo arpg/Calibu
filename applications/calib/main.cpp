@@ -37,7 +37,7 @@ int main( int argc, char** argv)
     
     for(size_t i=0; i<N; ++i) {
         if( video.Streams()[i].PixFormat().channels != 1) {
-            throw "Video channels must be GRAY8 format. Use Convert:// or fmt=GRAY8 option";
+            throw pangolin::VideoException("Video channels must be GRAY8 format. Use Convert:// or fmt=GRAY8 option");
         }
     }
     

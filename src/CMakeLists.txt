@@ -57,7 +57,6 @@ SET(
 find_package(Sophus REQUIRED)
 find_package(OpenCV REQUIRED)
 
-
 ## Apply project include directories
 list(APPEND USER_INC  "${PROJECT_SOURCE_DIR}/include;${CMAKE_CURRENT_BINARY_DIR}/include" )
 list(APPEND USER_INC   ${Sophus_INCLUDE_DIR} )

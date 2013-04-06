@@ -1,8 +1,6 @@
 #include <pangolin/pangolin.h>
 #include <pangolin/video.h>
 
-#include <cvd/image_convert.h>
-
 #include <fiducials/pose/Tracker.h>
 #include <fiducials/target/TargetRandomDot.h>
 #include <fiducials/gl/Drawing.h>
@@ -12,7 +10,6 @@
 using namespace std;
 using namespace pangolin;
 using namespace Eigen;
-using namespace CVD;
 using namespace fiducials;
 
 const int PANEL_WIDTH = 200;
@@ -22,7 +19,7 @@ int main( int argc, char* argv[] )
     if(argc != 2) {
         std::cout << "Usage:" << std::endl;
         std::cout << "\t" << argv[0] << " video_uri" << std::endl;
-        std::cout << "\t e.g. " << argv[0] << " files:[read_ahead=50,fps=1]//test_images/image_%05d.png" << std::endl;
+        std::cout << "\t e.g. " << argv[0] << " files:[fmt=GRAY8,read_ahead=50,fps=1]//test_images/image_%05d.png" << std::endl;
         return -1;
     }
     
@@ -31,9 +28,15 @@ int main( int argc, char* argv[] )
     // Setup Video
     VideoInput video(video_uri);
     
+    if(video.Streams().size() < 1 || video.Streams()[0].PixFormat().channels != 1)
+        throw pangolin::VideoException("Unsupported image format");
+    
+    // Allocate stream buffer and vector of images (that will point into buffer)
+    unsigned char image_buffer[video.SizeBytes()];
+    std::vector<pangolin::Image<unsigned char> > images;    
+    
     const unsigned w = video.Width();
     const unsigned h = video.Height();
-    CVD::ImageRef size(w,h);
     
     // Setup Tracker and associated target
     TargetRandomDot target;  
@@ -70,14 +73,8 @@ int main( int argc, char* argv[] )
             .AddDisplay(v3D);
     
     // OpenGl Texture for video frame
-    GlTexture texRGB(w,h,GL_RGBA8);
     GlTexture tex(w,h,GL_LUMINANCE8);
-    
-    // Declare Image buffers
-    CVD::ConvertImage<Rgb<byte>,byte> rgb_to_grey;
-    CVD::Image<Rgb<byte> > Irgb(size);
-    CVD::Image<byte> I(size);
-    
+        
     // Camera parameters
     CameraModel<Pinhole> cam(w, h, Eigen::Vector4d(525 , 525, w/2.0, h/2.0) );
     
@@ -95,10 +92,8 @@ int main( int argc, char* argv[] )
         bool go = frame==0 || run || Pushed(step);
         
         if(go) {
-            if (video.GrabNewest((byte*)Irgb.data(),true)) {
-                rgb_to_grey.convert(Irgb,I);
-                
-                tracking_good = tracker.ProcessFrame(cam, I.data());
+            if( video.Grab(image_buffer, images, true, true) ) {
+                tracking_good = tracker.ProcessFrame(cam, images[0].ptr, images[0].pitch );
             }else{
                 run = false;
             }
@@ -112,9 +107,8 @@ int main( int argc, char* argv[] )
         vVideo.ActivateScissorAndClear();
         
         if(!disp_thresh) {
-            //        texRGB.Upload(Irgb.data(),GL_RGB,GL_UNSIGNED_BYTE);
-            texRGB.Upload(I.data(),GL_LUMINANCE,GL_UNSIGNED_BYTE);
-            texRGB.RenderToViewportFlipY();
+            tex.Upload(tracker.Images().Img(),GL_LUMINANCE,GL_UNSIGNED_BYTE);
+            tex.RenderToViewportFlipY();
         }else{
             tex.Upload(tracker.Images().ImgThresh(),GL_LUMINANCE,GL_UNSIGNED_BYTE);
             tex.RenderToViewportFlipY();

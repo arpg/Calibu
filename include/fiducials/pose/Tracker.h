@@ -57,7 +57,7 @@ class Tracker
 public:
     Tracker(const TargetInterface& target, int w, int h);
 
-    bool ProcessFrame(CameraModelBase& cam, unsigned char *I);
+    bool ProcessFrame(CameraModelBase& cam, unsigned char *I, size_t pitch);
 
     const TargetInterface& Target() const {
         return target;
