@@ -3,6 +3,7 @@
 #include <thread>
 #include <mutex>
 #include <memory>
+#include <system_error>
 
 #include <Sophus/se3.hpp>
 
@@ -109,8 +110,14 @@ public:
     
     void Stop()
     {
-        m_should_run = false;
-        m_thread.join();        
+        if(m_running) {
+            m_should_run = false;
+            try {
+                m_thread.join();
+            }catch(std::system_error) {
+                // thread already died.
+            }
+        }
     }
     
     int AddCamera(const CameraModel<ProjModel>& cam, const Sophus::SE3d T_ck = Sophus::SE3d() )

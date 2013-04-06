@@ -49,7 +49,7 @@ int main( int argc, char** argv)
     
     // Setup GUI
     const int PANEL_WIDTH = 150;
-    pangolin::CreateGlutWindowAndBind("Main",2*w+PANEL_WIDTH,2*h);
+    pangolin::CreateGlutWindowAndBind("Main",(N+1)*w/2.0+PANEL_WIDTH,h/2.0);
     
     // Make things look prettier...        
     glEnable(GL_LINE_SMOOTH);
@@ -64,7 +64,7 @@ int main( int argc, char** argv)
     // Pangolin 3D Render state
     pangolin::OpenGlRenderState stacks;
     stacks.SetProjectionMatrix(pangolin::ProjectionMatrixRDF_TopLeft(640,480,420,420,320,240,0.01,1E6));
-    stacks.SetModelViewMatrix(pangolin::ModelViewLookAtRDF(0,0,-10, 0,0,0, 0, -1, 0) );
+    stacks.SetModelViewMatrix(pangolin::ModelViewLookAtRDF(0,0,-2, 0,0,0, 0, -1, 0) );
     
     // Create viewport for video with fixed aspect
     pangolin::CreatePanel("ui").SetBounds(1.0,0.0,0,pangolin::Attach::Pix(PANEL_WIDTH));
@@ -91,11 +91,11 @@ int main( int argc, char** argv)
     pangolin::Var<bool> reset("ui.reset", false, false);
     
     pangolin::Var<bool> disp_thresh("ui.Display Thresh",false);
-    pangolin::Var<bool> disp_lines("ui.Display Lines",false);
+    pangolin::Var<bool> disp_lines("ui.Display Lines",true);
                     
     int calib_cams[N];
     for(size_t i=0; i<N; ++i) {
-        // Add relatively arbitrary starting camera params
+        // Add (arbitrary) starting camera params
         const pangolin::StreamInfo& si = video.Streams()[i];
         CameraModel<Fov> default_cam( si.Width(), si.Height() );
         default_cam.Params()  << 300, 300, w/2.0, h/2.0, 0.2;
@@ -164,7 +164,7 @@ int main( int argc, char** argv)
                     ellipse_target_map,
                     0, 0, &T_hw[iI]
                 );
-                
+                                
                 if(calib_frame >= 0) {
                     if(iI==0) {
                         calibrator.GetFrame(calib_frame) = T_hw[iI];
@@ -201,25 +201,26 @@ int main( int argc, char** argv)
             glOrtho(-0.5,w-0.5,h-0.5,-0.5,0,1.0);
             glMatrixMode(GL_MODELVIEW);
 
-            if(tracking_good[iI]) {
-                //now draw a circle around the center cross
-                glColor3f(1.0,1.0,1.0);
-                const Conic& center_conic = conics[target.CenterId()];
-                pangolin::glDrawCirclePerimeter(center_conic.center,center_conic.bbox.Width()/2.0);
-            
-                if(disp_lines) { 
-                    for(std::list<LineGroup>::const_iterator i = target.LineGroups().begin(); i != target.LineGroups().end(); ++i)
+            //now draw a circle around the center cross
+            glColor3f(1.0,1.0,1.0);
+            const Conic& center_conic = conics[target.CenterId()];
+            pangolin::glDrawCirclePerimeter(center_conic.center,center_conic.bbox.Width()/2.0);
+        
+            if(disp_lines) { 
+                for(std::list<LineGroup>::const_iterator i = target.LineGroups().begin(); i != target.LineGroups().end(); ++i)
+                {
+                    glColorBin(i->k,3);
+                    //glColorHSV(i->theta*180/M_PI, 1.0, 1.0);
+                    glBegin(GL_LINE_STRIP);
+                    for(std::list<size_t>::const_iterator el = i->ops.begin(); el != i->ops.end(); ++el)
                     {
-                        glColorHSV(i->theta*180/M_PI, 1.0, 1.0);
-                        glBegin(GL_LINE_STRIP);
-                        for(std::list<size_t>::const_iterator el = i->ops.begin(); el != i->ops.end(); ++el)
-                        {
-                            const Eigen::Vector2d p = conics[*el].center;
-                            glVertex2d(p(0), p(1));
-                        }
-                        glEnd();
-                    }            
-                }else{                        
+                        const Eigen::Vector2d p = conics[*el].center;
+                        glVertex2d(p(0), p(1));
+                    }
+                    glEnd();
+                }            
+            }else{          
+                if(tracking_good[iI]) {
                     for( size_t i=0; i < conics.size(); ++i ) {   
                         const Eigen::Vector2d pc = conics[i].center;
                         const Eigen::Vector2i pg = target.Grid()[i];
@@ -227,13 +228,12 @@ int main( int argc, char** argv)
                         const Eigen::Vector2i pgz = pg + grid_center;
                         if( 0<= pgz(0) && pgz(0) < grid_size(0) &&  0<= pgz(1) && pgz(1) < grid_size(1) )
                         {
-                            glColorBin(std::abs(pg(0)), 20);
+                            glColorBin(pgz(1)*grid_size(0)+pgz(0), grid_size(0)*grid_size(1));
                             glDrawCross(pc, 10 );
                         }
                     }
                 }
-            }
-            
+            }            
         }
         
         v3D.ActivateScissorAndClear(stacks);
@@ -250,7 +250,7 @@ int main( int argc, char** argv)
             // Draw keyframes
             glColorBin(c, 2, 0.2);
             for(size_t k=0; k< calibrator.NumFrames(); ++k) {
-                glDrawFrustrum(Kinv,w,h,(T_ck * calibrator.GetFrame(k)).inverse().matrix(),0.01);
+                glDrawAxis((T_ck * calibrator.GetFrame(k)).inverse().matrix(), 0.01);
             }
             
             // Draw current camera

@@ -28,6 +28,7 @@
 
 #pragma once
 
+#include <array>
 #include <fiducials/target/Target.h>
 #include <fiducials/target/LineGroup.h>
 
@@ -39,18 +40,20 @@ inline bool operator<(const Dist& lhs, const Dist& rhs) { return lhs.dist < rhs.
 struct ParamsGridDot
 {
     ParamsGridDot() :
-        thresh_dist(0.13),
-        thresh_area(0.017),
-        cross_area_threshold(2.0),
-        cross_max_area_threshold(8.9),
+        max_line_dist_ratio(0.25),
+        max_norm_triple_area(0.03),
+        max_line_group_k_sigma(2.5),
+        min_cross_area(2.0),
+        max_cross_area(8.9),
         cross_radius_ratio(0.058),
         cross_line_ratio(0.036)
     {}
     
-    double thresh_dist;
-    double thresh_area;
-    double cross_area_threshold;
-    double cross_max_area_threshold;
+    double max_line_dist_ratio;
+    double max_norm_triple_area;
+    double max_line_group_k_sigma;
+    double min_cross_area;
+    double max_cross_area;
     double cross_radius_ratio;
     double cross_line_ratio;
 };
@@ -122,7 +125,6 @@ protected:
     
     ParamsGridDot params;
     
-    mutable double k[2];
     mutable std::vector<std::vector<Dist> > pts_distance;
     mutable std::vector<std::vector<Opposite> > pts_neighbours;
     mutable std::list<LineGroup> line_groups;

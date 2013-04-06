@@ -61,40 +61,63 @@ double NormArea(const Eigen::Vector2d& p1, const Eigen::Vector2d& p2, const Eige
     return std::abs(area) / (len*len);
 }
 
+bool LineGroupIsInvalid(const LineGroup& lg)
+{
+    return lg.k == 2;
+}
+
 std::vector<Opposite> FindOpposites(const std::vector<Eigen::Vector2d>& pts, const std::vector<Dist>& closest, double thresh_dist, double thresh_area)
 {
     std::vector<Opposite> ret;
     
+    const size_t max_neigh = 5;
+    
+    if(closest.size() < max_neigh) 
+        return ret;
+    
     const size_t c = closest[0].i;
     const Eigen::Vector2d cpt = pts[c];
     
-    bool used[5];
-    for(int i=0; i<5; ++i) used[i] = false;
+    const double max_dist = 3 * closest[2].dist;
+    
+    std::array<bool,max_neigh> used;
+    used.fill(false);
             
     // Filter possible pairs
-    for(int n1 = 1; n1 < 5; ++n1 ) {
-        for(int n2 = n1+1; n2 < 5; ++n2 ) {
-            // Check distances are similar
-            const double d1 = closest[n1].dist;
+    for(size_t n1 = 1; n1 < max_neigh; ++n1 ) {
+        const double d1 = closest[n1].dist;
+
+        for(size_t n2 = n1+1; n2 < max_neigh; ++n2 ) {
             const double d2 = closest[n2].dist;
-            if( std::abs((d2 - d1)/ d1) < thresh_dist ) {
-                // Check points are colinear with center
-                const size_t c1 = closest[n1].i;
-                const size_t c2 = closest[n2].i;
-                if( NormArea(pts[c1],cpt,pts[c2]) < thresh_area ) {
-                    if(used[n1] || used[n2]) {
-                        // ambigous pairs, bail
-                        ret.clear();
-                        return ret;
+            
+            // Check distances aren't much further than closest
+            if( d1 < max_dist && d2 < max_dist )
+            {
+                
+                // Check distances are similar
+                if( std::abs((d2 - d1)/ d1) < thresh_dist )
+                {
+                    // Check points are colinear with center
+                    const size_t c1 = closest[n1].i;
+                    const size_t c2 = closest[n2].i;
+                    if( NormArea(pts[c1],cpt,pts[c2]) < thresh_area )
+                    {
+                        // Check no aliasing exists between matched
+                        if(used[n1] || used[n2]) {
+                            // ambigous pairs, bail
+                            ret.clear();
+                            return ret;
+                        }
+                        
+                        used[n1] = true;
+                        used[n2] = true;
+                        ret.push_back( Opposite{c, c1, c2} );
                     }
-                    used[n1] = true;
-                    used[n2] = true;
-                    ret.push_back( Opposite{c, c1, c2} );
-                }            
+                }
             }
         }
     }
-        
+                
     return ret;
 }
 
@@ -236,19 +259,20 @@ bool TargetGridDot::Find(std::vector<Eigen::Vector2d>& pts, double thresh_dist, 
         while(lg.theta < 0) lg.theta += 2*M_PI;
     }
         
-    // Naive K-Means to find two principle directions
-    k[0] = 0;
-    k[1] = M_PI/2;
+    // Naive K-Means to find two principle directions. Initialise at 90 deg.
+    Eigen::Array2d k(0.0, M_PI/2);
+    Eigen::Array2d kvar(0.0, M_PI/2);
     
     for(int its=0; its < 10; ++its)
     {
-        int knum[2] = {0,0};
-        double ksum[2] = {0.0,0.0};
+        Eigen::Array2d knum(0, 0);
+        Eigen::Array2d ksum(0.0, 0.0);
+        Eigen::Array2d ksum_sq(0.0, 0.0);
 
         for(std::list<LineGroup>::iterator ilg = line_groups.begin(); ilg != line_groups.end(); ++ilg)
         {
             LineGroup& lg = *ilg;
-            double kdist[2];
+            Eigen::Vector2d kdist;
             
             // distance to k mean
             for(int ik=0; ik<2; ++ik) {
@@ -256,12 +280,12 @@ bool TargetGridDot::Find(std::vector<Eigen::Vector2d>& pts, double thresh_dist, 
             }
             
             // assign to closest kmean
-            const int closek = std::abs(kdist[0]) < std::abs(kdist[1]) ? 0 : 1;
-            lg.k = closek;
+            lg.k = std::abs(kdist[0]) < std::abs(kdist[1]) ? 0 : 1;
             
             // update stats for close k-mean
-            knum[closek]++;
-            ksum[closek] += kdist[closek];
+            knum[lg.k]++;
+            ksum[lg.k] += kdist[lg.k];
+            ksum_sq[lg.k] += kdist[lg.k] * kdist[lg.k];
         }
         
         // update k-mean
@@ -269,36 +293,30 @@ bool TargetGridDot::Find(std::vector<Eigen::Vector2d>& pts, double thresh_dist, 
             k[ik] += ksum[ik] / knum[ik];
             while(k[ik] < 0) k[ik] += M_PI;
             while(k[ik] > M_PI) k[ik] -= M_PI;
-        }                
+        }       
+        
+        // Compute variance
+        kvar = (ksum_sq - ((ksum*ksum)/knum)) / knum;
     }
 
     //find the max size of each group
     int kMaxSize[2] = {0,0};
-    for(const LineGroup& group: line_groups)
-    {
+    for(const LineGroup& group: line_groups) {
         kMaxSize[group.k] = std::max(kMaxSize[group.k],(int)group.ops.size());
     }
-    int kMax = kMaxSize[0] > kMaxSize[1] ? 0 : 1;
-
+    
     //flip ks if necessary
-    if(kMax == 1){
+    const bool flipk = kMaxSize[0] < kMaxSize[1];
+    if(flipk) {
         std::swap(k[0],k[1]);
+        std::swap(kvar[0],kvar[1]);
     }
             
     // Normalise line directions (so they face same way) and remove bad directions
     for(std::list<LineGroup>::iterator ilg = line_groups.begin(); ilg != line_groups.end(); ++ilg)
     {
         LineGroup& lg = *ilg;
-        if(kMax == 1){
-            lg.k = 1-lg.k;
-        }
-        
-//            if( std::abs(AngleDist(lg.theta, k[lg.k])) > M_PI/2 ) {
-//                lg.Reverse();
-//                const Eigen::Vector2d diff = pts[lg.last()] - pts[lg.first()];                
-//                lg.theta = atan2(diff(1),diff(0));
-//                while(lg.theta < 0) lg.theta += 2*M_PI;                    
-//            }
+        if(flipk) lg.k = 1-lg.k;
         
         const Eigen::Vector2d dp = pts[lg.last()] - pts[lg.first()];
         
@@ -309,10 +327,26 @@ bool TargetGridDot::Find(std::vector<Eigen::Vector2d>& pts, double thresh_dist, 
             while(lg.theta < 0) lg.theta += 2*M_PI;                    
         }
         
-        if( std::abs(LineAngleDist(lg.theta, k[lg.k])) > M_PI/10 ) {
+        // ignore if too far from mean angle
+        const double absdist = std::abs(LineAngleDist(lg.theta, k[lg.k]));
+        if( absdist > params.max_line_group_k_sigma * sqrt(kvar[lg.k]) ) {
             lg.k = 2;
         }
-    }            
+        
+        // ignore if too short
+        if(lg.ops.size() < 4) {
+            lg.k = 2;
+        }
+    }       
+    
+//    line_groups.erase(
+//        std::remove_if(line_groups.begin(), line_groups.end(), LineGroupIsInvalid),
+//        line_groups.end()
+//    );
+    
+    // We need at least two line groups to get points which aren't all colinear
+    if(line_groups.size() < 2)
+        return false;
     
     return true;
 }
@@ -404,7 +438,8 @@ bool TargetGridDot::FindTarget(
       ellipses.push_back(Eigen::Vector2d(conics[i].center.x(),conics[i].center.y()));
     }
     
-    Find(ellipses, params.thresh_dist, params.thresh_area);
+    bool tracking_good =
+        Find(ellipses, params.max_line_dist_ratio, params.max_norm_triple_area);
 
     //calcualte the score for each conic and keep a tally
     double bestScore = std::numeric_limits<double>::max();
@@ -415,7 +450,7 @@ bool TargetGridDot::FindTarget(
             const double score = GetCenterCrossScore(
                 pts_neighbours[jj][0], pts_neighbours[jj][1],
                 conics, images.Img(), images.Width(), images.Height(),
-                params.cross_area_threshold, params.cross_max_area_threshold,
+                params.min_cross_area, params.max_cross_area,
                 params.cross_radius_ratio, params.cross_line_ratio
             );
 
@@ -426,7 +461,7 @@ bool TargetGridDot::FindTarget(
         }
     }
     
-    bool tracking_good = idxCrossConic != -1;
+    tracking_good = tracking_good && (idxCrossConic != -1);
 
     ellipse_target_map.clear();
 
