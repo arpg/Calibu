@@ -44,7 +44,8 @@ void Label(
   int w, int h,
   const unsigned char* I,
   short* label,
-  std::vector<PixelClass>& labels
+  std::vector<PixelClass>& labels,
+  unsigned char passval
 );
 
 }

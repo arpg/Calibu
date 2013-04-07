@@ -202,6 +202,11 @@ public:
   {
     return Contains(p[0],p[1]);
   }
+  
+  Eigen::Vector2d Center() const
+  {
+      return Eigen::Vector2d((x2+x1)/2.0, (y2+y1)/2.0);
+  }
 
 };
 

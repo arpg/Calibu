@@ -34,17 +34,17 @@
 
 namespace fiducials {
 
-struct Dist { size_t i; double dist; };
+struct Dist { Vertex* v; double dist; };
 inline bool operator<(const Dist& lhs, const Dist& rhs) { return lhs.dist < rhs.dist; }
 
 struct ParamsGridDot
 {
     ParamsGridDot() :
-        max_line_dist_ratio(0.5),
+        max_line_dist_ratio(0.3),
         max_norm_triple_area(0.05),
         max_line_group_k_sigma(2.5),
-        min_cross_area(2.0),
-        max_cross_area(8.9),
+        min_cross_area(1.5),
+        max_cross_area(9.0),
         cross_radius_ratio(0.058),
         cross_line_ratio(0.036)
     {}
@@ -125,8 +125,6 @@ protected:
     
     ParamsGridDot params;
     
-    mutable std::vector<std::vector<Dist> > pts_distance;
-    mutable std::vector<std::vector<Opposite> > pts_neighbours;
     mutable std::list<LineGroup> line_groups;
     mutable std::vector<Eigen::Vector2i> grid;
     mutable int idxCrossConic;

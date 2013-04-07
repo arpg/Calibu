@@ -82,17 +82,15 @@ void ImageProcessing::Process(unsigned char* greyscale_image, size_t pitch)
     integral_image(width, height, I, intI );   
     
     // Threshold image
-    const unsigned char pass = params.black_on_white ? 0 : 255;
-    const unsigned char fail = params.black_on_white ? 255 : 0;
     AdaptiveThreshold(
         width, height, I, intI, tI, params.at_threshold,
         width / params.at_window_ratio,
-        pass, fail
+        (unsigned char)0, (unsigned char)255
     );    
     
     // Label image (connected components)
     labels.clear();
-    Label(width,height,tI,lI,labels);    
+    Label(width,height,tI,lI,labels, params.black_on_white ? 0 : 255 );
 }
 
 }

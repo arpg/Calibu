@@ -44,10 +44,9 @@ inline short RootLabel(vector<PixelClass>& labels, short label )
   return label;
 }
 
-inline void AssignLabel( const int w, const int h, const unsigned char* I, short* label, vector<PixelClass>& labels, int r, int c )
+inline void AssignLabel( const int w, const int h, const unsigned char* I, short* label, vector<PixelClass>& labels, int r, int c, unsigned char passval )
 {
-  const bool v = I[r*w+c] < 128;
-  if( v )
+  if( I[r*w+c] == passval )
   {
     short* labelr = label + r*w;
     short* labelrm1 = labelr - w;
@@ -82,7 +81,7 @@ inline void AssignLabel( const int w, const int h, const unsigned char* I, short
   }
 }
 
-void Label( int w, int h, const unsigned char* I, short* label, vector<PixelClass>& labels )
+void Label( int w, int h, const unsigned char* I, short* label, vector<PixelClass>& labels, unsigned char passval )
 {
   std::fill(label,label+w*h, -1);
 
@@ -91,13 +90,13 @@ void Label( int w, int h, const unsigned char* I, short* label, vector<PixelClas
     if( d<w )
     {
       for( int r=0; r< std::min(d,h); ++r )
-        AssignLabel(w,h,I,label,labels,r,d);
+        AssignLabel(w,h,I,label,labels,r,d, passval);
     }
 
     if( d<h )
     {
       for( int c=0; c<= std::min(d,w); ++c )
-        AssignLabel(w,h,I,label,labels,d,c);
+        AssignLabel(w,h,I,label,labels,d,c, passval);
     }
   }
 

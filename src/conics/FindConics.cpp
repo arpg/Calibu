@@ -128,7 +128,8 @@ void FindConics(
       conic.Dual /= conic.Dual(2,2);
       conic.center = Eigen::Vector2d(conic.Dual(0,2),conic.Dual(1,2));
 
-      if( region.Contains(conic.center))
+      const double max_dist = (region.Width() + region.Height()) / 8.0;
+      if( (conic.center - region.Center()).norm() < max_dist)
         conics.push_back( conic );
   }
 }

@@ -92,6 +92,12 @@ int main( int argc, char** argv)
     
     pangolin::Var<bool> disp_thresh("ui.Display Thresh",false);
     pangolin::Var<bool> disp_lines("ui.Display Lines",true);
+    pangolin::Var<bool> disp_cross("ui.Display crosses",true);
+    pangolin::Var<bool> disp_bbox("ui.Display bbox",true);
+    
+    pangolin::Var<double> at_thresh("ui.at thresh", 1.6, 0.0, 2.0);
+    pangolin::Var<double> at_window("ui.at win", 30.0, 0.0, 5.0);
+    
                     
     int calib_cams[N];
     for(size_t i=0; i<N; ++i) {
@@ -109,18 +115,22 @@ int main( int argc, char** argv)
     pangolin::RegisterKeyPressCallback(']', [&](){calibrator.Stop();} );
     
     ImageProcessing image_processing(w,h);
-    image_processing.Params().at_threshold = 1.0;
-    image_processing.Params().at_window_ratio = 3.6;
+    image_processing.Params().at_threshold = 1.6;
+    image_processing.Params().at_window_ratio = 30.0;
     image_processing.Params().black_on_white = false;
     
     ConicFinder conic_finder;
     conic_finder.Params().conic_min_area = 3.96;
     conic_finder.Params().conic_min_density = 0.208;
+    conic_finder.Params().conic_min_aspect = 0.3;
     
     TargetGridDot target(grid_spacing, grid_size, grid_center);
     
     for(int frame=0; !pangolin::ShouldQuit(); ++frame)
     {
+        image_processing.Params().at_threshold = at_thresh;
+        image_processing.Params().at_window_ratio = at_window;
+        
         glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);    
      
         if(pangolin::Pushed(reset)) {
@@ -201,16 +211,19 @@ int main( int argc, char** argv)
             glOrtho(-0.5,w-0.5,h-0.5,-0.5,0,1.0);
             glMatrixMode(GL_MODELVIEW);
 
-            //now draw a circle around the center cross
-            glColor3f(1.0,1.0,1.0);
-            const Conic& center_conic = conics[target.CenterId()];
-            pangolin::glDrawCirclePerimeter(center_conic.center,center_conic.bbox.Width()/2.0);
+            if(target.CenterId() >= 0) {
+                //now draw a circle around the center cross
+                glColor3f(1.0,1.0,1.0);
+                const Conic& center_conic = conics[target.CenterId()];
+                pangolin::glDrawCirclePerimeter(center_conic.center,center_conic.bbox.Width()/2.0);
+            }
         
             if(disp_lines) { 
                 for(std::list<LineGroup>::const_iterator i = target.LineGroups().begin(); i != target.LineGroups().end(); ++i)
                 {
-                    glColorBin(i->k,3);
+                    //glColorBin(i->k,3);
                     //glColorHSV(i->theta*180/M_PI, 1.0, 1.0);
+                    glColor3f(1,1,1);
                     glBegin(GL_LINE_STRIP);
                     for(std::list<size_t>::const_iterator el = i->ops.begin(); el != i->ops.end(); ++el)
                     {
@@ -219,21 +232,34 @@ int main( int argc, char** argv)
                     }
                     glEnd();
                 }            
-            }else{          
-                if(tracking_good[iI]) {
-                    for( size_t i=0; i < conics.size(); ++i ) {   
-                        const Eigen::Vector2d pc = conics[i].center;
-                        const Eigen::Vector2i pg = target.Grid()[i];
-                        
-                        const Eigen::Vector2i pgz = pg + grid_center;
-                        if( 0<= pgz(0) && pgz(0) < grid_size(0) &&  0<= pgz(1) && pgz(1) < grid_size(1) )
-                        {
-                            glColorBin(pgz(1)*grid_size(0)+pgz(0), grid_size(0)*grid_size(1));
-                            glDrawCross(pc, 10 );
-                        }
+            }
+            
+            if(disp_cross) {          
+                for( size_t i=0; i < conics.size(); ++i ) {   
+                    const Eigen::Vector2d pc = conics[i].center;
+                    const Eigen::Vector2i pg = tracking_good[iI] ? target.Grid()[i] : Eigen::Vector2i(0,0);
+                    
+                    const Eigen::Vector2i pgz = pg + grid_center;
+                    if( 0<= pgz(0) && pgz(0) < grid_size(0) &&  0<= pgz(1) && pgz(1) < grid_size(1) )
+                    {
+                        glColorBin(pgz(1)*grid_size(0)+pgz(0), grid_size(0)*grid_size(1));
+                        glDrawCross(pc, conics[i].bbox.Width()*0.75 );
                     }
                 }
-            }            
+            }
+            
+            if(disp_bbox) {
+                for( size_t i=0; i < conics.size(); ++i ) {   
+                    const Eigen::Vector2i pg = tracking_good[iI] ? target.Grid()[i] : Eigen::Vector2i(0,0);                    
+                    const Eigen::Vector2i pgz = pg + grid_center;
+                    if( 0<= pgz(0) && pgz(0) < grid_size(0) &&  0<= pgz(1) && pgz(1) < grid_size(1) )
+                    {
+                        glColorBin(pgz(1)*grid_size(0)+pgz(0), grid_size(0)*grid_size(1));
+                        glDrawRectangle(conics[i].bbox);
+                    }
+                }
+            }
+            
         }
         
         v3D.ActivateScissorAndClear(stacks);
