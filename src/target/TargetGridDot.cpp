@@ -327,9 +327,11 @@ bool TargetGridDot::Find(std::vector<Eigen::Vector2d>& pts, double thresh_dist, 
             while(lg.theta < 0) lg.theta += 2*M_PI;                    
         }
         
-        // ignore if too far from mean angle
         const double absdist = std::abs(LineAngleDist(lg.theta, k[lg.k]));
         if( absdist > params.max_line_group_k_sigma * sqrt(kvar[lg.k]) ) {
+            lg.k = 2;
+        }
+        if( absdist > M_PI/16.0 ) {
             lg.k = 2;
         }
         
