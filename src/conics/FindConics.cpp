@@ -153,7 +153,7 @@ void FindCandidateConicsFromLabels(
       // reject rectangles clipped by camera view
       if( r.x1 >= border && r.y1 >= border && r.x2 < (int)w-border && r.y2 < (int)h-border)
       {
-        const int area = r.Width() * r.Height();
+        const float area = r.Area();
         if( min_area <= area && area <= max_area )
         {
           const float aspect = (float)r.Width() / (float)r.Height();

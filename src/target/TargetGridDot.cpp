@@ -87,9 +87,9 @@ void FindTriples( Vertex& v, std::vector<Dist>& closest, double thresh_dist, dou
     // We need at least 3 points for a single collinear triple.
     if(max_neigh < 3) return;
     
-//    // Ignore points too much furthar than closest.
-//    // We are interested in 8-connected region
-//    const double max_dist = 5 * closest[1].dist;
+    // Ignore points too much furthar than closest.
+    // We are interested in 8-connected region
+    const double max_dist = 5 * closest[1].dist;
     
     std::array<bool,NEIGHBOURS> used;
     used.fill(false);
@@ -102,11 +102,11 @@ void FindTriples( Vertex& v, std::vector<Dist>& closest, double thresh_dist, dou
             const double d2 = closest[n2].dist;
             
             // Check distances aren't much further than closest
-//            if( d1 < max_dist && d2 < max_dist )
+            if( d1 < max_dist && d2 < max_dist )
             {
                 
                 // Check distances are similar
-                if( std::abs((d2 - d1)/ d1) < thresh_dist )
+                if( 2.0 * fabs(d2-d1) / (fabs(d1)+fabs(d2)) < thresh_dist )
                 {
                     // Check points are colinear with center
                     Vertex& c1 = *closest[n1].v;
@@ -453,6 +453,16 @@ bool TargetGridDot::FindTarget(
         FindTriples(vs[i], vs_distance[i], params.max_line_dist_ratio, params.max_norm_triple_area );
     }    
     
+    // Display triples
+    for(size_t i=0; i<vs.size(); ++i) {
+        for(size_t j=0; j < vs[i].triples.size(); ++j)
+        {
+            line_groups.push_back( LineGroup(Opposite(vs[i].triples[j]) )  );        
+        }
+    }    
+    
+    return false;
+    
     // Calcualte 'cross' score for each conic and remember best
     double bestScore = std::numeric_limits<double>::max();
     idxCrossConic = -1;
@@ -484,13 +494,17 @@ bool TargetGridDot::FindTarget(
     
     Vertex* cross = &vs[idxCrossConic];
     
+    if(cross->triples.size() < 4)
+        return false;
+    
     std::map<Eigen::Vector2i, Vertex*> map_grid_ellipse;
     map_grid_ellipse[Eigen::Vector2i(0,0)] = cross;
     cross->pg = Eigen::Vector2i(0,0);
-        
-    line_groups.push_back( LineGroup(Opposite(cross->triples[best_triple[0]]) )  );
-    line_groups.push_back( LineGroup(Opposite(cross->triples[best_triple[1]]) )  );
-    
+
+//    // Draw cross
+//    line_groups.push_back( LineGroup(Opposite(cross->triples[best_triple[0]]) )  );
+//    line_groups.push_back( LineGroup(Opposite(cross->triples[best_triple[1]]) )  );
+      
     return false;
 }
 

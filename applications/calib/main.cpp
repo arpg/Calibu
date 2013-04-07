@@ -120,9 +120,9 @@ int main( int argc, char** argv)
     image_processing.Params().black_on_white = false;
     
     ConicFinder conic_finder;
-    conic_finder.Params().conic_min_area = 3.96;
+    conic_finder.Params().conic_min_area = 2.0;
     conic_finder.Params().conic_min_density = 0.208;
-    conic_finder.Params().conic_min_aspect = 0.3;
+    conic_finder.Params().conic_min_aspect = 0.1;
     
     TargetGridDot target(grid_spacing, grid_size, grid_center);
     

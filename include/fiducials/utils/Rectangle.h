@@ -126,12 +126,12 @@ public:
 
   int Width() const
   {
-    return std::max(0,x2-x1);
+    return std::max(0,x2+1-x1);
   }
 
   int Height() const
   {
-    return std::max(0,y2-y1);
+    return std::max(0,y2+1-y1);
   }
   
   int Area() const
@@ -141,18 +141,18 @@ public:
 
   bool IntersectsWith(const IRectangle & other) const
   {
-    if(y2 <other.y1)	return false;
-    if(y1    > other.y2)	return false;
-    if(x2  < other.x1)	return false;
-    if(x1   > other.x2)	return false;
+    if(y2 < other.y1)	return false;
+    if(y1 > other.y2)	return false;
+    if(x2 < other.x1)	return false;
+    if(x1 > other.x2)	return false;
     return true;
   }
 
   bool Contains(const IRectangle & other) const
   {
-    if(  y1  >= other.y1)   return false;
-    if(  x1 >= other.x1)  return false;
-    if( x2 <= other.x2) return false;
+    if(y1 >= other.y1)   return false;
+    if(x1 >= other.x1)  return false;
+    if(x2 <= other.x2) return false;
     if(y2 <= other.y2) return false;
     return true;
   }
