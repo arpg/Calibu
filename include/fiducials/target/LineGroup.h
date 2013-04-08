@@ -133,31 +133,8 @@ std::ostream& operator<<(std::ostream& os, const Triple& t)
     return os;
 }
 
-
-
-
-struct Opposite
-{
-    Opposite() {}
-    Opposite(const Triple& t)
-    {
-        c = t.Center().id;
-        o1 = t.Neighbour(0).id;
-        o2 = t.Neighbour(1).id;
-    }
-
-    size_t c;
-    size_t o1;
-    size_t o2;
-};
-
 struct LineGroup
 {
-    LineGroup(Opposite o)
-        : ops{o.o1, o.c, o.o2}
-    {
-    }
-
     LineGroup(const Triple& o)
         : ops{o.vs[0]->id, o.vs[1]->id, o.vs[2]->id}
     {

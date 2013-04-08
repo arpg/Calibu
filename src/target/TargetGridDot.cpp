@@ -133,11 +133,6 @@ double NormArea(const Eigen::Vector2d& p1, const Eigen::Vector2d& p2, const Eige
     return std::abs(area) / (len*len);
 }
 
-bool LineGroupIsInvalid(const LineGroup& lg)
-{
-    return lg.k == 2;
-}
-
 void FindTriples( Vertex& v, std::vector<Dist>& closest, double thresh_dist, double thresh_area)
 {
     // Consider 9 closests points (including itself)
@@ -164,7 +159,6 @@ void FindTriples( Vertex& v, std::vector<Dist>& closest, double thresh_dist, dou
             // Check distances aren't much further than closest
             if( d1 < max_dist && d2 < max_dist )
             {
-                
                 // Check distances are similar
                 if( 2.0 * fabs(d2-d1) / (fabs(d1)+fabs(d2)) < thresh_dist )
                 {
@@ -188,24 +182,6 @@ void FindTriples( Vertex& v, std::vector<Dist>& closest, double thresh_dist, dou
             }
         }
     }
-}
-
-double AngleDist(double a1, double a2)
-{
-    double dist = a1 - a2;
-    while(dist < 0) dist += 2*M_PI;
-    while(dist > 2*M_PI) dist -= 2*M_PI;
-    if(dist > M_PI) dist = -(2*M_PI - dist);
-    return dist;
-}
-
-double LineAngleDist(double a1, double a2)
-{
-    double dist = a1 - a2;
-    while(dist < 0) dist += M_PI;
-    while(dist > M_PI) dist -= M_PI;
-    if(dist > M_PI/2) dist = -(M_PI - dist);
-    return dist;
 }
 
 //////////////////////////////////////////////////////////////
@@ -288,137 +264,6 @@ double GetCenterCrossScore(const Triple& op1,
     return score;
 }
 
-//bool TargetGridDot::Find(std::vector<Eigen::Vector2d>& pts, double thresh_dist, double thresh_area ) const
-//{
-    
-//    // Fill initial line group structure
-//    for(size_t c=0; c<pts_neighbours.size(); ++c) {
-//        for(size_t n=0; n<pts_neighbours[c].size(); ++n) {
-//            Opposite op = pts_neighbours[c][n];
-//            line_groups.push_back( LineGroup(op) );
-//        }
-//    }
-    
-//    // Try to merge line groups            
-//    bool something_added;
-//    do {
-//        something_added = false;
-//        for(std::list<LineGroup>::iterator i1 = line_groups.begin(); i1 != line_groups.end(); ++i1)
-//        {
-//            for(std::list<LineGroup>::iterator i2 = std::next(i1); i2 != line_groups.end(); ++i2)
-//            {                    
-//                if( i1->Merge(*i2) ) {
-//                    line_groups.erase(i2);
-//                    something_added = true;
-//                    break;
-//                }
-//            }
-//        }
-//    } while(something_added);  
-    
-//    // Work out angle for each line group based on ends
-//    for(std::list<LineGroup>::iterator i = line_groups.begin(); i != line_groups.end(); ++i)
-//    {
-//        LineGroup& lg = *i;
-//        const Eigen::Vector2d diff = pts[lg.last()] - pts[lg.first()];                
-//        lg.theta = atan2(diff(1),diff(0));
-//        while(lg.theta < 0) lg.theta += 2*M_PI;
-//    }
-        
-//    // Naive K-Means to find two principle directions. Initialise at 90 deg.
-//    Eigen::Array2d k(0.0, M_PI/2);
-//    Eigen::Array2d kvar(0.0, M_PI/2);
-    
-//    for(int its=0; its < 10; ++its)
-//    {
-//        Eigen::Array2d knum(0, 0);
-//        Eigen::Array2d ksum(0.0, 0.0);
-//        Eigen::Array2d ksum_sq(0.0, 0.0);
-
-//        for(std::list<LineGroup>::iterator ilg = line_groups.begin(); ilg != line_groups.end(); ++ilg)
-//        {
-//            LineGroup& lg = *ilg;
-//            Eigen::Vector2d kdist;
-            
-//            // distance to k mean
-//            for(int ik=0; ik<2; ++ik) {
-//                kdist[ik] = LineAngleDist(lg.theta, k[ik] );
-//            }
-            
-//            // assign to closest kmean
-//            lg.k = std::abs(kdist[0]) < std::abs(kdist[1]) ? 0 : 1;
-            
-//            // update stats for close k-mean
-//            knum[lg.k]++;
-//            ksum[lg.k] += kdist[lg.k];
-//            ksum_sq[lg.k] += kdist[lg.k] * kdist[lg.k];
-//        }
-        
-//        // update k-mean
-//        for(int ik=0; ik<2; ++ik) {
-//            k[ik] += ksum[ik] / knum[ik];
-//            while(k[ik] < 0) k[ik] += M_PI;
-//            while(k[ik] > M_PI) k[ik] -= M_PI;
-//        }       
-        
-//        // Compute variance
-//        kvar = (ksum_sq - ((ksum*ksum)/knum)) / knum;
-//    }
-
-//    //find the max size of each group
-//    int kMaxSize[2] = {0,0};
-//    for(const LineGroup& group: line_groups) {
-//        kMaxSize[group.k] = std::max(kMaxSize[group.k],(int)group.ops.size());
-//    }
-    
-//    //flip ks if necessary
-//    const bool flipk = kMaxSize[0] < kMaxSize[1];
-//    if(flipk) {
-//        std::swap(k[0],k[1]);
-//        std::swap(kvar[0],kvar[1]);
-//    }
-            
-//    // Normalise line directions (so they face same way) and remove bad directions
-//    for(std::list<LineGroup>::iterator ilg = line_groups.begin(); ilg != line_groups.end(); ++ilg)
-//    {
-//        LineGroup& lg = *ilg;
-//        if(flipk) lg.k = 1-lg.k;
-        
-//        const Eigen::Vector2d dp = pts[lg.last()] - pts[lg.first()];
-        
-//        const double dk = dp(lg.k);
-//        if( dk <0 ) {
-//            lg.Reverse();                
-//            lg.theta = lg.theta - M_PI;
-//            while(lg.theta < 0) lg.theta += 2*M_PI;                    
-//        }
-        
-//        const double absdist = std::abs(LineAngleDist(lg.theta, k[lg.k]));
-//        if( absdist > params.max_line_group_k_sigma * sqrt(kvar[lg.k]) ) {
-//            lg.k = 2;
-//        }
-//        if( absdist > M_PI/16.0 ) {
-//            lg.k = 2;
-//        }
-        
-//        // ignore if too short
-//        if(lg.ops.size() < 4) {
-//            lg.k = 2;
-//        }
-//    }       
-    
-////    line_groups.erase(
-////        std::remove_if(line_groups.begin(), line_groups.end(), LineGroupIsInvalid),
-////        line_groups.end()
-////    );
-    
-//    // We need at least two line groups to get points which aren't all colinear
-//    if(line_groups.size() < 2)
-//        return false;
-    
-//    return true;
-//}
-
 bool TargetGridDot::FindTarget(
   const Sophus::SE3d& T_cw,
   const CameraModelBase& cam,
@@ -500,36 +345,7 @@ bool TargetGridDot::FindTarget(
     for(auto* t: principle) {
         line_groups.push_back( LineGroup(*t) );
     }
-        
-//    // Calcualte 'cross' score for each conic and remember best
-//    double bestScore = std::numeric_limits<double>::max();
-//    idxCrossConic = -1;
-//    size_t best_triple[2];
-    
-//    for(size_t jj = 0 ; jj < vs.size() ; jj++){
-//        for(size_t n1=0; n1 < vs[jj].triples.size(); ++n1) {
-//            for(size_t n2=n1+1; n2 < vs[jj].triples.size(); ++n2) {
-//                const double score = GetCenterCrossScore(
-//                    vs[jj].triples[n1], vs[jj].triples[n2],
-//                    images.Img(), images.Width(), images.Height(),
-//                    params.min_cross_area, params.max_cross_area,
-//                    params.cross_radius_ratio, params.cross_line_ratio
-//                );
-    
-//                if(score < bestScore){
-//                    bestScore = score;
-//                    idxCrossConic = jj;
-//                    best_triple[0] = n1;
-//                    best_triple[1] = n2;
-//                }
-//            }
-//        }
-//    }
-    
-//    // Give up if no cross found
-//    if(idxCrossConic == -1) return false;
-//    Vertex* cross = &vs[idxCrossConic];
-    
+            
     // Search structures
     std::deque<Vertex*> fringe;
     std::deque<Vertex*> available;
@@ -629,6 +445,41 @@ bool TargetGridDot::FindTarget(
         }
         available.pop_front();
     }
+    
+    // Try to set grid center using cross
+    // Calcualte 'cross' score for each conic and remember best
+    double bestScore = std::numeric_limits<double>::max();
+    Vertex* cross = nullptr;
+    
+    for(size_t jj = 0 ; jj < vs.size() ; jj++){
+        for(size_t n1=0; n1 < vs[jj].triples.size(); ++n1) {
+            for(size_t n2=n1+1; n2 < vs[jj].triples.size(); ++n2) {
+                const double score = GetCenterCrossScore(
+                    vs[jj].triples[n1], vs[jj].triples[n2],
+                    images.Img(), images.Width(), images.Height(),
+                    params.min_cross_area, params.max_cross_area,
+                    params.cross_radius_ratio, params.cross_line_ratio
+                );
+    
+                if(score < bestScore){
+                    bestScore = score;
+                    cross = &vs[jj];
+                }
+            }
+        }
+    }
+        
+    if(cross && cross->HasGridPosition()) {
+        idxCrossConic = cross->id;
+        const Eigen::Vector2i cc = cross->pg;
+        for(auto m : map_grid_ellipse) {
+//            m.first -= cc;
+            m.second->pg -= cc;
+        }
+    }else{
+        return false;
+    }
+    
     
     // output map
     ellipse_target_map.resize(vs.size(), -1);
