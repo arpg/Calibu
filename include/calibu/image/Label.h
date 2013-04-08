@@ -1,7 +1,8 @@
 /* This file is part of the calibu Project.
  * https://github.com/stevenlovegrove/calibu
  *
- * Copyright (c) 2011 Steven Lovegrove
+ * Copyright (C) 2010  Steven Lovegrove
+ *                     Imperial College London
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -25,52 +26,26 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <calibu/utils/Utils.h>
+#pragma once
 
-#include "assert.h"
-#include <Eigen/Dense>
-
-using namespace Eigen;
+#include <calibu/utils/Rectangle.h>
+#include <vector>
 
 namespace calibu {
 
-Eigen::Matrix3d EstimateH_ba(
-  const std::vector<Eigen::Vector2d >& a,
-  const std::vector<Eigen::Vector2d >& b
-)
+struct PixelClass
 {
-  assert(a.size() == b.size());
+  int equiv;
+  IRectangle bbox;
+  int size;
+};
 
-  // based on estimatehomography.m
-  // George Vogiatzis and Carlos Hernández
-  // http://george-vogiatzis.org/calib/
-
-  MatrixXd M(a.size()*2,9);
-
-  for( unsigned int i=0; i< a.size(); ++i )
-  {
-    const double u1 = a[i][0];
-    const double v1 = a[i][1];
-    const double u2 = b[i][0];
-    const double v2 = b[i][1];
-
-    M.block<2,9>(i*2,0) <<
-      u1, v1, 1, 0, 0, 0, -u1 * u2, -v1 * u2, -u2,
-      0, 0, 0, u1, v1, 1, -u1 * v2, -v1 * v2, -v2;
-  }
-
-  const Matrix<double,9,9> Vt =
-    Eigen::JacobiSVD<MatrixXd>(M, ComputeFullV).matrixV().transpose();
-
-  // return last row of svd.get_VT(), reshaped in to 3x3
-  Matrix3d H;
-  H.block<1,3>(0,0) = Vt.block<1,3>(8,0);
-  H.block<1,3>(1,0) = Vt.block<1,3>(8,3);
-  H.block<1,3>(2,0) = Vt.block<1,3>(8,6);
-
-  H /= H(2,2);
-
-  return H;
-}
+void Label(
+  int w, int h,
+  const unsigned char* I,
+  short* label,
+  std::vector<PixelClass>& labels,
+  unsigned char passval
+);
 
 }

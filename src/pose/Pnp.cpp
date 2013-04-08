@@ -1,4 +1,4 @@
-#include <fiducials/pose/Pnp.h>
+#include <calibu/pose/Pnp.h>
 
 #include <opencv2/opencv.hpp>
 #include <opencv2/core/core.hpp>
@@ -7,7 +7,7 @@
 using namespace std;
 using namespace Eigen;
 
-namespace fiducials {
+namespace calibu {
 
 vector<int> PosePnPRansac(
     const CameraModelBase& cam,

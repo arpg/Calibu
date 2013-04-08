@@ -1,7 +1,7 @@
 #######################################################
 ## Sources
 
-set( INCDIR "../include/fiducials")
+set( INCDIR "../include/calibu")
 
 set(
     HEADERS
@@ -85,8 +85,8 @@ configure_file(
 )
 
 #######################################################
-## Export config file for easy inclusion into other projects: FIND_PACKAGE( Fiducials )
+## Export config file for easy inclusion into other projects: FIND_PACKAGE( Calibu )
 get_target_property( LIB_LOC ${LIBRARY_NAME} LOCATION )
-CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/FiducialsConfig.cmake.in
-    ${CMAKE_CURRENT_BINARY_DIR}/FiducialsConfig.cmake @ONLY IMMEDIATE )
-EXPORT( PACKAGE Fiducials )
+CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/CalibuConfig.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/CalibuConfig.cmake @ONLY IMMEDIATE )
+EXPORT( PACKAGE Calibu )

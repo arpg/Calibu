@@ -1,5 +1,5 @@
-/* This file is part of the fiducials Project.
- * https://github.com/stevenlovegrove/fiducials
+/* This file is part of the calibu Project.
+ * https://github.com/stevenlovegrove/calibu
  *
  * Copyright (C) 2010  Steven Lovegrove, Richard Newcombe, Hauke Strasdat
  *                     Imperial College London
@@ -26,7 +26,7 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <fiducials/target/TargetRandomDot.h>
+#include <calibu/target/TargetRandomDot.h>
 
 #include <algorithm>
 #include <iostream>
@@ -34,15 +34,15 @@
 
 #include <sophus/se2.hpp>
 
-#include <fiducials/target/Hungarian.h>
-#include <fiducials/conics/Conic.h>
-#include <fiducials/pose/Ransac.h>
-#include <fiducials/utils/Utils.h>
+#include <calibu/target/Hungarian.h>
+#include <calibu/conics/Conic.h>
+#include <calibu/pose/Ransac.h>
+#include <calibu/utils/Utils.h>
 
 using namespace std;
 using namespace Eigen;
 
-namespace fiducials {
+namespace calibu {
 
 // Forwards
 Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>

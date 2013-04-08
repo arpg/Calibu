@@ -1,4 +1,4 @@
-#include <fiducials/target/TargetGridDot.h>
+#include <calibu/target/TargetGridDot.h>
 
 #include <map>
 #include <set>
@@ -6,7 +6,7 @@
 #include <iostream>
 #include <deque>
 
-namespace fiducials {
+namespace calibu {
 
 TargetGridDot::TargetGridDot(double grid_spacing, Eigen::Vector2i grid_size, Eigen::Vector2i grid_center)
     : grid_spacing(grid_spacing), grid_size(grid_size), grid_center(grid_center)

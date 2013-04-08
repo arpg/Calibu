@@ -1,5 +1,5 @@
-/* This file is part of the fiducials Project.
- * https://github.com/stevenlovegrove/fiducials
+/* This file is part of the calibu Project.
+ * https://github.com/stevenlovegrove/calibu
  *
  * Copyright (c) 2011 Steven Lovegrove
  *
@@ -25,14 +25,14 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <fiducials/conics/Conic.h>
-#include <fiducials/utils/Utils.h>
+#include <calibu/conics/Conic.h>
+#include <calibu/utils/Utils.h>
 #include <Eigen/Dense>
 
 using namespace std;
 using namespace Eigen;
 
-namespace fiducials {
+namespace calibu {
 
 double Distance( const Conic& c1, const Conic& c2, double circle_radius )
 {

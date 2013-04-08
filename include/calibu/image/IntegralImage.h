@@ -1,7 +1,8 @@
 /* This file is part of the calibu Project.
  * https://github.com/stevenlovegrove/calibu
  *
- * Copyright (c) 2011 Steven Lovegrove
+ * Copyright (C) 2010  Steven Lovegrove
+ *                     Imperial College London
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -25,52 +26,33 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <calibu/utils/Utils.h>
-
-#include "assert.h"
-#include <Eigen/Dense>
-
-using namespace Eigen;
+#pragma once
 
 namespace calibu {
 
-Eigen::Matrix3d EstimateH_ba(
-  const std::vector<Eigen::Vector2d >& a,
-  const std::vector<Eigen::Vector2d >& b
-)
+// Influenced by libCVD integral_image
+template<typename TI, typename TO>
+void integral_image(const int w, const int h, const TI* in, TO* out)
 {
-  assert(a.size() == b.size());
+    out[0] = in[0];
 
-  // based on estimatehomography.m
-  // George Vogiatzis and Carlos Hernández
-  // http://george-vogiatzis.org/calib/
+    //Do the first row.
+    for(int x=1; x < w; x++)
+        out[x] =out[x-1] + in[x];
 
-  MatrixXd M(a.size()*2,9);
+    //Do the first column.
+    for(int y=1; y < h; y++)
+        out[y*w] =out[(y-1)*w] + in[y*w];
 
-  for( unsigned int i=0; i< a.size(); ++i )
-  {
-    const double u1 = a[i][0];
-    const double v1 = a[i][1];
-    const double u2 = b[i][0];
-    const double v2 = b[i][1];
+    //Do the remainder of the image
+    for(int y=1; y < h; y++) {
+        TO sum = in[y*w];
 
-    M.block<2,9>(i*2,0) <<
-      u1, v1, 1, 0, 0, 0, -u1 * u2, -v1 * u2, -u2,
-      0, 0, 0, u1, v1, 1, -u1 * v2, -v1 * v2, -v2;
-  }
-
-  const Matrix<double,9,9> Vt =
-    Eigen::JacobiSVD<MatrixXd>(M, ComputeFullV).matrixV().transpose();
-
-  // return last row of svd.get_VT(), reshaped in to 3x3
-  Matrix3d H;
-  H.block<1,3>(0,0) = Vt.block<1,3>(8,0);
-  H.block<1,3>(1,0) = Vt.block<1,3>(8,3);
-  H.block<1,3>(2,0) = Vt.block<1,3>(8,6);
-
-  H /= H(2,2);
-
-  return H;
+        for(int x=1; x < w; x++) {
+            sum += in[y*w+x];
+            out[y*w+x] = sum + out[(y-1)*w+x];
+        }
+    }
 }
 
 }

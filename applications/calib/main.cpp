@@ -5,14 +5,14 @@
 
 #include <sophus/se3.hpp>
 
-#include <fiducials/calib/Calibrator.h>
-#include <fiducials/image/ImageProcessing.h>
-#include <fiducials/target/TargetGridDot.h>
-#include <fiducials/gl/Drawing.h>
-#include <fiducials/pose/Pnp.h>
-#include <fiducials/conics/ConicFinder.h>
+#include <calibu/calib/Calibrator.h>
+#include <calibu/image/ImageProcessing.h>
+#include <calibu/target/TargetGridDot.h>
+#include <calibu/gl/Drawing.h>
+#include <calibu/pose/Pnp.h>
+#include <calibu/conics/ConicFinder.h>
 
-using namespace fiducials;
+using namespace calibu;
 
 int main( int argc, char** argv)
 {    

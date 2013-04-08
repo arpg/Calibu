@@ -1,5 +1,5 @@
-/* This file is part of the fiducials Project.
- * https://github.com/stevenlovegrove/fiducials
+/* This file is part of the calibu Project.
+ * https://github.com/stevenlovegrove/calibu
  *
  * Copyright (C) 2010-2013 Steven Lovegrove
  *
@@ -25,13 +25,13 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <fiducials/image/ImageProcessing.h>
-#include <fiducials/image/Gradient.h>
-#include <fiducials/image/AdaptiveThreshold.h>
-#include <fiducials/image/IntegralImage.h>
-#include <fiducials/image/Label.h>
+#include <calibu/image/ImageProcessing.h>
+#include <calibu/image/Gradient.h>
+#include <calibu/image/AdaptiveThreshold.h>
+#include <calibu/image/IntegralImage.h>
+#include <calibu/image/Label.h>
 
-namespace fiducials
+namespace calibu
 {
 
 ImageProcessing::ImageProcessing(int width, int height)

@@ -1,5 +1,5 @@
-/* This file is part of the fiducials Project.
- * https://github.com/stevenlovegrove/fiducials
+/* This file is part of the calibu Project.
+ * https://github.com/stevenlovegrove/calibu
  *
  * Copyright (C) 2010  Steven Lovegrove, Richard Newcombe, Hauke Strasdat
  *                     Imperial College London
@@ -26,9 +26,9 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <fiducials/conics/FindConics.h>
+#include <calibu/conics/FindConics.h>
 
-namespace fiducials
+namespace calibu
 {
 
 ////////////////////////////////////////////////////////////////////////////

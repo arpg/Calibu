@@ -1,16 +1,16 @@
 #include <pangolin/pangolin.h>
 #include <pangolin/video.h>
 
-#include <fiducials/pose/Tracker.h>
-#include <fiducials/target/TargetRandomDot.h>
-#include <fiducials/gl/Drawing.h>
-#include <fiducials/utils/Utils.h>
-#include <fiducials/cam/CameraModel.h>
+#include <calibu/pose/Tracker.h>
+#include <calibu/target/TargetRandomDot.h>
+#include <calibu/gl/Drawing.h>
+#include <calibu/utils/Utils.h>
+#include <calibu/cam/CameraModel.h>
 
 using namespace std;
 using namespace pangolin;
 using namespace Eigen;
-using namespace fiducials;
+using namespace calibu;
 
 const int PANEL_WIDTH = 200;
 

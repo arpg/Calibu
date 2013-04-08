@@ -1,0 +1,8 @@
+SET( Calibu_LIBRARIES    "@LIB_LOC@;@LINK_LIBS@" )
+SET( Calibu_LIBRARY      "@LIB_LOC@;@LINK_LIBS@" )
+
+SET( Calibu_INCLUDE_DIRS "@USER_INC@" )
+SET( Calibu_INCLUDE_DIR  "@USER_INC@" )
+
+SET( Calibu_LIBRARY_DIRS "@LIB_DIRS@" )
+SET( Calibu_LIBRARY_DIR  "@LIB_DIRS@" )

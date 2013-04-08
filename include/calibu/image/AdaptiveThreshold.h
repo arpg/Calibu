@@ -25,52 +25,37 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <calibu/utils/Utils.h>
+#pragma once
 
-#include "assert.h"
-#include <Eigen/Dense>
-
-using namespace Eigen;
+#include <algorithm>
 
 namespace calibu {
 
-Eigen::Matrix3d EstimateH_ba(
-  const std::vector<Eigen::Vector2d >& a,
-  const std::vector<Eigen::Vector2d >& b
-)
+template<typename TI,typename TintI,typename Tout>
+void AdaptiveThreshold( int w, int h, const TI* I, const TintI* intI, Tout* out, float threshold, int s, Tout pass, Tout fail )
 {
-  assert(a.size() == b.size());
+  // Adaptive Thresholding Using the Integral Image
+  // Derek Bradley, Gerhard Roth
 
-  // based on estimatehomography.m
-  // George Vogiatzis and Carlos Hernández
-  // http://george-vogiatzis.org/calib/
-
-  MatrixXd M(a.size()*2,9);
-
-  for( unsigned int i=0; i< a.size(); ++i )
+  for ( int j=0; j<h; ++j )
   {
-    const double u1 = a[i][0];
-    const double v1 = a[i][1];
-    const double u2 = b[i][0];
-    const double v2 = b[i][1];
+    const int y1 = std::max(1,j-s);
+    const int y2 = std::min(h-1,j+s);
 
-    M.block<2,9>(i*2,0) <<
-      u1, v1, 1, 0, 0, 0, -u1 * u2, -v1 * u2, -u2,
-      0, 0, 0, u1, v1, 1, -u1 * v2, -v1 * v2, -v2;
+    for( int i=0; i<w; ++i )
+    {
+      const int x1 = std::max(1,i-s);
+      const int x2 = std::min(w-1,i+s);
+      const int count = (x2-x1)*(y2-y1);
+      const TintI* intIy2 = intI + y2*w;
+      const TintI* intIy1m1 = intI + (y1-1)*w;
+      const TintI sum = intIy2[x2] - intIy1m1[x2] - intIy2[x1-1] + intIy1m1[x1-1];
+      unsigned id = j*w+i;
+      out[id] = (I[id]*count <= sum*threshold) ? pass : fail;
+//      const TintI sum = intI[y2][x2] - intI[y1-1][x2] - intI[y2][x1-1] + intI[y1-1][x1-1];
+//      out[j][i] = (I[j][i]*count <= sum*threshold) ? pass : fail;
+    }
   }
-
-  const Matrix<double,9,9> Vt =
-    Eigen::JacobiSVD<MatrixXd>(M, ComputeFullV).matrixV().transpose();
-
-  // return last row of svd.get_VT(), reshaped in to 3x3
-  Matrix3d H;
-  H.block<1,3>(0,0) = Vt.block<1,3>(8,0);
-  H.block<1,3>(1,0) = Vt.block<1,3>(8,3);
-  H.block<1,3>(2,0) = Vt.block<1,3>(8,6);
-
-  H /= H(2,2);
-
-  return H;
 }
 
 }

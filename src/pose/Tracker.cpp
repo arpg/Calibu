@@ -1,5 +1,5 @@
-/* This file is part of the fiducials Project.
- * https://github.com/stevenlovegrove/fiducials
+/* This file is part of the calibu Project.
+ * https://github.com/stevenlovegrove/calibu
  *
  * Copyright (C) 2012-2013 Steven Lovegrove
  * Copyright (C) 2013      Hauke Strasdat
@@ -26,17 +26,17 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <fiducials/pose/Tracker.h>
-#include <fiducials/pose/Pnp.h>
-#include <fiducials/image/ImageProcessing.h>
-#include <fiducials/cam/CameraModel.h>
+#include <calibu/pose/Tracker.h>
+#include <calibu/pose/Pnp.h>
+#include <calibu/image/ImageProcessing.h>
+#include <calibu/cam/CameraModel.h>
 
 #include <iostream>
 
 using namespace std;
 using namespace Eigen;
 
-namespace fiducials {
+namespace calibu {
 
 Tracker::Tracker(TargetInterface& target, int w, int h)
     : target(target), imgs(w,h),

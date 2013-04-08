@@ -1,8 +1,0 @@
-SET( Fiducials_LIBRARIES    "@LIB_LOC@;@LINK_LIBS@" )
-SET( Fiducials_LIBRARY      "@LIB_LOC@;@LINK_LIBS@" )
-
-SET( Fiducials_INCLUDE_DIRS "@USER_INC@" )
-SET( Fiducials_INCLUDE_DIR  "@USER_INC@" )
-
-SET( Fiducials_LIBRARY_DIRS "@LIB_DIRS@" )
-SET( Fiducials_LIBRARY_DIR  "@LIB_DIRS@" )

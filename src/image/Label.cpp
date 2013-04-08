@@ -1,5 +1,5 @@
-/* This file is part of the fiducials Project.
- * https://github.com/stevenlovegrove/fiducials
+/* This file is part of the calibu Project.
+ * https://github.com/stevenlovegrove/calibu
  *
  * Copyright (c) 2011 Steven Lovegrove
  *
@@ -25,14 +25,14 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <fiducials/image/Label.h>
+#include <calibu/image/Label.h>
 
 #include <vector>
 
 using namespace std;
 using namespace Eigen;
 
-namespace fiducials {
+namespace calibu {
 
 inline short RootLabel(vector<PixelClass>& labels, short label )
 {

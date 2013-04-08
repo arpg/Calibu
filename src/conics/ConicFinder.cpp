@@ -1,5 +1,5 @@
-/* This file is part of the fiducials Project.
- * https://github.com/stevenlovegrove/fiducials
+/* This file is part of the calibu Project.
+ * https://github.com/stevenlovegrove/calibu
  *
  * Copyright (C) 2010-2013 Steven Lovegrove
  *
@@ -25,11 +25,11 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <fiducials/conics/ConicFinder.h>
-#include <fiducials/conics/FindConics.h>
-#include <fiducials/image/ImageProcessing.h>
+#include <calibu/conics/ConicFinder.h>
+#include <calibu/conics/FindConics.h>
+#include <calibu/image/ImageProcessing.h>
 
-namespace fiducials {
+namespace calibu {
 
 ConicFinder::ConicFinder()
 {

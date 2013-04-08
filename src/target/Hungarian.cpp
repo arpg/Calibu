@@ -27,7 +27,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits>
-#include <fiducials/target/Hungarian.h>
+#include <calibu/target/Hungarian.h>
 
 #define INF std::numeric_limits<double>::max()
 #define verbose (0)

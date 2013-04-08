@@ -1,5 +1,5 @@
-find_package(Fiducials REQUIRED)
-include_directories(${Fiducials_INCLUDE_DIRS})
+find_package(Calibu REQUIRED)
+include_directories(${Calibu_INCLUDE_DIRS})
 link_libraries(${LIBRARY_NAME})
 
 # git://github.com/stevenlovegrove/Pangolin.git
