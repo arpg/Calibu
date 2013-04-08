@@ -1,8 +1,8 @@
 /* This file is part of the calibu Project.
  * https://github.com/stevenlovegrove/calibu
  *
- * Copyright (C) 2010  Steven Lovegrove, Richard Newcombe, Hauke Strasdat
- *                     Imperial College London
+ * Copyright (C) 2013      Hauke Strasdat
+ * Copyright (C) 2012-2013 Steven Lovegrove
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
