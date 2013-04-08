@@ -32,17 +32,18 @@ namespace calibu {
 
 // Influenced by libCVD gradient method
 template<typename TI, typename TD>
-void gradient(const int w, const int h, const TI* I, TD* grad) {
-  const TI* pI = I + w + 1;
-  const TI* pEnd = I + w*h - w - 1;
-  TD* pOut = grad + w + 1;
-
-  while (pI != pEnd) {
-    (*pOut)[0] = *(pI+1) - *(pI-1);
-    (*pOut)[1] = *(pI+w) - *(pI-w);
-    pI++;
-    pOut++;
-  }
+void gradient(const int w, const int h, const TI* I, TD* grad)
+{
+    const TI* pI = I + w + 1;
+    const TI* pEnd = I + w*h - w - 1;
+    TD* pOut = grad + w + 1;
+    
+    while (pI != pEnd) {
+        (*pOut)[0] = *(pI+1) - *(pI-1);
+        (*pOut)[1] = *(pI+w) - *(pI-w);
+        pI++;
+        pOut++;
+    }
 }
 
 }

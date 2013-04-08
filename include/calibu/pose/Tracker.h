@@ -39,16 +39,16 @@ namespace calibu {
 
 struct ParamsTracker
 {
-  ParamsTracker () :
-    robust_3pt_inlier_tol(1.5),
-    robust_3pt_its(100),
-    inlier_num_required(10),
-    max_rms(3.0) {}
-
-  double robust_3pt_inlier_tol;
-  int robust_3pt_its;
-  int inlier_num_required;
-  double max_rms;
+    ParamsTracker () :
+        robust_3pt_inlier_tol(1.5),
+        robust_3pt_its(100),
+        inlier_num_required(10),
+        max_rms(3.0) {}
+    
+    double robust_3pt_inlier_tol;
+    int robust_3pt_its;
+    int inlier_num_required;
+    double max_rms;
 };
 
 
@@ -56,9 +56,9 @@ class Tracker
 {
 public:
     Tracker(TargetInterface& target, int w, int h);
-
+    
     bool ProcessFrame(CameraModelBase& cam, unsigned char *I, size_t pitch);
-
+    
     const TargetInterface& Target() const {
         return target;
     }
@@ -70,11 +70,11 @@ public:
     const ImageProcessing& Images() const {
         return imgs;
     }
-        
+    
     const std::vector<int>& ConicsTargetMap() const{
         return conics_target_map;
     }
-        
+    
     const Sophus::SE3d& PoseT_gw() const
     {
         return T_gw;
@@ -90,12 +90,12 @@ protected:
     std::vector<int> conics_target_map;
     std::vector<int> conics_candidate_map_first_pass;
     std::vector<int> conics_candidate_map_second_pass;
-
+    
     // Last good pose
     Sophus::SE3d T_gw;
     std::clock_t last_good;
     int good_frames;
-
+    
     // Pose hypothesis
     Sophus::SE3d T_hw;
     

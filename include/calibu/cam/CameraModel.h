@@ -40,15 +40,15 @@ namespace calibu
 
 template<typename ProjectionModel>
 class CameraModel
-    : public CameraModelBase
+        : public CameraModelBase
 {
 public:
     static const unsigned NUM_PARAMS = ProjectionModel::NUM_PARAMS;
-            
+    
     ///////////////////////////////////////////////////////////////////////////
     // Static Utilities
     ///////////////////////////////////////////////////////////////////////////
-
+    
     inline static std::string Name() { return ProjectionModel::Name(); }
     
     // Map from image coordinates to z=1 plane
@@ -73,9 +73,9 @@ public:
         
         Eigen::Matrix<double,2,3> _dp_dP;
         _dp_dP << 
-          1.0/P(2), 0, -P(0)/(P(2)*P(2)),
-          0, 1.0/P(2), -P(1)/(P(2)*P(2));
-                
+                  1.0/P(2), 0, -P(0)/(P(2)*P(2)),
+                0, 1.0/P(2), -P(1)/(P(2)*P(2));
+        
         return _dMap_dp * _dp_dP;
     }    
     
@@ -88,10 +88,10 @@ public:
         // Inverse depth point in a transformed to b (homogeneous 2D)
         const Eigen::Matrix<T,3,1> Pb =
                 T_ba.rotationMatrix() * rhoPa + rho * T_ba.translation();
-    
+        
         // to non-homogeneous 2D
         const Eigen::Matrix<T,2,1> proj( Pb(0)/Pb(2), Pb(1)/Pb(2) );
-                
+        
         // apply distortion and linear cam
         return Map(proj, camparam); 
     }
@@ -105,11 +105,11 @@ public:
         // Inverse depth point in a transformed to b (homogeneous 2D)
         const Eigen::Matrix<T,3,1> Pb =
                 T_ba.rotationMatrix() * rhoPa + rho * T_ba.translation();
-    
+        
         // to non-homogeneous 2D
         const Eigen::Matrix<T,2,1> proj( Pb(0)/Pb(2), Pb(1)/Pb(2) );
         in_front = Pb(2) > 0;
-                
+        
         // apply distortion and linear cam
         return Map(proj, camparam); 
     }
@@ -121,8 +121,8 @@ public:
     {
         // rho*Pa (undo distortion, unproject, avoid division by inv depth)
         const Eigen::Matrix<T,3,1> rhoPa = Unproject<T>(
-            Unmap<T>(pa, camparam)
-        );
+                    Unmap<T>(pa, camparam)
+                    );
         
         return Transfer3D(camparam, T_ba, rhoPa, rho);
     }
@@ -134,21 +134,21 @@ public:
     {
         // rho*P1 (undo distortion, unproject, avoid division by inv depth)
         const Eigen::Matrix<T,3,1> rhoPa = Unproject<T>(
-            Unmap<T>(pa, camparam)
-        );
-            
+                    Unmap<T>(pa, camparam)
+                    );
+        
         return Transfer3D(camparam, T_ba, rhoPa, rho, in_front);
     }
     
     ///////////////////////////////////////////////////////////////////////////
     // Constructors
     ///////////////////////////////////////////////////////////////////////////
-
+    
     CameraModel()
         : CameraModelBase(0,0), params(Eigen::Matrix<double,NUM_PARAMS,1>::Zero())
     {
     }    
-
+    
     CameraModel(int w, int h)
         : CameraModelBase(w,h), params(Eigen::Matrix<double,NUM_PARAMS,1>::Zero())
     {
@@ -163,12 +163,12 @@ public:
         : CameraModelBase(w,h), params(params)
     {
     }        
-
+    
     CameraModel(double* cam_params)
         : CameraModelBase(0,0), params(Eigen::Map<Eigen::Matrix<double,NUM_PARAMS,1> >(cam_params))
     {
     }    
-
+    
     CameraModel(int w, int h, double* cam_params)
         : CameraModelBase(w,h), params(Eigen::Map<Eigen::Matrix<double,NUM_PARAMS,1> >(cam_params))
     {
@@ -178,7 +178,7 @@ public:
         : CameraModelBase(other), params(other.params)
     {
     }    
-
+    
     ///////////////////////////////////////////////////////////////////////////
     // Member functions
     ///////////////////////////////////////////////////////////////////////////
@@ -186,7 +186,7 @@ public:
     Eigen::Matrix<double,NUM_PARAMS,1>& Params() {
         return params;
     }
-
+    
     const Eigen::Matrix<double,NUM_PARAMS,1>& Params() const {
         return params;
     }
@@ -194,7 +194,7 @@ public:
     const double* data() const {
         return params.data();
     }
-
+    
     double* data() {
         return params.data();
     }
@@ -203,7 +203,7 @@ public:
     {
         return Map(proj, params.data());
     }
-
+    
     inline Eigen::Vector2d Unmap(const Eigen::Vector2d& img) const
     {
         return Unmap(img, params.data());
@@ -213,7 +213,7 @@ public:
     {
         return ProjectionModel::MakeK(params.data());
     }
-
+    
     inline Eigen::Matrix3d Kinv() const
     {
         return ProjectionModel::MakeKinv(params.data());
@@ -233,7 +233,7 @@ public:
     {
         return Transfer<double>(data(), T_ba, pa, rho);
     }
-
+    
     inline Eigen::Vector2d Transfer(const Sophus::SE3d& T_ba, const Eigen::Vector2d& pa, double rho, bool& in_front) const
     {
         return Transfer<double>(data(), T_ba, pa, rho, in_front);

@@ -6,7 +6,7 @@ namespace calibu
 {
 
 class CostFunctionAndParams
-    : public ceres::CostFunction
+        : public ceres::CostFunction
 {
 public:     
     virtual ~CostFunctionAndParams()
@@ -22,7 +22,7 @@ public:
     {
         return m_loss_func;
     }    
-        
+    
 protected:
     std::vector<double*> m_params;
     ceres::LossFunction* m_loss_func;

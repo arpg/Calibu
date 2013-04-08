@@ -56,7 +56,7 @@ TargetGridDot::TargetGridDot(double grid_spacing, Eigen::Vector2i grid_size, Eig
 std::vector<std::vector<Dist> > ClosestPoints( std::vector<Vertex>& pts)
 {
     std::vector<std::vector<Dist> > ret;
-
+    
     // Set size of arrays
     ret.resize(pts.size());
     for(size_t p1=0; p1 < pts.size(); ++p1)  ret[p1].resize(pts.size());
@@ -73,7 +73,7 @@ std::vector<std::vector<Dist> > ClosestPoints( std::vector<Vertex>& pts)
             ret[p2][p1] = Dist{ &pts[p1], dist};
         }
     }
-
+    
     // sort distances
     for(size_t p1=0; p1 < pts.size(); ++p1) {
         std::sort(ret[p1].begin(), ret[p1].end() );
@@ -176,11 +176,11 @@ void FindTriples( Vertex& v, std::vector<Dist>& closest, double thresh_dist, dou
     
     std::array<bool,NEIGHBOURS> used;
     used.fill(false);
-            
+    
     // Filter possible pairs
     for(size_t n1 = 1; n1 < max_neigh; ++n1 ) {
         const double d1 = closest[n1].dist;
-
+        
         for(size_t n2 = n1+1; n2 < max_neigh; ++n2 ) {
             const double d2 = closest[n2].dist;
             
@@ -222,7 +222,7 @@ double GetCenterCrossScore(const Triple& op1,
                            const double maxAreaThreshold, //< area threshold in percent
                            const double innerRadiusRatio,  //< size of the inner blob radius, in pixels
                            const double lineThicknessRatio //< size of the line, in pixels
-                             )
+                           )
 {
     double score = 0;
     //first do a size check
@@ -259,7 +259,7 @@ double GetCenterCrossScore(const Triple& op1,
                 const Eigen::Vector2d relativePos(ii - centerConic.center[0],jj - centerConic.center[1]);
                 const Eigen::Vector2d vecOp1 = op1.Neighbour(0).pc - op1.Neighbour(1).pc;
                 const Eigen::Vector2d vecOp2 = op2.Neighbour(0).pc - op2.Neighbour(1).pc;
-
+                
                 //calculate whether this pixel should be white or black.
                 //step 1 radius check
                 const double rad = innerRadiusRatio*(vecOp1.norm() + vecOp2.norm())/2.0;
@@ -269,13 +269,13 @@ double GetCenterCrossScore(const Triple& op1,
                     //check the distance from the vertical line
                     const double thickness1 = vecOp1.norm()*lineThicknessRatio;
                     const double thickness2 = vecOp2.norm()*lineThicknessRatio;
-
+                    
                     const double cosTheta1 = vecOp1.normalized().dot(relativePos.normalized());
                     const double cosTheta2 = vecOp2.normalized().dot(relativePos.normalized());
-
+                    
                     const double perpDistance1 = fabs(relativePos.norm()*sin(acos(cosTheta1)));
                     const double perpDistance2 = fabs(relativePos.norm()*sin(acos(cosTheta2)));
-
+                    
                     if(perpDistance1 <= thickness1/2.0 || perpDistance2 <= thickness2/2.0){
                         cVal = foreground;
                     }
@@ -288,27 +288,29 @@ double GetCenterCrossScore(const Triple& op1,
         //normalize the score by the number of pixels
         score /= (double)pixelCount;
     }
-
+    
     return score;
 }
 
 bool TargetGridDot::FindTarget(
-  const Sophus::SE3d& T_cw,
-  const CameraModelBase& cam,
-  const ImageProcessing& images,
-  const std::vector<Conic>& conics,
-  std::vector<int>& ellipse_target_map
-) {
+        const Sophus::SE3d& T_cw,
+        const CameraModelBase& cam,
+        const ImageProcessing& images,
+        const std::vector<Conic>& conics,
+        std::vector<int>& ellipse_target_map
+        )
+{
     // This target doesn't use position or camera information
     return FindTarget(images,conics,ellipse_target_map);
 }
 
 bool TargetGridDot::FindTarget(
-  const CameraModelBase& cam,
-  const ImageProcessing& images,
-  const std::vector<Conic>& conics,
-  std::vector<int>& ellipse_target_map
-) {
+        const CameraModelBase& cam,
+        const ImageProcessing& images,
+        const std::vector<Conic>& conics,
+        std::vector<int>& ellipse_target_map
+        )
+{
     // This target doesn't use position or camera information
     return FindTarget(images,conics,ellipse_target_map);
 }
@@ -327,11 +329,12 @@ void TargetGridDot::SetGrid(Vertex& v, const Eigen::Vector2i& g)
 }
 
 bool TargetGridDot::FindTarget(
-  const ImageProcessing& images,
-  const std::vector<Conic>& conics,
-  std::vector<int>& ellipse_target_map
-) {
-
+        const ImageProcessing& images,
+        const std::vector<Conic>& conics,
+        std::vector<int>& ellipse_target_map
+        )
+{
+    
     // Clear cached data structures
     Clear();
     ellipse_target_map.clear();    
@@ -359,7 +362,7 @@ bool TargetGridDot::FindTarget(
             break;
         }
     }
-
+    
     idxCrossConic = -1;
     if(!central)
         return false;
@@ -373,7 +376,7 @@ bool TargetGridDot::FindTarget(
     for(auto* t: principle) {
         line_groups.push_back( LineGroup(*t) );
     }
-            
+    
     // Search structures
     std::deque<Vertex*> fringe;
     std::deque<Vertex*> available;
@@ -413,7 +416,7 @@ bool TargetGridDot::FindTarget(
                     // expected other-neighbour grid position
                     const Eigen::Vector2i step = f.pg - n.pg;
                     const Eigen::Vector2i go = f.pg + step; 
-
+                    
                     // Only accept local neighbours.                    
                     if( abs(step[0]) > 1 || abs(step[1]) > 1 ) {
                         continue;
@@ -515,7 +518,7 @@ bool TargetGridDot::FindTarget(
     }
     
     ambigous_match = dim != grid_size;    
-            
+    
     // Try to set grid center using cross
     // Calcualte 'cross' score for each conic and remember best
     double bestScore = std::numeric_limits<double>::max();
@@ -525,12 +528,12 @@ bool TargetGridDot::FindTarget(
         for(size_t n1=0; n1 < vs[jj].triples.size(); ++n1) {
             for(size_t n2=n1+1; n2 < vs[jj].triples.size(); ++n2) {
                 const double score = GetCenterCrossScore(
-                    vs[jj].triples[n1], vs[jj].triples[n2],
-                    images.Img(), images.Width(), images.Height(),
-                    params.min_cross_area, params.max_cross_area,
-                    params.cross_radius_ratio, params.cross_line_ratio
-                );
-    
+                            vs[jj].triples[n1], vs[jj].triples[n2],
+                            images.Img(), images.Width(), images.Height(),
+                            params.min_cross_area, params.max_cross_area,
+                            params.cross_radius_ratio, params.cross_line_ratio
+                            );
+                
                 if(score < bestScore){
                     bestScore = score;
                     cross = &vs[jj];
@@ -538,7 +541,7 @@ bool TargetGridDot::FindTarget(
             }
         }
     }
-        
+    
     if(cross && cross->HasGridPosition()) {
         idxCrossConic = cross->id;
         const Eigen::Vector2i cc = cross->pg;
@@ -557,7 +560,7 @@ bool TargetGridDot::FindTarget(
             ellipse_target_map[p] = pgz(1)*grid_size(0) + pgz(0);
         }
     }
-          
+    
     return true;
 }
 

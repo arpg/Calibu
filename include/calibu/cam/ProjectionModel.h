@@ -61,7 +61,7 @@ struct ProjectionLinearId
     {
         return Eigen::Matrix<T,3,3>::Identity();
     }
-
+    
     template<typename T> inline
     static Eigen::Matrix<T,3,3> MakeKinv(T const* /*params*/)
     {
@@ -89,18 +89,18 @@ struct ProjectionLinear
     {
         const T fac = DistortionModel::template RFactor<T>(proj.norm(), params + NUM_LIN_PARAMS);
         return Eigen::Matrix<T,2,1>(
-            fac* params[0] * proj(0) + params[2],
-            fac* params[1] * proj(1) + params[3]
-        );        
+                    fac* params[0] * proj(0) + params[2],
+                fac* params[1] * proj(1) + params[3]
+                );        
     }
     
     template<typename T> inline
     static Eigen::Matrix<T,2,1> Unmap(const Eigen::Matrix<T,2,1>& img, T const* params)
     {    
         const Eigen::Matrix<T,2,1> dproj = Eigen::Matrix<T,2,1>(
-            (img[0] - params[2] ) / params[0],
-            (img[1] - params[3] ) / params[1]
-        );
+                    (img[0] - params[2] ) / params[0],
+                (img[1] - params[3] ) / params[1]
+                );
         const T fac = DistortionModel::RinvFactor(dproj.norm(), params + NUM_LIN_PARAMS);
         return fac*dproj;
     }
@@ -110,18 +110,18 @@ struct ProjectionLinear
     {
         Eigen::Matrix<T,3,3> K;
         K << params[0], 0, params[2],
-             0, params[1], params[3],
-             0, 0, 1;
+                0, params[1], params[3],
+                0, 0, 1;
         return K;
     }
-
+    
     template<typename T> inline
     static Eigen::Matrix<T,3,3> MakeKinv(T const* params)
     {
         Eigen::Matrix<T,3,3> K;
         K << 1.0/params[0], 0,    -params[2] / params[0],
-             0, 1.0/params[1], -params[3] / params[1],
-             0, 0, 1;
+                0, 1.0/params[1], -params[3] / params[1],
+                0, 0, 1;
         return K;
     }
     
@@ -130,19 +130,19 @@ struct ProjectionLinear
     {
         const double r = p.norm();    
         const Eigen::Vector2d dNorm_dp(p(0)/r, p(1)/r);
-
+        
         const double fac = DistortionModel::RFactor(r, params + NUM_LIN_PARAMS );
         const Eigen::Vector2d dfac_dp = DistortionModel::dRFactor_dr(r,params + NUM_LIN_PARAMS) * dNorm_dp;
-                
+        
         Eigen::Matrix<double,2,2> J;
         J.col(0) = Eigen::Matrix<double,2,1>(
-            dfac_dp(0) *params[0]*p(0) + fac*params[2],
-            dfac_dp(0) *params[1]*p(1)
-        );
+                    dfac_dp(0) *params[0]*p(0) + fac*params[2],
+                dfac_dp(0) *params[1]*p(1)
+                );
         J.col(1) = Eigen::Matrix<double,2,1>(
-            dfac_dp(1) *params[0]*p(0),
-            dfac_dp(1) *params[1]*p(1) + fac*params[3]
-        );
+                    dfac_dp(1) *params[0]*p(0),
+                dfac_dp(1) *params[1]*p(1) + fac*params[3]
+                );
         
         return J;
     }   
@@ -162,18 +162,18 @@ struct ProjectionLinearSquare
     {
         const T fac = DistortionModel::template RFactor<T>(proj.norm(), params + NUM_LIN_PARAMS);
         return Eigen::Matrix<T,2,1>(
-            fac* params[0] * proj(0) + params[1],
-            fac* params[0] * proj(1) + params[2]
-        );        
+                    fac* params[0] * proj(0) + params[1],
+                fac* params[0] * proj(1) + params[2]
+                );        
     }
     
     template<typename T> inline
     static Eigen::Matrix<T,2,1> Unmap(const Eigen::Matrix<T,2,1>& img, T const* params)
     {    
         const Eigen::Matrix<T,2,1> dproj = Eigen::Matrix<T,2,1>(
-            (img[0] - params[1] ) / params[0],
-            (img[1] - params[2] ) / params[0]
-        );
+                    (img[0] - params[1] ) / params[0],
+                (img[1] - params[2] ) / params[0]
+                );
         const T fac = DistortionModel::RinvFactor(dproj.norm(), params + NUM_LIN_PARAMS);
         return fac*dproj;
     }  
@@ -183,18 +183,18 @@ struct ProjectionLinearSquare
     {
         Eigen::Matrix<T,3,3> K;
         K << params[0], 0, params[1],
-             0, params[0], params[2],
-             0, 0, 1;
+                0, params[0], params[2],
+                0, 0, 1;
         return K;
     }
-
+    
     template<typename T> inline
     static Eigen::Matrix<T,3,3> MakeKinv(T const* params)
     {
         Eigen::Matrix<T,3,3> K;
         K << 1.0/params[0], 0, -params[1] / params[0],
-             0, 1.0/params[0], -params[2] / params[0],
-             0, 0, 1;
+                0, 1.0/params[0], -params[2] / params[0],
+                0, 0, 1;
         return K;
     }    
     
@@ -203,19 +203,19 @@ struct ProjectionLinearSquare
     {
         const double r = p.norm();    
         const Eigen::Vector2d dNorm_dp(p(0)/r, p(1)/r);
-
+        
         const double fac = DistortionModel::RFactor(r, params + NUM_LIN_PARAMS );
         const Eigen::Vector2d dfac_dp = DistortionModel::dRFactor_dr(r,params + NUM_LIN_PARAMS) * dNorm_dp;
-                
+        
         Eigen::Matrix<double,2,2> J;
         J.col(0) = Eigen::Matrix<double,2,1>(
-            dfac_dp(0) *params[0]*p(0) + fac*params[1],
-            dfac_dp(0) *params[0]*p(1)
-        );
+                    dfac_dp(0) *params[0]*p(0) + fac*params[1],
+                dfac_dp(0) *params[0]*p(1)
+                );
         J.col(1) = Eigen::Matrix<double,2,1>(
-            dfac_dp(1) *params[0]*p(0),
-            dfac_dp(1) *params[0]*p(1) + fac*params[1]
-        );
+                    dfac_dp(1) *params[0]*p(0),
+                dfac_dp(1) *params[0]*p(1) + fac*params[1]
+                );
         
         return J;
     }

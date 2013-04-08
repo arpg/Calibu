@@ -36,70 +36,70 @@ namespace calibu {
 
 inline short RootLabel(vector<PixelClass>& labels, short label )
 {
-  if( label >= 0 )
-  {
-    while( labels[label].equiv >= 0)
-      label = labels[label].equiv;
-  }
-  return label;
+    if( label >= 0 )
+    {
+        while( labels[label].equiv >= 0)
+            label = labels[label].equiv;
+    }
+    return label;
 }
 
 inline void AssignLabel( const int w, const int h, const unsigned char* I, short* label, vector<PixelClass>& labels, int r, int c, unsigned char passval )
 {
-  if( I[r*w+c] == passval )
-  {
-    short* labelr = label + r*w;
-    short* labelrm1 = labelr - w;
-
-    const short lup = r>0? RootLabel(labels,labelrm1[c]) : -1;
-    const short lleft = c>0? RootLabel(labels,labelr[c-1]) : -1;
-
-    if( lup >= 0 && lleft >= 0 && lup != lleft )
+    if( I[r*w+c] == passval )
     {
-      // merge
-      labelr[c] = lup;
-      labels[lup].size += labels[lleft].size + 1;
-      labels[lleft].equiv = lup;
-      labels[lup].bbox.Insert(labels[lleft].bbox);
-    }else if( lup >= 0 )
-    {
-      // assign to lup
-      labelr[c] = lup;
-      ++labels[lup].size;
-      labels[lup].bbox.Insert(c,r);
-    }else if( lleft >= 0 )
-    {
-      // assign to lleft
-      labelr[c] = lleft;
-      ++labels[lleft].size;
-      labels[lleft].bbox.Insert(c,r);
-    }else{
-      // new label
-      labels.push_back( (PixelClass){-1,IRectangle(c,r,c,r),1 } );
-      labelr[c] = labels.size()-1;
+        short* labelr = label + r*w;
+        short* labelrm1 = labelr - w;
+        
+        const short lup = r>0? RootLabel(labels,labelrm1[c]) : -1;
+        const short lleft = c>0? RootLabel(labels,labelr[c-1]) : -1;
+        
+        if( lup >= 0 && lleft >= 0 && lup != lleft )
+        {
+            // merge
+            labelr[c] = lup;
+            labels[lup].size += labels[lleft].size + 1;
+            labels[lleft].equiv = lup;
+            labels[lup].bbox.Insert(labels[lleft].bbox);
+        }else if( lup >= 0 )
+        {
+            // assign to lup
+            labelr[c] = lup;
+            ++labels[lup].size;
+            labels[lup].bbox.Insert(c,r);
+        }else if( lleft >= 0 )
+        {
+            // assign to lleft
+            labelr[c] = lleft;
+            ++labels[lleft].size;
+            labels[lleft].bbox.Insert(c,r);
+        }else{
+            // new label
+            labels.push_back( (PixelClass){-1,IRectangle(c,r,c,r),1 } );
+            labelr[c] = labels.size()-1;
+        }
     }
-  }
 }
 
 void Label( int w, int h, const unsigned char* I, short* label, vector<PixelClass>& labels, unsigned char passval )
 {
-  std::fill(label,label+w*h, -1);
-
-  for( int d=0; d < max(w,h); ++d )
-  {
-    if( d<w )
+    std::fill(label,label+w*h, -1);
+    
+    for( int d=0; d < max(w,h); ++d )
     {
-      for( int r=0; r< std::min(d,h); ++r )
-        AssignLabel(w,h,I,label,labels,r,d, passval);
+        if( d<w )
+        {
+            for( int r=0; r< std::min(d,h); ++r )
+                AssignLabel(w,h,I,label,labels,r,d, passval);
+        }
+        
+        if( d<h )
+        {
+            for( int c=0; c<= std::min(d,w); ++c )
+                AssignLabel(w,h,I,label,labels,d,c, passval);
+        }
     }
-
-    if( d<h )
-    {
-      for( int c=0; c<= std::min(d,w); ++c )
-        AssignLabel(w,h,I,label,labels,d,c, passval);
-    }
-  }
-
+    
 }
 
 }

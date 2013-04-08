@@ -37,28 +37,28 @@ namespace calibu {
 
 template<typename TdI>
 Eigen::Matrix3d FindEllipse(
-  const int w, const int /*h*/,
-  const TdI* dI,
-  const IRectangle& r,
-  double& /*residual*/
-);
+        const int w, const int /*h*/,
+        const TdI* dI,
+        const IRectangle& r,
+        double& /*residual*/
+        );
 
 void FindCandidateConicsFromLabels(
-  unsigned w, unsigned h,
-  const std::vector<PixelClass>& labels,
-  std::vector<PixelClass>& candidates,
-  float min_area,
-  float max_area,
-  float min_density,
-  float min_aspect
-);
+        unsigned w, unsigned h,
+        const std::vector<PixelClass>& labels,
+        std::vector<PixelClass>& candidates,
+        float min_area,
+        float max_area,
+        float min_density,
+        float min_aspect
+        );
 
 template<typename TdI>
 void FindConics(
-    const int w, const int h,
-    const std::vector<PixelClass>& candidates,
-    const TdI* dI,
-    std::vector<Conic>& conics
-);
+        const int w, const int h,
+        const std::vector<PixelClass>& candidates,
+        const TdI* dI,
+        std::vector<Conic>& conics
+        );
 
 }

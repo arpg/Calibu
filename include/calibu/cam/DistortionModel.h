@@ -70,7 +70,7 @@ struct DistortionPoly
         const T r4 = r2*r2;
         return (T)1.0 + params[0]*r2 + params[1]*r4 + params[2]*r4*r2;
     }
-
+    
     template<typename T> inline
     static T RinvFactor(T dr, const T* params)
     {

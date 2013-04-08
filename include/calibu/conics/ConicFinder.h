@@ -45,7 +45,7 @@ struct ParamsConicFinder
     {
         
     }
-
+    
     float conic_min_area;
     float conic_max_area;
     float conic_min_density;
@@ -61,7 +61,7 @@ public:
     inline const std::vector<Conic>& Conics() const {
         return conics;
     }
-        
+    
     ParamsConicFinder& Params() {
         return params;
     }

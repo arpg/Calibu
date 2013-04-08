@@ -48,7 +48,7 @@ struct Take1stOrderPart<JetT,T,Start,FirstBlock,Blocks...>
 
 template <typename CostBase, typename Derived, unsigned int NumResiduals, unsigned int... Blocks>
 class AutoDiffArrayCostFunction :
-  public CostBase
+        public CostBase
 { 
 public:    
     
@@ -56,7 +56,7 @@ public:
     static const unsigned int num_blocks = sizeof...(Blocks);
     static const unsigned int num_params = SumParams<Blocks...>::sum;
     const unsigned int block_params[num_blocks] = {Blocks...};
-
+    
     typedef double T;
     typedef Jet<T, num_params> JetT;
     
@@ -71,42 +71,43 @@ public:
     }
     
     virtual ~AutoDiffArrayCostFunction() {}
-
+    
     inline const Derived& derived() const {
         return *static_cast<const Derived*>(this);
     }
-
+    
     virtual bool Evaluate(T const* const* parameters,
-                        T* residuals,
-                        T** jacobians) const {
-    if (!jacobians) {
-        return derived().template Evaluate<T>(parameters, residuals);
-    }else{
-        JetT jet_residuals[num_residuals];
-        
-        JetT x[num_params];
-        int jet_start[num_blocks];
-        JetT* jet_parameters[num_blocks];
-
-        int jetb = 0;
-        for(unsigned int b=0; b < num_blocks; ++b) {
-            jet_start[b] = jetb;
-            jet_parameters[b] = x + jet_start[b];
-            ceres::internal::Make1stOrderPerturbation<JetT,double>(jetb, block_params[b], parameters[b], jet_parameters[b] );
-            jetb += block_params[b];
+                          T* residuals,
+                          T** jacobians) const
+    {
+        if (!jacobians) {
+            return derived().template Evaluate<T>(parameters, residuals);
+        }else{
+            JetT jet_residuals[num_residuals];
+            
+            JetT x[num_params];
+            int jet_start[num_blocks];
+            JetT* jet_parameters[num_blocks];
+            
+            int jetb = 0;
+            for(unsigned int b=0; b < num_blocks; ++b) {
+                jet_start[b] = jetb;
+                jet_parameters[b] = x + jet_start[b];
+                ceres::internal::Make1stOrderPerturbation<JetT,double>(jetb, block_params[b], parameters[b], jet_parameters[b] );
+                jetb += block_params[b];
+            }
+            
+            if(!derived().template Evaluate<JetT>(jet_parameters, jet_residuals)) {
+                return false;
+            }
+            
+            internal::Take0thOrderPart(num_residuals, jet_residuals, residuals);
+            
+            Take1stOrderPart<JetT, T, 0, Blocks...>::go(num_residuals, jet_residuals, jacobians);
+            
+            return true;
         }
-        
-        if(!derived().template Evaluate<JetT>(jet_parameters, jet_residuals)) {
-            return false;
-        }
-        
-        internal::Take0thOrderPart(num_residuals, jet_residuals, residuals);
-
-        Take1stOrderPart<JetT, T, 0, Blocks...>::go(num_residuals, jet_residuals, jacobians);
-        
-        return true;
     }
-  }
 };
 
 }

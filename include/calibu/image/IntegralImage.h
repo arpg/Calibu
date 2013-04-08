@@ -35,19 +35,19 @@ template<typename TI, typename TO>
 void integral_image(const int w, const int h, const TI* in, TO* out)
 {
     out[0] = in[0];
-
+    
     //Do the first row.
     for(int x=1; x < w; x++)
         out[x] =out[x-1] + in[x];
-
+    
     //Do the first column.
     for(int y=1; y < h; y++)
         out[y*w] =out[(y-1)*w] + in[y*w];
-
+    
     //Do the remainder of the image
     for(int y=1; y < h; y++) {
         TO sum = in[y*w];
-
+        
         for(int x=1; x < w; x++) {
             sum += in[y*w+x];
             out[y*w+x] = sum + out[(y-1)*w+x];

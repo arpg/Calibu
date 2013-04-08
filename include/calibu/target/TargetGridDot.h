@@ -34,11 +34,11 @@
 #include <calibu/target/LineGroup.h>
 
 namespace std {
-    template<> struct less<Eigen::Vector2i> {
-       bool operator() (const Eigen::Vector2i& lhs, const Eigen::Vector2i& rhs) {
-           return (lhs[0] < rhs[0]) || (lhs[0]==rhs[0] && lhs[1] < rhs[1]);
-       }
-    };
+template<> struct less<Eigen::Vector2i> {
+    bool operator() (const Eigen::Vector2i& lhs, const Eigen::Vector2i& rhs) {
+        return (lhs[0] < rhs[0]) || (lhs[0]==rhs[0] && lhs[1] < rhs[1]);
+    }
+};
 }
 
 namespace calibu {
@@ -68,36 +68,36 @@ struct ParamsGridDot
 };
 
 class TargetGridDot
-    : public TargetInterface
+        : public TargetInterface
 {
 public:
     TargetGridDot(double grid_spacing, Eigen::Vector2i grid_size, Eigen::Vector2i grid_center);
     
     ////////////////////////////////////////////////////////////////////////////
-  
+    
     bool FindTarget(
-      const Sophus::SE3d& T_cw,
-      const CameraModelBase& cam,
-      const ImageProcessing& images,
-      const std::vector<Conic>& conics,
-      std::vector<int>& ellipse_target_map
-    );
-  
+            const Sophus::SE3d& T_cw,
+            const CameraModelBase& cam,
+            const ImageProcessing& images,
+            const std::vector<Conic>& conics,
+            std::vector<int>& ellipse_target_map
+            );
+    
     bool FindTarget(
-      const CameraModelBase& cam,
-      const ImageProcessing& images,
-      const std::vector<Conic>& conics,
-      std::vector<int>& ellipse_target_map
-    );
-  
+            const CameraModelBase& cam,
+            const ImageProcessing& images,
+            const std::vector<Conic>& conics,
+            std::vector<int>& ellipse_target_map
+            );
+    
     bool FindTarget(
-      const ImageProcessing& images,
-      const std::vector<Conic>& conics,
-      std::vector<int>& ellipse_target_map
-    );
+            const ImageProcessing& images,
+            const std::vector<Conic>& conics,
+            std::vector<int>& ellipse_target_map
+            );
     
     ////////////////////////////////////////////////////////////////////////////
-  
+    
     const std::vector<Eigen::Vector2d >& Circles2D() const {
         return tpts2d;
     }
@@ -105,7 +105,7 @@ public:
     const std::vector<Eigen::Vector3d >& Circles3D() const {
         return tpts3d;
     }
-
+    
     ////////////////////////////////////////////////////////////////////////////
     
     bool Ambigous() const {

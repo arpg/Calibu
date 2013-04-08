@@ -35,17 +35,17 @@ namespace calibu {
 
 struct PixelClass
 {
-  int equiv;
-  IRectangle bbox;
-  int size;
+    int equiv;
+    IRectangle bbox;
+    int size;
 };
 
 void Label(
-  int w, int h,
-  const unsigned char* I,
-  short* label,
-  std::vector<PixelClass>& labels,
-  unsigned char passval
-);
+        int w, int h,
+        const unsigned char* I,
+        short* label,
+        std::vector<PixelClass>& labels,
+        unsigned char passval
+        );
 
 }

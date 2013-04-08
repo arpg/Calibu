@@ -48,27 +48,27 @@ public:
     
     // Assume approximately known camera and pose
     virtual bool FindTarget(
-        const Sophus::SE3d& T_cw,            
-        const CameraModelBase& cam,
-        const ImageProcessing& images,
-        const std::vector<Conic>& conics,
-        std::vector<int>& conics_target_map
-    ) = 0;
-
+            const Sophus::SE3d& T_cw,            
+            const CameraModelBase& cam,
+            const ImageProcessing& images,
+            const std::vector<Conic>& conics,
+            std::vector<int>& conics_target_map
+            ) = 0;
+    
     // Assume approximately known camera
     virtual bool FindTarget(
-        const CameraModelBase& cam,
-        const ImageProcessing& images,
-        const std::vector<Conic>& conics,
-        std::vector<int>& conics_target_map
-    ) = 0;
-
+            const CameraModelBase& cam,
+            const ImageProcessing& images,
+            const std::vector<Conic>& conics,
+            std::vector<int>& conics_target_map
+            ) = 0;
+    
     // Only observations known
     virtual bool FindTarget(
-        const ImageProcessing& images,
-        const std::vector<Conic>& conics,
-        std::vector<int>& conics_target_map
-    ) = 0;
+            const ImageProcessing& images,
+            const std::vector<Conic>& conics,
+            std::vector<int>& conics_target_map
+            ) = 0;
     
     // Return canonical set of known 2D/3D points.
     virtual const std::vector<Eigen::Vector2d>& Circles2D() const = 0;

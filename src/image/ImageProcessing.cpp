@@ -83,10 +83,10 @@ void ImageProcessing::Process(unsigned char* greyscale_image, size_t pitch)
     
     // Threshold image
     AdaptiveThreshold(
-        width, height, I, intI, tI, params.at_threshold,
-        width / params.at_window_ratio,
-        (unsigned char)0, (unsigned char)255
-    );    
+                width, height, I, intI, tI, params.at_threshold,
+                width / params.at_window_ratio,
+                (unsigned char)0, (unsigned char)255
+                );    
     
     // Label image (connected components)
     labels.clear();

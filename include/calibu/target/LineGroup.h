@@ -54,7 +54,7 @@ struct Vertex
     {
         return pg(0) != GRID_INVALID;
     }
-        
+    
     size_t id;
     Conic conic;
     Eigen::Vector2d pc;
@@ -74,13 +74,13 @@ struct Triple
     
     inline Vertex& Neighbour(size_t i) { return i ? *vs[2] : *vs[0]; }    
     inline const Vertex& Neighbour(size_t i) const { return i ? *vs[2] : *vs[0]; }
-
+    
     inline Vertex& OtherNeighbour(size_t i) { return i ? *vs[0] : *vs[2]; }    
     inline const Vertex& OtherNeighbour(size_t i) const { return i ? *vs[0] : *vs[2]; }
     
     inline Vertex& Vert(size_t i) { return *vs[i]; }
     inline const Vertex& Vert(size_t i) const { return *vs[i]; }
-
+    
     inline Eigen::Vector2d Dir() const
     {
         return vs[2]->pc - vs[0]->pc;
@@ -168,7 +168,7 @@ struct LineGroup
         rev_ops.insert(rev_ops.begin(), ops.rbegin(), ops.rend());
         ops = rev_ops;
     }
-
+    
     size_t first() { return *ops.begin(); }
     size_t last() { return *ops.rbegin(); }
     size_t second() { return *std::next(ops.begin()); }

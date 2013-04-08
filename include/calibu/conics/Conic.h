@@ -40,27 +40,30 @@ namespace calibu {
 
 struct Conic
 {
-  IRectangle bbox;
-  Eigen::Matrix3d C;      // quadratic form: x'*C*x = 0 with x = (x1,x2,1) are
-                          // points on the ellipse
-  Eigen::Matrix3d Dual;   // l:=C*x is tangent line throught the point x
-                          // The dual of C is adj(C).
-                          // For lines through C it holds: l'*adj(C)*l = 0.
-                          // If C has full rank it holds up to scale:
-                          // adj(C) = C^{-1}
-  Eigen::Vector2d center; // center (c1,c2)
+    IRectangle bbox;
+    
+    // quadratic form: x'*C*x = 0 with x = (x1,x2,1) are points on the ellipse
+    Eigen::Matrix3d C;      
+    
+    // l:=C*x is tangent line throught the point x. The dual of C is adj(C).
+    // For lines through C it holds: l'*adj(C)*l = 0.
+    // If C has full rank it holds up to scale: adj(C) = C^{-1}
+    Eigen::Matrix3d Dual;
+    
+    // center (c1,c2)
+    Eigen::Vector2d center; 
 };
 
 double Distance( const Conic& c1, const Conic& c2, double circle_radius );
 
 std::array<std::pair<Eigen::Vector3d,Eigen::Matrix3d >, 2 > PlaneFromConic(
-  const Conic& c, double plane_circle_radius, const Eigen::Matrix3d& K
-);
+        const Conic& c, double plane_circle_radius, const Eigen::Matrix3d& K
+        );
 
 std::pair<Eigen::Vector3d,Eigen::Matrix3d > PlaneFromConics(
-  const std::vector<Conic>& conics, double plane_circle_radius,
-  const Eigen::Matrix3d& K, double inlier_threshold
-);
+        const std::vector<Conic>& conics, double plane_circle_radius,
+        const Eigen::Matrix3d& K, double inlier_threshold
+        );
 
 Conic UnmapConic( const Conic& c, const CameraModelBase& cam );
 

@@ -32,100 +32,48 @@
 #include <Eigen/Dense>
 #include <sophus/se3.hpp>
 
-#ifdef HAVE_TOON
-#include <TooN/se3.h>
-#endif // HAVE_TOON
-
 namespace calibu {
-
-#ifdef HAVE_TOON
-template<typename T, unsigned s>
-TooN::Vector<s,T> toTooN(const Eigen::Matrix<T,s,1>& v)
-{
-    TooN::Vector<s,T> ret;
-    for(unsigned i=0; i<s; ++i)
-        ret[i] = v(i);
-    return ret;
-}
-
-template<typename T, unsigned s>
-Eigen::Matrix<T,s,1> toEigen(const TooN::Vector<s,T>& v)
-{
-    Eigen::Matrix<T,s,1> ret;
-    for(unsigned i=0; i<s; ++i)
-        ret(i) = v[i];
-    return ret;
-}
-
-inline TooN::SE3<double> toTooN(const Sophus::SE3d& T)
-{
-    TooN::Vector<6> se3 = toTooN<double,6>(T.log());
-    return TooN::SE3<double>(se3);
-}
-
-inline Sophus::SE3d toEigen(const TooN::SE3<double>& T)
-{
-    Sophus::Vector6d se3 = toEigen<double,6>(T.ln());
-    return Sophus::SE3d::exp(se3);
-}
-
-#endif // HAVE_TOON
 
 template<typename Derived>
 bool is_nan(const Eigen::MatrixBase<Derived>& x)
 {
-  return !(x.array() == x.array()).all();
+    return !(x.array() == x.array()).all();
 }
 
 template<typename Derived>
 bool is_finite(const Eigen::MatrixBase<Derived>& x)
 {
-  return !is_nan( (x.array() - x.array()).matrix() );
+    return !is_nan( (x.array() - x.array()).matrix() );
 }
 
 Eigen::Matrix3d EstimateH_ba(
-  const std::vector<Eigen::Vector2d >& a,
-  const std::vector<Eigen::Vector2d >& b
-);
-
-//inline Sophus::SE3d FromMatrix(Eigen::Matrix4d T_wa)
-//{
-//  const Sophus::SO3d R(T_wa.slice<0,0,3,3>());
-//  return Sophus::SE3d(R, T_wa.T()[3].slice<0,3>() );
-//}
-
-//template<typename P>
-//inline Eigen::Matrix<P,4,4> T_4x4(const Sophus::SE3d<P>& T)
-//{
-//  Eigen::Matrix<P,4,4> ret = Eigen::Identity;
-//  ret.template slice<0,0,3,3>() = T.get_rotation().get_matrix();
-//  ret.T()[3].template slice<0,3>() = T.get_translation();
-//  return ret;
-//}
+        const std::vector<Eigen::Vector2d >& a,
+        const std::vector<Eigen::Vector2d >& b
+        );
 
 inline Eigen::Matrix3d SkewSym( const Eigen::Vector3d& A)
 {
-  Eigen::Matrix3d R;
-  R <<
-    0, -A[2], A[1],
-    A[2], 0, -A[0],
-    -A[1], A[0], 0;
-  return R;
+    Eigen::Matrix3d R;
+    R <<
+         0, -A[2], A[1],
+            A[2], 0, -A[0],
+            -A[1], A[0], 0;
+    return R;
 }
 
 inline Eigen::Matrix4d SymmetryTransform( const Eigen::Vector4d& N )
 {
-  // Compute Symmetry transformation S in ss(3) induced by plane N
-  // "The top-left 3 × 3 sub-matrix of any element in ss(3) is always a House-holder matrix"
-  // therefore S in ss(3) is involutionary: S^{-1} = S
-  // T = S1.S2 where S1,S2 in ss(3) and T in SE(3)
-
+    // Compute Symmetry transformation S in ss(3) induced by plane N
+    // "The top-left 3 × 3 sub-matrix of any element in ss(3) is always a House-holder matrix"
+    // therefore S in ss(3) is involutionary: S^{-1} = S
+    // T = S1.S2 where S1,S2 in ss(3) and T in SE(3)
+    
     Eigen::Matrix4d S = Eigen::Matrix4d::Identity();
-  const Eigen::Vector3d n = N.head<3>();
-  const double d = -N[3];
-  S.block<3,3>(0,0) = (Eigen::Matrix3d::Identity()) - 2 * n * n.transpose();
-  S.block<3,1>(0,3) = 2 * d * n;
-  return S;
+    const Eigen::Vector3d n = N.head<3>();
+    const double d = -N[3];
+    S.block<3,3>(0,0) = (Eigen::Matrix3d::Identity()) - 2 * n * n.transpose();
+    S.block<3,1>(0,3) = 2 * d * n;
+    return S;
 }
 
 }

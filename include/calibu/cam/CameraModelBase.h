@@ -84,7 +84,7 @@ public:
     //////////////////////////////////////////////////////////////////////////////    
     // Virtual member functions
     //////////////////////////////////////////////////////////////////////////////    
-
+    
     virtual Eigen::Vector2d Map(const Eigen::Vector2d& proj) const = 0;
     virtual Eigen::Vector2d Unmap(const Eigen::Vector2d& img) const = 0;
     
@@ -98,12 +98,12 @@ public:
         : m_width(0), m_height(0)
     {
     }
-
+    
     CameraModelBase(int width, int height)
         : m_width(width), m_height(height)
     {
     }
-
+    
     //////////////////////////////////////////////////////////////////////////////
     // Image Dimentions
     
@@ -115,7 +115,7 @@ public:
     {
         return m_width;
     }
-
+    
     int& Height()
     {
         return m_height;
@@ -154,10 +154,10 @@ public:
     {            
         // Inverse depth point in a transformed to b (homogeneous 2D)
         const Eigen::Vector3d Pb = T_ba.rotationMatrix() * rhoPa + rho * T_ba.translation();
-    
+        
         // to non-homogeneous 2D
         const Eigen::Vector2d proj( Pb(0)/Pb(2), Pb(1)/Pb(2) );
-                
+        
         // apply distortion and linear cam
         return Map(proj); 
     }
@@ -170,11 +170,11 @@ public:
     {            
         // Inverse depth point in a transformed to b (homogeneous 2D)
         const Eigen::Vector3d Pb = T_ba.rotationMatrix() * rhoPa + rho * T_ba.translation();
-    
+        
         // to non-homogeneous 2D
         const Eigen::Vector2d proj( Pb(0)/Pb(2), Pb(1)/Pb(2) );
         in_front = Pb(2) > 0;
-                
+        
         // apply distortion and linear cam
         return Map(proj); 
     }

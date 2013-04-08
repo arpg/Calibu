@@ -44,7 +44,7 @@ struct ParamsRandomDot
           plane_inlier_thresh(1.5)
     {
     }
-
+    
     int match_neighbours;
     int ransac_its;
     int ransac_min_pts;
@@ -53,82 +53,82 @@ struct ParamsRandomDot
 };
 
 class TargetRandomDot
-    : public TargetInterface
+        : public TargetInterface
 {
 public:
-  TargetRandomDot();
-
-  ////////////////////////////////////////////////////////////////////////////
-  void SetSeed(int s );
-  void GenerateCircular(unsigned int max_circles, double radius, double min_distance, double border, const Eigen::Vector2d& size );
-  void GenerateEmptyCircle(unsigned int max_circles, double radius, double min_distance, double border, double clear_radius, const Eigen::Vector2d& size );
-  void GenerateRandom(unsigned int max_circles, double radius, double min_distance, double border, const Eigen::Vector2d& size );
-  void LoadPattern( std::string filename, double radius, double scale = 1.0 );
-  bool LoadEPS( std::string filename, float points_per_unit =1 );
-  void SaveEPS( std::string filename, float points_per_unit =1 );
-  void SaveRotatedEPS( std::string filename, float points_per_unit=1);
-
-  ////////////////////////////////////////////////////////////////////////////
-
-  bool FindTarget(
-    const Sophus::SE3d& T_cw,
-    const CameraModelBase& cam,
-    const ImageProcessing& images,
-    const std::vector<Conic>& conics,
-    std::vector<int>& ellipse_target_map
-  );
-
-  bool FindTarget(
-    const CameraModelBase& cam,
-    const ImageProcessing& images,
-    const std::vector<Conic>& conics,
-    std::vector<int>& ellipse_target_map
-  );
-
-  bool FindTarget(
-    const ImageProcessing& images,
-    const std::vector<Conic>& conics,
-    std::vector<int>& ellipse_target_map
-  );
-  
-  ////////////////////////////////////////////////////////////////////////////
-
-  const std::vector<Eigen::Vector2d >& Circles2D() const {
-      return tpts;
-  }
-  
-  const std::vector<Eigen::Vector3d >& Circles3D() const {
-      return tpts3d;
-  }
-
-  ////////////////////////////////////////////////////////////////////////////
-
-  inline Eigen::Vector2d Size() const {
-      return size;
-  }
-
-  inline double Radius() const {
-      return radius;
-  }
-  
+    TargetRandomDot();
+    
+    ////////////////////////////////////////////////////////////////////////////
+    void SetSeed(int s );
+    void GenerateCircular(unsigned int max_circles, double radius, double min_distance, double border, const Eigen::Vector2d& size );
+    void GenerateEmptyCircle(unsigned int max_circles, double radius, double min_distance, double border, double clear_radius, const Eigen::Vector2d& size );
+    void GenerateRandom(unsigned int max_circles, double radius, double min_distance, double border, const Eigen::Vector2d& size );
+    void LoadPattern( std::string filename, double radius, double scale = 1.0 );
+    bool LoadEPS( std::string filename, float points_per_unit =1 );
+    void SaveEPS( std::string filename, float points_per_unit =1 );
+    void SaveRotatedEPS( std::string filename, float points_per_unit=1);
+    
+    ////////////////////////////////////////////////////////////////////////////
+    
+    bool FindTarget(
+            const Sophus::SE3d& T_cw,
+            const CameraModelBase& cam,
+            const ImageProcessing& images,
+            const std::vector<Conic>& conics,
+            std::vector<int>& ellipse_target_map
+            );
+    
+    bool FindTarget(
+            const CameraModelBase& cam,
+            const ImageProcessing& images,
+            const std::vector<Conic>& conics,
+            std::vector<int>& ellipse_target_map
+            );
+    
+    bool FindTarget(
+            const ImageProcessing& images,
+            const std::vector<Conic>& conics,
+            std::vector<int>& ellipse_target_map
+            );
+    
+    ////////////////////////////////////////////////////////////////////////////
+    
+    const std::vector<Eigen::Vector2d >& Circles2D() const {
+        return tpts;
+    }
+    
+    const std::vector<Eigen::Vector3d >& Circles3D() const {
+        return tpts3d;
+    }
+    
+    ////////////////////////////////////////////////////////////////////////////
+    
+    inline Eigen::Vector2d Size() const {
+        return size;
+    }
+    
+    inline double Radius() const {
+        return radius;
+    }
+    
 protected:
-  void Clear();
-  void InitialiseFrom2DPts();
-  void Match(
-    const Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>& sorted_measurement_distance_matrix,
-    std::vector<int>& measurement_label, int match_neighbours
-  ) const;
-  void Match( const std::vector<Eigen::Vector2d >& measurement, std::vector<int>& measurement_label, int match_neighbours  ) const;
-
-  unsigned int seed;
-  Eigen::Vector2d size;
-  double radius;
-  std::vector<Eigen::Vector2d > tpts;
-  std::vector<Eigen::Vector2d > tpts_reflected;
-  std::vector<Eigen::Vector3d > tpts3d;
-  Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>* dt;
-  
-  ParamsRandomDot params;
+    void Clear();
+    void InitialiseFrom2DPts();
+    void Match(
+            const Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>& sorted_measurement_distance_matrix,
+            std::vector<int>& measurement_label, int match_neighbours
+            ) const;
+    void Match( const std::vector<Eigen::Vector2d >& measurement, std::vector<int>& measurement_label, int match_neighbours  ) const;
+    
+    unsigned int seed;
+    Eigen::Vector2d size;
+    double radius;
+    std::vector<Eigen::Vector2d > tpts;
+    std::vector<Eigen::Vector2d > tpts_reflected;
+    std::vector<Eigen::Vector3d > tpts3d;
+    Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>* dt;
+    
+    ParamsRandomDot params;
 };
 
 }

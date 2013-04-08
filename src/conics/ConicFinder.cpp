@@ -42,11 +42,11 @@ void ConicFinder::Find(const ImageProcessing& imgs)
     
     // Find candidate regions for conics
     FindCandidateConicsFromLabels(
-        imgs.Width(), imgs.Height(), imgs.Labels(), candidates,
-        params.conic_min_area, params.conic_max_area,
-        params.conic_min_density,
-        params.conic_min_aspect
-    );
+                imgs.Width(), imgs.Height(), imgs.Labels(), candidates,
+                params.conic_min_area, params.conic_max_area,
+                params.conic_min_density,
+                params.conic_min_aspect
+                );
     
     // Find conic parameters
     FindConics(imgs.Width(), imgs.Height(), candidates, imgs.ImgDeriv(), conics );

@@ -42,7 +42,7 @@ struct ParamsImageProcessing
     {
         
     }
-
+    
     float at_threshold;
     int at_window_ratio;
     bool black_on_white;
@@ -55,10 +55,10 @@ public:
     ~ImageProcessing();
     
     void Process(unsigned char* greyscale_image, size_t pitch);
-        
+    
     inline int Width()  const { return width; }
     inline int Height() const { return height; }
-
+    
     inline const unsigned char* Img() const { return I; }    
     inline const Eigen::Vector2f* ImgDeriv() const { return dI; }
     inline const unsigned char* ImgThresh() const { return tI; }    
@@ -78,7 +78,7 @@ protected:
     Eigen::Vector2f* dI;
     short* lI;
     unsigned char* tI;
-
+    
     std::vector<PixelClass> labels;
     ParamsImageProcessing params;
 };
