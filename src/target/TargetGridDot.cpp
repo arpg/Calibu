@@ -395,8 +395,6 @@ bool TargetGridDot::FindTarget(
                     if( no.HasGridPosition() ) {
                         // check
                         if(no.pg != go) {
-                            std::cout << "Inconsistent: " << no.pg.transpose() << ", " << go.transpose() << std::endl;
-                            std::cout << t << std::endl;
                             // tracking bad!
                             return false;
                         }
@@ -431,7 +429,6 @@ bool TargetGridDot::FindTarget(
                     if(f.HasGridPosition()) {
                         // check
                         if(f.pg != g) {
-                            std::cout << "Inconsistent center: " << t << ": " << g.transpose() << std::endl;
                             // tracking bad.
                             return false;
                         }
@@ -446,6 +443,51 @@ bool TargetGridDot::FindTarget(
         available.pop_front();
     }
     
+    // Find ranges of grid coordinates by projecting onto princple axis'
+    std::map<int,size_t> histogram[2];
+    for(auto& mv : map_grid_ellipse) {
+        histogram[0][mv.first[0]]++;
+        histogram[1][mv.first[1]]++;
+    }
+    
+    // Find min and max grid coordinate with noise threshold
+    const size_t required_min = std::min(grid_size[0], grid_size[1]) / 3;
+    Eigen::Vector2i minmax[2] = {
+        Eigen::Vector2i(std::numeric_limits<int>::max(),std::numeric_limits<int>::max()),
+        Eigen::Vector2i(std::numeric_limits<int>::min(),std::numeric_limits<int>::min())
+    };    
+    for(int i=0; i<2; ++i) {
+        for(auto& m : histogram[i]) {
+            if(m.second >= required_min) {
+                minmax[0][i] = std::min(minmax[0][i], m.first);
+                minmax[1][i] = std::max(minmax[1][i], m.first);
+            }
+        }
+    }
+    
+    Eigen::Vector2i dim = minmax[1] - minmax[0] + Eigen::Vector2i(1,1);
+    
+    const bool flip = dim[0] < dim[1];
+    if(flip) {
+        std::swap(dim[0], dim[1]);
+        std::swap(minmax[0][0], minmax[0][1]);
+        std::swap(minmax[1][0], minmax[1][1]);
+        for(auto m : map_grid_ellipse) {
+            Eigen::Vector2i& pg = m.second->pg;
+            std::swap(pg[0],pg[1]);
+        }        
+    }
+    
+    if( dim == grid_size ) {
+        // We found the entire grid! Zero coordinates
+        const Eigen::Vector2i cc = minmax[0] + grid_center;
+        for(auto m : map_grid_ellipse) {
+            m.second->pg -= cc;
+        }        
+    }
+    
+    ambigous_match = dim != grid_size;    
+            
     // Try to set grid center using cross
     // Calcualte 'cross' score for each conic and remember best
     double bestScore = std::numeric_limits<double>::max();
@@ -473,13 +515,9 @@ bool TargetGridDot::FindTarget(
         idxCrossConic = cross->id;
         const Eigen::Vector2i cc = cross->pg;
         for(auto m : map_grid_ellipse) {
-//            m.first -= cc;
             m.second->pg -= cc;
         }
-    }else{
-        return false;
-    }
-    
+    }    
     
     // output map
     ellipse_target_map.resize(vs.size(), -1);
@@ -491,12 +529,7 @@ bool TargetGridDot::FindTarget(
             ellipse_target_map[p] = pgz(1)*grid_size(0) + pgz(0);
         }
     }
-    
-
-//    // Draw cross
-//    line_groups.push_back( LineGroup(Opposite(cross->triples[best_triple[0]]) )  );
-//    line_groups.push_back( LineGroup(Opposite(cross->triples[best_triple[1]]) )  );
-      
+          
     return true;
 }
 

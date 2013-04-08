@@ -108,6 +108,10 @@ public:
 
     ////////////////////////////////////////////////////////////////////////////
     
+    bool Ambigous() const {
+        return ambigous_match;
+    }
+    
     const std::vector<Vertex>& Map() const {
         return vs;
     }
@@ -137,6 +141,7 @@ protected:
     
     std::vector<Vertex> vs;
     std::map<Eigen::Vector2i, Vertex*> map_grid_ellipse;
+    bool ambigous_match;
     
     std::list<LineGroup> line_groups;
     int idxCrossConic;
