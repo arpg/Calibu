@@ -94,10 +94,10 @@ int main( int argc, char** argv)
     pangolin::Var<bool> disp_lines("ui.Display Lines",true);
     pangolin::Var<bool> disp_cross("ui.Display crosses",true);
     pangolin::Var<bool> disp_bbox("ui.Display bbox",true);
-    
-    pangolin::Var<double> at_thresh("ui.at thresh", 1.6, 0.0, 2.0);
-    pangolin::Var<double> at_window("ui.at win", 30.0, 0.0, 5.0);
 
+    pangolin::Var<double> disp_mse("ui.MSE");
+    pangolin::Var<int> disp_frame("ui.frame");
+    
     for(size_t i=0; i<container.NumChildren(); ++i) {
         pangolin::RegisterKeyPressCallback('1'+i, [&container,i](){container[i].ToggleShow();} );
     }
@@ -117,6 +117,10 @@ int main( int argc, char** argv)
         
     pangolin::RegisterKeyPressCallback('[', [&](){calibrator.Start();} );
     pangolin::RegisterKeyPressCallback(']', [&](){calibrator.Stop();} );
+
+    pangolin::RegisterKeyPressCallback(pangolin::PANGO_SPECIAL+ GLUT_KEY_RIGHT, [&](){step = true;} );
+    pangolin::RegisterKeyPressCallback(' ', [&](){run = !run;} );
+    pangolin::RegisterKeyPressCallback(pangolin::PANGO_CTRL + 'r', [&](){reset = true;} );
     
     ImageProcessing image_processing(w,h);
     image_processing.Params().at_threshold = 1.6;
@@ -130,11 +134,8 @@ int main( int argc, char** argv)
     
     TargetGridDot target(grid_spacing, grid_size, grid_center);
     
-    for(int frame=0; !pangolin::ShouldQuit(); ++frame)
+    for(int frame=0; !pangolin::ShouldQuit();)
     {
-        image_processing.Params().at_threshold = at_thresh;
-        image_processing.Params().at_window_ratio = at_window;
-        
         glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);    
      
         if(pangolin::Pushed(reset)) {
@@ -150,6 +151,7 @@ int main( int argc, char** argv)
         if( go ) {
             if( video.Grab(image_buffer, images, true, true) ) {
                 calib_frame = calibrator.AddFrame(Sophus::SE3d(Sophus::SO3(), Eigen::Vector3d(0,0,1000)) );
+                ++frame;
             }else{
                 run = false;
             }
@@ -297,7 +299,10 @@ int main( int argc, char** argv)
                 }
             }
         }
-                    
+                 
+        disp_mse = calibrator.MeanSquareError();
+        disp_frame = frame;
+        
         // Process window events via GLUT
         pangolin::FinishGlutFrame();    
     }

@@ -51,7 +51,6 @@ struct ParamsGridDot
     ParamsGridDot() :
         max_line_dist_ratio(0.3),
         max_norm_triple_area(0.03),
-        max_line_group_k_sigma(2.5),
         min_cross_area(1.5),
         max_cross_area(9.0),
         cross_radius_ratio(0.058),
@@ -60,7 +59,6 @@ struct ParamsGridDot
     
     double max_line_dist_ratio;
     double max_norm_triple_area;
-    double max_line_group_k_sigma;
     double min_cross_area;
     double max_cross_area;
     double cross_radius_ratio;

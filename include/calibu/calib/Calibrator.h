@@ -175,6 +175,11 @@ public:
         return *m_camera[i];
     }
     
+    double MeanSquareError() const
+    {
+        return m_mse;
+    }
+    
 protected:
     
     void SolveThread()
@@ -212,8 +217,8 @@ protected:
                     ceres::Solver::Summary summary;
                     ceres::Solve(m_solver_options, &problem, &summary);
                     std::cout << summary.BriefReport() << std::endl;     
-                    const double mse = summary.final_cost / summary.num_residuals;
-                    std::cout << "Frames: " << m_T_kw.size() << "; Observations: " << summary.num_residuals << "; mse: " << mse << std::endl;
+                    m_mse = summary.final_cost / summary.num_residuals;
+                    std::cout << "Frames: " << m_T_kw.size() << "; Observations: " << summary.num_residuals << "; mse: " << m_mse << std::endl;
                 }catch(std::exception e) {
                     std::cerr << e.what() << std::endl;
                 }
@@ -233,7 +238,9 @@ protected:
     
     ceres::Problem::Options m_prob_options;
     ceres::Solver::Options  m_solver_options;
-    LocalParameterizationSe3  m_LocalParamSe3;    
+    LocalParameterizationSe3  m_LocalParamSe3; 
+    
+    double m_mse;
 };
 
 }
