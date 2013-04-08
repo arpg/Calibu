@@ -186,7 +186,7 @@ int main( int argc, char** argv)
                     
                     for(size_t p=0; p < ellipses.size(); ++p) {
                         const Eigen::Vector2d pc = ellipses[p];
-                        const Eigen::Vector2i pg = target.Grid()[p];
+                        const Eigen::Vector2i pg = target.Map()[p].pg;
                         
                         const Eigen::Vector2i pgz = pg + grid_center;
                         if( 0<= pgz(0) && pgz(0) < grid_size(0) &&  0<= pgz(1) && pgz(1) < grid_size(1) )
@@ -243,7 +243,7 @@ int main( int argc, char** argv)
                 if(disp_cross) {          
                     for( size_t i=0; i < conics.size(); ++i ) {   
                         const Eigen::Vector2d pc = conics[i].center;
-                        const Eigen::Vector2i pg = tracking_good[iI] ? target.Grid()[i] : Eigen::Vector2i(0,0);
+                        const Eigen::Vector2i pg = tracking_good[iI] ? target.Map()[i].pg : Eigen::Vector2i(0,0);
                         
                         const Eigen::Vector2i pgz = pg + grid_center;
                         if( 0<= pgz(0) && pgz(0) < grid_size(0) &&  0<= pgz(1) && pgz(1) < grid_size(1) )
@@ -256,7 +256,7 @@ int main( int argc, char** argv)
                 
                 if(disp_bbox) {
                     for( size_t i=0; i < conics.size(); ++i ) {   
-                        const Eigen::Vector2i pg = tracking_good[iI] ? target.Grid()[i] : Eigen::Vector2i(0,0);                    
+                        const Eigen::Vector2i pg = tracking_good[iI] ? target.Map()[i].pg : Eigen::Vector2i(0,0);                    
                         const Eigen::Vector2i pgz = pg + grid_center;
                         if( 0<= pgz(0) && pgz(0) < grid_size(0) &&  0<= pgz(1) && pgz(1) < grid_size(1) )
                         {

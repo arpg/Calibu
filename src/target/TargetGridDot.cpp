@@ -377,7 +377,6 @@ void TargetGridDot::Clear()
 {
     vs.clear();
     line_groups.clear();
-    grid.clear();
     map_grid_ellipse.clear();
 }
 
@@ -398,7 +397,6 @@ bool TargetGridDot::FindTarget(
     ellipse_target_map.clear();    
     
     // Generate vertex and point structures
-    std::vector<Vertex> vs;
     for( size_t i=0; i < conics.size(); ++i ) {
         vs.push_back( Vertex(i, conics[i]) );
     }
@@ -459,10 +457,11 @@ bool TargetGridDot::FindTarget(
         available.push_back(&vs[i]);
     }
     
-    // Setup cross as basis of grid
+    // Setup cross as center of grid
     SetGrid(*cross, Eigen::Vector2i(0,0));
     available.erase(std::find(available.begin(), available.end(), cross));
     
+    // add neighbours of cross to form basis
     for(int i=0; i<2; ++i)
     {
         Triple& t =  cross->triples[best_triple[i]];
@@ -478,6 +477,7 @@ bool TargetGridDot::FindTarget(
         line_groups.push_back( LineGroup(t) );        
     }
     
+    // depth first search extending 'fringe' set by adding colinear vertices
     while(fringe.size() > 0) {
         Vertex& f = *fringe.front();
         for(size_t i=0; i<f.triples.size(); ++i) {
@@ -521,6 +521,7 @@ bool TargetGridDot::FindTarget(
         fringe.pop_front();
     }
     
+    // Try to add any that we've missed by 'filling in'
     while(available.size() > 0) {
         Vertex& f = *available.front();
         for(size_t i=0; i<f.triples.size(); ++i) {
@@ -548,12 +549,24 @@ bool TargetGridDot::FindTarget(
         }
         available.pop_front();
     }
+    
+    // output map
+    ellipse_target_map.resize(vs.size(), -1);
+    for(size_t p=0; p < vs.size(); ++p) {
+        Vertex& v = vs[p];
+        const Eigen::Vector2i pgz = v.pg + grid_center;
+        if( 0<= pgz(0) && pgz(0) < grid_size(0) &&  0<= pgz(1) && pgz(1) < grid_size(1) )
+        {
+            ellipse_target_map[p] = pgz(1)*grid_size(0) + pgz(0);
+        }
+    }
+    
 
 //    // Draw cross
 //    line_groups.push_back( LineGroup(Opposite(cross->triples[best_triple[0]]) )  );
 //    line_groups.push_back( LineGroup(Opposite(cross->triples[best_triple[1]]) )  );
       
-    return false;
+    return true;
 }
 
 

@@ -108,8 +108,8 @@ public:
 
     ////////////////////////////////////////////////////////////////////////////
     
-    const std::vector<Eigen::Vector2i>& Grid() const {
-        return grid;
+    const std::vector<Vertex>& Map() const {
+        return vs;
     }
     
     const std::list<LineGroup>& LineGroups() const {
@@ -139,7 +139,6 @@ protected:
     std::map<Eigen::Vector2i, Vertex*> map_grid_ellipse;
     
     std::list<LineGroup> line_groups;
-    std::vector<Eigen::Vector2i> grid;
     int idxCrossConic;
 };
 
