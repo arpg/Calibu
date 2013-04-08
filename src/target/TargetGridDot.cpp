@@ -1,6 +1,7 @@
 #include <fiducials/target/TargetGridDot.h>
 
 #include <map>
+#include <set>
 #include <algorithm>
 #include <iostream>
 #include <deque>
@@ -48,6 +49,72 @@ std::vector<std::vector<Dist> > ClosestPoints( std::vector<Vertex>& pts)
     // sort distances
     for(size_t p1=0; p1 < pts.size(); ++p1) {
         std::sort(ret[p1].begin(), ret[p1].end() );
+    }
+    
+    return ret;
+}
+
+std::vector<Dist> MostCentral( std::vector<std::vector<Dist> >& distances )
+{
+    std::vector<Dist> sum_sq;
+    
+    for(size_t i=0; i < distances.size(); ++i) {
+        Vertex* v = distances[i][0].v;
+        Dist dist{v,0};
+        for(size_t j=0; j < distances[i].size(); ++j) {
+            dist.dist += distances[i][j].dist * distances[i][j].dist;
+        }
+        sum_sq.push_back( dist );
+    }
+    
+    std::sort(sum_sq.begin(), sum_sq.end());
+    return sum_sq;
+}
+
+std::vector<Triple*> PrincipleDirections( Vertex& v)
+{
+    // Create set of neighbours to v
+    std::set<Vertex*> ns;
+    for(size_t i=0; i<v.triples.size(); ++i) {
+        ns.insert(&v.triples[i].Neighbour(0));
+        ns.insert(&v.triples[i].Neighbour(1));
+    }
+    
+    // Find principle directions by observing that neighbours from princple
+    // directions are central within triple that is also formed from these
+    // neighbours.
+    std::set<Triple*> pd;
+    for(size_t i=0; i<v.triples.size(); ++i) {
+        Triple& t = v.triples[i];
+        for(size_t j=0; j<2; ++j) {
+            Vertex& n = t.Neighbour(j);
+            for(size_t k=0; k< n.triples.size(); ++k) {
+                Triple& a = n.triples[k];
+                if(a.In(ns))  {
+                    // a is parallel to principle direction
+                    // t is a parallel direction.
+                    pd.insert(&t);
+                    break;
+                }
+            }
+        }
+    }
+    
+    // convert to vector
+    std::vector<Triple*> ret;
+    ret.insert(ret.begin(), pd.begin(), pd.end());
+    
+    // find most x-ily and y-ily
+    if(ret.size() == 2) {
+        Eigen::Vector2d d[2] = { ret[0]->Dir(), ret[1]->Dir() };
+        if(abs(d[1][0]) > abs(d[0][0]) ) {
+            std::swap(ret[0], ret[1]);
+            std::swap(d[0], d[1]);
+        }
+        
+        // place in axis ascending order.
+        if(d[0][0] < 0) ret[0]->Reverse();
+        if(d[1][1] < 0) ret[1]->Reverse();
     }
     
     return ret;
@@ -403,53 +470,66 @@ bool TargetGridDot::FindTarget(
     
     // Compute closest points for each ellipse
     std::vector<std::vector<Dist> > vs_distance = ClosestPoints(vs);
+    std::vector<Dist> vs_central = MostCentral(vs_distance);
     
     // Find colinear neighbours for each ellipse
     for(size_t i=0; i < vs.size(); ++i) {
         FindTriples(vs[i], vs_distance[i], params.max_line_dist_ratio, params.max_norm_triple_area );
     }    
     
-//    // Display triples
-//    for(size_t i=0; i<vs.size(); ++i) {
-//        for(size_t j=0; j < vs[i].triples.size(); ++j) {
-//            line_groups.push_back( LineGroup(Opposite(vs[i].triples[j]) )  );        
-//        }
-//    }    
-    
-    // Calcualte 'cross' score for each conic and remember best
-    double bestScore = std::numeric_limits<double>::max();
-    idxCrossConic = -1;
-    size_t best_triple[2];
-    
-    for(size_t jj = 0 ; jj < vs.size() ; jj++){
-        for(size_t n1=0; n1 < vs[jj].triples.size(); ++n1) {
-            for(size_t n2=n1+1; n2 < vs[jj].triples.size(); ++n2) {
-                const double score = GetCenterCrossScore(
-                    vs[jj].triples[n1], vs[jj].triples[n2],
-                    images.Img(), images.Width(), images.Height(),
-                    params.min_cross_area, params.max_cross_area,
-                    params.cross_radius_ratio, params.cross_line_ratio
-                );
-    
-                if(score < bestScore){
-                    bestScore = score;
-                    idxCrossConic = jj;
-                    best_triple[0] = n1;
-                    best_triple[1] = n2;
-                }
-            }
+    // Find central, well connected vertex
+    Vertex* central = nullptr;
+    for(size_t i=0; i < vs_central.size(); ++i) {
+        Vertex* v = vs_central[i].v;
+        if(v->triples.size() == 4) {
+            central = v;
+            break;
         }
     }
-    
-    // Give up if no cross found
-    if(idxCrossConic == -1)
-        return false;
-    
-    Vertex* cross = &vs[idxCrossConic];
-    
-    if(cross->triples.size() < 4)
-        return false;
 
+    idxCrossConic = -1;
+    if(!central)
+        return false;
+    
+    idxCrossConic = central->id;
+    std::vector<Triple*> principle = PrincipleDirections(*central);
+    
+    if(principle.size() != 2)
+        return false;
+    
+    for(auto* t: principle) {
+        line_groups.push_back( LineGroup(*t) );
+    }
+        
+//    // Calcualte 'cross' score for each conic and remember best
+//    double bestScore = std::numeric_limits<double>::max();
+//    idxCrossConic = -1;
+//    size_t best_triple[2];
+    
+//    for(size_t jj = 0 ; jj < vs.size() ; jj++){
+//        for(size_t n1=0; n1 < vs[jj].triples.size(); ++n1) {
+//            for(size_t n2=n1+1; n2 < vs[jj].triples.size(); ++n2) {
+//                const double score = GetCenterCrossScore(
+//                    vs[jj].triples[n1], vs[jj].triples[n2],
+//                    images.Img(), images.Width(), images.Height(),
+//                    params.min_cross_area, params.max_cross_area,
+//                    params.cross_radius_ratio, params.cross_line_ratio
+//                );
+    
+//                if(score < bestScore){
+//                    bestScore = score;
+//                    idxCrossConic = jj;
+//                    best_triple[0] = n1;
+//                    best_triple[1] = n2;
+//                }
+//            }
+//        }
+//    }
+    
+//    // Give up if no cross found
+//    if(idxCrossConic == -1) return false;
+//    Vertex* cross = &vs[idxCrossConic];
+    
     // Search structures
     std::deque<Vertex*> fringe;
     std::deque<Vertex*> available;
@@ -458,13 +538,13 @@ bool TargetGridDot::FindTarget(
     }
     
     // Setup cross as center of grid
-    SetGrid(*cross, Eigen::Vector2i(0,0));
-    available.erase(std::find(available.begin(), available.end(), cross));
+    SetGrid(*central, Eigen::Vector2i(0,0));
+    available.erase(std::find(available.begin(), available.end(), central));
     
     // add neighbours of cross to form basis
     for(int i=0; i<2; ++i)
     {
-        Triple& t =  cross->triples[best_triple[i]];
+        Triple& t = *principle[i];
         Eigen::Vector2i g(0,0);
         
         for(int j=0; j < 2; ++j) {

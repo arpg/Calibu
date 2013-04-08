@@ -33,6 +33,7 @@
 #include <Eigen/Eigen>
 #include <vector>
 #include <array>
+#include <set>
 #include <algorithm>
 #include <fiducials/conics/Conic.h>
 
@@ -66,11 +67,6 @@ struct Triple
     inline Triple(Vertex& o1, Vertex& c, Vertex& o2)
     {
         vs = {{&o1, &c, &o2}};
-        
-        // enforce canonical order to aid comparisons
-        if( vs[2]->id < vs[0]->id ) {
-            std::swap( vs[0], vs[2]);
-        }
     }
     
     inline Vertex& Center() { return *vs[1]; }
@@ -85,10 +81,25 @@ struct Triple
     inline Vertex& Vert(size_t i) { return *vs[i]; }
     inline const Vertex& Vert(size_t i) const { return *vs[i]; }
 
+    inline Eigen::Vector2d Dir() const
+    {
+        return vs[2]->pc - vs[0]->pc;
+    }
+    
     inline bool Contains(const Vertex& v) const
     {
         const bool found = std::find(vs.begin(), vs.end(), &v) != vs.end();
         return found;
+    }
+    
+    inline bool In(const std::set<Vertex*> bag) const
+    {
+        return bag.find(vs[0]) != bag.end() && bag.find(vs[2]) != bag.end();
+    }
+    
+    inline void Reverse()
+    {
+        std::swap(vs[0], vs[2]);
     }
     
     // Colinear sequence of vertices, v[0], v[1], v[2]. v[1] is center
@@ -98,12 +109,6 @@ struct Triple
 bool operator==(const Vertex& lhs, const Vertex& rhs)
 {
     return lhs.id == rhs.id;
-}
-
-bool operator==(const Triple& lhs, const Triple& rhs)
-{
-    // This will actually compare pointers, but that's okay.
-    return std::equal( lhs.vs.begin(), lhs.vs.end(), rhs.vs.begin());
 }
 
 bool AreCollinear(const Triple& t1, const Triple& t2)
