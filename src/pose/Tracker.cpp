@@ -38,7 +38,7 @@ using namespace Eigen;
 
 namespace fiducials {
 
-Tracker::Tracker(const TargetInterface& target, int w, int h)
+Tracker::Tracker(TargetInterface& target, int w, int h)
     : target(target), imgs(w,h),
     last_good(0), good_frames(0)
 {

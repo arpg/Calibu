@@ -29,8 +29,17 @@
 #pragma once
 
 #include <array>
+#include <map>
 #include <fiducials/target/Target.h>
 #include <fiducials/target/LineGroup.h>
+
+namespace std {
+    template<> struct less<Eigen::Vector2i> {
+       bool operator() (const Eigen::Vector2i& lhs, const Eigen::Vector2i& rhs) {
+           return (lhs[0] < rhs[0]) || (lhs[0]==rhs[0] && lhs[1] < rhs[1]);
+       }
+    };
+}
 
 namespace fiducials {
 
@@ -72,20 +81,20 @@ public:
       const ImageProcessing& images,
       const std::vector<Conic>& conics,
       std::vector<int>& ellipse_target_map
-    ) const;
+    );
   
     bool FindTarget(
       const CameraModelBase& cam,
       const ImageProcessing& images,
       const std::vector<Conic>& conics,
       std::vector<int>& ellipse_target_map
-    ) const;
+    );
   
     bool FindTarget(
       const ImageProcessing& images,
       const std::vector<Conic>& conics,
       std::vector<int>& ellipse_target_map
-    ) const;
+    );
     
     ////////////////////////////////////////////////////////////////////////////
   
@@ -112,7 +121,8 @@ public:
     }
     
 protected:
-    void Clear() const;
+    void Clear();
+    void SetGrid(Vertex& v, const Eigen::Vector2i& g);
     bool Find(std::vector<Eigen::Vector2d>& pts, double thresh_dist, double thresh_area ) const;
     void PropagateGrid(const std::vector<Eigen::Vector2d>& pts,const int idxCross) const;
     
@@ -125,9 +135,12 @@ protected:
     
     ParamsGridDot params;
     
-    mutable std::list<LineGroup> line_groups;
-    mutable std::vector<Eigen::Vector2i> grid;
-    mutable int idxCrossConic;
+    std::vector<Vertex> vs;
+    std::map<Eigen::Vector2i, Vertex*> map_grid_ellipse;
+    
+    std::list<LineGroup> line_groups;
+    std::vector<Eigen::Vector2i> grid;
+    int idxCrossConic;
 };
 
 }

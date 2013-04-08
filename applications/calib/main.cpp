@@ -97,6 +97,10 @@ int main( int argc, char** argv)
     
     pangolin::Var<double> at_thresh("ui.at thresh", 1.6, 0.0, 2.0);
     pangolin::Var<double> at_window("ui.at win", 30.0, 0.0, 5.0);
+
+    for(size_t i=0; i<container.NumChildren(); ++i) {
+        pangolin::RegisterKeyPressCallback('1'+i, [&container,i](){container[i].ToggleShow();} );
+    }
     
                     
     int calib_cams[N];
@@ -194,95 +198,99 @@ int main( int argc, char** argv)
                 }
             }
 
-            container[iI].ActivateScissorAndClear();                
-            glColor3f(1,1,1);
+            if(container[iI].IsShown()) {
+                container[iI].ActivateScissorAndClear();                
+                glColor3f(1,1,1);
+                
+                if(!disp_thresh) {
+                    tex.Upload(image_processing.Img(),GL_LUMINANCE,GL_UNSIGNED_BYTE);
+                    tex.RenderToViewportFlipY();
+                }else{
+                    tex.Upload(image_processing.ImgThresh(),GL_LUMINANCE,GL_UNSIGNED_BYTE);
+                    tex.RenderToViewportFlipY();
+                }
+    
+                // Display detected ellipses
+                glMatrixMode(GL_PROJECTION);
+                glLoadIdentity();
+                glOrtho(-0.5,w-0.5,h-0.5,-0.5,0,1.0);
+                glMatrixMode(GL_MODELVIEW);
+    
+                if(target.CenterId() >= 0) {
+                    //now draw a circle around the center cross
+                    glColor3f(1.0,1.0,1.0);
+                    const Conic& center_conic = conics[target.CenterId()];
+                    pangolin::glDrawCirclePerimeter(center_conic.center,center_conic.bbox.Width()/2.0);
+                }
             
-            if(!disp_thresh) {
-                tex.Upload(image_processing.Img(),GL_LUMINANCE,GL_UNSIGNED_BYTE);
-                tex.RenderToViewportFlipY();
-            }else{
-                tex.Upload(image_processing.ImgThresh(),GL_LUMINANCE,GL_UNSIGNED_BYTE);
-                tex.RenderToViewportFlipY();
-            }
-
-            // Display detected ellipses
-            glMatrixMode(GL_PROJECTION);
-            glLoadIdentity();
-            glOrtho(-0.5,w-0.5,h-0.5,-0.5,0,1.0);
-            glMatrixMode(GL_MODELVIEW);
-
-            if(target.CenterId() >= 0) {
-                //now draw a circle around the center cross
-                glColor3f(1.0,1.0,1.0);
-                const Conic& center_conic = conics[target.CenterId()];
-                pangolin::glDrawCirclePerimeter(center_conic.center,center_conic.bbox.Width()/2.0);
-            }
-        
-            if(disp_lines) { 
-                for(std::list<LineGroup>::const_iterator i = target.LineGroups().begin(); i != target.LineGroups().end(); ++i)
-                {
-                    //glColorBin(i->k,3);
-                    //glColorHSV(i->theta*180/M_PI, 1.0, 1.0);
-                    glColor3f(1,1,1);
-                    glBegin(GL_LINE_STRIP);
-                    for(std::list<size_t>::const_iterator el = i->ops.begin(); el != i->ops.end(); ++el)
+                if(disp_lines) { 
+                    for(std::list<LineGroup>::const_iterator i = target.LineGroups().begin(); i != target.LineGroups().end(); ++i)
                     {
-                        const Eigen::Vector2d p = conics[*el].center;
-                        glVertex2d(p(0), p(1));
+                        //glColorBin(i->k,3);
+                        //glColorHSV(i->theta*180/M_PI, 1.0, 1.0);
+                        glColor3f(1,1,1);
+//                        glColorBin(di, target.LineGroups().size());
+                        glBegin(GL_LINE_STRIP);
+                        for(std::list<size_t>::const_iterator el = i->ops.begin(); el != i->ops.end(); ++el)
+                        {
+                            const Eigen::Vector2d p = conics[*el].center;
+                            glVertex2d(p(0), p(1));
+                        }
+                        glEnd();
+                    }            
+                }
+                
+                if(disp_cross) {          
+                    for( size_t i=0; i < conics.size(); ++i ) {   
+                        const Eigen::Vector2d pc = conics[i].center;
+                        const Eigen::Vector2i pg = tracking_good[iI] ? target.Grid()[i] : Eigen::Vector2i(0,0);
+                        
+                        const Eigen::Vector2i pgz = pg + grid_center;
+                        if( 0<= pgz(0) && pgz(0) < grid_size(0) &&  0<= pgz(1) && pgz(1) < grid_size(1) )
+                        {
+                            glColorBin(pgz(1)*grid_size(0)+pgz(0), grid_size(0)*grid_size(1));
+                            glDrawCross(pc, conics[i].bbox.Width()*0.75 );
+                        }
                     }
-                    glEnd();
-                }            
-            }
-            
-            if(disp_cross) {          
-                for( size_t i=0; i < conics.size(); ++i ) {   
-                    const Eigen::Vector2d pc = conics[i].center;
-                    const Eigen::Vector2i pg = tracking_good[iI] ? target.Grid()[i] : Eigen::Vector2i(0,0);
-                    
-                    const Eigen::Vector2i pgz = pg + grid_center;
-                    if( 0<= pgz(0) && pgz(0) < grid_size(0) &&  0<= pgz(1) && pgz(1) < grid_size(1) )
-                    {
-                        glColorBin(pgz(1)*grid_size(0)+pgz(0), grid_size(0)*grid_size(1));
-                        glDrawCross(pc, conics[i].bbox.Width()*0.75 );
+                }
+                
+                if(disp_bbox) {
+                    for( size_t i=0; i < conics.size(); ++i ) {   
+                        const Eigen::Vector2i pg = tracking_good[iI] ? target.Grid()[i] : Eigen::Vector2i(0,0);                    
+                        const Eigen::Vector2i pgz = pg + grid_center;
+                        if( 0<= pgz(0) && pgz(0) < grid_size(0) &&  0<= pgz(1) && pgz(1) < grid_size(1) )
+                        {
+                            glColorBin(pgz(1)*grid_size(0)+pgz(0), grid_size(0)*grid_size(1));
+                            glDrawRectangle(conics[i].bbox);
+                        }
                     }
                 }
             }
-            
-            if(disp_bbox) {
-                for( size_t i=0; i < conics.size(); ++i ) {   
-                    const Eigen::Vector2i pg = tracking_good[iI] ? target.Grid()[i] : Eigen::Vector2i(0,0);                    
-                    const Eigen::Vector2i pgz = pg + grid_center;
-                    if( 0<= pgz(0) && pgz(0) < grid_size(0) &&  0<= pgz(1) && pgz(1) < grid_size(1) )
-                    {
-                        glColorBin(pgz(1)*grid_size(0)+pgz(0), grid_size(0)*grid_size(1));
-                        glDrawRectangle(conics[i].bbox);
-                    }
-                }
-            }
-            
         }
         
-        v3D.ActivateScissorAndClear(stacks);
-        
-        pangolin::glColorHSV(100, 0.2, 1.0);
-        pangolin::glDraw_z0(1.0, 10);
-        
-        for(size_t c=0; c< calibrator.NumCameras(); ++c) {
-            const Eigen::Matrix3d Kinv = calibrator.GetCamera(c).camera.Kinv();
+        if(v3D.IsShown()) {
+            v3D.ActivateScissorAndClear(stacks);
             
-            const CameraAndPose<Fov> cap = calibrator.GetCamera(c);
-            const Sophus::SE3d T_ck = cap.T_ck;
-
-            // Draw keyframes
-            glColorBin(c, 2, 0.2);
-            for(size_t k=0; k< calibrator.NumFrames(); ++k) {
-                glDrawAxis((T_ck * calibrator.GetFrame(k)).inverse().matrix(), 0.01);
-            }
+            pangolin::glColorHSV(100, 0.2, 1.0);
+            pangolin::glDraw_z0(1.0, 10);
             
-            // Draw current camera
-            if(tracking_good[c]) {
-                glColorBin(c, 2, 0.5);
-                glDrawFrustrum(Kinv,w,h,T_hw[c].inverse().matrix(),0.05);
+            for(size_t c=0; c< calibrator.NumCameras(); ++c) {
+                const Eigen::Matrix3d Kinv = calibrator.GetCamera(c).camera.Kinv();
+                
+                const CameraAndPose<Fov> cap = calibrator.GetCamera(c);
+                const Sophus::SE3d T_ck = cap.T_ck;
+    
+                // Draw keyframes
+                glColorBin(c, 2, 0.2);
+                for(size_t k=0; k< calibrator.NumFrames(); ++k) {
+                    glDrawAxis((T_ck * calibrator.GetFrame(k)).inverse().matrix(), 0.01);
+                }
+                
+                // Draw current camera
+                if(tracking_good[c]) {
+                    glColorBin(c, 2, 0.5);
+                    glDrawFrustrum(Kinv,w,h,T_hw[c].inverse().matrix(),0.05);
+                }
             }
         }
                     

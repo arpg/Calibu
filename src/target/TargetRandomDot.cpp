@@ -590,7 +590,7 @@ bool TargetRandomDot::FindTarget(
   const ImageProcessing& images,
   const vector<Conic>& conics,
   vector<int>& conics_target_map
-) const {
+) {
   // We have conic centers, and projected centers. Try to match
 
   const IRectangle img_rect( 0,0,cam.Width(),cam.Height());
@@ -647,7 +647,7 @@ bool TargetRandomDot::FindTarget(
   const ImageProcessing& images,
   const vector<Conic>& conics,
   vector<int>& conics_target_map
-) const {
+) {
   // Compute metric positions in 2D
   const vector<Eigen::Vector2d >& tpts = this->tpts;
   vector<Vector2d >  mpts;
@@ -721,7 +721,7 @@ bool TargetRandomDot::FindTarget(
   const ImageProcessing& images,
   const std::vector<Conic>& conics,
   std::vector<int>& ellipse_target_map
-) const {
+) {
     return false;
 }
 

@@ -55,7 +55,7 @@ struct ParamsTracker
 class Tracker
 {
 public:
-    Tracker(const TargetInterface& target, int w, int h);
+    Tracker(TargetInterface& target, int w, int h);
 
     bool ProcessFrame(CameraModelBase& cam, unsigned char *I, size_t pitch);
 
@@ -82,7 +82,7 @@ public:
     
 protected:
     // Fiducial Target
-    const TargetInterface& target;
+    TargetInterface& target;
     ImageProcessing imgs;
     ConicFinder conic_finder;
     

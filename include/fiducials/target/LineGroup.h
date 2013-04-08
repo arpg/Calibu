@@ -78,6 +78,9 @@ struct Triple
     
     inline Vertex& Neighbour(size_t i) { return i ? *vs[2] : *vs[0]; }    
     inline const Vertex& Neighbour(size_t i) const { return i ? *vs[2] : *vs[0]; }
+
+    inline Vertex& OtherNeighbour(size_t i) { return i ? *vs[0] : *vs[2]; }    
+    inline const Vertex& OtherNeighbour(size_t i) const { return i ? *vs[0] : *vs[2]; }
     
     inline Vertex& Vert(size_t i) { return *vs[i]; }
     inline const Vertex& Vert(size_t i) const { return *vs[i]; }
@@ -113,9 +116,17 @@ double Distance(const Vertex& v1, const Vertex& v2)
     return (v2.pc - v1.pc).norm();
 }
 
+std::ostream& operator<<(std::ostream& os, const Vertex& v)
+{
+    os << "(" << v.pg.transpose() << ")";
+    return os;
+}
 
-
-
+std::ostream& operator<<(std::ostream& os, const Triple& t)
+{
+    os << t.Vert(0) << " - " << t.Vert(1) << " - " << t.Vert(2);
+    return os;
+}
 
 
 
@@ -139,6 +150,11 @@ struct LineGroup
 {
     LineGroup(Opposite o)
         : ops{o.o1, o.c, o.o2}
+    {
+    }
+
+    LineGroup(const Triple& o)
+        : ops{o.vs[0]->id, o.vs[1]->id, o.vs[2]->id}
     {
     }
     

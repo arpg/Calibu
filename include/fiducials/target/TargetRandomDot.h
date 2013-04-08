@@ -76,20 +76,20 @@ public:
     const ImageProcessing& images,
     const std::vector<Conic>& conics,
     std::vector<int>& ellipse_target_map
-  ) const;
+  );
 
   bool FindTarget(
     const CameraModelBase& cam,
     const ImageProcessing& images,
     const std::vector<Conic>& conics,
     std::vector<int>& ellipse_target_map
-  ) const;
+  );
 
   bool FindTarget(
     const ImageProcessing& images,
     const std::vector<Conic>& conics,
     std::vector<int>& ellipse_target_map
-  ) const;
+  );
   
   ////////////////////////////////////////////////////////////////////////////
 

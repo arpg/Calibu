@@ -3,14 +3,7 @@
 #include <map>
 #include <algorithm>
 #include <iostream>
-
-namespace std {
-    template<> struct less<Eigen::Vector2i> {
-       bool operator() (const Eigen::Vector2i& lhs, const Eigen::Vector2i& rhs) {
-           return (lhs[0] < rhs[0]) || (lhs[0]==rhs[0] && lhs[1] < rhs[1]);
-       }
-    };
-}
+#include <deque>
 
 namespace fiducials {
 
@@ -359,56 +352,13 @@ double GetCenterCrossScore(const Triple& op1,
 //    return true;
 //}
 
-//void TargetGridDot::PropagateGrid(const std::vector<Eigen::Vector2d>& pts,const int idxCross) const
-//{
-//    // Find grid coords
-//    grid.clear();
-//    grid.resize(pts.size(), Eigen::Vector2i(-100000,-100000));
-//    grid[idxCross] = Eigen::Vector2i(0,0);
-
-//    // Repeat a few times for good measure.
-//    for(int its=0; its < 10; its++) {
-//        // For each line, run up and down enforcing local distance
-//        for(std::list<LineGroup>::iterator ilg = line_groups.begin(); ilg != line_groups.end(); ++ilg)
-//        {
-//            // go through in sequence
-//            LineGroup& lg = *ilg;
-//            const int ix = lg.k;
-//            const int io = (lg.k+1)%2;
-
-//            if(ix < 2) { // inlier
-
-//                // travel up line
-//                Eigen::Vector2i last = grid[lg.first()];
-//                for(std::list<size_t>::iterator ie = std::next(lg.ops.begin()); ie != lg.ops.end(); ++ie)
-//                {
-//                    Eigen::Vector2i& curr = grid[*ie];
-//                    curr[ix] = std::max(curr[ix], last[ix]+1);
-//                    curr[io] = std::max(curr[io], last[io]);
-//                    last = curr;
-//                }
-
-//                // travel down line
-//                last = grid[lg.last()];
-//                for(std::list<size_t>::reverse_iterator ie = std::next(lg.ops.rbegin()); ie != lg.ops.rend(); ++ie)
-//                {
-//                    Eigen::Vector2i& curr = grid[*ie];
-//                    curr[ix] = std::max(curr[ix], last[ix]-1);
-//                    curr[io] = std::max(curr[io], last[io]);
-//                    last = curr;
-//                }
-//            }
-//        }
-//    }
-//}
-
 bool TargetGridDot::FindTarget(
   const Sophus::SE3d& T_cw,
   const CameraModelBase& cam,
   const ImageProcessing& images,
   const std::vector<Conic>& conics,
   std::vector<int>& ellipse_target_map
-) const {
+) {
     // This target doesn't use position or camera information
     return FindTarget(images,conics,ellipse_target_map);
 }
@@ -418,22 +368,30 @@ bool TargetGridDot::FindTarget(
   const ImageProcessing& images,
   const std::vector<Conic>& conics,
   std::vector<int>& ellipse_target_map
-) const {
+) {
     // This target doesn't use position or camera information
     return FindTarget(images,conics,ellipse_target_map);
 }
 
-void TargetGridDot::Clear() const
+void TargetGridDot::Clear()
 {
+    vs.clear();
     line_groups.clear();
     grid.clear();
+    map_grid_ellipse.clear();
+}
+
+void TargetGridDot::SetGrid(Vertex& v, const Eigen::Vector2i& g)
+{
+    v.pg = g;
+    map_grid_ellipse[g] = &v;
 }
 
 bool TargetGridDot::FindTarget(
   const ImageProcessing& images,
   const std::vector<Conic>& conics,
   std::vector<int>& ellipse_target_map
-) const {
+) {
 
     // Clear cached data structures
     Clear();
@@ -453,15 +411,12 @@ bool TargetGridDot::FindTarget(
         FindTriples(vs[i], vs_distance[i], params.max_line_dist_ratio, params.max_norm_triple_area );
     }    
     
-    // Display triples
-    for(size_t i=0; i<vs.size(); ++i) {
-        for(size_t j=0; j < vs[i].triples.size(); ++j)
-        {
-            line_groups.push_back( LineGroup(Opposite(vs[i].triples[j]) )  );        
-        }
-    }    
-    
-    return false;
+//    // Display triples
+//    for(size_t i=0; i<vs.size(); ++i) {
+//        for(size_t j=0; j < vs[i].triples.size(); ++j) {
+//            line_groups.push_back( LineGroup(Opposite(vs[i].triples[j]) )  );        
+//        }
+//    }    
     
     // Calcualte 'cross' score for each conic and remember best
     double bestScore = std::numeric_limits<double>::max();
@@ -496,10 +451,103 @@ bool TargetGridDot::FindTarget(
     
     if(cross->triples.size() < 4)
         return false;
+
+    // Search structures
+    std::deque<Vertex*> fringe;
+    std::deque<Vertex*> available;
+    for(size_t i=0; i< vs.size(); ++i) {
+        available.push_back(&vs[i]);
+    }
     
-    std::map<Eigen::Vector2i, Vertex*> map_grid_ellipse;
-    map_grid_ellipse[Eigen::Vector2i(0,0)] = cross;
-    cross->pg = Eigen::Vector2i(0,0);
+    // Setup cross as basis of grid
+    SetGrid(*cross, Eigen::Vector2i(0,0));
+    available.erase(std::find(available.begin(), available.end(), cross));
+    
+    for(int i=0; i<2; ++i)
+    {
+        Triple& t =  cross->triples[best_triple[i]];
+        Eigen::Vector2i g(0,0);
+        
+        for(int j=0; j < 2; ++j) {
+            Vertex& n = t.Neighbour(j);
+            g[i] = 2*j-1;
+            SetGrid(n, g);
+            available.erase(std::find(available.begin(), available.end(), &n));
+            fringe.push_back(&n);
+        }
+        line_groups.push_back( LineGroup(t) );        
+    }
+    
+    while(fringe.size() > 0) {
+        Vertex& f = *fringe.front();
+        for(size_t i=0; i<f.triples.size(); ++i) {
+            Triple& t = f.triples[i];
+            for(size_t j=0; j < 2; ++j) {
+                Vertex& n = t.Neighbour(j);
+                Vertex& no = t.OtherNeighbour(j);
+                if( n.HasGridPosition() ) {
+                    // expected other-neighbour grid position
+                    const Eigen::Vector2i step = f.pg - n.pg;
+                    const Eigen::Vector2i go = f.pg + step; 
+
+                    // Only accept local neighbours.                    
+                    if( abs(step[0]) > 1 || abs(step[1]) > 1 ) {
+                        continue;
+                    }
+                    
+                    // Either check consistent or complete
+                    if( no.HasGridPosition() ) {
+                        // check
+                        if(no.pg != go) {
+                            std::cout << "Inconsistent: " << no.pg.transpose() << ", " << go.transpose() << std::endl;
+                            std::cout << t << std::endl;
+                            // tracking bad!
+                            return false;
+                        }
+                    }else{
+                        // add
+                        SetGrid(no, go);
+                        fringe.push_back(&no);
+                        line_groups.push_back( LineGroup(t)  );
+                    }
+                    
+                    // no need to check other neighbour
+                    break;
+                }
+            }
+        }
+        
+        // Remove from fringe
+        fringe.pop_front();
+    }
+    
+    while(available.size() > 0) {
+        Vertex& f = *available.front();
+        for(size_t i=0; i<f.triples.size(); ++i) {
+            Triple& t = f.triples[i];
+            Vertex& n = t.Neighbour(0);
+            Vertex& no = t.OtherNeighbour(0);
+            if( n.HasGridPosition() && no.HasGridPosition()) {
+                const Eigen::Vector2i step = no.pg - n.pg;
+                if(step[0]%2 == 0 && step[1]%2 ==0) {
+                    const Eigen::Vector2i g = (no.pg + n.pg) / 2;
+                    if(f.HasGridPosition()) {
+                        // check
+                        if(f.pg != g) {
+                            std::cout << "Inconsistent center: " << t << ": " << g.transpose() << std::endl;
+                            // tracking bad.
+                            return false;
+                        }
+                    }else{
+                        // add
+                        SetGrid(f, g);
+                        line_groups.push_back( LineGroup(t)  );
+                    }
+                }
+            }
+        }
+        available.pop_front();
+    }
 
 //    // Draw cross
 //    line_groups.push_back( LineGroup(Opposite(cross->triples[best_triple[0]]) )  );
