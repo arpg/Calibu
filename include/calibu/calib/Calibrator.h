@@ -70,7 +70,6 @@ class Calibrator
 public:
     
     Calibrator()
-        : m_mse(0)
     {
         m_prob_options.cost_function_ownership = ceres::DO_NOT_TAKE_OWNERSHIP;
         m_prob_options.local_parameterization_ownership = ceres::DO_NOT_TAKE_OWNERSHIP;
@@ -78,7 +77,9 @@ public:
         
 //        m_solver_options.num_threads = 4;
         m_solver_options.update_state_every_iteration = true;
-        m_solver_options.max_num_iterations = 100;        
+        m_solver_options.max_num_iterations = 100;
+        
+        Clear();
     }
     
     ~Calibrator()
@@ -94,9 +95,11 @@ public:
     
     void Clear()
     {
+        Stop();
         m_T_kw.clear();
         m_camera.clear();
         m_costs.clear();
+        m_mse = 0;
     }
     
     void Start()
@@ -136,11 +139,15 @@ public:
     }
     
     void AddObservation(
-            int frame, int camera,
+            size_t frame, size_t camera,
             const Eigen::Vector3d& P_c,
             const Eigen::Vector2d& p_c
             ) {
         m_update_mutex.lock();
+        
+        // Ensure index is valid
+        while( NumFrames() < frame) { AddFrame(); }
+        while( NumCameras() < camera ) { AddCamera(CameraModel<ProjModel>()); }
         
         // new camera pose to bundle adjust
         

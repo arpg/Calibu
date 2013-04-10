@@ -78,10 +78,4 @@ public:
     virtual const std::vector<Eigen::Vector3d>& Circles3D() const = 0;
 };
 
-TargetInterface& LoadTarget(std::string filename, float points_per_unit = 1);
-
-void SaveTarget(const TargetInterface& target, std::string filename, float points_per_unit = 1);
-
-void SaveTargetRotated(const TargetInterface& target, std::string filename, float points_per_unit = 1);
-
 }

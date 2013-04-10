@@ -96,16 +96,16 @@ public:
     
     ////////////////////////////////////////////////////////////////////////////
 
-    double CircleRadius() const {
+    inline double CircleRadius() const {
         // TODO: Load this from eps or something.
         return grid_spacing / 10.0;
     }
     
-    const std::vector<Eigen::Vector2d >& Circles2D() const {
+    inline const std::vector<Eigen::Vector2d >& Circles2D() const {
         return tpts2d;
     }
     
-    const std::vector<Eigen::Vector3d >& Circles3D() const {
+    inline const std::vector<Eigen::Vector3d >& Circles3D() const {
         return tpts3d;
     }
     

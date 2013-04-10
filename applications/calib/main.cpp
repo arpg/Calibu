@@ -64,7 +64,7 @@ int main( int argc, char** argv)
     // Pangolin 3D Render state
     pangolin::OpenGlRenderState stacks;
     stacks.SetProjectionMatrix(pangolin::ProjectionMatrixRDF_TopLeft(640,480,420,420,320,240,0.01,1E6));
-    stacks.SetModelViewMatrix(pangolin::ModelViewLookAtRDF(0,0,-2, 0,0,0, 0, -1, 0) );
+    stacks.SetModelViewMatrix(pangolin::ModelViewLookAtRDF(0,0,-0.5, 0,0,0, 0, -1, 0) );
     
     // Create viewport for video with fixed aspect
     pangolin::CreatePanel("ui").SetBounds(1.0,0.0,0,pangolin::Attach::Pix(PANEL_WIDTH));
@@ -102,16 +102,7 @@ int main( int argc, char** argv)
         pangolin::RegisterKeyPressCallback('1'+i, [&container,i](){container[i].ToggleShow();} );
     }
     
-                    
-    int calib_cams[N];
-    for(size_t i=0; i<N; ++i) {
-        // Add (arbitrary) starting camera params
-        const pangolin::StreamInfo& si = video.Streams()[i];
-        CameraModel<Fov> default_cam( si.Width(), si.Height() );
-        default_cam.Params()  << 300, 300, w/2.0, h/2.0, 0.2;
-        calib_cams[i] = calibrator.AddCamera(default_cam);
-    }
-    
+    int calib_cams[N];    
     bool tracking_good[N];
     Sophus::SE3d T_hw[N];
         
@@ -133,15 +124,29 @@ int main( int argc, char** argv)
     conic_finder.Params().conic_min_aspect = 0.1;
     
     TargetGridDot target(grid_spacing, grid_size, grid_center);
-    
+
+    for(size_t i=0; i<N; ++i) {
+        // Add (arbitrary) starting camera params
+        const pangolin::StreamInfo& si = video.Streams()[i];
+        CameraModel<Fov> default_cam( si.Width(), si.Height() );
+        default_cam.Params()  << 300, 300, w/2.0, h/2.0, 0.2;
+        calib_cams[i] = calibrator.AddCamera(default_cam);
+    }            
+
     for(int frame=0; !pangolin::ShouldQuit();)
-    {
-        glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);    
-     
-        if(pangolin::Pushed(reset)) {
-            video.Reset();
+    {     
+        if(pangolin::Pushed(reset) ) {
             calibrator.Clear();
+            video.Reset();
             frame=0;
+            
+            // Re-add camers
+            for(size_t i=0; i<N; ++i) {
+                const pangolin::StreamInfo& si = video.Streams()[i];
+                CameraModel<Fov> default_cam( si.Width(), si.Height() );
+                default_cam.Params()  << 300, 300, w/2.0, h/2.0, 0.2;
+                calib_cams[i] = calibrator.AddCamera(default_cam);
+            }            
         }
 
         const bool go = (frame==0) || run || pangolin::Pushed(step);
@@ -156,6 +161,8 @@ int main( int argc, char** argv)
                 run = false;
             }
         }  
+        
+        glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);            
                 
         for(size_t iI = 0; iI < N; ++iI)
         {
@@ -276,10 +283,8 @@ int main( int argc, char** argv)
         if(v3D.IsShown()) {
             v3D.ActivateScissorAndClear(stacks);
             
-            pangolin::glColorHSV(100, 0.2, 1.0);
-            pangolin::glDraw_z0(1.0, 10);
-            calibu::glDrawTarget(target, Eigen::Vector2d(0,0), 1.0, 0.2, 0.5);
-            
+            calibu::glDrawTarget(target, Eigen::Vector2d(0,0), 1.0, 0.8, 1.0);
+                        
             for(size_t c=0; c< calibrator.NumCameras(); ++c) {
                 const Eigen::Matrix3d Kinv = calibrator.GetCamera(c).camera.Kinv();
                 
@@ -295,7 +300,7 @@ int main( int argc, char** argv)
                 // Draw current camera
                 if(tracking_good[c]) {
                     glColorBin(c, 2, 0.5);
-                    glDrawFrustrum(Kinv,w,h,T_hw[c].inverse().matrix(),0.05);
+                    glDrawFrustrum(Kinv,w,h,T_hw[c].inverse().matrix(),0.01);
                 }
             }
         }

@@ -41,7 +41,7 @@ namespace calibu {
 
 using namespace pangolin;
 
-void glDrawRectangle( const IRectangle& r )
+inline void glDrawRectangle( const IRectangle& r )
 {
     glBegin(GL_LINE_STRIP);
     glVertex2f(r.x1,r.y1);
@@ -67,7 +67,7 @@ inline void glDrawPlane(const Eigen::Vector4d& N_w, float scale, int grid)
     glDrawPlane(nd_w, scale, grid);
 }
 
-void glDrawTarget( const TargetInterface& t, const Eigen::Vector2d& offset, double scale, double sat, double val )
+inline void glDrawTarget( const TargetInterface& t, const Eigen::Vector2d& offset, double scale, double sat, double val )
 {
     const double r = t.CircleRadius() * scale;
     
@@ -79,7 +79,7 @@ void glDrawTarget( const TargetInterface& t, const Eigen::Vector2d& offset, doub
     }
 }
 
-void glDrawTarget( const std::vector<int>& map, const TargetInterface& target, const Eigen::Vector2d& offset, double scale, double sat, double val )
+inline void glDrawTarget( const std::vector<int>& map, const TargetInterface& target, const Eigen::Vector2d& offset, double scale, double sat, double val )
 {
     const double r = target.CircleRadius() * scale;
     
