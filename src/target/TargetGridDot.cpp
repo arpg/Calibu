@@ -351,6 +351,7 @@ bool TargetGridDot::FindTarget(
     // Find colinear neighbours for each ellipse
     for(size_t i=0; i < vs.size(); ++i) {
         FindTriples(vs[i], vs_distance[i], params.max_line_dist_ratio, params.max_norm_triple_area );
+        for(Triple& t : vs[i].triples) line_groups.push_back( LineGroup(t)  );            
     }    
     
     // Find central, well connected vertex
@@ -363,11 +364,9 @@ bool TargetGridDot::FindTarget(
         }
     }
     
-    idxCrossConic = -1;
     if(!central)
         return false;
     
-    idxCrossConic = central->id;
     std::vector<Triple*> principle = PrincipleDirections(*central);
     
     if(principle.size() != 2)
@@ -401,7 +400,7 @@ bool TargetGridDot::FindTarget(
             available.erase(std::find(available.begin(), available.end(), &n));
             fringe.push_back(&n);
         }
-        line_groups.push_back( LineGroup(t) );        
+//        line_groups.push_back( LineGroup(t) );        
     }
     
     // depth first search extending 'fringe' set by adding colinear vertices
@@ -433,7 +432,7 @@ bool TargetGridDot::FindTarget(
                         // add
                         SetGrid(no, go);
                         fringe.push_back(&no);
-                        line_groups.push_back( LineGroup(t)  );
+//                        line_groups.push_back( LineGroup(t)  );
                     }
                     
                     // no need to check other neighbour
@@ -466,7 +465,7 @@ bool TargetGridDot::FindTarget(
                     }else{
                         // add
                         SetGrid(f, g);
-                        line_groups.push_back( LineGroup(t)  );
+//                        line_groups.push_back( LineGroup(t)  );
                     }
                 }
             }
@@ -516,37 +515,38 @@ bool TargetGridDot::FindTarget(
             m.second->pg -= cc;
         }        
     }
-    
-    ambigous_match = dim != grid_size;    
-    
+        
     // Try to set grid center using cross
     // Calcualte 'cross' score for each conic and remember best
     double bestScore = std::numeric_limits<double>::max();
     Vertex* cross = nullptr;
+    idxCrossConic = -1;    
     
     for(size_t jj = 0 ; jj < vs.size() ; jj++){
-        for(size_t n1=0; n1 < vs[jj].triples.size(); ++n1) {
-            for(size_t n2=n1+1; n2 < vs[jj].triples.size(); ++n2) {
-                const double score = GetCenterCrossScore(
-                            vs[jj].triples[n1], vs[jj].triples[n2],
-                            images.Img(), images.Width(), images.Height(),
-                            params.min_cross_area, params.max_cross_area,
-                            params.cross_radius_ratio, params.cross_line_ratio
-                            );
-                
-                if(score < bestScore){
-                    bestScore = score;
-                    cross = &vs[jj];
-                }
+        std::vector<Triple*> principle = PrincipleDirections(vs[jj]);        
+        if(principle.size() == 2) {        
+            const double score = GetCenterCrossScore(
+                        *principle[0], *principle[1],
+                        images.Img(), images.Width(), images.Height(),
+                        params.min_cross_area, params.max_cross_area,
+                        params.cross_radius_ratio, params.cross_line_ratio
+                        );
+            
+            if(score < bestScore){
+                bestScore = score;
+                cross = &vs[jj];
             }
         }
     }
     
-    if(cross && cross->HasGridPosition()) {
+    if(cross) {
         idxCrossConic = cross->id;
-        const Eigen::Vector2i cc = cross->pg;
-        for(auto m : map_grid_ellipse) {
-            m.second->pg -= cc;
+        
+        if(cross->HasGridPosition()) {
+            const Eigen::Vector2i cc = cross->pg;
+            for(auto m : map_grid_ellipse) {
+                m.second->pg -= cc;
+            }
         }
     }    
     
@@ -561,7 +561,7 @@ bool TargetGridDot::FindTarget(
         }
     }
     
-    return true;
+    return dim == grid_size || cross != nullptr;
 }
 
 

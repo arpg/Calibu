@@ -95,6 +95,11 @@ public:
             );
     
     ////////////////////////////////////////////////////////////////////////////
+
+    double CircleRadius() const {
+        // TODO: Load this from eps or something.
+        return grid_spacing / 10.0;
+    }
     
     const std::vector<Eigen::Vector2d >& Circles2D() const {
         return tpts2d;
@@ -105,10 +110,6 @@ public:
     }
     
     ////////////////////////////////////////////////////////////////////////////
-    
-    bool Ambigous() const {
-        return ambigous_match;
-    }
     
     const std::vector<Vertex>& Map() const {
         return vs;
@@ -139,7 +140,6 @@ protected:
     
     std::vector<Vertex> vs;
     std::map<Eigen::Vector2i, Vertex*> map_grid_ellipse;
-    bool ambigous_match;
     
     std::list<LineGroup> line_groups;
     int idxCrossConic;

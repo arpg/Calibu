@@ -70,12 +70,13 @@ class Calibrator
 public:
     
     Calibrator()
+        : m_mse(0)
     {
         m_prob_options.cost_function_ownership = ceres::DO_NOT_TAKE_OWNERSHIP;
         m_prob_options.local_parameterization_ownership = ceres::DO_NOT_TAKE_OWNERSHIP;
         m_prob_options.loss_function_ownership = ceres::DO_NOT_TAKE_OWNERSHIP;
         
-        m_solver_options.num_threads = 4;
+//        m_solver_options.num_threads = 4;
         m_solver_options.update_state_every_iteration = true;
         m_solver_options.max_num_iterations = 100;        
     }

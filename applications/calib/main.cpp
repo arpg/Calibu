@@ -166,7 +166,6 @@ int main( int argc, char** argv)
             std::vector<int> ellipse_target_map;
             
             tracking_good[iI] = target.FindTarget(image_processing, conic_finder.Conics(), ellipse_target_map);
-//            if(target.Ambigous()) tracking_good[iI] = false;
             
             if(tracking_good[iI]) {
                 // Generate map and point structures
@@ -279,6 +278,7 @@ int main( int argc, char** argv)
             
             pangolin::glColorHSV(100, 0.2, 1.0);
             pangolin::glDraw_z0(1.0, 10);
+            calibu::glDrawTarget(target, Eigen::Vector2d(0,0), 1.0, 0.2, 0.5);
             
             for(size_t c=0; c< calibrator.NumCameras(); ++c) {
                 const Eigen::Matrix3d Kinv = calibrator.GetCamera(c).camera.Kinv();

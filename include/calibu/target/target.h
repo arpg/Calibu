@@ -70,9 +70,18 @@ public:
             std::vector<int>& conics_target_map
             ) = 0;
     
+    // Return circle radius
+    virtual double CircleRadius() const = 0;
+    
     // Return canonical set of known 2D/3D points.
     virtual const std::vector<Eigen::Vector2d>& Circles2D() const = 0;
     virtual const std::vector<Eigen::Vector3d>& Circles3D() const = 0;
 };
+
+TargetInterface& LoadTarget(std::string filename, float points_per_unit = 1);
+
+void SaveTarget(const TargetInterface& target, std::string filename, float points_per_unit = 1);
+
+void SaveTargetRotated(const TargetInterface& target, std::string filename, float points_per_unit = 1);
 
 }

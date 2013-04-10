@@ -354,7 +354,7 @@ bool TargetRandomDot::LoadEPS( std::string filename, float points_per_unit )
         f.close();
         
         InitialiseFrom2DPts();
-        cout << "Loaded " << tpts.size() << " circles (radius: " << Radius() << ")" << endl;    
+        cout << "Loaded " << tpts.size() << " circles (radius: " << CircleRadius() << ")" << endl;    
         return true;
     }else{
         return false;

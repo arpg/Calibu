@@ -32,7 +32,7 @@
 
 #include <Eigen/Dense>
 
-#include <calibu/target/TargetRandomDot.h>
+#include <calibu/target/Target.h>
 #include <calibu/utils/Rectangle.h>
 #include <calibu/utils/Utils.h>
 #include <calibu/utils/PlaneBasis.h>
@@ -67,9 +67,9 @@ inline void glDrawPlane(const Eigen::Vector4d& N_w, float scale, int grid)
     glDrawPlane(nd_w, scale, grid);
 }
 
-void glDrawTarget( const TargetRandomDot& t, const Eigen::Vector2d& offset, double scale, double sat, double val )
+void glDrawTarget( const TargetInterface& t, const Eigen::Vector2d& offset, double scale, double sat, double val )
 {
-    const double r = t.Radius() * scale;
+    const double r = t.CircleRadius() * scale;
     
     for( unsigned int i=0; i<t.Circles2D().size(); ++i )
     {
@@ -79,9 +79,9 @@ void glDrawTarget( const TargetRandomDot& t, const Eigen::Vector2d& offset, doub
     }
 }
 
-void glDrawTarget( const std::vector<int>& map, const TargetRandomDot& target, const Eigen::Vector2d& offset, double scale, double sat, double val )
+void glDrawTarget( const std::vector<int>& map, const TargetInterface& target, const Eigen::Vector2d& offset, double scale, double sat, double val )
 {
-    const double r = target.Radius() * scale;
+    const double r = target.CircleRadius() * scale;
     
     for( unsigned int i=0; i<map.size(); ++i )
     {

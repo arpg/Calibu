@@ -90,8 +90,12 @@ public:
             const std::vector<Conic>& conics,
             std::vector<int>& ellipse_target_map
             );
-    
+        
     ////////////////////////////////////////////////////////////////////////////
+
+    double CircleRadius() const {
+        return radius;
+    }
     
     const std::vector<Eigen::Vector2d >& Circles2D() const {
         return tpts;
@@ -106,11 +110,7 @@ public:
     inline Eigen::Vector2d Size() const {
         return size;
     }
-    
-    inline double Radius() const {
-        return radius;
-    }
-    
+        
 protected:
     void Clear();
     void InitialiseFrom2DPts();
