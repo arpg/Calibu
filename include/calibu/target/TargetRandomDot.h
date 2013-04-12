@@ -30,7 +30,7 @@
 
 #include <Eigen/Dense>
 #include <sophus/se3.hpp>
-#include "target.h"
+#include "Target.h"
 
 namespace calibu {
 

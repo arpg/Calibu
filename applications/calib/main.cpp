@@ -1,7 +1,7 @@
 #include <memory>
 
 #include <pangolin/pangolin.h>
-#include <Pangolin/gldraw.h>
+#include <pangolin/gldraw.h>
 
 #include <sophus/se3.hpp>
 
