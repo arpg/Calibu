@@ -101,13 +101,6 @@ std::vector<Dist> MostCentral( std::vector<std::vector<Dist> >& distances )
 
 std::vector<Triple*> PrincipleDirections( Vertex& v)
 {
-    // Create set of neighbours to v
-    std::set<Vertex*> ns;
-    for(size_t i=0; i<v.triples.size(); ++i) {
-        ns.insert(&v.triples[i].Neighbour(0));
-        ns.insert(&v.triples[i].Neighbour(1));
-    }
-    
     // Find principle directions by observing that neighbours from princple
     // directions are central within triple that is also formed from these
     // neighbours.
@@ -118,7 +111,7 @@ std::vector<Triple*> PrincipleDirections( Vertex& v)
             Vertex& n = t.Neighbour(j);
             for(size_t k=0; k< n.triples.size(); ++k) {
                 Triple& a = n.triples[k];
-                if(a.In(ns))  {
+                if(a.In(v.neighbours))  {
                     // a is parallel to principle direction
                     // t is a parallel direction.
                     pd.insert(&t);
@@ -199,15 +192,38 @@ void FindTriples( Vertex& v, std::vector<Dist>& closest, double thresh_dist, dou
                         // Check no aliasing exists between matched
                         if(used[n1] || used[n2]) {
                             v.triples.clear();
+                            v.neighbours.clear();
                             return;
+                        }else{
+                            used[n1] = true;
+                            used[n2] = true;
+                            v.neighbours.insert(&c1);
+                            v.neighbours.insert(&c2);
+                            v.triples.push_back( Triple(c1, v, c2) );
                         }
-                        
-                        used[n1] = true;
-                        used[n2] = true;
-                        v.triples.push_back( Triple(c1, v, c2) );
                     }
                 }
             }
+        }
+    }
+    
+    if(v.neighbours.size() >= 2) {
+        // Sort neightbours by circle area
+        std::vector<Dist> vecrad;
+        vecrad.push_back( Dist{ &v, (double)v.conic.bbox.Area() });
+        for(Vertex* n : v.neighbours)  {
+            vecrad.push_back( Dist{n, (double)n->conic.bbox.Area()} );
+        }
+        std::sort(vecrad.begin(), vecrad.end());
+        
+        const double rad0 = 2.0;
+        const double rad1 = 3.0;
+        
+        if(rad1*vecrad.front().dist / rad0 <= vecrad.back().dist * 1.2) {
+            // is difference
+            const double d0 = std::abs(v.conic.bbox.Area()-vecrad.front().dist);
+            const double d1 = std::abs(v.conic.bbox.Area()-vecrad.back().dist);
+            v.value = ( d0 < d1 ) ? 0 : 1;
         }
     }
 }
@@ -383,7 +399,7 @@ bool TargetGridDot::FindTarget(
         available.push_back(&vs[i]);
     }
     
-    // Setup cross as center of grid
+    // Setup central as center of grid
     SetGrid(*central, Eigen::Vector2i(0,0));
     available.erase(std::find(available.begin(), available.end(), central));
     
@@ -497,8 +513,8 @@ bool TargetGridDot::FindTarget(
     
     Eigen::Vector2i dim = minmax[1] - minmax[0] + Eigen::Vector2i(1,1);
     
-    const bool flip = dim[0] < dim[1];
-    if(flip) {
+    const bool rotate = dim[0] < dim[1];
+    if(rotate) {
         std::swap(dim[0], dim[1]);
         std::swap(minmax[0][0], minmax[0][1]);
         std::swap(minmax[1][0], minmax[1][1]);
@@ -516,39 +532,39 @@ bool TargetGridDot::FindTarget(
         }        
     }
         
-    // Try to set grid center using cross
-    // Calcualte 'cross' score for each conic and remember best
-    double bestScore = std::numeric_limits<double>::max();
-    Vertex* cross = nullptr;
-    idxCrossConic = -1;    
+//    // Try to set grid center using cross
+//    // Calcualte 'cross' score for each conic and remember best
+//    double bestScore = std::numeric_limits<double>::max();
+//    Vertex* cross = nullptr;
+//    idxCrossConic = -1;    
     
-    for(size_t jj = 0 ; jj < vs.size() ; jj++){
-        std::vector<Triple*> principle = PrincipleDirections(vs[jj]);        
-        if(principle.size() == 2) {        
-            const double score = GetCenterCrossScore(
-                        *principle[0], *principle[1],
-                        images.Img(), images.Width(), images.Height(),
-                        params.min_cross_area, params.max_cross_area,
-                        params.cross_radius_ratio, params.cross_line_ratio
-                        );
+//    for(size_t jj = 0 ; jj < vs.size() ; jj++){
+//        std::vector<Triple*> principle = PrincipleDirections(vs[jj]);        
+//        if(principle.size() == 2) {        
+//            const double score = GetCenterCrossScore(
+//                        *principle[0], *principle[1],
+//                        images.Img(), images.Width(), images.Height(),
+//                        params.min_cross_area, params.max_cross_area,
+//                        params.cross_radius_ratio, params.cross_line_ratio
+//                        );
             
-            if(score < bestScore){
-                bestScore = score;
-                cross = &vs[jj];
-            }
-        }
-    }
+//            if(score < bestScore){
+//                bestScore = score;
+//                cross = &vs[jj];
+//            }
+//        }
+//    }
     
-    if(cross) {
-        idxCrossConic = cross->id;
+//    if(cross) {
+//        idxCrossConic = cross->id;
         
-        if(cross->HasGridPosition()) {
-            const Eigen::Vector2i cc = cross->pg;
-            for(auto m : map_grid_ellipse) {
-                m.second->pg -= cc;
-            }
-        }
-    }    
+//        if(cross->HasGridPosition()) {
+//            const Eigen::Vector2i cc = cross->pg;
+//            for(auto m : map_grid_ellipse) {
+//                m.second->pg -= cc;
+//            }
+//        }
+//    }    
     
     // output map
     ellipse_target_map.resize(vs.size(), -1);
@@ -561,7 +577,7 @@ bool TargetGridDot::FindTarget(
         }
     }
     
-    return dim == grid_size || cross != nullptr;
+    return dim == grid_size; // || cross != nullptr;
 }
 
 
