@@ -28,7 +28,7 @@
 #pragma once
 
 #include <Eigen/Eigen>
-#include "label.h"
+#include "Label.h"
 
 namespace calibu
 {

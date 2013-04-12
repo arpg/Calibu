@@ -5,7 +5,7 @@
 #include <memory>
 #include <system_error>
 
-#include <Sophus/se3.hpp>
+#include <sophus/se3.hpp>
 
 #include <calibu/cam/CameraModel.h>
 #include <calibu/calib/CostFunctionAndParams.h>
