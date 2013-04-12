@@ -309,7 +309,7 @@ int main( int argc, char** argv)
                 // Draw current camera
                 if(tracking_good[c]) {
                     glColorBin(c, 2, 0.5);
-                    glDrawFrustrum(Kinv,w,h,T_hw[c].inverse().matrix(),0.01);
+                    glDrawFrustrum(Kinv,w,h,T_hw[c].inverse().matrix(),0.05);
                 }
             }
         }

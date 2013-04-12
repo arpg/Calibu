@@ -28,6 +28,7 @@ set(
     ${INCDIR}/pose/Tracker.h
     ${INCDIR}/target/Hungarian.h
     ${INCDIR}/target/LineGroup.h
+    ${INCDIR}/target/RandomGrid.h
     ${INCDIR}/target/Target.h
     ${INCDIR}/target/TargetGridDot.h
     ${INCDIR}/target/TargetRandomDot.h
@@ -46,6 +47,7 @@ SET(
     pose/Pnp.cpp
     pose/Tracker.cpp
     target/Hungarian.cpp
+    target/RandomGrid.cpp
     target/TargetGridDot.cpp
     target/TargetRandomDot.cpp
     utils/Utils.cpp

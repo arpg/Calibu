@@ -27,6 +27,7 @@
  */
 
 #include <calibu/target/TargetGridDot.h>
+#include <calibu/target/RandomGrid.h>
 
 #include <map>
 #include <set>
@@ -36,11 +37,13 @@
 
 namespace calibu {
 
-TargetGridDot::TargetGridDot(double grid_spacing, Eigen::Vector2i grid_size, Eigen::Vector2i grid_center)
+TargetGridDot::TargetGridDot(double grid_spacing, Eigen::Vector2i grid_size, Eigen::Vector2i grid_center, uint32_t seed)
     : grid_spacing(grid_spacing), grid_size(grid_size), grid_center(grid_center)
 {
-    // Create cached grid coordinates
+    // Create binary pattern (and rotated pattern) from seed
+    PG = MakePatternGroup(grid_size(1), grid_size(0), seed);
     
+    // Create cached grid coordinates
     tpts2d.resize(grid_size(0) * grid_size(1));
     tpts3d.resize(grid_size(0) * grid_size(1));
     
@@ -344,6 +347,38 @@ void TargetGridDot::SetGrid(Vertex& v, const Eigen::Vector2i& g)
     map_grid_ellipse[g] = &v;
 }
 
+void Match(const std::map<Eigen::Vector2i, Vertex*>& obs, const std::array<Eigen::MatrixXi,4>& PG)
+{
+    Eigen::Vector2i omin(std::numeric_limits<int>::max(),std::numeric_limits<int>::max());
+    Eigen::Vector2i omax(std::numeric_limits<int>::min(),std::numeric_limits<int>::min());
+    
+    // find max and min
+    for(std::map<Eigen::Vector2i, Vertex*>::const_iterator i = obs.begin(); i != obs.end(); ++i) {
+        omin[0] = std::min(omin[0], i->first[0]);
+        omin[1] = std::min(omin[1], i->first[1]);
+        omax[0] = std::max(omax[0], i->first[0]);
+        omax[1] = std::max(omax[1], i->first[1]);
+    }
+    
+    // Create sample matrix
+    Eigen::Vector2i osize = (omax + Eigen::Vector2i(1,1)) - omin;
+    
+//    std::cout << "size: " << osize.transpose() << std::endl;
+    
+    if( osize[0] > 1 && osize[1] > 1) {
+        Eigen::MatrixXi m( osize(1), osize(0));
+        for(std::map<Eigen::Vector2i, Vertex*>::const_iterator i = obs.begin(); i != obs.end(); ++i) {
+            const Eigen::Vector2i pg = i->first - omin;
+//            std::cout << pg.transpose() << std::endl;
+            m(pg(1),pg(0)) = i->second->value;
+        }
+        
+        if(osize[0] <= PG[0].cols() && osize[1] <= PG[1].cols() ) {
+            std::cout << NumMatches(PG,m) << std::endl;
+        }
+    }
+}
+
 bool TargetGridDot::FindTarget(
         const ImageProcessing& images,
         const std::vector<Conic>& conics,
@@ -403,7 +438,7 @@ bool TargetGridDot::FindTarget(
     SetGrid(*central, Eigen::Vector2i(0,0));
     available.erase(std::find(available.begin(), available.end(), central));
     
-    // add neighbours of cross to form basis
+    // add neighbours of central to form basis
     for(int i=0; i<2; ++i)
     {
         Triple& t = *principle[i];
@@ -489,48 +524,51 @@ bool TargetGridDot::FindTarget(
         available.pop_front();
     }
     
-    // Find ranges of grid coordinates by projecting onto princple axis'
-    std::map<int,size_t> histogram[2];
-    for(auto& mv : map_grid_ellipse) {
-        histogram[0][mv.first[0]]++;
-        histogram[1][mv.first[1]]++;
-    }
+    // Correlation of what we have with binary pattern
+    Match(map_grid_ellipse, PG);
     
-    // Find min and max grid coordinate with noise threshold
-    const size_t required_min = std::min(grid_size[0], grid_size[1]) / 3;
-    Eigen::Vector2i minmax[2] = {
-        Eigen::Vector2i(std::numeric_limits<int>::max(),std::numeric_limits<int>::max()),
-        Eigen::Vector2i(std::numeric_limits<int>::min(),std::numeric_limits<int>::min())
-    };    
-    for(int i=0; i<2; ++i) {
-        for(auto& m : histogram[i]) {
-            if(m.second >= required_min) {
-                minmax[0][i] = std::min(minmax[0][i], m.first);
-                minmax[1][i] = std::max(minmax[1][i], m.first);
-            }
-        }
-    }
+//    // Find ranges of grid coordinates by projecting onto princple axis'
+//    std::map<int,size_t> histogram[2];
+//    for(auto& mv : map_grid_ellipse) {
+//        histogram[0][mv.first[0]]++;
+//        histogram[1][mv.first[1]]++;
+//    }
     
-    Eigen::Vector2i dim = minmax[1] - minmax[0] + Eigen::Vector2i(1,1);
+//    // Find min and max grid coordinate with noise threshold
+//    const size_t required_min = std::min(grid_size[0], grid_size[1]) / 3;
+//    Eigen::Vector2i minmax[2] = {
+//        Eigen::Vector2i(std::numeric_limits<int>::max(),std::numeric_limits<int>::max()),
+//        Eigen::Vector2i(std::numeric_limits<int>::min(),std::numeric_limits<int>::min())
+//    };    
+//    for(int i=0; i<2; ++i) {
+//        for(auto& m : histogram[i]) {
+//            if(m.second >= required_min) {
+//                minmax[0][i] = std::min(minmax[0][i], m.first);
+//                minmax[1][i] = std::max(minmax[1][i], m.first);
+//            }
+//        }
+//    }
     
-    const bool rotate = dim[0] < dim[1];
-    if(rotate) {
-        std::swap(dim[0], dim[1]);
-        std::swap(minmax[0][0], minmax[0][1]);
-        std::swap(minmax[1][0], minmax[1][1]);
-        for(auto m : map_grid_ellipse) {
-            Eigen::Vector2i& pg = m.second->pg;
-            std::swap(pg[0],pg[1]);
-        }        
-    }
+//    Eigen::Vector2i dim = minmax[1] - minmax[0] + Eigen::Vector2i(1,1);
     
-    if( dim == grid_size ) {
-        // We found the entire grid! Zero coordinates
-        const Eigen::Vector2i cc = minmax[0] + grid_center;
-        for(auto m : map_grid_ellipse) {
-            m.second->pg -= cc;
-        }        
-    }
+//    const bool rotate = dim[0] < dim[1];
+//    if(rotate) {
+//        std::swap(dim[0], dim[1]);
+//        std::swap(minmax[0][0], minmax[0][1]);
+//        std::swap(minmax[1][0], minmax[1][1]);
+//        for(auto m : map_grid_ellipse) {
+//            Eigen::Vector2i& pg = m.second->pg;
+//            std::swap(pg[0],pg[1]);
+//        }        
+//    }
+    
+//    if( dim == grid_size ) {
+//        // We found the entire grid! Zero coordinates
+//        const Eigen::Vector2i cc = minmax[0] + grid_center;
+//        for(auto m : map_grid_ellipse) {
+//            m.second->pg -= cc;
+//        }        
+//    }
         
 //    // Try to set grid center using cross
 //    // Calcualte 'cross' score for each conic and remember best
@@ -577,7 +615,8 @@ bool TargetGridDot::FindTarget(
         }
     }
     
-    return dim == grid_size; // || cross != nullptr;
+//    return dim == grid_size; // || cross != nullptr;
+    return true;
 }
 
 
