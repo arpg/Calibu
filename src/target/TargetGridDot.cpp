@@ -177,6 +177,21 @@ double Area(const Conic& c)
     }
 }
 
+std::set<Vertex*> Neighbours(std::map<Eigen::Vector2i, Vertex*>& map, const Vertex& v)
+{
+    std::set<Vertex*> neighbours;
+    for(int r=-1; r <=1; ++r) {
+        for(int c=-1; c<=1; ++c) {
+            Eigen::Vector2i pg(v.pg[0]+c, v.pg[1]+r);
+            std::map<Eigen::Vector2i, Vertex*>::const_iterator i = map.find(pg);
+            if(i!= map.end()) {
+                neighbours.insert(i->second);
+            }
+        }
+    }
+    return neighbours;
+}
+
 void FindTriples( Vertex& v, std::vector<Dist>& closest, double thresh_dist, double thresh_area)
 {
     // Consider 9 closests points (including itself)
@@ -555,6 +570,44 @@ bool TargetGridDot::FindTarget(
         }
         available.pop_front();
     }
+    
+    // Compute area and grid neighbours for all ellipses in grid
+    for(std::map<Eigen::Vector2i, Vertex*>::const_iterator i = map_grid_ellipse.begin(); i != map_grid_ellipse.end(); ++i) {
+        Vertex& v = *i->second;
+        v.area = Area(v.conic);
+        v.neighbours = Neighbours(map_grid_ellipse,v);
+    }
+
+    // Determine binary value from neighbours area
+    for(std::map<Eigen::Vector2i, Vertex*>::const_iterator i = map_grid_ellipse.begin(); i != map_grid_ellipse.end(); ++i) {
+        Vertex& v = *i->second;
+        
+        if(v.neighbours.size() > 0) {
+            // Sort neightbours by circle area
+            std::vector<Dist> vecrad;
+            // TODO: Get area directly from Conic form
+            vecrad.push_back( Dist{ &v, v.area });
+            for(Vertex* n : v.neighbours)  {
+                vecrad.push_back( Dist{n, n->area } );
+            }
+            std::sort(vecrad.begin(), vecrad.end());
+            
+            const double _area0 = vecrad.front().dist;
+            const double _area1 = vecrad.back().dist;
+            
+            const double area0 = 2*2;
+            const double area1 = 3*3;
+            if(area1*_area0 / area0 <= _area1 * 1.1)
+            {
+                // is difference
+                const double d0 = std::abs(v.area-_area0);
+                const double d1 = std::abs(v.area-_area1);
+                v.value = ( d0 < d1 ) ? 0 : 1;
+            }
+        }else{
+            v.value = -1;
+        }  
+    }    
     
     // Correlation of what we have with binary pattern
     Match(map_grid_ellipse, PG);

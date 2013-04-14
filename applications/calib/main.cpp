@@ -129,7 +129,7 @@ int main( int argc, char** argv)
     CVarUtils::AttachCVar("proc.black_on_white", &image_processing.Params().black_on_white);
     
     ConicFinder conic_finder;
-    conic_finder.Params().conic_min_area = 2.0;
+    conic_finder.Params().conic_min_area = 4.0;
     conic_finder.Params().conic_min_density = 0.208;
     conic_finder.Params().conic_min_aspect = 0.1;
         
