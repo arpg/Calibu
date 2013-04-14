@@ -157,6 +157,26 @@ double NormArea(const Eigen::Vector2d& p1, const Eigen::Vector2d& p2, const Eige
     return std::abs(area) / (len*len);
 }
 
+double Area(const Conic& c)
+{
+    // http://en.wikipedia.org/wiki/Matrix_representation_of_conic_sections
+    const Eigen::Matrix2d A33 = c.C.block<2,2>(0,0);
+    Eigen::SelfAdjointEigenSolver<Eigen::Matrix2d> eigensolver(A33);
+    if (eigensolver.info() == Eigen::Success) {
+        const double detA = c.C.determinant();
+        const double detA33 = A33.determinant();        
+        const double fac = -detA / (detA33);
+        const Eigen::Vector2d l = eigensolver.eigenvalues();
+        
+        const double a = sqrt(fac/l[0]);
+        const double b = sqrt(fac/l[1]);
+        
+        return M_PI * a * b;
+    }else{
+        return 0.0;
+    }
+}
+
 void FindTriples( Vertex& v, std::vector<Dist>& closest, double thresh_dist, double thresh_area)
 {
     // Consider 9 closests points (including itself)
@@ -210,22 +230,29 @@ void FindTriples( Vertex& v, std::vector<Dist>& closest, double thresh_dist, dou
         }
     }
     
-    if(v.neighbours.size() >= 2) {
+    if(v.neighbours.size() > 0) {
         // Sort neightbours by circle area
         std::vector<Dist> vecrad;
-        vecrad.push_back( Dist{ &v, (double)v.conic.bbox.Area() });
+        // TODO: Get area directly from Conic form
+        vecrad.push_back( Dist{ &v, Area(v.conic) });
         for(Vertex* n : v.neighbours)  {
-            vecrad.push_back( Dist{n, (double)n->conic.bbox.Area()} );
+            vecrad.push_back( Dist{n, Area(n->conic) } );
         }
         std::sort(vecrad.begin(), vecrad.end());
         
-        const double rad0 = 2.0;
-        const double rad1 = 3.0;
+        const double _area0 = vecrad.front().dist;
+        const double _area1 = vecrad.back().dist;
+        const double _area = Area(v.conic);
         
-        if(rad1*vecrad.front().dist / rad0 <= vecrad.back().dist * 1.2) {
+//        std::cout << _area0 << ", " << _area << ", " << _area1 << std::endl;
+        
+        const double area0 = 2*2;
+        const double area1 = 3*3;
+        if(area1*_area0 / area0 <= _area1 * 1.1)
+        {
             // is difference
-            const double d0 = std::abs(v.conic.bbox.Area()-vecrad.front().dist);
-            const double d1 = std::abs(v.conic.bbox.Area()-vecrad.back().dist);
+            const double d0 = std::abs(_area-_area0);
+            const double d1 = std::abs(_area-_area1);
             v.value = ( d0 < d1 ) ? 0 : 1;
         }
     }
@@ -366,15 +393,20 @@ void Match(const std::map<Eigen::Vector2i, Vertex*>& obs, const std::array<Eigen
 //    std::cout << "size: " << osize.transpose() << std::endl;
     
     if( osize[0] > 1 && osize[1] > 1) {
-        Eigen::MatrixXi m( osize(1), osize(0));
+        std::cout << "-----------------------------------------------------" << std::endl;
+        
+        Eigen::MatrixXi m = Eigen::MatrixXi::Constant( osize(1), osize(0), -1);
+        
         for(std::map<Eigen::Vector2i, Vertex*>::const_iterator i = obs.begin(); i != obs.end(); ++i) {
             const Eigen::Vector2i pg = i->first - omin;
 //            std::cout << pg.transpose() << std::endl;
             m(pg(1),pg(0)) = i->second->value;
         }
         
+        PrintPattern(m);
+        
         if(osize[0] <= PG[0].cols() && osize[1] <= PG[1].cols() ) {
-            std::cout << NumMatches(PG,m) << std::endl;
+            std::cout << NumExactMatches(PG,m) << std::endl;
         }
     }
 }

@@ -263,10 +263,10 @@ int main( int argc, char** argv)
                     if(disp_cross) {          
                         for( size_t i=0; i < conics.size(); ++i ) {   
                             const Eigen::Vector2d pc = conics[i].center;
-                            const Eigen::Vector2i pg = tracking_good[iI] ? target.Map()[i].pg : Eigen::Vector2i(0,0);
+//                            const Eigen::Vector2i pg = tracking_good[iI] ? target.Map()[i].pg : Eigen::Vector2i(0,0);
                             
-                            const Eigen::Vector2i pgz = pg + grid_center;
-                            if( 0<= pgz(0) && pgz(0) < grid_size(0) &&  0<= pgz(1) && pgz(1) < grid_size(1) )
+//                            const Eigen::Vector2i pgz = pg + grid_center;
+//                            if( 0<= pgz(0) && pgz(0) < grid_size(0) &&  0<= pgz(1) && pgz(1) < grid_size(1) )
                             {
 //                                    glColorBin(pgz(1)*grid_size(0)+pgz(0), grid_size(0)*grid_size(1));
                                 glColorBin( target.Map()[i].value, 2);

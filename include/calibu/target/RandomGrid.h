@@ -49,11 +49,11 @@ Eigen::MatrixXi MakePattern(int r, int c, uint32_t seed = 0);
 
 std::array<Eigen::MatrixXi,4> MakePatternGroup(int r, int c, uint32_t seed);
 
-int Correlation(const Eigen::MatrixXi& M, const Eigen::MatrixXi& m, int r, int c);
+int HammingDistance(const Eigen::MatrixXi& M, const Eigen::MatrixXi& m, int r, int c);
 
-int NumMatches(const Eigen::MatrixXi& M, const Eigen::MatrixXi& m);
+int NumExactMatches(const Eigen::MatrixXi& M, const Eigen::MatrixXi& m);
 
-int NumMatches(const std::array<Eigen::MatrixXi,4>& PG, const Eigen::MatrixXi& m);
+int NumExactMatches(const std::array<Eigen::MatrixXi,4>& PG, const Eigen::MatrixXi& m);
 
 int AutoCorrelation(const std::array<Eigen::MatrixXi,4>& PG, int minr=2, int minc=2 );
 
@@ -62,5 +62,7 @@ int AutoCorrelationMinArea(const std::array<Eigen::MatrixXi,4>& PG );
 int SeedScore(uint32_t seed, int r, int c);
 
 uint32_t FindBestSeed(int r, int c, bool& should_run);
+
+void PrintPattern(const Eigen::MatrixXi& M);
 
 }

@@ -102,20 +102,24 @@ std::array<Eigen::MatrixXi,4> MakePatternGroup(int r, int c, uint32_t seed)
     return patterns;
 }
 
-int Correlation(const Eigen::MatrixXi& M, const Eigen::MatrixXi& m, int r, int c)
+int HammingDistance(const Eigen::MatrixXi& M, const Eigen::MatrixXi& m, int r, int c)
 {
     int sum = 0;
     for(int mr=0; mr<m.rows(); ++mr) {
         for(int mc=0; mc<m.cols(); ++mc) {
             const int vm = m(mr,mc);
-            if(vm >=0) sum += abs( M(mr+r,mc+c) - vm);
+            const int Mr = mr+r;
+            const int Mc = mc+c;
+            if(vm >=0 && 0 <= Mr && Mr < M.rows() && 0 <= Mc && Mc < M.cols() ) {
+                sum += abs( M(Mr,Mc) - vm);
+            }
         }
     } 
     return sum;
 }
 
 
-int NumMatches(const Eigen::MatrixXi& M, const Eigen::MatrixXi& m)
+int NumExactMatches(const Eigen::MatrixXi& M, const Eigen::MatrixXi& m)
 {
     const Eigen::Vector2i num( 1+M.rows() - m.rows(), 1+M.cols() - m.cols());
     
@@ -124,7 +128,7 @@ int NumMatches(const Eigen::MatrixXi& M, const Eigen::MatrixXi& m)
     for(int r=0; r < num(0); ++r ) {
         for(int c=0; c < num(1); ++c) {
             const Eigen::Vector2i t(r,c);
-            const int corr = Correlation(M, m, r,c );
+            const int corr = HammingDistance(M, m, r,c );
             if(corr==0)  ++num_zeros;
         }
     }
@@ -132,12 +136,12 @@ int NumMatches(const Eigen::MatrixXi& M, const Eigen::MatrixXi& m)
     return num_zeros;
 }
 
-int NumMatches(const std::array<Eigen::MatrixXi,4>& PG, const Eigen::MatrixXi& m)
+int NumExactMatches(const std::array<Eigen::MatrixXi,4>& PG, const Eigen::MatrixXi& m)
 {
     int num_zeroes = 0;
     
     for(int i=0; i<4; ++i) {
-        num_zeroes += NumMatches(PG[i], m);
+        num_zeroes += NumExactMatches(PG[i], m);
     }
     
     return num_zeroes;
@@ -161,7 +165,7 @@ int AutoCorrelation(const std::array<Eigen::MatrixXi,4>& PG, int minr, int minc 
                 for(int c=0; c < MC; ++c ) {
                     const Eigen::MatrixXi m = M.block(r,c,nr,nc);
                     // Don't count the known good match (-1)
-                    num_bad_matches += NumMatches(PG, m) - 1;
+                    num_bad_matches += NumExactMatches(PG, m) - 1;
                 }
             }
         }
@@ -187,7 +191,7 @@ int AutoCorrelationMinArea(const std::array<Eigen::MatrixXi,4>& PG )
                 for(int c=0; c < MC; ++c ) {
                     const Eigen::MatrixXi m = M.block(r,c,nr,nc);
                     // Don't count the known good match (-1)
-                    if(NumMatches(PG, m) > 1) {
+                    if(NumExactMatches(PG, m) > 1) {
                         min_area = std::max(min_area, nr*nc+1 );
                     }
                 }
@@ -216,6 +220,18 @@ uint32_t FindBestSeed(int r, int c, bool& should_run) {
         }
     }
     return best_seed;
+}
+
+void PrintPattern(const Eigen::MatrixXi& M)
+{
+    for(int r=0; r< M.rows(); ++r) {
+        for(int c=0; c<M.cols(); ++c) {
+            const int v = M(r,c);
+            const char b = (v == -1) ? 'x' : '0'+v;
+            std::cout << b << ' ';
+        }
+        std::cout << '\n';
+    }
 }
 
 }

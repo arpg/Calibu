@@ -103,7 +103,7 @@ Eigen::Matrix3d FindEllipse(
     //  const Matrix3d C_star = LU<3>(C).get_inverse();
     //  return C_star/C_star[2][2];
     
-    return C/C(2,2);
+    return C; //C/C(2,2);
 }
 
 ////////////////////////////////////////////////////////////////////////////
