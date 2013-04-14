@@ -1,29 +1,20 @@
-/* This file is part of the calibu Project.
- * https://github.com/stevenlovegrove/calibu
- *
- * Copyright (C) 2013  Steven Lovegrove
- *                     George Washington University
- *
- * Permission is hereby granted, free of charge, to any person
- * obtaining a copy of this software and associated documentation
- * files (the "Software"), to deal in the Software without
- * restriction, including without limitation the rights to use,
- * copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following
- * conditions:
- *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
- * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- * OTHER DEALINGS IN THE SOFTWARE.
+/* 
+   This file is part of the Calibu Project.
+https://robotics.gwu.edu/git/calibu
+
+Copyright (C) 2013 George Washington University
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
  */
 
 #pragma once
@@ -34,213 +25,431 @@
 namespace calibu
 {
 
-//////////////////////////////////////////////////////////////////////////////
-// Linear Projection and Distortion
-//////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////
+    // Linear Projection and Distortion
+    //////////////////////////////////////////////////////////////////////////////
 
-template<typename ProjectionModel>
-class CameraModel
-        : public CameraModelBase
-{
-public:
-    static const unsigned NUM_PARAMS = ProjectionModel::NUM_PARAMS;
-    
+    template<typename ProjectionModel>
+        class CameraModel : public CameraModelBase
+    {
+        public:
+            static const unsigned NUM_PARAMS = ProjectionModel::NUM_PARAMS;
+
+            /////////////////////////////////////////////////////////////////////////
+            // Static Utilities
+            /////////////////////////////////////////////////////////////////////////
+
+            inline static std::string Name() 
+            { 
+                return ProjectionModel::Name(); 
+            }
+
+            /////////////////////////////////////////////////////////////////////////
+            /// Map from image coordinates to z=1 plane.
+            template<typename T> inline static Eigen::Matrix<T,2,1> Map(
+                    const Eigen::Matrix<T,2,1>& proj, //< Input:
+                    T const* params                   //< Input:
+                    )
+            {
+                return ProjectionModel::Map(proj, params);
+            }
+
+            /////////////////////////////////////////////////////////////////////////
+            /// Map from z=1 plane to image coordinates.
+            template<typename T> inline
+                static Eigen::Matrix<T,2,1> Unmap(
+                        const Eigen::Matrix<T,2,1>& img, //< Input:
+                        T const* params                  //< Input:
+                        )
+                {    
+                    return ProjectionModel::Unmap(img, params);
+                }
+
+            /////////////////////////////////////////////////////////////////////////
+            /// TODO doxygen comment    
+            static inline
+                Eigen::Matrix<double,2,3> dMap_dP(
+                        const Eigen::Vector3d& P, //< Input:
+                        const double* params      //< Input:
+                        )
+                {
+                    const Eigen::Vector2d p(P(0) / P(2), P(1) / P(2));
+                    const Eigen::Matrix<double,2,2> _dMap_dp = ProjectionModel::dMap_dp(p, params);
+
+                    Eigen::Matrix<double,2,3> _dp_dP;
+                    _dp_dP << 
+                        1.0/P(2), 0, -P(0)/(P(2)*P(2)),
+                        0, 1.0/P(2), -P(1)/(P(2)*P(2));
+
+                    return _dMap_dp * _dp_dP;
+                }    
+
+            /////////////////////////////////////////////////////////////////////////
+            /// Transfer point correspondence with known inv. depth to secondary camera
+            //  frame.  Points at infinity are supported (rho = 0) rhoPa =
+            //  unproject(unmap(pa))
+            template<typename T> inline
+                static Eigen::Matrix<T,2,1> Transfer3D(
+                        const T* camparam,                 //< Input:
+                        const Sophus::SE3Group<T>& T_ba,   //< Input:
+                        const Eigen::Matrix<T,3,1>& rhoPa, //< Input:
+                        const T rho                        //< Input:
+                        )
+                {
+                    // Inverse depth point in a transformed to b (homogeneous 2D)
+                    const Eigen::Matrix<T,3,1> Pb =
+                        T_ba.rotationMatrix() * rhoPa + rho * T_ba.translation();
+
+                    // to non-homogeneous 2D
+                    const Eigen::Matrix<T,2,1> proj( Pb(0)/Pb(2), Pb(1)/Pb(2) );
+
+                    // apply distortion and linear cam
+                    return Map(proj, camparam); 
+                }
+
+            /////////////////////////////////////////////////////////////////////////
+            /// Transfer point correspondence with known inv. depth to secondary camera
+            //  frame.  Points at infinity are supported (rho = 0) rhoPa =
+            //  unproject(unmap(pa))
+            template<typename T> inline
+                static Eigen::Matrix<T,2,1> Transfer3D(
+                        const T* camparam,                 //< Input:
+                        const Sophus::SE3Group<T>& T_ba,   //< Input:
+                        const Eigen::Matrix<T,3,1>& rhoPa, //< Input:
+                        const T rho,                       //< Input:
+                        bool& in_front                     //< Output:
+                        )
+                {
+                    // Inverse depth point in a transformed to b (homogeneous 2D)
+                    const Eigen::Matrix<T,3,1> Pb =
+                        T_ba.rotationMatrix() * rhoPa + rho * T_ba.translation();
+
+                    // to non-homogeneous 2D
+                    const Eigen::Matrix<T,2,1> proj( Pb(0)/Pb(2), Pb(1)/Pb(2) );
+                    in_front = Pb(2) > 0;
+
+                    // apply distortion and linear cam
+                    return Map(proj, camparam); 
+                }
+
+            ///////////////////////////////////////////////////////////////////////////
+            /// Transfer point correspondence with known inv. depth to secondary camera
+            //  frame.  Points at infinity are supported (rho = 0)
+            template<typename T> inline
+                static Eigen::Matrix<T,2,1> Transfer(
+                        const T* camparam,               //< Input:
+                        const Sophus::SE3Group<T>& T_ba, //< Input:
+                        const Eigen::Matrix<T,2,1>& pa,  //< Input:
+                        const T rho                      //< Input:
+                        )
+                {
+                    // rho*Pa (undo distortion, unproject, avoid division by inv depth)
+                    const Eigen::Matrix<T,3,1> rhoPa = Unproject<T>( Unmap<T>(pa, camparam)); 
+                    return Transfer3D(camparam, T_ba, rhoPa, rho);
+                }
+
+            ///////////////////////////////////////////////////////////////////////////
+            /// Transfer point correspondence with known inv. depth to secondary camera
+            //  frame.  Points at infinity are supported (rho = 0)
+            template<typename T> inline
+                static Eigen::Matrix<T,2,1> Transfer(
+                        const T* camparam,               //< Input:
+                        const Sophus::SE3Group<T>& T_ba, //< Input:
+                        const Eigen::Matrix<T,2,1>& pa,  //< Input:
+                        const T rho,                     //< Input:
+                        bool& in_front                   //< Output:
+                        )
+                {
+                    // rho*P1 (undo distortion, unproject, avoid division by inv depth)
+                    const Eigen::Matrix<T,3,1> rhoPa = Unproject<T>( Unmap<T>(pa, camparam) ); 
+                    return Transfer3D(camparam, T_ba, rhoPa, rho, in_front);
+                }
+
+            /////////////////////////////////////////////////////////////////////////
+            // Constructors
+            /////////////////////////////////////////////////////////////////////////
+
+            CameraModel()
+                : CameraModelBase(0,0), params(Eigen::Matrix<double,NUM_PARAMS,1>::Zero())
+            {
+            }    
+
+            CameraModel(int w, int h)
+                : CameraModelBase(w,h), params(Eigen::Matrix<double,NUM_PARAMS,1>::Zero())
+            {
+            }    
+
+            CameraModel(const Eigen::Matrix<double,NUM_PARAMS,1>& params)
+                : CameraModelBase(0,0), params(params)
+            {
+            }    
+
+            CameraModel(int w, int h, const Eigen::Matrix<double,NUM_PARAMS,1>& params)
+                : CameraModelBase(w,h), params(params)
+            {
+            }        
+
+            CameraModel(double* cam_params)
+                : CameraModelBase(0,0), params(Eigen::Map<Eigen::Matrix<double,NUM_PARAMS,1> >(cam_params))
+            {
+            }    
+
+            CameraModel(int w, int h, double* cam_params)
+                : CameraModelBase(w,h), params(Eigen::Map<Eigen::Matrix<double,NUM_PARAMS,1> >(cam_params))
+            {
+            }    
+
+            CameraModel(const CameraModel& other)
+                : CameraModelBase(other), params(other.params)
+            {
+            }    
+
+            ///////////////////////////////////////////////////////////////////////////
+            // Member functions
+            ///////////////////////////////////////////////////////////////////////////
+
+            Eigen::Matrix<double,NUM_PARAMS,1>& Params() {
+                return params;
+            }
+
+            const Eigen::Matrix<double,NUM_PARAMS,1>& Params() const {
+                return params;
+            }
+
+            const double* data() const {
+                return params.data();
+            }
+
+            double* data() {
+                return params.data();
+            }
+
+            inline Eigen::Vector2d Map(const Eigen::Vector2d& proj) const
+            {
+                return Map(proj, params.data());
+            }
+
+            inline Eigen::Vector2d Unmap(const Eigen::Vector2d& img) const
+            {
+                return Unmap(img, params.data());
+            }
+
+            inline Eigen::Matrix3d K() const
+            {
+                return ProjectionModel::MakeK(params.data());
+            }
+
+            inline Eigen::Matrix3d Kinv() const
+            {
+                return ProjectionModel::MakeKinv(params.data());
+            }
+
+            inline Eigen::Vector2d ProjectMap(const Eigen::Vector3d& P) const
+            {
+                return Map( Project(P) , params.data() );
+            }    
+
+            inline Eigen::Vector3d UnmapUnproject(const Eigen::Vector2d& p) const
+            {
+                return Unproject( Unmap( p, params.data()) );
+            }        
+
+            inline Eigen::Vector2d Transfer(const Sophus::SE3d& T_ba, const Eigen::Vector2d& pa, double rho) const
+            {
+                return Transfer<double>(data(), T_ba, pa, rho);
+            }
+
+            inline Eigen::Vector2d Transfer(const Sophus::SE3d& T_ba, const Eigen::Vector2d& pa, double rho, bool& in_front) const
+            {
+                return Transfer<double>(data(), T_ba, pa, rho, in_front);
+            }
+
+        protected:
+            Eigen::Matrix<double,NUM_PARAMS,1> params;
+    };
+
+
     ///////////////////////////////////////////////////////////////////////////
-    // Static Utilities
+    /// All cameras must implement this interface
+    class CameraModelInterface
+    {
+        public:
+            virtual ~CameraModelInterface(){}
+
+            virtual bool Init() = 0;
+
+            /// Return the perspective projection camera model "K" matrix    
+            virtual Eigen::Matrix3d K() = 0;
+
+            /// Return the perspective projection camera model inverse "K" matrix
+            virtual Eigen::Matrix3d Kinv() = 0;
+
+            virtual Eigen::Vector2d Map( 
+                    const Eigen::Vector2d& proj  //< Input:
+                    ) = 0;
+            virtual Eigen::Vector2d Unmap( 
+                    const Eigen::Vector2d& img //< Input:
+                    ) = 0;
+
+            //////////////////////////////////////////////////////////////////
+            /// Report camera model 
+            const char* Type()
+            {
+                return m_sType.c_str();
+            }
+
+        private:
+            int              m_nWidth;    //< Camera width, in pixels
+            int              m_nHeight;   //< Camera height, in pixels
+            std::string      m_sType;     //< Model type name.
+            std::string      m_sName;     //< particular camera name, e.g., "Left"
+            int              m_nVersion;  //< Calibu or MVL camera model version.
+            long int         m_nSerialNo; //< Camera serial number, if appropriate.
+            int              m_nIndex;    //< Camera index, for multi-camera systems.
+            Eigen::Matrix3d  m_RDF;       //< Define coordinate-frame convention from Right, Down, Forward vectors.
+
+    };
+
     ///////////////////////////////////////////////////////////////////////////
-    
-    inline static std::string Name() { return ProjectionModel::Name(); }
-    
-    // Map from image coordinates to z=1 plane
-    template<typename T> inline
-    static Eigen::Matrix<T,2,1> Map(const Eigen::Matrix<T,2,1>& proj, T const* params)
+    template <typename ProjectionModel>
+    class CameraModelSpecialization : public CameraModelInterface
     {
-        return ProjectionModel::Map(proj, params);
-    }
-    
-    // Map from z=1 plane to image coordinates
-    template<typename T> inline
-    static Eigen::Matrix<T,2,1> Unmap(const Eigen::Matrix<T,2,1>& img, T const* params)
-    {    
-        return ProjectionModel::Unmap(img, params);
-    }
-    
-    static inline
-    Eigen::Matrix<double,2,3> dMap_dP(const Eigen::Vector3d& P, const double* params)
-    {
-        const Eigen::Vector2d p(P(0) / P(2), P(1) / P(2));
-        const Eigen::Matrix<double,2,2> _dMap_dp = ProjectionModel::dMap_dp(p, params);
-        
-        Eigen::Matrix<double,2,3> _dp_dP;
-        _dp_dP << 
-                  1.0/P(2), 0, -P(0)/(P(2)*P(2)),
-                0, 1.0/P(2), -P(1)/(P(2)*P(2));
-        
-        return _dMap_dp * _dp_dP;
-    }    
-    
-    // Transfer point correspondence with known inv. depth to secondary camera frame.
-    // Points at infinity are supported (rho = 0)
-    // rhoPa = unproject(unmap(pa))
-    template<typename T> inline
-    static Eigen::Matrix<T,2,1> Transfer3D(const T* camparam, const Sophus::SE3Group<T>& T_ba, const Eigen::Matrix<T,3,1>& rhoPa, const T rho)
-    {            
-        // Inverse depth point in a transformed to b (homogeneous 2D)
-        const Eigen::Matrix<T,3,1> Pb =
-                T_ba.rotationMatrix() * rhoPa + rho * T_ba.translation();
-        
-        // to non-homogeneous 2D
-        const Eigen::Matrix<T,2,1> proj( Pb(0)/Pb(2), Pb(1)/Pb(2) );
-        
-        // apply distortion and linear cam
-        return Map(proj, camparam); 
-    }
-    
-    // Transfer point correspondence with known inv. depth to secondary camera frame.
-    // Points at infinity are supported (rho = 0)
-    // rhoPa = unproject(unmap(pa))
-    template<typename T> inline
-    static Eigen::Matrix<T,2,1> Transfer3D(const T* camparam, const Sophus::SE3Group<T>& T_ba, const Eigen::Matrix<T,3,1>& rhoPa, const T rho, bool& in_front)
-    {            
-        // Inverse depth point in a transformed to b (homogeneous 2D)
-        const Eigen::Matrix<T,3,1> Pb =
-                T_ba.rotationMatrix() * rhoPa + rho * T_ba.translation();
-        
-        // to non-homogeneous 2D
-        const Eigen::Matrix<T,2,1> proj( Pb(0)/Pb(2), Pb(1)/Pb(2) );
-        in_front = Pb(2) > 0;
-        
-        // apply distortion and linear cam
-        return Map(proj, camparam); 
-    }
-    
-    // Transfer point correspondence with known inv. depth to secondary camera frame.
-    // Points at infinity are supported (rho = 0)
-    template<typename T> inline
-    static Eigen::Matrix<T,2,1> Transfer(const T* camparam, const Sophus::SE3Group<T>& T_ba, const Eigen::Matrix<T,2,1>& pa, const T rho)
-    {
-        // rho*Pa (undo distortion, unproject, avoid division by inv depth)
-        const Eigen::Matrix<T,3,1> rhoPa = Unproject<T>(
-                    Unmap<T>(pa, camparam)
-                    );
-        
-        return Transfer3D(camparam, T_ba, rhoPa, rho);
-    }
-    
-    // Transfer point correspondence with known inv. depth to secondary camera frame.
-    // Points at infinity are supported (rho = 0)
-    template<typename T> inline
-    static Eigen::Matrix<T,2,1> Transfer(const T* camparam, const Sophus::SE3Group<T>& T_ba, const Eigen::Matrix<T,2,1>& pa, const T rho, bool& in_front)
-    {
-        // rho*P1 (undo distortion, unproject, avoid division by inv depth)
-        const Eigen::Matrix<T,3,1> rhoPa = Unproject<T>(
-                    Unmap<T>(pa, camparam)
-                    );
-        
-        return Transfer3D(camparam, T_ba, rhoPa, rho, in_front);
-    }
-    
+        public:
+            bool Init() { return true; }
+            ~CameraModelSpecialization(){}
+
+            //////////////////////////////////////////////////////////////////
+            /// Return the perspective projection camera model "K" matrix    
+            Eigen::Matrix3d K() 
+            {
+                return Eigen::Matrix3d();
+            }
+
+            //////////////////////////////////////////////////////////////////
+            /// Return the perspective projection camera model inverse "K" matrix
+            Eigen::Matrix3d Kinv()
+            {
+                return Eigen::Matrix3d();
+            }
+
+            //////////////////////////////////////////////////////////////////
+            Eigen::Vector2d Map( 
+                    const Eigen::Vector2d& proj  //< Input:
+                    )
+            {
+                return Eigen::Vector2d();
+            }
+
+            //////////////////////////////////////////////////////////////////
+            Eigen::Vector2d Unmap( 
+                    const Eigen::Vector2d& img //< Input:
+                    )
+            {
+                return Eigen::Vector2d();
+            }
+    };
+
+    typedef CameraModelSpecialization<Pinhole> PinholeCam;
+
     ///////////////////////////////////////////////////////////////////////////
-    // Constructors
+    CameraModelInterface* CameraModelFactory( const std::string sModelName )
+    {
+        if ( sModelName == "Pinhole" ){
+            return new PinholeCam();
+        }
+        return NULL;
+    }
+
     ///////////////////////////////////////////////////////////////////////////
-    
-    CameraModel()
-        : CameraModelBase(0,0), params(Eigen::Matrix<double,NUM_PARAMS,1>::Zero())
+    /// Simple pass-through to the specified camera model.
+    class MyCameraModel : public CameraModelInterface
     {
-    }    
-    
-    CameraModel(int w, int h)
-        : CameraModelBase(w,h), params(Eigen::Matrix<double,NUM_PARAMS,1>::Zero())
-    {
-    }    
-    
-    CameraModel(const Eigen::Matrix<double,NUM_PARAMS,1>& params)
-        : CameraModelBase(0,0), params(params)
-    {
-    }    
-    
-    CameraModel(int w, int h, const Eigen::Matrix<double,NUM_PARAMS,1>& params)
-        : CameraModelBase(w,h), params(params)
-    {
-    }        
-    
-    CameraModel(double* cam_params)
-        : CameraModelBase(0,0), params(Eigen::Map<Eigen::Matrix<double,NUM_PARAMS,1> >(cam_params))
-    {
-    }    
-    
-    CameraModel(int w, int h, double* cam_params)
-        : CameraModelBase(w,h), params(Eigen::Map<Eigen::Matrix<double,NUM_PARAMS,1> >(cam_params))
-    {
-    }    
-    
-    CameraModel(const CameraModel& other)
-        : CameraModelBase(other), params(other.params)
-    {
-    }    
-    
-    ///////////////////////////////////////////////////////////////////////////
-    // Member functions
-    ///////////////////////////////////////////////////////////////////////////
-    
-    Eigen::Matrix<double,NUM_PARAMS,1>& Params() {
-        return params;
-    }
-    
-    const Eigen::Matrix<double,NUM_PARAMS,1>& Params() const {
-        return params;
-    }
-    
-    const double* data() const {
-        return params.data();
-    }
-    
-    double* data() {
-        return params.data();
-    }
-    
-    inline Eigen::Vector2d Map(const Eigen::Vector2d& proj) const
-    {
-        return Map(proj, params.data());
-    }
-    
-    inline Eigen::Vector2d Unmap(const Eigen::Vector2d& img) const
-    {
-        return Unmap(img, params.data());
-    }
-    
-    inline Eigen::Matrix3d K() const
-    {
-        return ProjectionModel::MakeK(params.data());
-    }
-    
-    inline Eigen::Matrix3d Kinv() const
-    {
-        return ProjectionModel::MakeKinv(params.data());
-    }
-    
-    inline Eigen::Vector2d ProjectMap(const Eigen::Vector3d& P) const
-    {
-        return Map( Project(P) , params.data() );
-    }    
-    
-    inline Eigen::Vector3d UnmapUnproject(const Eigen::Vector2d& p) const
-    {
-        return Unproject( Unmap( p, params.data()) );
-    }        
-    
-    inline Eigen::Vector2d Transfer(const Sophus::SE3d& T_ba, const Eigen::Vector2d& pa, double rho) const
-    {
-        return Transfer<double>(data(), T_ba, pa, rho);
-    }
-    
-    inline Eigen::Vector2d Transfer(const Sophus::SE3d& T_ba, const Eigen::Vector2d& pa, double rho, bool& in_front) const
-    {
-        return Transfer<double>(data(), T_ba, pa, rho, in_front);
-    }
-    
-protected:
-    Eigen::Matrix<double,NUM_PARAMS,1> params;
-};
+        public:
+            ///////////////////////////////////////////////////////////////////
+            MyCameraModel()
+            {
+            }
+
+            ///////////////////////////////////////////////////////////////////
+            MyCameraModel( const std::string& sType )
+            {
+                Init( sType );
+            }
+
+            ///////////////////////////////////////////////////////////////////
+            bool Init()
+            {
+                return false; // never called
+            }
+
+            /// Report camera model 
+            const char* Type()
+            {
+                return m_pCam->Type();
+            }
+
+            bool Init( const std::string& sModelType )
+            {
+                if(m_pCam) {
+                    delete m_pCam;
+                    m_pCam = 0;
+                }
+                m_pCam = CameraModelFactory( sModelType );
+                if( m_pCam ){
+                    return m_pCam->Init();
+                }
+                return false; 
+            }
+
+
+            ///////////////////////////////////////////////////////////////////
+            /// Return the perspective projection camera model "K" matrix    
+            Eigen::Matrix3d K() 
+            {
+                return Eigen::Matrix3d();
+            }
+
+            ///////////////////////////////////////////////////////////////////
+            /// Return the perspective projection camera model inverse "K" matrix
+            Eigen::Matrix3d Kinv()
+            {
+                return Eigen::Matrix3d();
+            }
+
+            ///////////////////////////////////////////////////////////////////
+            Eigen::Vector2d Map( 
+                    const Eigen::Vector2d& proj  //< Input:
+                    )
+            {
+                return Eigen::Vector2d();
+            }
+
+            ///////////////////////////////////////////////////////////////////
+            Eigen::Vector2d Unmap( 
+                    const Eigen::Vector2d& img //< Input:
+                    )
+            {
+                return Eigen::Vector2d();
+            }
+
+            ///////////////////////////////////////////////////////////////////
+            /// Report camera model 
+            const char* Type() const
+            {
+                return m_pCam->Type();
+            }
+
+            ///////////////////////////////////////////////////////////////////
+            CameraModelInterface* InterfacePtr()
+            {
+                return m_pCam;
+            }
+
+        private:
+            CameraModelInterface*   m_pCam;
+    };
 
 }
+
+
+

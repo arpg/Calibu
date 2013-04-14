@@ -1,7 +1,7 @@
 #######################################################
 ## Sources
 
-set( INCDIR "../include/calibu")
+set( INCDIR "../include/calibu" )
 
 set(
     HEADERS
@@ -11,6 +11,7 @@ set(
     ${INCDIR}/calib/EigenCeresJetNumTraits.h
     ${INCDIR}/calib/LocalParamSe3.h
     ${INCDIR}/cam/CameraModel.h
+    ${INCDIR}/cam/CameraModelIO.h
     ${INCDIR}/cam/CameraModelBase.h
     ${INCDIR}/cam/DistortionModel.h
     ${INCDIR}/cam/ProjectionModel.h
@@ -35,6 +36,7 @@ set(
     ${INCDIR}/utils/Rectangle.h
     ${INCDIR}/utils/Utils.h
     ${INCDIR}/utils/PlaneBasis.h
+    ${INCDIR}/utils/Xml.h
 )
 
 SET(
@@ -51,34 +53,38 @@ SET(
     target/TargetGridDot.cpp
     target/TargetRandomDot.cpp
     utils/Utils.cpp
+    utils/Xml.cpp
+    utils/XmlError.cpp
+    utils/XmlParser.cpp
 )
 
 #######################################################
 ## Find required dependencies
 
 # git://github.com/stevenlovegrove/Sophus.git
-find_package(Sophus REQUIRED)
-find_package(OpenCV REQUIRED)
+find_package( Sophus REQUIRED )
+find_package( OpenCV REQUIRED )
+find_package( ZLIB REQUIRED )
 
 ## Apply project include directories
-list(APPEND USER_INC  "${PROJECT_SOURCE_DIR}/include;${CMAKE_CURRENT_BINARY_DIR}/include" )
-list(APPEND USER_INC   ${Sophus_INCLUDE_DIR} )
+list( APPEND USER_INC  "${PROJECT_SOURCE_DIR}/include;${CMAKE_CURRENT_BINARY_DIR}/include" )
+list( APPEND USER_INC   ${Sophus_INCLUDE_DIR} )
 
-list(APPEND LINK_LIBS  ${OpenCV2_LIBRARIES} )
-list(APPEND INTERNAL_INC ${OpenCV2_INCLUDE_DIRS} )
+list( APPEND LINK_LIBS  ${OpenCV2_LIBRARIES} ${ZLIB_LIBRARIES} )
+list( APPEND INTERNAL_INC ${OpenCV2_INCLUDE_DIRS} ${ZLIB_INCLUDE_DIR} )
 
 include_directories( ${INTERNAL_INC} )
 include_directories( ${USER_INC} )
-link_libraries(${LINK_LIBS})
-link_directories(${LIB_DIRS})
+link_libraries( ${LINK_LIBS} )
+link_directories( ${LIB_DIRS} )
 
-add_library(${LIBRARY_NAME} SHARED ${HEADERS} ${SOURCES})
+add_library( ${LIBRARY_NAME} SHARED ${HEADERS} ${SOURCES} )
 
 #######################################################
 ## Create configure file for inclusion in library
 
-IF(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-   SET(_OSX_ 1)
+IF( ${CMAKE_SYSTEM_NAME} MATCHES "Darwin" )
+   SET( _OSX_ 1 )
 ENDIF()
 
 configure_file(
@@ -92,3 +98,4 @@ get_target_property( LIB_LOC ${LIBRARY_NAME} LOCATION )
 CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/CalibuConfig.cmake.in
     ${CMAKE_CURRENT_BINARY_DIR}/CalibuConfig.cmake @ONLY IMMEDIATE )
 EXPORT( PACKAGE Calibu )
+

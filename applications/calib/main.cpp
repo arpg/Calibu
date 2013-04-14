@@ -42,17 +42,17 @@ int main( int argc, char** argv)
             throw pangolin::VideoException("Video channels must be GRAY8 format. Use Convert:// or fmt=GRAY8 option");
         }
     }
-    
+
     // Make grid of 3d points
     const double grid_spacing = 0.02;
     const Eigen::Vector2i grid_size(19,10);
     const Eigen::Vector2i grid_center(9, 5);
     Calibrator<Fov> calibrator;   
-    
+ 
     // Setup GUI
     const int PANEL_WIDTH = 150;
     pangolin::CreateGlutWindowAndBind("Main",(N+1)*w/2.0+PANEL_WIDTH,h/2.0);
-    
+ 
     // Make things look prettier...        
     glEnable(GL_LINE_SMOOTH);
     glHint( GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST );
@@ -67,27 +67,27 @@ int main( int argc, char** argv)
     pangolin::OpenGlRenderState stacks;
     stacks.SetProjectionMatrix(pangolin::ProjectionMatrixRDF_TopLeft(640,480,420,420,320,240,0.01,1E6));
     stacks.SetModelViewMatrix(pangolin::ModelViewLookAtRDF(0,0,-0.5, 0,0,0, 0, -1, 0) );
-    
+ 
     // Create viewport for video with fixed aspect
     pangolin::CreatePanel("ui").SetBounds(1.0,0.0,0,pangolin::Attach::Pix(PANEL_WIDTH));
-    
+ 
     pangolin::View& container = pangolin::CreateDisplay()
             .SetBounds(1.0,0.0, pangolin::Attach::Pix(PANEL_WIDTH),1.0)
             .SetLayout(pangolin::LayoutEqual);
-    
+ 
     // Add view for each camera stream
     for(size_t c=0; c < N; ++c) {
         container.AddDisplay( pangolin::CreateDisplay().SetAspect(w/(float)h) );
     }
-    
+ 
     // Add 3d view, attach input handler
     pangolin::Handler3D handler(stacks);
     pangolin::View& v3D = pangolin::CreateDisplay().SetAspect((float)w/h).SetHandler(&handler);
     container.AddDisplay(v3D);
-        
+ 
     // OpenGl Texture for video frame
     pangolin::GlTexture tex(w,h,GL_LUMINANCE8);
-            
+
     pangolin::Var<bool> reset("ui.reset", false, false);
     pangolin::Var<bool> step("ui.step", false, false);
     pangolin::Var<bool> run("ui.run", false, true);
