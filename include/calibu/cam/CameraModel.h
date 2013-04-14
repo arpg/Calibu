@@ -279,6 +279,9 @@ namespace calibu
     class CameraModelInterface
     {
         public:
+            CameraModelInterface() : m_nWidth(0), m_nHeight(0) {}
+            CameraModelInterface( int nWidth, int nHeight) :
+                m_nWidth(nWidth), m_nHeight(nHeight) {}
             virtual ~CameraModelInterface(){}
 
             virtual bool Init() = 0;
@@ -297,25 +300,125 @@ namespace calibu
                     const Eigen::Vector2d& img //< Input:
                     ) = 0;
 
-            /*
             /// getters/setters to implement:
-//            virtual int& Width() = 0;
+            /*
             virtual int Width() = 0;
-//            virtual int& Height() = 0;
             virtual int Height() = 0;
             virtual void SetImageDimensions( int nWidth, int nHeight ) = 0;
-            */
+
             virtual const char* Type() = 0;
             virtual void SetType( const std::string& sType ) = 0;
+ 
             virtual int Version() = 0;
             virtual void SetVersion( int nVersion ) = 0;
-            /*
-            virtual const char* Name() = 0;
-            virtual void SetName( const std::string& sName ) = 0;
-            virtual void SetSerialNumber( const long int nSerialNo ) = 0;
-            virtual void SetIndex( const int nIndex ) = 0;
-            virtual Eigen::Matrix3d RDF() = 0;
             */
+            
+            //            virtual Eigen::Matrix3d RDF() = 0;
+
+            //////////////////////////////////////////////////////////////////
+            /// Image dimensions
+            int Width()
+            {
+                return m_nWidth;
+            }
+
+            //////////////////////////////////////////////////////////////////
+            /// Image dimensions
+            int Height()
+            {
+                return m_nHeight;
+            }
+
+            //////////////////////////////////////////////////////////////////
+            /// Set image dimensions
+            void SetImageDimensions(
+                    int nWidth,  //< Input:
+                    int nHeight  //< Input:
+                    )
+            {
+                m_nWidth = nWidth;
+                m_nHeight = nHeight;
+            }
+
+            //////////////////////////////////////////////////////////////////
+            const char* Name()
+            {
+                return m_sName.c_str();
+            }
+
+            //////////////////////////////////////////////////////////////////
+            void SetName( const std::string& sName )
+            {
+                m_sName = sName;
+            }
+
+            //////////////////////////////////////////////////////////////////
+            /// Report camera model 
+            const char* Type()
+            {
+                return m_sType.c_str();
+            }
+
+            //////////////////////////////////////////////////////////////////
+            /// Set the camera model type.
+            void SetType( const std::string& sType )
+            {
+                m_sType = sType;
+            }
+
+            //////////////////////////////////////////////////////////////////
+            /// Report camera model version number.
+            int Version()
+            {
+                return m_nVersion;
+            }
+
+            //////////////////////////////////////////////////////////////////
+            /// Set the camera veriona nuber.
+            void SetVersion( int nVersion )
+            {
+                m_nVersion = nVersion;
+            }
+
+            //////////////////////////////////////////////////////////////////
+            /// Get the camera serial number.
+            long int SerialNumber()
+            {
+                return m_nSerialNo;
+            }
+
+            //////////////////////////////////////////////////////////////////
+            /// Set the camera serial number.
+            void SetSerialNumber( const long int nSerialNo )
+            {
+                m_nSerialNo = nSerialNo;
+            }
+
+            //////////////////////////////////////////////////////////////////
+            /// Get the camera index (for multi-camera rigs).
+            int Index()
+            {
+                return m_nIndex;
+            }
+
+            //////////////////////////////////////////////////////////////////
+            /// Set the camera index (for multi-camera rigs).
+            void SetIndex( const int nIndex )
+            {
+                m_nIndex = nIndex;
+            }
+
+        private:
+            int              m_nWidth;    //< Camera width, in pixels
+            int              m_nHeight;   //< Camera height, in pixels
+            std::string      m_sType;     //< Model type name.
+            std::string      m_sName;     //< particular camera name, e.g., "Left"
+            int              m_nVersion;  //< Calibu or MVL camera model version.
+            long int         m_nSerialNo; //< Camera serial number, if appropriate.
+            int              m_nIndex;    //< Camera index, for multi-camera systems.
+            Eigen::Matrix3d  m_RDF;       //< Define coordinate-frame convention from Right, Down, Forward vectors.
+
+
     };
 
 
@@ -330,11 +433,6 @@ namespace calibu
             /////////////////////////////////////////////////////////////////////////
             // Static Utilities
             /////////////////////////////////////////////////////////////////////////
-
-            inline static std::string Name() 
-            { 
-                return ProjectionModel::Name(); 
-            }
 
             /////////////////////////////////////////////////////////////////////////
             /// Map from image coordinates to z=1 plane.
@@ -463,15 +561,13 @@ namespace calibu
             // Constructors
             /////////////////////////////////////////////////////////////////////////
             CameraModelSpecialization() :
-                m_nWidth(0),
-                m_nHeight(0),
+                CameraModelInterface(0,0),
                 vParams( Eigen::Matrix<double,NUM_PARAMS,1>::Zero() )
             {
             }
 
             CameraModelSpecialization( int nWidth, int nHeight ) :
-                m_nWidth(nWidth),
-                m_nHeight(nHeight),
+                CameraModelInterface(nWidth,nHeight),
                 vParams( Eigen::Matrix<double,NUM_PARAMS,1>::Zero() )
             {
             }
@@ -548,111 +644,12 @@ namespace calibu
             }
 
             //////////////////////////////////////////////////////////////////
-            /// Image dimensions
-            int& Width() 
-            {
-                return m_nWidth;
-            }
-
-            //////////////////////////////////////////////////////////////////
-            /// Image dimensions
-            int Width() const
-            {
-                return m_nWidth;
-            }
-
-            //////////////////////////////////////////////////////////////////
-            /// Image dimensions
-            int& Height()
-            {
-                return m_nHeight;
-            }
-
-            //////////////////////////////////////////////////////////////////
-            /// Image dimensions
-            int Height() const
-            {
-                return m_nHeight;
-            }
-
-            //////////////////////////////////////////////////////////////////
-            /// Set image dimensions
-            void SetImageDimensions(
-                    int nWidth,  //< Input:
-                    int nHeight  //< Input:
-                    )
-            {
-                m_nWidth = nWidth;
-                m_nHeight = nHeight;
-            }
-
-            //////////////////////////////////////////////////////////////////
-            /// Report camera model 
-            const char* Type()
-            {
-                return m_sType.c_str();
-            }
-
-            //////////////////////////////////////////////////////////////////
-            /// Set the camera model type.
-            void SetType( const std::string& sType )
-            {
-                m_sType = sType;
-            }
-
-            //////////////////////////////////////////////////////////////////
-            /// Report camera model version number.
-            int Version()
-            {
-                return m_nVersion;
-            }
-
-            //////////////////////////////////////////////////////////////////
-            /// Set the camera veriona nuber.
-            void SetVersion( int nVersion )
-            {
-                m_nVersion = nVersion;
-            }
-
-
-            //////////////////////////////////////////////////////////////////
-            /// Set the camera model name. e.g., "Left"
-            void SetName( const std::string& sName )
-            {
-                m_sName = sName;
-            }
-
-            //////////////////////////////////////////////////////////////////
-            /// Set the camera serial number.
-            void SetSerialNumber( const long int nSerialNo )
-            {
-                m_nSerialNo = nSerialNo;
-            }
-
-            //////////////////////////////////////////////////////////////////
-            /// Set the camera index (for multi-camera rigs).
-            void SetIndex( const int nIndex )
-            {
-                m_nIndex = nIndex;
-            }
-
-            //////////////////////////////////////////////////////////////////
             /// Set the camera index (for multi-camera rigs).
             /// Return 3x3 RDF matrix, describing the coordinate-frame convention.
             Eigen::Matrix3d RDF() const
             {
                 return m_RDF;
             }
-
-        private:
-            int              m_nWidth;    //< Camera width, in pixels
-            int              m_nHeight;   //< Camera height, in pixels
-            std::string      m_sType;     //< Model type name.
-            std::string      m_sName;     //< particular camera name, e.g., "Left"
-            int              m_nVersion;  //< Calibu or MVL camera model version.
-            long int         m_nSerialNo; //< Camera serial number, if appropriate.
-            int              m_nIndex;    //< Camera index, for multi-camera systems.
-            Eigen::Matrix3d  m_RDF;       //< Define coordinate-frame convention from Right, Down, Forward vectors.
 
         protected:
             Eigen::Matrix<double,NUM_PARAMS,1> vParams;
@@ -747,6 +744,30 @@ namespace calibu
             {
                 return Eigen::Vector2d();
             }
+/*
+            //////////////////////////////////////////////////////////////////
+            /// Image dimensions
+            int Width()
+            {
+                return m_pCam->Width();
+            }
+
+            //////////////////////////////////////////////////////////////////
+            /// Image dimensions
+            int Height()
+            {
+                return m_pCam->Height();
+            }
+
+            //////////////////////////////////////////////////////////////////
+            /// Set image dimensions
+            void SetImageDimensions(
+                    int nWidth,  //< Input:
+                    int nHeight  //< Input:
+                    )
+            {
+                m_pCam->SetImageDimensions( nWidth, nHeight);
+            }
 
             ///////////////////////////////////////////////////////////////////
             /// Report camera model 
@@ -774,6 +795,7 @@ namespace calibu
             {
                 m_pCam->SetVersion( nVersion );
             }
+            */
 
             ///////////////////////////////////////////////////////////////////
             CameraModelInterface* InterfacePtr()
