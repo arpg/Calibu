@@ -269,6 +269,11 @@ namespace calibu
     };
 
 
+
+
+
+
+
     ///////////////////////////////////////////////////////////////////////////
     /// All cameras must implement this interface
     class CameraModelInterface
@@ -287,36 +292,230 @@ namespace calibu
             virtual Eigen::Vector2d Map( 
                     const Eigen::Vector2d& proj  //< Input:
                     ) = 0;
+
             virtual Eigen::Vector2d Unmap( 
                     const Eigen::Vector2d& img //< Input:
                     ) = 0;
 
-            //////////////////////////////////////////////////////////////////
-            /// Report camera model 
-            const char* Type()
-            {
-                return m_sType.c_str();
-            }
-
-        private:
-            int              m_nWidth;    //< Camera width, in pixels
-            int              m_nHeight;   //< Camera height, in pixels
-            std::string      m_sType;     //< Model type name.
-            std::string      m_sName;     //< particular camera name, e.g., "Left"
-            int              m_nVersion;  //< Calibu or MVL camera model version.
-            long int         m_nSerialNo; //< Camera serial number, if appropriate.
-            int              m_nIndex;    //< Camera index, for multi-camera systems.
-            Eigen::Matrix3d  m_RDF;       //< Define coordinate-frame convention from Right, Down, Forward vectors.
-
+            /*
+            /// getters/setters to implement:
+//            virtual int& Width() = 0;
+            virtual int Width() = 0;
+//            virtual int& Height() = 0;
+            virtual int Height() = 0;
+            virtual void SetImageDimensions( int nWidth, int nHeight ) = 0;
+            */
+            virtual const char* Type() = 0;
+            virtual void SetType( const std::string& sType ) = 0;
+            virtual int Version() = 0;
+            virtual void SetVersion( int nVersion ) = 0;
+            /*
+            virtual const char* Name() = 0;
+            virtual void SetName( const std::string& sName ) = 0;
+            virtual void SetSerialNumber( const long int nSerialNo ) = 0;
+            virtual void SetIndex( const int nIndex ) = 0;
+            virtual Eigen::Matrix3d RDF() = 0;
+            */
     };
 
+
     ///////////////////////////////////////////////////////////////////////////
+    /// This class allows templated specialized implementations.
     template <typename ProjectionModel>
     class CameraModelSpecialization : public CameraModelInterface
     {
         public:
+            static const unsigned NUM_PARAMS = ProjectionModel::NUM_PARAMS;
+
+            /////////////////////////////////////////////////////////////////////////
+            // Static Utilities
+            /////////////////////////////////////////////////////////////////////////
+
+            inline static std::string Name() 
+            { 
+                return ProjectionModel::Name(); 
+            }
+
+            /////////////////////////////////////////////////////////////////////////
+            /// Map from image coordinates to z=1 plane.
+            template<typename T> inline static Eigen::Matrix<T,2,1> Map(
+                    const Eigen::Matrix<T,2,1>& proj, //< Input:
+                    T const* params                   //< Input:
+                    )
+            {
+                return ProjectionModel::Map(proj, params);
+            }
+
+            /////////////////////////////////////////////////////////////////////////
+            /// Map from z=1 plane to image coordinates.
+            template<typename T> inline
+                static Eigen::Matrix<T,2,1> Unmap(
+                        const Eigen::Matrix<T,2,1>& img, //< Input:
+                        T const* params                  //< Input:
+                        )
+                {    
+                    return ProjectionModel::Unmap(img, params);
+                }
+
+            /////////////////////////////////////////////////////////////////////////
+            /// TODO doxygen comment    
+            static inline
+                Eigen::Matrix<double,2,3> dMap_dP(
+                        const Eigen::Vector3d& P, //< Input:
+                        const double* params      //< Input:
+                        )
+                {
+                    const Eigen::Vector2d p(P(0) / P(2), P(1) / P(2));
+                    const Eigen::Matrix<double,2,2> _dMap_dp = ProjectionModel::dMap_dp(p, params);
+
+                    Eigen::Matrix<double,2,3> _dp_dP;
+                    _dp_dP << 
+                        1.0/P(2), 0, -P(0)/(P(2)*P(2)),
+                        0, 1.0/P(2), -P(1)/(P(2)*P(2));
+
+                    return _dMap_dp * _dp_dP;
+                }    
+
+            /////////////////////////////////////////////////////////////////////////
+            /// Transfer point correspondence with known inv. depth to secondary 
+            //  camera frame.  Points at infinity are supported (rho = 0) rhoPa =
+            //  unproject(unmap(pa))
+            template<typename T> inline
+                static Eigen::Matrix<T,2,1> Transfer3D(
+                        const T* camparam,                 //< Input:
+                        const Sophus::SE3Group<T>& T_ba,   //< Input:
+                        const Eigen::Matrix<T,3,1>& rhoPa, //< Input:
+                        const T rho                        //< Input:
+                        )
+                {
+                    // Inverse depth point in a transformed to b (homogeneous 2D)
+                    const Eigen::Matrix<T,3,1> Pb =
+                        T_ba.rotationMatrix() * rhoPa + rho * T_ba.translation();
+
+                    // to non-homogeneous 2D
+                    const Eigen::Matrix<T,2,1> proj( Pb(0)/Pb(2), Pb(1)/Pb(2) );
+
+                    // apply distortion and linear cam
+                    return Map(proj, camparam); 
+                }
+
+            /////////////////////////////////////////////////////////////////////////
+            /// Transfer point correspondence with known inv. depth to secondary 
+            //  camera frame.  Points at infinity are supported (rho = 0) rhoPa =
+            //  unproject(unmap(pa))
+            template<typename T> inline
+                static Eigen::Matrix<T,2,1> Transfer3D(
+                        const T* camparam,                 //< Input:
+                        const Sophus::SE3Group<T>& T_ba,   //< Input:
+                        const Eigen::Matrix<T,3,1>& rhoPa, //< Input:
+                        const T rho,                       //< Input:
+                        bool& in_front                     //< Output:
+                        )
+                {
+                    // Inverse depth point in a transformed to b (homogeneous 2D)
+                    const Eigen::Matrix<T,3,1> Pb =
+                        T_ba.rotationMatrix() * rhoPa + rho * T_ba.translation();
+
+                    // to non-homogeneous 2D
+                    const Eigen::Matrix<T,2,1> proj( Pb(0)/Pb(2), Pb(1)/Pb(2) );
+                    in_front = Pb(2) > 0;
+
+                    // apply distortion and linear cam
+                    return Map(proj, camparam); 
+                }
+
+            ///////////////////////////////////////////////////////////////////////////
+            /// Transfer point correspondence with known inv. depth to secondary camera
+            //  frame.  Points at infinity are supported (rho = 0)
+            template<typename T> inline
+                static Eigen::Matrix<T,2,1> Transfer(
+                        const T* camparam,               //< Input:
+                        const Sophus::SE3Group<T>& T_ba, //< Input:
+                        const Eigen::Matrix<T,2,1>& pa,  //< Input:
+                        const T rho                      //< Input:
+                        )
+                {
+                    // rho*Pa (undo distortion, unproject, avoid division by inv depth)
+                    const Eigen::Matrix<T,3,1> rhoPa = Unproject<T>( Unmap<T>(pa, camparam)); 
+                    return Transfer3D(camparam, T_ba, rhoPa, rho);
+                }
+
+            ///////////////////////////////////////////////////////////////////////////
+            /// Transfer point correspondence with known inv. depth to secondary camera
+            //  frame.  Points at infinity are supported (rho = 0)
+            template<typename T> inline
+                static Eigen::Matrix<T,2,1> Transfer(
+                        const T* camparam,               //< Input:
+                        const Sophus::SE3Group<T>& T_ba, //< Input:
+                        const Eigen::Matrix<T,2,1>& pa,  //< Input:
+                        const T rho,                     //< Input:
+                        bool& in_front                   //< Output:
+                        )
+                {
+                    // rho*P1 (undo distortion, unproject, avoid division by inv depth)
+                    const Eigen::Matrix<T,3,1> rhoPa = Unproject<T>( Unmap<T>(pa, camparam) ); 
+                    return Transfer3D(camparam, T_ba, rhoPa, rho, in_front);
+                }
+
+
+
+            /////////////////////////////////////////////////////////////////////////
+            // Constructors
+            /////////////////////////////////////////////////////////////////////////
+            CameraModelSpecialization() :
+                m_nWidth(0),
+                m_nHeight(0),
+                vParams( Eigen::Matrix<double,NUM_PARAMS,1>::Zero() )
+            {
+            }
+
+            CameraModelSpecialization( int nWidth, int nHeight ) :
+                m_nWidth(nWidth),
+                m_nHeight(nHeight),
+                vParams( Eigen::Matrix<double,NUM_PARAMS,1>::Zero() )
+            {
+            }
+
+
+            /*
+            CameraModelSpecialization(int w, int h)
+                : CameraModelBase(w,h), params(Eigen::Matrix<double,NUM_PARAMS,1>::Zero())
+            {
+            }    
+
+            CameraModelSpecialization(const Eigen::Matrix<double,NUM_PARAMS,1>& params)
+                : CameraModelBase(0,0), params(params)
+            {
+            }    
+
+            CameraModelSpecialization(int w, int h, const Eigen::Matrix<double,NUM_PARAMS,1>& params)
+                : CameraModelBase(w,h), params(params)
+            {
+            }        
+
+            CameraModelSpecialization( double* cam_params)
+                : CameraModelBase(0,0), params(Eigen::Map<Eigen::Matrix<double,NUM_PARAMS,1> >(cam_params))
+            {
+            }    
+
+            CameraModelSpecialization(int w, int h, double* cam_params)
+                : CameraModelBase(w,h), params(Eigen::Map<Eigen::Matrix<double,NUM_PARAMS,1> >(cam_params))
+            {
+            }    
+
+            CameraModelSpecialization(const CameraModelSpecialization& other)
+                : CameraModelBase(other), params(other.params)
+            {
+            }    
+            */
+
+
+            //////////////////////////////////////////////////////////////////
+            //////////////////////////////////////////////////////////////////
+            //////////////////////////////////////////////////////////////////
             bool Init() { return true; }
             ~CameraModelSpecialization(){}
+
 
             //////////////////////////////////////////////////////////////////
             /// Return the perspective projection camera model "K" matrix    
@@ -347,7 +546,124 @@ namespace calibu
             {
                 return Eigen::Vector2d();
             }
+
+            //////////////////////////////////////////////////////////////////
+            /// Image dimensions
+            int& Width() 
+            {
+                return m_nWidth;
+            }
+
+            //////////////////////////////////////////////////////////////////
+            /// Image dimensions
+            int Width() const
+            {
+                return m_nWidth;
+            }
+
+            //////////////////////////////////////////////////////////////////
+            /// Image dimensions
+            int& Height()
+            {
+                return m_nHeight;
+            }
+
+            //////////////////////////////////////////////////////////////////
+            /// Image dimensions
+            int Height() const
+            {
+                return m_nHeight;
+            }
+
+            //////////////////////////////////////////////////////////////////
+            /// Set image dimensions
+            void SetImageDimensions(
+                    int nWidth,  //< Input:
+                    int nHeight  //< Input:
+                    )
+            {
+                m_nWidth = nWidth;
+                m_nHeight = nHeight;
+            }
+
+            //////////////////////////////////////////////////////////////////
+            /// Report camera model 
+            const char* Type()
+            {
+                return m_sType.c_str();
+            }
+
+            //////////////////////////////////////////////////////////////////
+            /// Set the camera model type.
+            void SetType( const std::string& sType )
+            {
+                m_sType = sType;
+            }
+
+            //////////////////////////////////////////////////////////////////
+            /// Report camera model version number.
+            int Version()
+            {
+                return m_nVersion;
+            }
+
+            //////////////////////////////////////////////////////////////////
+            /// Set the camera veriona nuber.
+            void SetVersion( int nVersion )
+            {
+                m_nVersion = nVersion;
+            }
+
+
+            //////////////////////////////////////////////////////////////////
+            /// Set the camera model name. e.g., "Left"
+            void SetName( const std::string& sName )
+            {
+                m_sName = sName;
+            }
+
+            //////////////////////////////////////////////////////////////////
+            /// Set the camera serial number.
+            void SetSerialNumber( const long int nSerialNo )
+            {
+                m_nSerialNo = nSerialNo;
+            }
+
+            //////////////////////////////////////////////////////////////////
+            /// Set the camera index (for multi-camera rigs).
+            void SetIndex( const int nIndex )
+            {
+                m_nIndex = nIndex;
+            }
+
+            //////////////////////////////////////////////////////////////////
+            /// Set the camera index (for multi-camera rigs).
+            /// Return 3x3 RDF matrix, describing the coordinate-frame convention.
+            Eigen::Matrix3d RDF() const
+            {
+                return m_RDF;
+            }
+
+        private:
+            int              m_nWidth;    //< Camera width, in pixels
+            int              m_nHeight;   //< Camera height, in pixels
+            std::string      m_sType;     //< Model type name.
+            std::string      m_sName;     //< particular camera name, e.g., "Left"
+            int              m_nVersion;  //< Calibu or MVL camera model version.
+            long int         m_nSerialNo; //< Camera serial number, if appropriate.
+            int              m_nIndex;    //< Camera index, for multi-camera systems.
+            Eigen::Matrix3d  m_RDF;       //< Define coordinate-frame convention from Right, Down, Forward vectors.
+
+        protected:
+            Eigen::Matrix<double,NUM_PARAMS,1> vParams;
     };
+
+
+
+
+
+
+
 
     typedef CameraModelSpecialization<Pinhole> PinholeCam;
 
@@ -437,6 +753,26 @@ namespace calibu
             const char* Type() const
             {
                 return m_pCam->Type();
+            }
+
+            ///////////////////////////////////////////////////////////////////
+            void SetType( const std::string& sType )
+            {
+                m_pCam->SetType( sType );
+            }
+
+            //////////////////////////////////////////////////////////////////
+            /// Report camera model version number.
+            int Version()
+            {
+                return m_pCam->Version();
+            }
+
+            //////////////////////////////////////////////////////////////////
+            /// Set the camera veriona nuber.
+            void SetVersion( int nVersion )
+            {
+                m_pCam->SetVersion( nVersion );
             }
 
             ///////////////////////////////////////////////////////////////////
