@@ -385,7 +385,8 @@ namespace calibu
         return NULL;
     }
 
-
+    ///////////////////////////////////////////////////////////////////////////
+    /// Generic CameraModel class.  Manual polymorphism.
     ///////////////////////////////////////////////////////////////////////////
     class CameraModel : public CameraModelInterface
     {
@@ -480,7 +481,7 @@ namespace calibu
             {
                 m_pCam->SetImageDimensions( nWidth, nHeight );
             }
-            
+
             std::string Name()
             {
                 return m_pCam->Name();    
