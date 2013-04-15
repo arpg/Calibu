@@ -95,47 +95,61 @@ std::array<Eigen::MatrixXi,4> MakePatternGroup(int r, int c, uint32_t seed)
 
 int HammingDistance(const Eigen::MatrixXi& M, const Eigen::MatrixXi& m, int r, int c)
 {
-    int sum = 0;
+    int diff = 0;
     for(int mr=0; mr<m.rows(); ++mr) {
         for(int mc=0; mc<m.cols(); ++mc) {
             const int vm = m(mr,mc);
             const int Mr = mr+r;
             const int Mc = mc+c;
             if(vm >=0 && 0 <= Mr && Mr < M.rows() && 0 <= Mc && Mc < M.cols() ) {
-                sum += abs( M(Mr,Mc) - vm);
+                diff += abs( M(Mr,Mc) - vm);
             }
         }
-    } 
-    return sum;
+    }
+    return diff;
 }
 
 
-int NumExactMatches(const Eigen::MatrixXi& M, const Eigen::MatrixXi& m)
+int NumExactMatches(const Eigen::MatrixXi& M, const Eigen::MatrixXi& m, int& best_score, int& best_r, int& best_c)
 {
-    const Eigen::Vector2i num( 1+M.rows() - m.rows(), 1+M.cols() - m.cols());
-    
-    int num_zeros = 0;
-    
-    for(int r=0; r < num(0); ++r ) {
-        for(int c=0; c < num(1); ++c) {
-            const Eigen::Vector2i t(r,c);
-            const int corr = HammingDistance(M, m, r,c );
-            if(corr==0)  ++num_zeros;
+    const int border = std::min((int)std::min(m.rows(),m.cols())-2, 2);
+    best_score = std::numeric_limits<int>::max();
+    const Eigen::Vector2i rcmax( 2*border + M.rows() - m.rows(), 2*border + M.cols() - m.cols());
+    int num_zeros = 0;    
+    for(int r=-border; r < rcmax(0); ++r ) {
+        for(int c=-border; c < rcmax(1); ++c) {
+            const int hd = HammingDistance(M, m, r,c );
+            if(hd < best_score) {
+                best_score = hd;
+                best_r = r;
+                best_c = c;
+            }
+            if(hd==0) {
+                ++num_zeros;
+            }
         }
     }
     
     return num_zeros;
 }
 
-int NumExactMatches(const std::array<Eigen::MatrixXi,4>& PG, const Eigen::MatrixXi& m)
+int NumExactMatches(const std::array<Eigen::MatrixXi,4>& PG, const Eigen::MatrixXi& m, int& best_score, int& best_g, int& best_r, int& best_c)
 {
-    int num_zeroes = 0;
+    best_score = std::numeric_limits<int>::max();
+    int num_exact = 0;
     
-    for(int i=0; i<4; ++i) {
-        num_zeroes += NumExactMatches(PG[i], m);
+    for(int g=0; g<4; ++g) {
+        int pgr, pgc, pgs;
+        num_exact += NumExactMatches(PG[g], m, pgs,pgr,pgc);
+        if(pgs < best_score) {
+            best_score = pgs;
+            best_g = g;
+            best_r = pgr;
+            best_c = pgc;
+        }
     }
     
-    return num_zeroes;
+    return num_exact;
 }
 
 int AutoCorrelation(const std::array<Eigen::MatrixXi,4>& PG, int minr, int minc )
@@ -156,7 +170,8 @@ int AutoCorrelation(const std::array<Eigen::MatrixXi,4>& PG, int minr, int minc 
                 for(int c=0; c < MC; ++c ) {
                     const Eigen::MatrixXi m = M.block(r,c,nr,nc);
                     // Don't count the known good match (-1)
-                    num_bad_matches += NumExactMatches(PG, m) - 1;
+                    int bs,bg,br,bc;
+                    num_bad_matches += NumExactMatches(PG, m, bs,bg,br,bc) - 1;
                 }
             }
         }
@@ -182,7 +197,8 @@ int AutoCorrelationMinArea(const std::array<Eigen::MatrixXi,4>& PG )
                 for(int c=0; c < MC; ++c ) {
                     const Eigen::MatrixXi m = M.block(r,c,nr,nc);
                     // Don't count the known good match (-1)
-                    if(NumExactMatches(PG, m) > 1) {
+                    int bs,bg,br,bc;                    
+                    if(NumExactMatches(PG, m, bs,bg,br,bc) > 1) {
                         min_area = std::max(min_area, nr*nc+1 );
                     }
                 }
@@ -208,6 +224,9 @@ uint32_t FindBestSeed(int r, int c, bool& should_run) {
         if(score < best_score) {
             best_seed = seed;
             best_score = score;
+            std::cout << "*Seed " << seed << ": score:" << score << std::endl;
+        }else{
+            std::cout << " Seed " << seed << std::endl;
         }
     }
     return best_seed;
@@ -221,7 +240,7 @@ void PrintPattern(const Eigen::MatrixXi& M)
             const char b = (v == -1) ? 'x' : '0'+v;
             std::cout << b << ' ';
         }
-        std::cout << '\n';
+        std::cout << std::endl;
     }
 }
 

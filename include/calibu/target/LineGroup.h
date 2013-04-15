@@ -37,7 +37,7 @@ struct Triple;
 struct Vertex
 {
     inline Vertex(size_t id, const Conic& c)
-        : id(id), conic(c), pc(c.center), pg(GRID_INVALID,GRID_INVALID), value(-1)
+        : id(id), conic(c), pc(c.center), pg(GRID_INVALID,GRID_INVALID), area(0.0), value(-1)
     {
     }
     
@@ -52,6 +52,7 @@ struct Vertex
     Eigen::Vector2i pg;
     std::vector<Triple> triples;
     std::set<Vertex*> neighbours;
+    double area;
     int value;
 };
 

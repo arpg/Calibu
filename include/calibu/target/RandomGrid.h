@@ -42,9 +42,9 @@ std::array<Eigen::MatrixXi,4> MakePatternGroup(int r, int c, uint32_t seed);
 
 int HammingDistance(const Eigen::MatrixXi& M, const Eigen::MatrixXi& m, int r, int c);
 
-int NumExactMatches(const Eigen::MatrixXi& M, const Eigen::MatrixXi& m);
+int NumExactMatches(const Eigen::MatrixXi& M, const Eigen::MatrixXi& m, int& best_score, int& best_r, int& best_c);
 
-int NumExactMatches(const std::array<Eigen::MatrixXi,4>& PG, const Eigen::MatrixXi& m);
+int NumExactMatches(const std::array<Eigen::MatrixXi,4>& PG, const Eigen::MatrixXi& m, int& best_score, int& best_g, int& best_r, int& best_c);
 
 int AutoCorrelation(const std::array<Eigen::MatrixXi,4>& PG, int minr=2, int minc=2 );
 

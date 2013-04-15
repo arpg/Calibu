@@ -40,7 +40,7 @@ TargetGridDot::TargetGridDot(double grid_spacing, Eigen::Vector2i grid_size, Eig
     
     for(int r=0; r< grid_size(1); ++r) {
         for(int c=0; c< grid_size(0); ++c) {
-            Eigen::Vector2i p = Eigen::Vector2i(c,r) - grid_center;
+            Eigen::Vector2i p = Eigen::Vector2i(c,r);
             tpts2d[r*grid_size(0)+c] = grid_spacing * Eigen::Vector2d(p(0), p(1));
             tpts3d[r*grid_size(0)+c] = grid_spacing * Eigen::Vector3d(p(0), p(1), 0);
         }
@@ -168,6 +168,21 @@ double Area(const Conic& c)
     }
 }
 
+std::set<Vertex*> Neighbours(std::map<Eigen::Vector2i, Vertex*>& map, const Vertex& v)
+{
+    std::set<Vertex*> neighbours;
+    for(int r=-1; r <=1; ++r) {
+        for(int c=-1; c<=1; ++c) {
+            Eigen::Vector2i pg(v.pg[0]+c, v.pg[1]+r);
+            std::map<Eigen::Vector2i, Vertex*>::const_iterator i = map.find(pg);
+            if(i!= map.end()) {
+                neighbours.insert(i->second);
+            }
+        }
+    }
+    return neighbours;
+}
+
 void FindTriples( Vertex& v, std::vector<Dist>& closest, double thresh_dist, double thresh_area)
 {
     // Consider 9 closests points (including itself)
@@ -220,113 +235,6 @@ void FindTriples( Vertex& v, std::vector<Dist>& closest, double thresh_dist, dou
             }
         }
     }
-    
-    if(v.neighbours.size() > 0) {
-        // Sort neightbours by circle area
-        std::vector<Dist> vecrad;
-        // TODO: Get area directly from Conic form
-        vecrad.push_back( Dist{ &v, Area(v.conic) });
-        for(Vertex* n : v.neighbours)  {
-            vecrad.push_back( Dist{n, Area(n->conic) } );
-        }
-        std::sort(vecrad.begin(), vecrad.end());
-        
-        const double _area0 = vecrad.front().dist;
-        const double _area1 = vecrad.back().dist;
-        const double _area = Area(v.conic);
-        
-//        std::cout << _area0 << ", " << _area << ", " << _area1 << std::endl;
-        
-        const double area0 = 2*2;
-        const double area1 = 3*3;
-        if(area1*_area0 / area0 <= _area1 * 1.1)
-        {
-            // is difference
-            const double d0 = std::abs(_area-_area0);
-            const double d1 = std::abs(_area-_area1);
-            v.value = ( d0 < d1 ) ? 0 : 1;
-        }
-    }
-}
-
-//////////////////////////////////////////////////////////////
-// returns a score for whether or not the blob pointed to by
-// op1 and op2 could work as a center cross
-double GetCenterCrossScore(const Triple& op1,
-                           const Triple& op2,
-                           const unsigned char* img, int w, int h,
-                           const double minAreaThreshold, //< area threshold in percent
-                           const double maxAreaThreshold, //< area threshold in percent
-                           const double innerRadiusRatio,  //< size of the inner blob radius, in pixels
-                           const double lineThicknessRatio //< size of the line, in pixels
-                           )
-{
-    double score = 0;
-    //first do a size check
-    
-    const double averageArea = (op1.Neighbour(0).conic.bbox.Area() +
-                                op1.Neighbour(1).conic.bbox.Area() +
-                                op2.Neighbour(0).conic.bbox.Area() +
-                                op2.Neighbour(1).conic.bbox.Area() )/4.0;
-    
-    const Conic& centerConic = op1.Center().conic;
-    
-    if( centerConic.bbox.Area() < averageArea*minAreaThreshold ||
-        centerConic.bbox.Area() > averageArea*maxAreaThreshold ) {
-        score = std::numeric_limits<double>::max();
-    }else{
-        //go through every pixel, calculate background and foreground from min/max
-        unsigned char background = 255, foreground = 0;
-        for(int ii = centerConic.bbox.x1 ; ii < centerConic.bbox.x2 ; ii++){
-            for(int jj = centerConic.bbox.y1 ; jj < centerConic.bbox.y2 ; jj++){
-                unsigned char pval = *(img + jj*w + ii);
-                background = std::min(background,pval);
-                foreground = std::max(foreground,pval);
-            }
-        }        
-        //std::cout << "Background: " << (int)background << " foreground: " << (int)foreground << std::endl;
-        
-        score = 0;
-        int pixelCount = 0;
-        for(int ii = centerConic.bbox.x1 ; ii < centerConic.bbox.x2 ; ii++){
-            for(int jj = centerConic.bbox.y1 ; jj < centerConic.bbox.y2 ; jj++){
-                pixelCount++;
-                unsigned char cVal = background;
-                //pixel position relative to center
-                const Eigen::Vector2d relativePos(ii - centerConic.center[0],jj - centerConic.center[1]);
-                const Eigen::Vector2d vecOp1 = op1.Neighbour(0).pc - op1.Neighbour(1).pc;
-                const Eigen::Vector2d vecOp2 = op2.Neighbour(0).pc - op2.Neighbour(1).pc;
-                
-                //calculate whether this pixel should be white or black.
-                //step 1 radius check
-                const double rad = innerRadiusRatio*(vecOp1.norm() + vecOp2.norm())/2.0;
-                if(relativePos.norm() <= rad){
-                    cVal = foreground;
-                }else{
-                    //check the distance from the vertical line
-                    const double thickness1 = vecOp1.norm()*lineThicknessRatio;
-                    const double thickness2 = vecOp2.norm()*lineThicknessRatio;
-                    
-                    const double cosTheta1 = vecOp1.normalized().dot(relativePos.normalized());
-                    const double cosTheta2 = vecOp2.normalized().dot(relativePos.normalized());
-                    
-                    const double perpDistance1 = fabs(relativePos.norm()*sin(acos(cosTheta1)));
-                    const double perpDistance2 = fabs(relativePos.norm()*sin(acos(cosTheta2)));
-                    
-                    if(perpDistance1 <= thickness1/2.0 || perpDistance2 <= thickness2/2.0){
-                        cVal = foreground;
-                    }
-                }
-                const unsigned char pval = *(img + jj*w + ii);
-                const double pdiff = pval-cVal;
-                score += pdiff*pdiff;
-            }
-        }
-        //normalize the score by the number of pixels
-        score /= (double)pixelCount;
-    }
-    
-    return score;
 }
 
 bool TargetGridDot::FindTarget(
@@ -365,7 +273,7 @@ void TargetGridDot::SetGrid(Vertex& v, const Eigen::Vector2i& g)
     map_grid_ellipse[g] = &v;
 }
 
-void Match(const std::map<Eigen::Vector2i, Vertex*>& obs, const std::array<Eigen::MatrixXi,4>& PG)
+bool TargetGridDot::Match(std::map<Eigen::Vector2i, Vertex*>& obs, const std::array<Eigen::MatrixXi,4>& PG)
 {
     Eigen::Vector2i omin(std::numeric_limits<int>::max(),std::numeric_limits<int>::max());
     Eigen::Vector2i omax(std::numeric_limits<int>::min(),std::numeric_limits<int>::min());
@@ -381,25 +289,47 @@ void Match(const std::map<Eigen::Vector2i, Vertex*>& obs, const std::array<Eigen
     // Create sample matrix
     Eigen::Vector2i osize = (omax + Eigen::Vector2i(1,1)) - omin;
     
-//    std::cout << "size: " << osize.transpose() << std::endl;
-    
-    if( osize[0] > 1 && osize[1] > 1) {
-        std::cout << "-----------------------------------------------------" << std::endl;
-        
+    if( osize[0] > 2 && osize[1] > 2) {
         Eigen::MatrixXi m = Eigen::MatrixXi::Constant( osize(1), osize(0), -1);
+        int num_valid = 0;
         
-        for(std::map<Eigen::Vector2i, Vertex*>::const_iterator i = obs.begin(); i != obs.end(); ++i) {
+        for(std::map<Eigen::Vector2i, Vertex*>::iterator i = obs.begin(); i != obs.end(); ++i) {
             const Eigen::Vector2i pg = i->first - omin;
-//            std::cout << pg.transpose() << std::endl;
-            m(pg(1),pg(0)) = i->second->value;
+            i->second->pg = pg;            
+            const int val = i->second->value;
+            m(pg(1),pg(0)) = val;
+            if(val >= 0) ++num_valid;
         }
         
-        PrintPattern(m);
-        
-        if(osize[0] <= PG[0].cols() && osize[1] <= PG[1].cols() ) {
-            std::cout << NumExactMatches(PG,m) << std::endl;
+        int bs,bg,br,bc;
+        const int num_matches = NumExactMatches(PG,m,bs,bg,br,bc);
+        if( num_matches <= 1 && bs < num_valid / 16 )
+//        if( num_matches == 1 )
+        {
+            // Found unique match
+            Sophus::SE2Group<int> T_0x[4] = {
+                Sophus::SE2Group<int>(Sophus::SO2Group<int>(1,0), Eigen::Vector2i(0,0) ),
+                Sophus::SE2Group<int>(Sophus::SO2Group<int>(0,1), Eigen::Vector2i(grid_size[0]-1,0) ),
+                Sophus::SE2Group<int>(Sophus::SO2Group<int>(-1,0), Eigen::Vector2i(grid_size[0]-1,grid_size[1]-1) ),
+                Sophus::SE2Group<int>(Sophus::SO2Group<int>(0,-1), Eigen::Vector2i(0,grid_size[1]-1) )
+            };
+            
+            Sophus::SE2Group<int> T_xm(Sophus::SO2Group<int>(), Eigen::Vector2i(bc,br));
+            
+            Sophus::SE2Group<int> T_0m = T_0x[bg] * T_xm;
+            
+            for(std::map<Eigen::Vector2i, Vertex*>::iterator i = obs.begin(); i != obs.end(); ++i) {
+                i->second->pg = T_0m * i->second->pg;
+            }     
+            return true;
+        }else{
+            PrintPattern(m);
+            std::cerr << "bestscore: " << bs << ", num_matches: " << num_matches << ", ";
         }
+    }else{
+        std::cerr << "Grid too small, ";
     }
+    return false;
 }
 
 bool TargetGridDot::FindTarget(
@@ -430,22 +360,24 @@ bool TargetGridDot::FindTarget(
     
     // Find central, well connected vertex
     Vertex* central = nullptr;
+    std::vector<Triple*> principle;
+    
     for(size_t i=0; i < vs_central.size(); ++i) {
         Vertex* v = vs_central[i].v;
-        if(v->triples.size() == 4) {
-            central = v;
-            break;
+        if(v->triples.size() >= 2) {
+            principle = PrincipleDirections(*v);
+            if(principle.size() == 2) {
+                central = v;
+                break;
+            }
         }
     }
     
-    if(!central)
+    if(!central) {
+        std::cerr << "No central point found" << std::endl;
         return false;
-    
-    std::vector<Triple*> principle = PrincipleDirections(*central);
-    
-    if(principle.size() != 2)
-        return false;
-    
+    }
+        
     for(auto* t: principle) {
         line_groups.push_back( LineGroup(*t) );
     }
@@ -500,6 +432,7 @@ bool TargetGridDot::FindTarget(
                         // check
                         if(no.pg != go) {
                             // tracking bad!
+                            std::cerr << "fringe: Not consistent" << std::endl;                            
                             return false;
                         }
                     }else{
@@ -534,6 +467,7 @@ bool TargetGridDot::FindTarget(
                         // check
                         if(f.pg != g) {
                             // tracking bad.
+                            std::cerr << "fill: Not consistent" << std::endl;                                                        
                             return false;
                         }
                     }else{
@@ -547,98 +481,63 @@ bool TargetGridDot::FindTarget(
         available.pop_front();
     }
     
-    // Correlation of what we have with binary pattern
-    Match(map_grid_ellipse, PG);
-    
-//    // Find ranges of grid coordinates by projecting onto princple axis'
-//    std::map<int,size_t> histogram[2];
-//    for(auto& mv : map_grid_ellipse) {
-//        histogram[0][mv.first[0]]++;
-//        histogram[1][mv.first[1]]++;
-//    }
-    
-//    // Find min and max grid coordinate with noise threshold
-//    const size_t required_min = std::min(grid_size[0], grid_size[1]) / 3;
-//    Eigen::Vector2i minmax[2] = {
-//        Eigen::Vector2i(std::numeric_limits<int>::max(),std::numeric_limits<int>::max()),
-//        Eigen::Vector2i(std::numeric_limits<int>::min(),std::numeric_limits<int>::min())
-//    };    
-//    for(int i=0; i<2; ++i) {
-//        for(auto& m : histogram[i]) {
-//            if(m.second >= required_min) {
-//                minmax[0][i] = std::min(minmax[0][i], m.first);
-//                minmax[1][i] = std::max(minmax[1][i], m.first);
-//            }
-//        }
-//    }
-    
-//    Eigen::Vector2i dim = minmax[1] - minmax[0] + Eigen::Vector2i(1,1);
-    
-//    const bool rotate = dim[0] < dim[1];
-//    if(rotate) {
-//        std::swap(dim[0], dim[1]);
-//        std::swap(minmax[0][0], minmax[0][1]);
-//        std::swap(minmax[1][0], minmax[1][1]);
-//        for(auto m : map_grid_ellipse) {
-//            Eigen::Vector2i& pg = m.second->pg;
-//            std::swap(pg[0],pg[1]);
-//        }        
-//    }
-    
-//    if( dim == grid_size ) {
-//        // We found the entire grid! Zero coordinates
-//        const Eigen::Vector2i cc = minmax[0] + grid_center;
-//        for(auto m : map_grid_ellipse) {
-//            m.second->pg -= cc;
-//        }        
-//    }
+    // Compute area and grid neighbours for all ellipses in grid
+    for(std::map<Eigen::Vector2i, Vertex*>::const_iterator i = map_grid_ellipse.begin(); i != map_grid_ellipse.end(); ++i) {
+        Vertex& v = *i->second;
+        v.area = Area(v.conic);
+        v.neighbours = Neighbours(map_grid_ellipse,v);
+    }
+
+    // Determine binary value from neighbours area
+    for(std::map<Eigen::Vector2i, Vertex*>::const_iterator i = map_grid_ellipse.begin(); i != map_grid_ellipse.end(); ++i) {
+        Vertex& v = *i->second;
         
-//    // Try to set grid center using cross
-//    // Calcualte 'cross' score for each conic and remember best
-//    double bestScore = std::numeric_limits<double>::max();
-//    Vertex* cross = nullptr;
-//    idxCrossConic = -1;    
-    
-//    for(size_t jj = 0 ; jj < vs.size() ; jj++){
-//        std::vector<Triple*> principle = PrincipleDirections(vs[jj]);        
-//        if(principle.size() == 2) {        
-//            const double score = GetCenterCrossScore(
-//                        *principle[0], *principle[1],
-//                        images.Img(), images.Width(), images.Height(),
-//                        params.min_cross_area, params.max_cross_area,
-//                        params.cross_radius_ratio, params.cross_line_ratio
-//                        );
+        if(v.neighbours.size() > 0) {
+            // TODO: just take min/max - no need to sort
+            // Sort neightbours by circle area
+            std::vector<Dist> vecrad;
+            vecrad.push_back( Dist{ &v, v.area });
+            for(Vertex* n : v.neighbours)  {
+                vecrad.push_back( Dist{n, n->area } );
+            }
+            std::sort(vecrad.begin(), vecrad.end());
             
-//            if(score < bestScore){
-//                bestScore = score;
-//                cross = &vs[jj];
-//            }
-//        }
-//    }
+            const double _area0 = vecrad.front().dist;
+            const double _area1 = vecrad.back().dist;
+            
+            // TODO: determine these values from pattern
+            const double area0 = 2*2;
+            const double area1 = 3*3;
+            if(area1*_area0 / area0 <= _area1 * 1.2)
+            {
+                // is difference
+                const double d0 = std::abs(v.area-_area0);
+                const double d1 = std::abs(v.area-_area1);
+                v.value = ( d0 < d1 ) ? 0 : 1;
+            }
+        }else{
+            v.value = -1;
+        }  
+    }    
     
-//    if(cross) {
-//        idxCrossConic = cross->id;
-        
-//        if(cross->HasGridPosition()) {
-//            const Eigen::Vector2i cc = cross->pg;
-//            for(auto m : map_grid_ellipse) {
-//                m.second->pg -= cc;
-//            }
-//        }
-//    }    
+    // Correlation of what we have with binary pattern
+    const bool found = Match(map_grid_ellipse, PG);
+    
+    if(!found) {
+        std::cerr << "Pattern not found" << std::endl;                            
+        return false;
+    }
     
     // output map
     ellipse_target_map.resize(vs.size(), -1);
     for(size_t p=0; p < vs.size(); ++p) {
         Vertex& v = vs[p];
-        const Eigen::Vector2i pgz = v.pg + grid_center;
-        if( 0<= pgz(0) && pgz(0) < grid_size(0) &&  0<= pgz(1) && pgz(1) < grid_size(1) )
+        if( 0<= v.pg(0) && v.pg(0) < grid_size(0) &&  0<= v.pg(1) && v.pg(1) < grid_size(1) )
         {
-            ellipse_target_map[p] = pgz(1)*grid_size(0) + pgz(0);
+            ellipse_target_map[p] = v.pg(1)*grid_size(0) + v.pg(0);
         }
     }
     
-//    return dim == grid_size; // || cross != nullptr;
     return true;
 }
 
