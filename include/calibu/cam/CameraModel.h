@@ -172,38 +172,53 @@ namespace calibu
             // Constructors
             /////////////////////////////////////////////////////////////////////////
 
-            CameraModel()
-                : CameraModelBase(0,0), params(Eigen::Matrix<double,NUM_PARAMS,1>::Zero())
+            CameraModel() :  
+                m_nWidth(0),
+                m_nHeight(0),
+                params(Eigen::Matrix<double,NUM_PARAMS,1>::Zero())
             {
             }    
 
-            CameraModel(int w, int h)
-                : CameraModelBase(w,h), params(Eigen::Matrix<double,NUM_PARAMS,1>::Zero())
+            CameraModel(int w, int h) :
+                m_nWidth(0),
+                m_nHeight(0),
+                params(Eigen::Matrix<double,NUM_PARAMS,1>::Zero())
             {
             }    
 
-            CameraModel(const Eigen::Matrix<double,NUM_PARAMS,1>& params)
-                : CameraModelBase(0,0), params(params)
+            CameraModel( const Eigen::Matrix<double,NUM_PARAMS,1>& params) :
+                m_nWidth(0),
+                m_nHeight(0),
+                params(params)
             {
             }    
 
-            CameraModel(int w, int h, const Eigen::Matrix<double,NUM_PARAMS,1>& params)
-                : CameraModelBase(w,h), params(params)
+            CameraModel( 
+                    int w, 
+                    int h, 
+                    const Eigen::Matrix<double,NUM_PARAMS,1>& params) :
+                m_nWidth(w),
+                m_nHeight(h),
+                params(params)
             {
             }        
 
-            CameraModel(double* cam_params)
-                : CameraModelBase(0,0), params(Eigen::Map<Eigen::Matrix<double,NUM_PARAMS,1> >(cam_params))
+            CameraModel(double* cam_params):
+                m_nWidth(0),
+                m_nHeight(0),
+                params(Eigen::Map<Eigen::Matrix<double,NUM_PARAMS,1> >(cam_params))
             {
             }    
 
-            CameraModel(int w, int h, double* cam_params)
-                : CameraModelBase(w,h), params(Eigen::Map<Eigen::Matrix<double,NUM_PARAMS,1> >(cam_params))
+            CameraModel(int w, int h, double* cam_params) :
+                m_nWidth(w),
+                m_nHeight(h),
+                params(Eigen::Map<Eigen::Matrix<double,NUM_PARAMS,1> >(cam_params))
             {
             }    
 
-            CameraModel(const CameraModel& other)
-                : CameraModelBase(other), params(other.params)
+            CameraModel(const CameraModel& other) : 
+                params(other.params)
             {
             }    
 
@@ -317,8 +332,28 @@ namespace calibu
                 return m_RDF;
             }
 
+            int Width() const
+            {
+                return m_nWidth;
+            }
+
+            int Height() const
+            {
+                return m_nHeight;
+            }
+
+            void SetImageDimensions(
+                    int nWidth,  //< Input:
+                    int nHeight  //< Input:
+                    )
+            {
+                m_nWidth = nWidth;
+                m_nHeight = nHeight;
+            }
 
         protected:
+            int              m_nWidth;    //< Camera width, in pixels
+            int              m_nHeight;   //< Camera height, in pixels
             Eigen::Matrix<double,NUM_PARAMS,1> params;
 
             std::string      m_sType;     //< Model type name.
@@ -924,13 +959,11 @@ namespace calibu
             // Constructors
             /////////////////////////////////////////////////////////////////////////
             NewCameraModel() : 
-                CameraModelBase(0,0),
                 m_pCam(NULL)
             {
             }
 
-            NewCameraModel( const NewCameraModel& rRHS ) :
-                CameraModelBase(rRHS)
+            NewCameraModel( const NewCameraModel& rRHS )
             {
                 Init( rRHS.Type() );
             }
@@ -1005,6 +1038,23 @@ namespace calibu
                 return m_pCam->RDF();
             }
 
+            int Width() const
+            {
+                return m_pCam->Width();
+            }
+
+            int Height() const
+            {
+                return m_pCam->Height();
+            }
+
+            void SetImageDimensions(
+                    int nWidth,  //< Input:
+                    int nHeight  //< Input:
+                    )
+            {
+                m_pCam->SetImageDimensions( nWidth, nHeight );
+            }
 
 
             bool Init( const std::string& sType )

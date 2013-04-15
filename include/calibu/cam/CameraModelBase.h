@@ -114,22 +114,6 @@ public:
     virtual Eigen::Matrix3d Kinv() const = 0;
 
     //////////////////////////////////////////////////////////////////////////////
-    // Constructors
-    
-    CameraModelBase()
-        : m_nWidth(0), m_nHeight(0)
-    {
-    }
-    
-    CameraModelBase(
-            int nWidth, //< Input:
-            int nHeight //< Input:
-            )
-        : m_nWidth(nWidth), m_nHeight(nHeight)
-    {
-    }
-    
-    //////////////////////////////////////////////////////////////////////////////
     // Project point in 3d camera coordinates to image coordinates
     Eigen::Vector2d ProjectMap(
             const Eigen::Vector3d& P //< Input:
@@ -220,7 +204,7 @@ public:
 
     //////////////////////////////////////////////////////////////////////////////
     // Image Dimentions
-    
+   /* 
     int& Width() {
         return m_nWidth;
     }
@@ -249,7 +233,17 @@ public:
         m_nHeight = nHeight;
     }
 
+    */
 
+    virtual int Width() const = 0;
+    
+    virtual int Height() const = 0;
+    
+    virtual void SetImageDimensions( 
+            int nWidth,  //< Input:
+            int nHeight  //< Input:
+            ) = 0;
+    
     /// Report camera model version number.
     virtual int Version() const = 0;
 
@@ -297,9 +291,6 @@ public:
 
     //////////////////////////////////////////////////////////////////////////////
 protected:
-    int              m_nWidth;    //< Camera width, in pixels
-    int              m_nHeight;   //< Camera height, in pixels
-
     std::string      m_sName;     //< particular camera name, e.g., "Left"
 };
 
