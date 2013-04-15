@@ -37,7 +37,7 @@ Tracker::Tracker(TargetInterface& target, int w, int h)
 }
 
 bool Tracker::ProcessFrame(
-        CameraModel& cam, unsigned char* I, size_t pitch
+        CameraModelInterface& cam, unsigned char* I, size_t pitch
         )
 {
     double rms = 0;

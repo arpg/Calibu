@@ -76,7 +76,7 @@ int main( int argc, char* argv[] )
     GlTexture tex(w,h,GL_LUMINANCE8);
         
     // Camera parameters
-    CameraModel<Pinhole> cam(w, h, Eigen::Vector4d(525 , 525, w/2.0, h/2.0) );
+    CameraModelSpecialization<Pinhole> cam(w, h, Eigen::Vector4d(525 , 525, w/2.0, h/2.0) );
     
     // Variables
     Var<bool> step("ui.step", false, false);
@@ -84,16 +84,15 @@ int main( int argc, char* argv[] )
     
     Var<bool> disp_thresh("ui.Display Thresh",false);
     Var<bool> lock_to_cam("ui.AR",false);
-    
-    bool tracking_good = false;  
-    
-    for(int frame=0; !pangolin::ShouldQuit(); ++frame)
-    {
+ 
+    bool tracking_good = false;
+ 
+    for( int frame=0; !pangolin::ShouldQuit(); ++frame ) {
         bool go = frame==0 || run || Pushed(step);
         
         if(go) {
             if( video.Grab(image_buffer, images, true, true) ) {
-                tracking_good = tracker.ProcessFrame(cam, images[0].ptr, images[0].pitch );
+                tracking_good = tracker.ProcessFrame( cam, images[0].ptr, images[0].pitch );
             }else{
                 run = false;
             }

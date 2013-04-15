@@ -56,6 +56,6 @@ std::pair<Eigen::Vector3d,Eigen::Matrix3d > PlaneFromConics(
         const Eigen::Matrix3d& K, double inlier_threshold
         );
 
-Conic UnmapConic( const Conic& c, const CameraModel& cam );
+Conic UnmapConic( const Conic& c, const CameraModelInterface& cam );
 
 }

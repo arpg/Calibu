@@ -42,12 +42,12 @@ std::unique_ptr<T> make_unique( Args&& ...args )
 template<typename ProjModel>
 struct CameraAndPose
 {
-    CameraAndPose( const CameraModel<ProjModel>& camera, const Sophus::SE3d& T_ck)
+    CameraAndPose( const CameraModelSpecialization<ProjModel>& camera, const Sophus::SE3d& T_ck)
         : camera(camera), T_ck(T_ck)
     {
     }
     
-    CameraModel<ProjModel> camera;
+    CameraModelSpecialization<ProjModel> camera;
     Sophus::SE3d T_ck;
 };
 
@@ -143,7 +143,7 @@ public:
         }
     }
     
-    int AddCamera(const CameraModel<ProjModel>& cam, const Sophus::SE3d T_ck = Sophus::SE3d() )
+    int AddCamera(const CameraModelSpecialization<ProjModel>& cam, const Sophus::SE3d T_ck = Sophus::SE3d() )
     {
         int id = m_camera.size();
         m_camera.push_back( make_unique<CameraAndPose<ProjModel> >(cam,T_ck) );
@@ -166,7 +166,7 @@ public:
         
         // Ensure index is valid
         while( NumFrames() < frame) { AddFrame(); }
-        while( NumCameras() < camera ) { AddCamera(CameraModel<ProjModel>()); }
+        while( NumCameras() < camera ) { AddCamera(CameraModelSpecialization<ProjModel>()); }
         
         // new camera pose to bundle adjust
         
