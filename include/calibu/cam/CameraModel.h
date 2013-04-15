@@ -152,7 +152,7 @@ namespace calibu
 
             ///////////////////////////////////////////////////////////////////////////
             /// Transfer point correspondence with known inv. depth to secondary camera
-            //  frame.  Points at infinity are supported (rho = 0)
+            //  frame.  Points at infinity are supported (rho = 0).
             template<typename T> inline
                 static Eigen::Matrix<T,2,1> Transfer(
                         const T* camparam,               //< Input:
