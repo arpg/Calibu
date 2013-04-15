@@ -23,7 +23,7 @@
 #include <Eigen/Dense>
 #include <sophus/se3.hpp>
 
-#include <calibu/cam/CameraModelBase.h>
+#include <calibu/cam/CameraModel.h>
 #include <calibu/image/ImageProcessing.h>
 #include <calibu/conics/Conic.h>
 
@@ -40,7 +40,7 @@ public:
     // Assume approximately known camera and pose
     virtual bool FindTarget(
             const Sophus::SE3d& T_cw,            
-            const CameraModelBase& cam,
+            const CameraModelInterface& cam,
             const ImageProcessing& images,
             const std::vector<Conic>& conics,
             std::vector<int>& conics_target_map
@@ -48,12 +48,12 @@ public:
     
     // Assume approximately known camera
     virtual bool FindTarget(
-            const CameraModelBase& cam,
+            const CameraModelInterface& cam,
             const ImageProcessing& images,
             const std::vector<Conic>& conics,
             std::vector<int>& conics_target_map
             ) = 0;
-    
+ 
     // Only observations known
     virtual bool FindTarget(
             const ImageProcessing& images,

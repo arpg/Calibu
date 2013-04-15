@@ -17,7 +17,6 @@
    limitations under the License.
  */
 
-
 #pragma once
 
 #include <sophus/se3.hpp>
@@ -86,16 +85,13 @@ Eigen::Matrix<double,1,2> dNorm_dx(
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// Polymorphic camera base class
-//////////////////////////////////////////////////////////////////////////////
-
-class CameraModelBase
+// Interface for polymorphic camera class
+class CameraModelInterface
 {
 public:
-    //////////////////////////////////////////////////////////////////////////////    
+    //////////////////////////////////////////////////////////////////////////////
     // Virtual member functions
-    //////////////////////////////////////////////////////////////////////////////    
-    virtual ~CameraModelBase(){}
+    virtual ~CameraModelInterface(){}
 
     /// Map from image coordinates to z=1 plane.
     virtual Eigen::Vector2d Map( 
@@ -113,6 +109,53 @@ public:
     /// Return the perspective projection camera model inverse "K" matrix
     virtual Eigen::Matrix3d Kinv() const = 0;
 
+//    virtual static std::string Name() = 0;
+
+    virtual int Width() const = 0;
+ 
+    virtual int Height() const = 0;
+ 
+    virtual void SetImageDimensions( 
+            int nWidth,  //< Input:
+            int nHeight  //< Input:
+            ) = 0;
+ 
+    /// Report camera model version number.
+    virtual int Version() const = 0;
+
+    /// Set the camera veriona nuber.
+    virtual void SetVersion( int nVersion ) = 0;
+
+    /// Report camera model 
+    virtual const char* Type() const = 0;
+
+    virtual void SetType( const std::string& sType ) = 0;
+
+    /// Set the camera model name. e.g., "Left"
+    virtual std::string Name() = 0;
+
+    /// Set the camera model name. e.g., "Left"
+    virtual void SetName( const std::string& sName ) = 0;
+    
+    /// Set the camera serial number.
+    virtual long int SerialNumber() = 0;
+
+    /// Set the camera serial number.
+    virtual void SetSerialNumber( const long int nSerialNo ) = 0;
+
+    /// Set the camera index (for multi-camera rigs).
+    virtual int Index() = 0;
+
+    /// Set the camera index (for multi-camera rigs).
+    virtual void SetIndex( const int nIndex ) = 0;
+
+    //////////////////////////////////////////////////////////////////////////////
+    /// Return 3x3 RDF matrix, describing the coordinate-frame convention.
+    virtual Eigen::Matrix3d RDF() const = 0;
+
+
+    //////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////
     // Project point in 3d camera coordinates to image coordinates
     Eigen::Vector2d ProjectMap(
@@ -202,96 +245,6 @@ public:
         return Transfer3D(T_ba, rhoPa, rho, in_front);
     }
 
-    //////////////////////////////////////////////////////////////////////////////
-    // Image Dimentions
-   /* 
-    int& Width() {
-        return m_nWidth;
-    }
-    
-    int Width() const
-    {
-        return m_nWidth;
-    }
-    
-    int& Height()
-    {
-        return m_nHeight;
-    }
-    
-    int Height() const
-    {
-        return m_nHeight;
-    }
-    
-    void SetImageDimensions(
-            int nWidth,  //< Input:
-            int nHeight  //< Input:
-            )
-    {
-        m_nWidth = nWidth;
-        m_nHeight = nHeight;
-    }
-
-    */
-
-    virtual int Width() const = 0;
-    
-    virtual int Height() const = 0;
-    
-    virtual void SetImageDimensions( 
-            int nWidth,  //< Input:
-            int nHeight  //< Input:
-            ) = 0;
-    
-    /// Report camera model version number.
-    virtual int Version() const = 0;
-
-    /// Set the camera veriona nuber.
-    virtual void SetVersion( int nVersion ) = 0;
-
-    /// Report camera model 
-    virtual const char* Type() const = 0;
-
-    virtual void SetType( const std::string& sType ) = 0;
-
-/*
-    //////////////////////////////////////////////////////////////////////////////
-    /// Set the camera model name. e.g., "Left"
-    std::string Name()
-    {
-        return m_sName;
-    }
-
-    //////////////////////////////////////////////////////////////////////////////
-    /// Set the camera model name. e.g., "Left"
-    void SetName( const std::string& sName )
-    {
-        m_sName = sName;
-    }
-
-    */
-    //////////////////////////////////////////////////////////////////////////////
-    /// Set the camera serial number.
-    virtual long int SerialNumber() = 0;
-
-    /// Set the camera serial number.
-    virtual void SetSerialNumber( const long int nSerialNo ) = 0;
-
-    /// Set the camera index (for multi-camera rigs).
-    virtual int Index() = 0;
-
-    /// Set the camera index (for multi-camera rigs).
-    virtual void SetIndex( const int nIndex ) = 0;
-
-    //////////////////////////////////////////////////////////////////////////////
-    /// Return 3x3 RDF matrix, describing the coordinate-frame convention.
-    virtual Eigen::Matrix3d RDF() const = 0;
-
-
-    //////////////////////////////////////////////////////////////////////////////
-protected:
-    std::string      m_sName;     //< particular camera name, e.g., "Left"
 };
 
 }

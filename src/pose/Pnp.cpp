@@ -29,7 +29,7 @@ using namespace Eigen;
 namespace calibu {
 
 vector<int> PosePnPRansac(
-        const CameraModelBase& cam,
+        const CameraModel& cam,
         const std::vector<Vector2d> &img_pts,
         const vector<Vector3d> & ideal_pts,
         const vector<int> & candidate_map,
@@ -105,7 +105,7 @@ int CountInliers(const vector<int> & conics_target_map)
     return inliers;
 }
 
-double ReprojectionErrorRMS(const CameraModelBase& cam,
+double ReprojectionErrorRMS(const CameraModel& cam,
                             const Sophus::SE3d& T_cw,
                             const vector<Vector3d>& pts3d,
                             const vector<Vector2d>& pts2d,

@@ -580,7 +580,7 @@ Matrix3d RansacHomogModelFunction( const std::vector<int>& indices, RansacMatchD
 
 bool TargetRandomDot::FindTarget(
         const Sophus::SE3d& T_cw,
-        const CameraModelBase& cam,
+        const CameraModelInterface& cam,
         const ImageProcessing& images,
         const vector<Conic>& conics,
         vector<int>& conics_target_map
@@ -622,7 +622,12 @@ Vector3d nd_b(const Sophus::SE3d& T_ba, const Vector3d& n_a)
     return n_b / d_b;
 }
 
-Eigen::Vector3d IntersectCamFeaturePlane( const Eigen::Vector2d& p, const CameraModelBase & cam, const Sophus::SE3d& T_wk, const Eigen::Vector4d& N_w)
+Eigen::Vector3d IntersectCamFeaturePlane(
+        const Eigen::Vector2d& p, 
+        const CameraModelInterface & cam,
+        const Sophus::SE3d& T_wk,
+        const Eigen::Vector4d& N_w
+        )
 {
     const Vector3d nd_k = nd_b(T_wk.inverse(), Project(N_w));
     const Vector3d kinvp = cam.UnmapUnproject(p);
@@ -638,7 +643,7 @@ Eigen::Vector3d IntersectCamFeaturePlane( const Eigen::Vector2d& p, const Camera
 }
 
 bool TargetRandomDot::FindTarget(
-        const CameraModelBase& cam,
+        const CameraModelInterface& cam,
         const ImageProcessing& images,
         const vector<Conic>& conics,
         vector<int>& conics_target_map

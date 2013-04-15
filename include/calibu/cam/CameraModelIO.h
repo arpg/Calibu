@@ -124,7 +124,7 @@ static const char* CameraModelType( const std::string& sType )
     ///////////////////////////////////////////////////////
     void ReadCameraModelHeaderAndPose(
             const std::string& sFile, //< Input: file name to read from. 
-            NewCameraModel& rCam,     //< Output: camera model.
+            CameraModel& rCam,     //< Output: camera model.
             Eigen::Matrix4d& rPose    //< Output: user specified pose of the camera.
             )
     {
@@ -218,7 +218,7 @@ static const char* CameraModelType( const std::string& sType )
     ///////////////////////////////////////////////////////
     ///
     void WriteCameraModelAndPose(
-            const CameraModelBase&, //< Input: camera to save.
+            const CameraModel&, //< Input: camera to save.
             const Eigen::Matrix4d&, //< Input: pose of the camera.
             const std::string& sFile  //< Input: file name to write.
             )

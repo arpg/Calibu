@@ -21,12 +21,12 @@
 
 #include <vector>
 #include <sophus/se3.hpp>
-#include <calibu/cam/CameraModelBase.h>
+#include <calibu/cam/CameraModel.h>
 
 namespace calibu {
 
 std::vector<int> PosePnPRansac(
-        const CameraModelBase& cam,
+        const CameraModel& cam,
         const std::vector<Eigen::Vector2d> & img_pts,
         const std::vector<Eigen::Vector3d> & ideal_pts,
         const std::vector<int> & candidate_map,
@@ -36,7 +36,7 @@ std::vector<int> PosePnPRansac(
         );
 
 double ReprojectionErrorRMS(
-        const CameraModelBase& cam,
+        const CameraModel& cam,
         const Sophus::SE3d& T_cw,
         const std::vector<Eigen::Vector3d>& pts3d,
         const std::vector<Eigen::Vector2d>& pts2d,

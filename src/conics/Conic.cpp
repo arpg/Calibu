@@ -122,7 +122,7 @@ pair<Vector3d,Matrix3d > PlaneFromConics( const vector<Conic>& conics, double pl
     return best;
 }
 
-Conic UnmapConic( const Conic& c, const CameraModelBase& cam )
+Conic UnmapConic( const Conic& c, const CameraModel& cam )
 {
     std::vector<Eigen::Vector2d > d;
     std::vector<Eigen::Vector2d > u;

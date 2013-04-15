@@ -25,6 +25,7 @@
 
 #include <calibu/target/Target.h>
 #include <calibu/conics/ConicFinder.h>
+#include <calibu/cam/CameraModel.h>
 
 namespace calibu {
 
@@ -48,7 +49,7 @@ class Tracker
 public:
     Tracker(TargetInterface& target, int w, int h);
     
-    bool ProcessFrame(CameraModelBase& cam, unsigned char *I, size_t pitch);
+    bool ProcessFrame( CameraModel& cam, unsigned char *I, size_t pitch );
     
     const TargetInterface& Target() const {
         return target;
