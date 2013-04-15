@@ -310,28 +310,33 @@ bool TargetGridDot::Match(std::map<Eigen::Vector2i, Vertex*>& obs, const std::ar
             if(val >= 0) ++num_valid;
         }
         
-        if(num_valid >= 13)
+        int bs,bg,br,bc;
+        const int num_matches = NumExactMatches(PG,m,bs,bg,br,bc);
+        if( num_matches <= 1 && bs < num_valid / 16 )
+//        if( num_matches == 1 )
         {
-            int bs,bg,br,bc;
-            if( NumExactMatches(PG,m,bs,bg,br,bc) == 1 ) {
-                // Found unique match
-                Sophus::SE2Group<int> T_0x[4] = {
-                    Sophus::SE2Group<int>(Sophus::SO2Group<int>(1,0), Eigen::Vector2i(0,0) ),
-                    Sophus::SE2Group<int>(Sophus::SO2Group<int>(0,1), Eigen::Vector2i(grid_size[0]-1,0) ),
-                    Sophus::SE2Group<int>(Sophus::SO2Group<int>(-1,0), Eigen::Vector2i(grid_size[0]-1,grid_size[1]-1) ),
-                    Sophus::SE2Group<int>(Sophus::SO2Group<int>(0,-1), Eigen::Vector2i(0,grid_size[1]-1) )
-                };
-                
-                Sophus::SE2Group<int> T_xm(Sophus::SO2Group<int>(), Eigen::Vector2i(bc,br));
-                
-                Sophus::SE2Group<int> T_0m = T_0x[bg] * T_xm;
-                
-                for(std::map<Eigen::Vector2i, Vertex*>::iterator i = obs.begin(); i != obs.end(); ++i) {
-                    i->second->pg = T_0m * i->second->pg;
-                }     
-                return true;
-            }
+            // Found unique match
+            Sophus::SE2Group<int> T_0x[4] = {
+                Sophus::SE2Group<int>(Sophus::SO2Group<int>(1,0), Eigen::Vector2i(0,0) ),
+                Sophus::SE2Group<int>(Sophus::SO2Group<int>(0,1), Eigen::Vector2i(grid_size[0]-1,0) ),
+                Sophus::SE2Group<int>(Sophus::SO2Group<int>(-1,0), Eigen::Vector2i(grid_size[0]-1,grid_size[1]-1) ),
+                Sophus::SE2Group<int>(Sophus::SO2Group<int>(0,-1), Eigen::Vector2i(0,grid_size[1]-1) )
+            };
+            
+            Sophus::SE2Group<int> T_xm(Sophus::SO2Group<int>(), Eigen::Vector2i(bc,br));
+            
+            Sophus::SE2Group<int> T_0m = T_0x[bg] * T_xm;
+            
+            for(std::map<Eigen::Vector2i, Vertex*>::iterator i = obs.begin(); i != obs.end(); ++i) {
+                i->second->pg = T_0m * i->second->pg;
+            }     
+            return true;
+        }else{
+            PrintPattern(m);
+            std::cerr << "bestscore: " << bs << ", num_matches: " << num_matches << ", ";
         }
+    }else{
+        std::cerr << "Grid too small, ";
     }
     return false;
 }
@@ -364,22 +369,24 @@ bool TargetGridDot::FindTarget(
     
     // Find central, well connected vertex
     Vertex* central = nullptr;
+    std::vector<Triple*> principle;
+    
     for(size_t i=0; i < vs_central.size(); ++i) {
         Vertex* v = vs_central[i].v;
-        if(v->triples.size() == 4) {
-            central = v;
-            break;
+        if(v->triples.size() >= 2) {
+            principle = PrincipleDirections(*v);
+            if(principle.size() == 2) {
+                central = v;
+                break;
+            }
         }
     }
     
-    if(!central)
+    if(!central) {
+        std::cerr << "No central point found" << std::endl;
         return false;
-    
-    std::vector<Triple*> principle = PrincipleDirections(*central);
-    
-    if(principle.size() != 2)
-        return false;
-    
+    }
+        
     for(auto* t: principle) {
         line_groups.push_back( LineGroup(*t) );
     }
@@ -434,6 +441,7 @@ bool TargetGridDot::FindTarget(
                         // check
                         if(no.pg != go) {
                             // tracking bad!
+                            std::cerr << "fringe: Not consistent" << std::endl;                            
                             return false;
                         }
                     }else{
@@ -468,6 +476,7 @@ bool TargetGridDot::FindTarget(
                         // check
                         if(f.pg != g) {
                             // tracking bad.
+                            std::cerr << "fill: Not consistent" << std::endl;                                                        
                             return false;
                         }
                     }else{
@@ -493,9 +502,9 @@ bool TargetGridDot::FindTarget(
         Vertex& v = *i->second;
         
         if(v.neighbours.size() > 0) {
+            // TODO: just take min/max - no need to sort
             // Sort neightbours by circle area
             std::vector<Dist> vecrad;
-            // TODO: Get area directly from Conic form
             vecrad.push_back( Dist{ &v, v.area });
             for(Vertex* n : v.neighbours)  {
                 vecrad.push_back( Dist{n, n->area } );
@@ -505,9 +514,10 @@ bool TargetGridDot::FindTarget(
             const double _area0 = vecrad.front().dist;
             const double _area1 = vecrad.back().dist;
             
+            // TODO: determine these values from pattern
             const double area0 = 2*2;
             const double area1 = 3*3;
-            if(area1*_area0 / area0 <= _area1 * 1.1)
+            if(area1*_area0 / area0 <= _area1 * 1.2)
             {
                 // is difference
                 const double d0 = std::abs(v.area-_area0);
@@ -522,7 +532,10 @@ bool TargetGridDot::FindTarget(
     // Correlation of what we have with binary pattern
     const bool found = Match(map_grid_ellipse, PG);
     
-    if(!found) return false;
+    if(!found) {
+        std::cerr << "Pattern not found" << std::endl;                            
+        return false;
+    }
     
     // output map
     ellipse_target_map.resize(vs.size(), -1);

@@ -69,7 +69,7 @@ class TargetGridDot
         : public TargetInterface
 {
 public:
-    TargetGridDot(double grid_spacing, Eigen::Vector2i grid_size, Eigen::Vector2i grid_center, uint32_t seed = 71);
+    TargetGridDot(double grid_spacing, Eigen::Vector2i grid_size, Eigen::Vector2i grid_center, uint32_t seed = 14);
     
     ////////////////////////////////////////////////////////////////////////////
     

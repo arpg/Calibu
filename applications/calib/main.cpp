@@ -130,8 +130,8 @@ int main( int argc, char** argv)
     
     ConicFinder conic_finder;
     conic_finder.Params().conic_min_area = 4.0;
-    conic_finder.Params().conic_min_density = 0.208;
-    conic_finder.Params().conic_min_aspect = 0.1;
+    conic_finder.Params().conic_min_density = 0.6;
+    conic_finder.Params().conic_min_aspect = 0.2;
         
     TargetGridDot target(grid_spacing, grid_size, grid_center);
 

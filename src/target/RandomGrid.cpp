@@ -114,18 +114,19 @@ int HammingDistance(const Eigen::MatrixXi& M, const Eigen::MatrixXi& m, int r, i
                 diff += abs( M(Mr,Mc) - vm);
             }
         }
-    } 
+    }
     return diff;
 }
 
 
 int NumExactMatches(const Eigen::MatrixXi& M, const Eigen::MatrixXi& m, int& best_score, int& best_r, int& best_c)
 {
+    const int border = std::min((int)std::min(m.rows(),m.cols())-2, 2);
     best_score = std::numeric_limits<int>::max();
-    const Eigen::Vector2i rcmax( 4 + M.rows() - m.rows(), 4 + M.cols() - m.cols());
+    const Eigen::Vector2i rcmax( 2*border + M.rows() - m.rows(), 2*border + M.cols() - m.cols());
     int num_zeros = 0;    
-    for(int r=-2; r < rcmax(0); ++r ) {
-        for(int c=-2; c < rcmax(1); ++c) {
+    for(int r=-border; r < rcmax(0); ++r ) {
+        for(int c=-border; c < rcmax(1); ++c) {
             const int hd = HammingDistance(M, m, r,c );
             if(hd < best_score) {
                 best_score = hd;
@@ -232,6 +233,9 @@ uint32_t FindBestSeed(int r, int c, bool& should_run) {
         if(score < best_score) {
             best_seed = seed;
             best_score = score;
+            std::cout << "*Seed " << seed << ": score:" << score << std::endl;
+        }else{
+            std::cout << " Seed " << seed << std::endl;
         }
     }
     return best_seed;
@@ -245,7 +249,7 @@ void PrintPattern(const Eigen::MatrixXi& M)
             const char b = (v == -1) ? 'x' : '0'+v;
             std::cout << b << ' ';
         }
-        std::cout << '\n';
+        std::cout << std::endl;
     }
 }
 
