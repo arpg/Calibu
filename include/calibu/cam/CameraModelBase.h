@@ -17,6 +17,7 @@
    limitations under the License.
  */
 
+
 #pragma once
 
 #include <sophus/se3.hpp>
@@ -55,7 +56,7 @@ Eigen::Matrix<T,4,1> Unproject(
 }
 
 //////////////////////////////////////////////////////////////////////////////
-/// This function Project from 3D into an image, returning a 2x1 image point.
+/// This function Projects from 3D into an image, returning a 2x1 image point.
 template<typename T> inline
 Eigen::Matrix<T,2,1> Project(const Eigen::Matrix<T,3,1>& P)
 {
@@ -74,7 +75,7 @@ Eigen::Matrix<T,3,1> Project(
 }
 
 //////////////////////////////////////////////////////////////////////////////
-/// dNorm_dx returns ... 
+/// dNorm_dx returns ... TODO
 inline
 Eigen::Matrix<double,1,2> dNorm_dx(
         const Eigen::Vector2d& x //< Input:
@@ -94,10 +95,14 @@ public:
     //////////////////////////////////////////////////////////////////////////////    
     // Virtual member functions
     //////////////////////////////////////////////////////////////////////////////    
-    
+    virtual ~CameraModelBase(){}
+
+    /// Map from image coordinates to z=1 plane.
     virtual Eigen::Vector2d Map( 
             const Eigen::Vector2d& proj  //< Input:
             ) const = 0;
+
+    /// Map from z=1 plane to image coordinates.
     virtual Eigen::Vector2d Unmap( 
             const Eigen::Vector2d& img //< Input:
             ) const = 0;
@@ -125,45 +130,14 @@ public:
     }
     
     //////////////////////////////////////////////////////////////////////////////
-    // Image Dimentions
-    
-    int& Width() {
-        return m_nWidth;
-    }
-    
-    int Width() const
-    {
-        return m_nWidth;
-    }
-    
-    int& Height()
-    {
-        return m_nHeight;
-    }
-    
-    int Height() const
-    {
-        return m_nHeight;
-    }
-    
-    void SetImageDimensions(
-            int nWidth,  //< Input:
-            int nHeight  //< Input:
-            )
-    {
-        m_nWidth = nWidth;
-        m_nHeight = nHeight;
-    }
-    
-    //////////////////////////////////////////////////////////////////////////////
     // Project point in 3d camera coordinates to image coordinates
     Eigen::Vector2d ProjectMap(
             const Eigen::Vector3d& P //< Input:
             ) const
     {
         return Map( Project(P) );
-    }    
-    
+    }
+ 
     //////////////////////////////////////////////////////////////////////////////
     // Create 3D camera coordinates ray from image space coordinates
     Eigen::Vector3d UnmapUnproject(
@@ -172,7 +146,7 @@ public:
     {
         return Unproject( Unmap(p) );
     }        
-    
+ 
     //////////////////////////////////////////////////////////////////////////////
     /// Transfer point correspondence with known inv. depth to secondary camera frame.
     //  Points at infinity are supported (rho = 0)
@@ -244,34 +218,55 @@ public:
         return Transfer3D(T_ba, rhoPa, rho, in_front);
     }
 
-
-
     //////////////////////////////////////////////////////////////////////////////
+    // Image Dimentions
+    
+    int& Width() {
+        return m_nWidth;
+    }
+    
+    int Width() const
+    {
+        return m_nWidth;
+    }
+    
+    int& Height()
+    {
+        return m_nHeight;
+    }
+    
+    int Height() const
+    {
+        return m_nHeight;
+    }
+    
+    void SetImageDimensions(
+            int nWidth,  //< Input:
+            int nHeight  //< Input:
+            )
+    {
+        m_nWidth = nWidth;
+        m_nHeight = nHeight;
+    }
+
+
     /// Report camera model version number.
-    int Version() const
-    {
-        return m_nVersion;
-    }
+    virtual int Version() const = 0;
 
-    //////////////////////////////////////////////////////////////////////////////
     /// Set the camera veriona nuber.
-    void SetVersion( int nVersion )
-    {
-        m_nVersion = nVersion;
-    }
+    virtual void SetVersion( int nVersion ) = 0;
 
-    //////////////////////////////////////////////////////////////////////////////
     /// Report camera model 
-    const char* Type() const
-    {
-        return m_sType.c_str();
-    }
+    virtual const char* Type() const = 0;
 
+    virtual void SetType( const std::string& sType ) = 0;
+
+/*
     //////////////////////////////////////////////////////////////////////////////
-    /// Set the camera model type.
-    void SetType( const std::string& sType )
+    /// Set the camera model name. e.g., "Left"
+    std::string Name()
     {
-        m_sType = sType;
+        return m_sName;
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -281,38 +276,31 @@ public:
         m_sName = sName;
     }
 
+    */
     //////////////////////////////////////////////////////////////////////////////
     /// Set the camera serial number.
-    void SetSerialNumber( const long int nSerialNo )
-    {
-        m_nSerialNo = nSerialNo;
-    }
+    virtual long int SerialNumber() = 0;
 
-    //////////////////////////////////////////////////////////////////////////////
+    /// Set the camera serial number.
+    virtual void SetSerialNumber( const long int nSerialNo ) = 0;
+
     /// Set the camera index (for multi-camera rigs).
-    void SetIndex( const int nIndex )
-    {
-        m_nIndex = nIndex;
-    }
+    virtual int Index() = 0;
+
+    /// Set the camera index (for multi-camera rigs).
+    virtual void SetIndex( const int nIndex ) = 0;
 
     //////////////////////////////////////////////////////////////////////////////
     /// Return 3x3 RDF matrix, describing the coordinate-frame convention.
-    Eigen::Matrix3d RDF() const
-    {
-        return m_RDF;
-    }
+    virtual Eigen::Matrix3d RDF() const = 0;
+
 
     //////////////////////////////////////////////////////////////////////////////
 protected:
     int              m_nWidth;    //< Camera width, in pixels
     int              m_nHeight;   //< Camera height, in pixels
 
-    std::string      m_sType;     //< Model type name.
     std::string      m_sName;     //< particular camera name, e.g., "Left"
-    int              m_nVersion;  //< Calibu or MVL camera model version.
-    long int         m_nSerialNo; //< Camera serial number, if appropriate.
-    int              m_nIndex;    //< Camera index, for multi-camera systems.
-    Eigen::Matrix3d  m_RDF;       //< Define coordinate-frame convention from Right, Down, Forward vectors.
 };
 
 }

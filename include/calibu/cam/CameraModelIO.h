@@ -122,9 +122,9 @@ static const char* CameraModelType( const std::string& sType )
 }
 
     ///////////////////////////////////////////////////////
-    void ReadCameraModelAndPose(
+    void ReadCameraModelHeaderAndPose(
             const std::string& sFile, //< Input: file name to read from. 
-            CameraModelBase& rCam,    //< Output: camera model.
+            NewCameraModel& rCam,     //< Output: camera model.
             Eigen::Matrix4d& rPose    //< Output: user specified pose of the camera.
             )
     {
@@ -153,13 +153,21 @@ static const char* CameraModelType( const std::string& sType )
             success = doc.LoadFile( sFileName.c_str() );
         }
         if( !success ){
-            fprintf( stderr, "ERROR: opening or parsing camera model XML file '%s'\n", sFile.c_str() );
+            fprintf( stderr,
+                    "ERROR: opening or parsing camera model XML file '%s': %s\n",
+                    sFile.c_str(), strerror(errno) );
             return;
         }
 
         // start parsing the xml
         TiXmlElement* pCamNode = doc.FirstChildElement( "camera_model" );
 
+        /// Get Type, allocate and initialize specialized camera type
+        std::string sType = CameraModelType( pCamNode->Attribute("type"));
+        rCam.Init( sType );
+//        rCam.SetType( sType );
+
+        /*
         /// Get version
         const char* sVer = pCamNode->Attribute("version");
         if( !sVer ){
@@ -179,10 +187,6 @@ static const char* CameraModelType( const std::string& sType )
         const char* sSerial = pCamNode->Attribute("serialno");
         rCam.SetSerialNumber( sSerial ? atoi(sSerial) : -1 );
 
-        /// Get Type
-        rCam.SetType( CameraModelType( pCamNode->Attribute("type")) );
-
-        /*
         if( g_nMvlCameraModelVerbosityLevel > 0 &&
                 cam->version != CURRENT_CMOD_XML_FILE_VERSION ){
             printf( "WARNING: Camera model v%d is outdated -- things should be fine, but you\n"
@@ -190,6 +194,11 @@ static const char* CameraModelType( const std::string& sType )
             printf( "         To do so, just run the 'cmodupdate' utility.\n\n" );
             //        printf( "       *** WILL TRY TO CONTINUE BUT BEHAVIOUR IS UNDEFINED AFTER THIS POINT ***\n\n\n" );
         }
+        */
+/*
+        rCam.Init( ); 
+
+        rCam.Read( 
 
         if( rCam.Type() == "calibu_fov" ){
             rCam = CameraModel<Fov>();
