@@ -118,16 +118,11 @@ public:
     const std::list<LineGroup>& LineGroups() const {
         return line_groups;
     }
-    
-    int CenterId() const {
-        return idxCrossConic;
-    }
-    
+        
 protected:
     void Clear();
     void SetGrid(Vertex& v, const Eigen::Vector2i& g);
-    bool Find(std::vector<Eigen::Vector2d>& pts, double thresh_dist, double thresh_area ) const;
-    void PropagateGrid(const std::vector<Eigen::Vector2d>& pts,const int idxCross) const;
+    bool Match(std::map<Eigen::Vector2i, Vertex*>& obs, const std::array<Eigen::MatrixXi,4>& PG);
     
     std::vector<Eigen::Vector2d > tpts2d;
     std::vector<Eigen::Vector3d > tpts3d;
@@ -143,7 +138,6 @@ protected:
     std::map<Eigen::Vector2i, Vertex*> map_grid_ellipse;
     
     std::list<LineGroup> line_groups;
-    int idxCrossConic;
 };
 
 }
