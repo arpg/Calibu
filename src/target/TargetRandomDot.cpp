@@ -1,8 +1,9 @@
 /* 
    This file is part of the Calibu Project.
-   https://robotics.gwu.edu/git/calibu
+   http://robotics.gwu.edu/git/?p=calibu
 
-   Copyright (C) 2013 George Washington University
+   Copyright (C) 2013 George Washington University,
+                      Steven Lovegrove
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -264,7 +265,7 @@ void TargetRandomDot::SaveEPS(string filename, float points_per_unit)
     ofstream f;
     f.open(filename.c_str());
     f << "%!PS-Adobe EPSF-3.0" << endl;
-    f << "%%Creator: FiducialCalibrationTarget" << endl;
+    f << "%%Creator: CalibuCalibrationTarget" << endl;
     f << "%%Title: Calibration Target" << endl;
     f << "%%Origin: 0 0" << endl;
     f << "%%BoundingBox: 0 0 " << size[0]*ppu << " " << size[1]*ppu << endl;
@@ -289,7 +290,7 @@ void TargetRandomDot::SaveRotatedEPS(string filename, float points_per_unit)
     ofstream f;
     f.open(filename.c_str());
     f << "%!PS-Adobe EPSF-3.0" << endl;
-    f << "%%Creator: FiducialCalibrationTarget" << endl;
+    f << "%%Creator: CalibuCalibrationTarget" << endl;
     f << "%%Title: Calibration Target" << endl;
     f << "%%Origin: 0 0" << endl;
     f << "%%BoundingBox: 0 0 " << size[1]*ppu << " " << size[0]*ppu << endl;  

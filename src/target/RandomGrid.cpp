@@ -1,8 +1,9 @@
 /* 
    This file is part of the Calibu Project.
-   https://robotics.gwu.edu/git/calibu
+   http://robotics.gwu.edu/git/?p=calibu
 
-   Copyright (C) 2013 George Washington University
+   Copyright (C) 2013 George Washington University,
+                      Steven Lovegrove
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -37,7 +38,7 @@ void SaveEPS(
     std::ofstream f;
     f.open(filename.c_str());
     f << "%!PS-Adobe EPSF-3.0" << std::endl;
-    f << "%%Creator: FiducialCalibrationTarget" << std::endl;
+    f << "%%Creator: CalibuCalibrationTarget" << std::endl;
     f << "%%Title: Calibration Target" << std::endl;
     f << "%%Origin: 0 0" << std::endl;
     f << "%%BoundingBox: 0 0 " << max_pts[0] << " " << max_pts[1] << std::endl;

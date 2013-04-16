@@ -2,7 +2,9 @@
    This file is part of the Calibu Project.
    https://robotics.gwu.edu/git/calibu
 
-   Copyright (C) 2013 George Washington University
+   Copyright (C) 2013 George Washington University,
+                      Steven Lovegrove,
+                      Hauke Strasdat
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.

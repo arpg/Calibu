@@ -1,5 +1,5 @@
-#ifndef FIDUCIALS_CONFIG_H
-#define FIDUCIALS_CONFIG_H
+#ifndef _CALIBU_CONFIG_H_
+#define _CALIBU_CONFIG_H_
 
 /// Platform
 #cmakedefine _OSX_
@@ -9,4 +9,4 @@
   #define _OSX
 #endif
 
-#endif //FIDUCIALS_CONFIG_H
+#endif //_CALIBU_CONFIG_H_
