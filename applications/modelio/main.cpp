@@ -11,8 +11,7 @@ int main( int argc, char* argv[] )
     Eigen::Matrix4d pose;
 
     CameraModel cam;
-//    cam.Read( "lcmod.xml", pose );
-//    ReadCameraModelAndPose( "lcmod.xml", cam, pose );
+    ReadCameraModelAndPose( "lcmod.xml", cam, pose );
 
     Eigen::Vector2d p;
     Eigen::Vector3d P;

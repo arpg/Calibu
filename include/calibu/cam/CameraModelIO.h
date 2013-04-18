@@ -1,21 +1,21 @@
 /* 
    This file is part of the Calibu Project.
-   https://robotics.gwu.edu/git/calibu
+https://robotics.gwu.edu/git/calibu
 
-   Copyright (C) 2013 George Washington University
-                      Gabe Sibley 
+Copyright (C) 2013 George Washington University
+Gabe Sibley 
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-   http://www.apache.org/licenses/LICENSE-2.0
+http://www.apache.org/licenses/LICENSE-2.0
 
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
  */
 
 #pragma once
@@ -70,62 +70,62 @@ namespace calibu
         return pBuf;
     }
 
-/*
-///////////////////////////////////////////////////////////////////////////////
-/// Helper for reading lookup-tables from xml files.
-static bool _read_lut_point( char* buf, char** endptr, _Bi_Point2D_f_nob& pt );
+    /*
+    ///////////////////////////////////////////////////////////////////////////////
+    /// Helper for reading lookup-tables from xml files.
+    static bool _read_lut_point( char* buf, char** endptr, _Bi_Point2D_f_nob& pt );
 
-///////////////////////////////////////////////////////////////////////////////
-/// Helper for writing lookup-tables to xml files.
-static void _write_lut_point( const _Bi_Point2D_f_nob& pt, char* buf );
+    ///////////////////////////////////////////////////////////////////////////////
+    /// Helper for writing lookup-tables to xml files.
+    static void _write_lut_point( const _Bi_Point2D_f_nob& pt, char* buf );
 
 
-////////////////////////////////////////////////////////////////////////////////
-/// Reads lookup table from file specified by filename in lut camera model
-static int _read_lut_from_file(
-        const char* pLUTFileName, //< Input: LUT file name.
-        int nWidth,               //< Input: image width.
-        int nHeight,              //< Input: image height.
-        Bi_Point2D_f_nob*** pLUT  //< Output: lookup table.
-        );
-*/
+    ////////////////////////////////////////////////////////////////////////////////
+    /// Reads lookup table from file specified by filename in lut camera model
+    static int _read_lut_from_file(
+    const char* pLUTFileName, //< Input: LUT file name.
+    int nWidth,               //< Input: image width.
+    int nHeight,              //< Input: image height.
+    Bi_Point2D_f_nob*** pLUT  //< Output: lookup table.
+    );
+     */
 
-///////////////////////////////////////////////////////////////////////////////
-static bool IsFile( const std::string& sFile )
-{
-    struct stat StatBuf;
-    if( stat( sFile.c_str(), &StatBuf ) < 0 ){
-        return false;
+    ///////////////////////////////////////////////////////////////////////////////
+    static bool IsFile( const std::string& sFile )
+    {
+        struct stat StatBuf;
+        if( stat( sFile.c_str(), &StatBuf ) < 0 ){
+            return false;
+        }
+        return S_ISREG( StatBuf.st_mode );
     }
-    return S_ISREG( StatBuf.st_mode );
-}
 
-///////////////////////////////////////////////////////////////////////////////
-static const char* CameraModelType( const std::string& sType )
-{
-    if( sType.empty() ){
-        fprintf( stderr, "ERROR: Unknown camera model type (no type attribute)" );
-        return NULL;
+    ///////////////////////////////////////////////////////////////////////////////
+    static const char* CameraModelType( const std::string& sType )
+    {
+        if( sType.empty() ){
+            fprintf( stderr, "ERROR: Unknown camera model type (no type attribute)" );
+            return NULL;
+        }
+        if( sType == "MVL_CAMERA_WARPED" || sType == "calibu_poly" ) {
+            return "calibu_poly"; // standard polynomial radial distortion model
+        }
+        else if( sType == "MVL_CAMERA_LINEAR" || sType == "calibu_pinhole" ) {
+            return "calibu_pinhole"; // standard pinhole projection model
+        }
+        else if( sType == "MVL_CAMERA_LUT" || sType == "calibu_lut" ) {
+            return "calibu_lut"; // look-up table model
+        }
+        else if( sType == "calibu_fov" ) {
+            return "calibu_fov"; // fov model
+        }
+        return "none";
     }
-    if( sType == "MVL_CAMERA_WARPED" || sType == "calibu_poly" ) {
-        return "calibu_poly"; // standard polynomial radial distortion model
-    }
-    else if( sType == "MVL_CAMERA_LINEAR" || sType == "calibu_pinhole" ) {
-        return "calibu_pinhole"; // standard pinhole projection model
-    }
-    else if( sType == "MVL_CAMERA_LUT" || sType == "calibu_lut" ) {
-        return "calibu_lut"; // look-up table model
-    }
-    else if( sType == "calibu_fov" ) {
-        return "calibu_fov"; // fov model
-    }
-    return "none";
-}
 
     ///////////////////////////////////////////////////////
-    void ReadCameraModelHeaderAndPose(
+    void ReadCameraModelAndPose(
             const std::string& sFile, //< Input: file name to read from. 
-            CameraModel& rCam,     //< Output: camera model.
+            CameraModel& rCam,        //< Output: camera model.
             Eigen::Matrix4d& rPose    //< Output: user specified pose of the camera.
             )
     {
@@ -164,16 +164,23 @@ static const char* CameraModelType( const std::string& sType )
         TiXmlElement* pCamNode = doc.FirstChildElement( "camera_model" );
 
         /// Get Type, allocate and initialize specialized camera type
-        std::string sType = CameraModelType( pCamNode->Attribute("type"));
-        rCam.Init( sType );
-//        rCam.SetType( sType );
-
+        std::string sType   = CameraModelType( pCamNode->Attribute("type"));
         /*
+        std::string sVer    = pCamNode->Attribute("version");
+        std::string sName   = pCamNode->Attribute("name");
+        std::string sIndex  = pCamNode->Attribute("index");
+        std::string sSerial = pCamNode->Attribute("serialno");
+
+        cam = Camera
+
+        //        rCam.Init( sType );
+        //        rCam.SetType( sType );
+
         /// Get version
         const char* sVer = pCamNode->Attribute("version");
         if( !sVer ){
-            fprintf( stderr, "ERROR: Unknown camera model version (no version attribute)" );
-            return;
+        fprintf( stderr, "ERROR: Unknown camera model version (no version attribute)" );
+        return;
         }
         rCam.SetVersion( atoi(sVer) );
 
@@ -189,31 +196,31 @@ static const char* CameraModelType( const std::string& sType )
         rCam.SetSerialNumber( sSerial ? atoi(sSerial) : -1 );
 
         if( g_nMvlCameraModelVerbosityLevel > 0 &&
-                cam->version != CURRENT_CMOD_XML_FILE_VERSION ){
-            printf( "WARNING: Camera model v%d is outdated -- things should be fine, but you\n"
-                    "         should consider updating your camera models.\n", cam->version );
-            printf( "         To do so, just run the 'cmodupdate' utility.\n\n" );
-            //        printf( "       *** WILL TRY TO CONTINUE BUT BEHAVIOUR IS UNDEFINED AFTER THIS POINT ***\n\n\n" );
+        cam->version != CURRENT_CMOD_XML_FILE_VERSION ){
+        printf( "WARNING: Camera model v%d is outdated -- things should be fine, but you\n"
+        "         should consider updating your camera models.\n", cam->version );
+        printf( "         To do so, just run the 'cmodupdate' utility.\n\n" );
+        //        printf( "       *** WILL TRY TO CONTINUE BUT BEHAVIOUR IS UNDEFINED AFTER THIS POINT ***\n\n\n" );
         }
-        */
-/*
-        rCam.Init( ); 
+         */
+        /*
+           rCam.Init( ); 
 
-        rCam.Read( 
+           rCam.Read( 
 
-        if( rCam.Type() == "calibu_fov" ){
-            rCam = CameraModel<Fov>();
-        }
-        */
+           if( rCam.Type() == "calibu_fov" ){
+           rCam = CameraModel<Fov>();
+           }
+         */
 
         /*
-        if( rCam.m_sType == "calibu_poly" ){
-            CameraModel<Fov> cam;
-        }
-        if( rCam.m_sType == "calibu_pinhole" ){
-            CameraModel<Fov> cam;
-        }
-        */
+           if( rCam.m_sType == "calibu_poly" ){
+           CameraModel<Fov> cam;
+           }
+           if( rCam.m_sType == "calibu_pinhole" ){
+           CameraModel<Fov> cam;
+           }
+         */
     }
 
     ///////////////////////////////////////////////////////
@@ -224,7 +231,7 @@ static const char* CameraModelType( const std::string& sType )
             const std::string& sFile  //< Input: file name to write.
             )
     {
-    
+
     }
 }
 

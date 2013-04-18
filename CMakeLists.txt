@@ -7,15 +7,6 @@ option( BUILD_APPLICATIONS "Build Applications" ON )
 
 set( CMAKE_CXX_FLAGS "-std=c++0x -Wall ${CMAKE_CXX_FLAGS}" )
 
-# Overide with cmake -DCMAKE_BUILD_TYPE=Debug {dir}
-if( NOT CMAKE_BUILD_TYPE )
-#   message("Build type not set (defaults to release)")
-#   message("-DCMAKE_BUILD_TYPE=Debug for debug")
-   set( CMAKE_BUILD_TYPE Release )
-else()
-   MESSAGE("Build type: ${CMAKE_BUILD_TYPE}")
-endif()
-
 string( TOLOWER ${PROJECT_NAME} LIBRARY_NAME )
 
 add_subdirectory( src )
