@@ -75,17 +75,17 @@ public:
         jacobian[23] = -half_q3;    
         
         // d output_translation / d update
-        jacobian[24]  = 1.0 - 2.0 * (q2_sq - q3_sq);
+        jacobian[24]  = 1.0 - 2.0 * (q2_sq + q3_sq);
         jacobian[25]  = 2.0 * (q1*q2 - q0*q3);
         jacobian[26]  = 2.0 * (q1*q3 + q0*q2);
         
         jacobian[30]  = 2.0 * (q1*q2 + q0*q3);
-        jacobian[31]  = 1.0 - 2.0 * (q1_sq - q3_sq);
+        jacobian[31]  = 1.0 - 2.0 * (q1_sq + q3_sq);
         jacobian[32]  = 2.0 * (q2*q3 - q0*q1);
         
         jacobian[36] = 2.0 * (q1*q3 - q0*q2);
         jacobian[37] = 2.0 * (q2*q3 + q0*q1);
-        jacobian[38] = 1.0 - 2.0 * (q1_sq - q2_sq);
+        jacobian[38] = 1.0 - 2.0 * (q1_sq + q2_sq);
         
         return true;
     }
