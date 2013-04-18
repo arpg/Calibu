@@ -3,6 +3,7 @@
    https://robotics.gwu.edu/git/calibu
 
    Copyright (C) 2013 George Washington University,
+                      Hauke Strasdat,
                       Steven Lovegrove
 
    Licensed under the Apache License, Version 2.0 (the "License");

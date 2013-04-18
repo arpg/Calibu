@@ -4,8 +4,6 @@
 
    Copyright (C) 2013 George Washington University,
                       Steven Lovegrove,
-                      Nima Keivan,
-                      Gabe Sibley
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -25,22 +23,33 @@
 #include <type_traits>
 
 #include <ceres/ceres.h>
-#include "EigenCeresJetNumTraits.h"
+#include "CeresExtra.h"
 
 namespace ceres
 {
 
 // Sum group of variadic compile time values.
-template <int... PS> struct SumParams;
-template<int P> struct SumParams<P>{
+template <int... PS>
+struct SumParams;
+
+template<int P>
+struct SumParams<P>{
     static const int sum = P;
 };
-template <int P, int... PS> struct SumParams<P,PS...> {
+
+template <int P, int... PS>
+struct SumParams<P,PS...>
+{
     static const int sum = P + SumParams<PS...>::sum;
 };
 
 // Sum first N variadic compile time values
-template<int N, int P, int... PS> struct SumParamsN{
+template<int... ALL>
+struct SumParamsN;
+
+template<int N, int P, int... PS>
+struct SumParamsN<N,P,PS...>
+{
     static const int sum = P + std::conditional<N==1, SumParams<0>, SumParamsN<N-1,PS...> >::sum; 
 };
 

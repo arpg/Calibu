@@ -8,7 +8,7 @@ set(
     ${INCDIR}/calib/AutoDiffArrayCostFunction.h
     ${INCDIR}/calib/Calibrator.h
     ${INCDIR}/calib/CostFunctionAndParams.h
-    ${INCDIR}/calib/EigenCeresJetNumTraits.h
+    ${INCDIR}/calib/CeresExtra.h
     ${INCDIR}/calib/LocalParamSe3.h
     ${INCDIR}/cam/CameraModel.h
     ${INCDIR}/cam/CameraModelIO.h

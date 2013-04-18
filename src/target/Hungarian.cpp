@@ -1,22 +1,27 @@
-/* 
-   This file is part of the Calibu Project.
-   http://robotics.gwu.edu/git/?p=calibu
-
-   Copyright (C) 2013 George Washington University,
-                      Steven Lovegrove
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-   http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
- */
+/********************************************************************
+ ********************************************************************
+ **
+ ** libhungarian by Cyrill Stachniss, 2004
+ **
+ **
+ ** Solving the Minimum Assignment Problem using the 
+ ** Hungarian Method.
+ **
+ ** ** This file may be freely copied and distributed! **
+ **
+ ** Parts of the used code was originally provided by the 
+ ** "Stanford GraphGase", but I made changes to this code.
+ ** As asked by  the copyright node of the "Stanford GraphGase", 
+ ** I hereby proclaim that this file are *NOT* part of the
+ ** "Stanford GraphGase" distrubition!
+ **
+ ** This file is distributed in the hope that it will be useful,
+ ** but WITHOUT ANY WARRANTY; without even the implied 
+ ** warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ ** PURPOSE.  
+ **
+ ********************************************************************
+ ********************************************************************/
 
 #include <stdio.h>
 #include <stdlib.h>
