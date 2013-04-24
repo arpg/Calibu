@@ -21,6 +21,8 @@
 
 #pragma once
 
+#include <ceres/ceres.h>
+
 namespace calibu
 {
 

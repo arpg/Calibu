@@ -28,9 +28,8 @@
 #include <sophus/se3.hpp>
 
 #include <calibu/cam/CameraModel.h>
-#include <calibu/calib/CostFunctionAndParams.h>
-#include <calibu/calib/AutoDiffArrayCostFunction.h>
 #include <calibu/calib/LocalParamSe3.h>
+#include <calibu/calib/ReprojectionCost.h>
 
 namespace calibu {
 
@@ -50,38 +49,6 @@ struct CameraAndPose
     
     CameraModelSpecialization<ProjModel> camera;
     Sophus::SE3d T_ck;
-};
-
-// Parameter block 0: T_kw // keyframe
-// Parameter block 1: T_ck // keyframe to cam
-// Parameter block 2: fu,fv,u0,v0,w
-template<typename ProjModel>
-struct ReprojectionCost
-        : public ceres::AutoDiffArrayCostFunction<
-        CostFunctionAndParams, ReprojectionCost<ProjModel>,
-        2,  7,7, ProjModel::NUM_PARAMS>
-{
-    ReprojectionCost(Eigen::Vector3d Pw, Eigen::Vector2d pc)
-        : m_Pw(Pw), m_pc(pc)
-    {        
-    }
-    
-    template<typename T=double>
-    bool Evaluate(T const* const* parameters, T* residuals) const
-    {
-        Eigen::Map<Eigen::Matrix<T,2,1> > r(residuals);
-        const Eigen::Map<const Sophus::SE3Group<T> > T_kw(parameters[0]);
-        const Eigen::Map<const Sophus::SE3Group<T> > T_ck(parameters[1]);
-        T const* camparam = parameters[2];
-        
-        const Eigen::Matrix<T,3,1> Pc = T_ck * (T_kw * m_Pw.cast<T>());
-        const Eigen::Matrix<T,2,1> pc = ProjModel::template Map<T>(Project<T>(Pc), camparam);
-        r = pc - m_pc.cast<T>();
-        return true;
-    }    
-    
-    Eigen::Vector3d m_Pw;
-    Eigen::Vector2d m_pc;
 };
 
 template<typename ProjModel>
