@@ -28,8 +28,12 @@
 #include <sophus/se3.hpp>
 
 #include <calibu/cam/CameraModel.h>
+
+#include <calibu/calib/CeresExtra.h>
 #include <calibu/calib/LocalParamSe3.h>
-#include <calibu/calib/ReprojectionCost.h>
+
+#include <calibu/calib/ReprojectionCostFunctor.h>
+#include <calibu/calib/CostFunctionAndParams.h>
 
 namespace calibu {
 
@@ -142,8 +146,18 @@ public:
         Sophus::SE3d& T_kw = *m_T_kw[frame];
         
         // Create cost function
-        CostFunctionAndParams* cost = new ReprojectionCost<ProjModel>(P_c, p_c);
-        cost->Params() = std::vector<double*>{T_kw.data(), cp.T_ck.data(), cp.camera.data()};
+//        CostFunctionAndParams* cost = new ReprojectionCost<ProjModel>(P_c, p_c);
+        
+        CostFunctionAndParams* cost = new CostFunctionAndParams();
+        ReprojectionCostFunctor<ProjModel>* c =
+                new ReprojectionCostFunctor<ProjModel>(P_c, p_c);
+        cost->Cost() =  new ceres::AutoDiffCostFunction<ReprojectionCostFunctor<ProjModel>,
+                2, Sophus::SE3d::num_parameters, Sophus::SE3d::num_parameters,
+                ProjModel::NUM_PARAMS>(c);
+                
+        cost->Params() = std::vector<double*>{
+                T_kw.data(), cp.T_ck.data(), cp.camera.data()
+        };
         cost->Loss() = nullptr;
         m_costs.push_back(std::unique_ptr<CostFunctionAndParams>(cost));
         
@@ -201,7 +215,7 @@ protected:
             for(size_t c=0; c<m_costs.size(); ++c)
             {
                 CostFunctionAndParams& cost = *m_costs[c];
-                problem.AddResidualBlock(&cost, cost.Loss(), cost.Params());
+                problem.AddResidualBlock(cost.Cost(), cost.Loss(), cost.Params());
             }
             
             m_update_mutex.unlock();

@@ -26,12 +26,16 @@ namespace calibu
 {
 
 class CostFunctionAndParams
-        : public ceres::CostFunction
 {
 public:     
     virtual ~CostFunctionAndParams()
     {
     }    
+    
+    ceres::CostFunction*& Cost()
+    {
+        return m_cost;
+    }
     
     std::vector<double*>& Params()
     {
@@ -44,6 +48,7 @@ public:
     }    
     
 protected:
+    ceres::CostFunction* m_cost;
     std::vector<double*> m_params;
     ceres::LossFunction* m_loss_func;
 };
