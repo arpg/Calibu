@@ -61,6 +61,7 @@ class Calibrator
 public:
     
     Calibrator()
+        : m_running(false)
     {
         m_prob_options.cost_function_ownership = ceres::DO_NOT_TAKE_OWNERSHIP;
         m_prob_options.local_parameterization_ownership = ceres::DO_NOT_TAKE_OWNERSHIP;
