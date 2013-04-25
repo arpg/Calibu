@@ -32,7 +32,11 @@
 #include <calibu/cam/CameraModelIO.h>
 #include <calibu/calib/CostFunctionAndParams.h>
 #include <calibu/calib/AutoDiffArrayCostFunction.h>
+
 #include <calibu/calib/LocalParamSe3.h>
+
+#include <calibu/calib/ReprojectionCostFunctor.h>
+#include <calibu/calib/CostFunctionAndParams.h>
 
 namespace calibu {
 
@@ -54,44 +58,13 @@ struct CameraAndPose
     Sophus::SE3d T_ck;
 };
 
-// Parameter block 0: T_kw // keyframe
-// Parameter block 1: T_ck // keyframe to cam
-// Parameter block 2: fu,fv,u0,v0,w
-template<typename ProjModel>
-struct ReprojectionCost
-        : public ceres::AutoDiffArrayCostFunction<
-        CostFunctionAndParams, ReprojectionCost<ProjModel>,
-        2,  7,7, ProjModel::NUM_PARAMS>
-{
-    ReprojectionCost(Eigen::Vector3d Pw, Eigen::Vector2d pc)
-        : m_Pw(Pw), m_pc(pc)
-    {        
-    }
-    
-    template<typename T=double>
-    bool Evaluate(T const* const* parameters, T* residuals) const
-    {
-        Eigen::Map<Eigen::Matrix<T,2,1> > r(residuals);
-        const Eigen::Map<const Sophus::SE3Group<T> > T_kw(parameters[0]);
-        const Eigen::Map<const Sophus::SE3Group<T> > T_ck(parameters[1]);
-        T const* camparam = parameters[2];
-        
-        const Eigen::Matrix<T,3,1> Pc = T_ck * (T_kw * m_Pw.cast<T>());
-        const Eigen::Matrix<T,2,1> pc = ProjModel::template Map<T>(Project<T>(Pc), camparam);
-        r = pc - m_pc.cast<T>();
-        return true;
-    }    
-    
-    Eigen::Vector3d m_Pw;
-    Eigen::Vector2d m_pc;
-};
-
 template<typename ProjModel>
 class Calibrator
 {
 public:
     
     Calibrator()
+        : m_running(false)
     {
         m_prob_options.cost_function_ownership = ceres::DO_NOT_TAKE_OWNERSHIP;
         m_prob_options.local_parameterization_ownership = ceres::DO_NOT_TAKE_OWNERSHIP;
@@ -186,8 +159,18 @@ public:
         Sophus::SE3d& T_kw = *m_T_kw[frame];
         
         // Create cost function
-        CostFunctionAndParams* cost = new ReprojectionCost<ProjModel>(P_c, p_c);
-        cost->Params() = std::vector<double*>{T_kw.data(), cp.T_ck.data(), cp.camera.data()};
+//        CostFunctionAndParams* cost = new ReprojectionCost<ProjModel>(P_c, p_c);
+        
+        CostFunctionAndParams* cost = new CostFunctionAndParams();
+        ReprojectionCostFunctor<ProjModel>* c =
+                new ReprojectionCostFunctor<ProjModel>(P_c, p_c);
+        cost->Cost() =  new ceres::AutoDiffCostFunction<ReprojectionCostFunctor<ProjModel>,
+                2, Sophus::SE3d::num_parameters, Sophus::SE3d::num_parameters,
+                ProjModel::NUM_PARAMS>(c);
+                
+        cost->Params() = std::vector<double*>{
+                T_kw.data(), cp.T_ck.data(), cp.camera.data()
+        };
         cost->Loss() = nullptr;
         m_costs.push_back(std::unique_ptr<CostFunctionAndParams>(cost));
         
@@ -243,7 +226,7 @@ protected:
             // Add costs
             for(size_t c=0; c<m_costs.size(); ++c) {
                 CostFunctionAndParams& cost = *m_costs[c];
-                problem.AddResidualBlock(&cost, cost.Loss(), cost.Params());
+                problem.AddResidualBlock(cost.Cost(), cost.Loss(), cost.Params());
             }
             
             m_update_mutex.unlock();
