@@ -2,8 +2,9 @@
    This file is part of the Calibu Project.
    https://robotics.gwu.edu/git/calibu
 
-   Copyright (C) 2013 George Washington University
-                      Steven Lovegrove
+   Copyright (C) 2013 George Washington University,
+                      Steven Lovegrove,
+                      Gabe Sibley
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -28,6 +29,7 @@
 #include <sophus/se3.hpp>
 
 #include <calibu/cam/CameraModel.h>
+#include <calibu/cam/CameraModelIO.h>
 #include <calibu/calib/CostFunctionAndParams.h>
 #include <calibu/calib/AutoDiffArrayCostFunction.h>
 #include <calibu/calib/LocalParamSe3.h>
@@ -110,7 +112,16 @@ public:
             std::cout << m_camera[c]->camera.Params().transpose() << std::endl;
             std::cout << m_camera[c]->T_ck.matrix3x4() << std::endl << std::endl;
         }        
-        
+    }
+
+    void WriteCameraModels()
+    {
+        for(size_t c=0; c<m_camera.size(); ++c) {
+            std::stringstream sFile;
+            sFile << "CameraModel-" << m_camera[c]->camera.Index() << ".xml";
+            Eigen::Matrix4d pose = m_camera[c]->T_ck.matrix();
+            WriteCameraModelAndPose( m_camera[c]->camera, pose, sFile.str() );
+        }
     }
     
     void Clear()
@@ -143,28 +154,28 @@ public:
             }
         }
     }
-    
+ 
     int AddCamera(const CameraModelSpecialization<ProjModel>& cam, const Sophus::SE3d T_ck = Sophus::SE3d() )
     {
         int id = m_camera.size();
         m_camera.push_back( make_unique<CameraAndPose<ProjModel> >(cam,T_ck) );
         return id;
     }
-    
+ 
     int AddFrame(Sophus::SE3d T_kw = Sophus::SE3d())
     {
         int id = m_T_kw.size();
         m_T_kw.push_back( make_unique<Sophus::SE3d>(T_kw) );
         return id;
     }
-    
+ 
     void AddObservation(
             size_t frame, size_t camera,
             const Eigen::Vector3d& P_c,
             const Eigen::Vector2d& p_c
             ) {
         m_update_mutex.lock();
-        
+ 
         // Ensure index is valid
         while( NumFrames() < frame) { AddFrame(); }
         while( NumCameras() < camera ) { AddCamera(CameraModelSpecialization<ProjModel>()); }
@@ -213,8 +224,7 @@ protected:
     void SolveThread()
     {
         m_running = true;
-        while(m_should_run)
-        {
+        while( m_should_run ){
             ceres::Problem problem(m_prob_options);
             
             m_update_mutex.lock();
@@ -231,8 +241,7 @@ protected:
             }
             
             // Add costs
-            for(size_t c=0; c<m_costs.size(); ++c)
-            {
+            for(size_t c=0; c<m_costs.size(); ++c) {
                 CostFunctionAndParams& cost = *m_costs[c];
                 problem.AddResidualBlock(&cost, cost.Loss(), cost.Params());
             }
@@ -254,16 +263,16 @@ protected:
         }
         m_running = false;
     }
-    
-    std::mutex m_update_mutex;    
-    std::thread m_thread;    
+ 
+    std::mutex m_update_mutex;
+    std::thread m_thread;
     bool m_should_run;
     bool m_running;
-    
+ 
     std::vector< std::unique_ptr<Sophus::SE3d> > m_T_kw;
-    std::vector< std::unique_ptr<CameraAndPose<ProjModel> > > m_camera;    
-    std::vector< std::unique_ptr<CostFunctionAndParams > > m_costs;  
-    
+    std::vector< std::unique_ptr<CameraAndPose<ProjModel> > > m_camera;
+    std::vector< std::unique_ptr<CostFunctionAndParams > > m_costs;
+ 
     ceres::Problem::Options m_prob_options;
     ceres::Solver::Options  m_solver_options;
     LocalParameterizationSe3  m_LocalParamSe3; 

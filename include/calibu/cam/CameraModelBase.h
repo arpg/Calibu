@@ -111,11 +111,11 @@ public:
     /// Return the perspective projection camera model inverse "K" matrix
     virtual Eigen::Matrix3d Kinv() const = 0;
 
-//    virtual static std::string Name() = 0;
-
     virtual int Width() const = 0;
  
     virtual int Height() const = 0;
+
+    virtual Eigen::VectorXd GenericParams() = 0;
  
     virtual void SetImageDimensions( 
             int nWidth,  //< Input:
@@ -129,7 +129,7 @@ public:
     virtual void SetVersion( int nVersion ) = 0;
 
     /// Report camera model 
-    virtual const char* Type() const = 0;
+    virtual std::string Type() const = 0;
 
     virtual void SetType( const std::string& sType ) = 0;
 

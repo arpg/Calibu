@@ -16,11 +16,45 @@
 
 using namespace calibu;
 
+const char* sUriInfo = 
+"Video URI's take the following form:\n"
+" scheme:[param1=value1,param2=value2,...]//device\n"
+"\n"
+"scheme = file | dc1394 | v4l | openni | convert | mjpeg\n"
+"\n"
+"file/files - read PVN file format (pangolin video) or other formats using ffmpeg\n"
+" e.g. \"file:[realtime=1]///home/user/video/movie.pvn\"\n"
+" e.g. \"file:[stream=1]///home/user/video/movie.avi\"\n"
+" e.g. \"files:///home/user/sequence/foo%03d.jpeg\"\n"
+"\n"
+"dc1394 - capture video through a firewire camera\n"
+" e.g. \"dc1394:[fmt=RGB24,size=640x480,fps=30,iso=400,dma=10]//0\"\n"
+" e.g. \"dc1394:[fmt=FORMAT7_1,size=640x480,pos=2+2,iso=400,dma=10]//0\"\n"
+"\n"
+"v4l - capture video from a Video4Linux (USB) camera (normally YUVY422 format)\n"
+" e.g. \"v4l:///dev/video0\"\n"
+"\n"
+"openni - capture video / depth from an OpenNI streaming device (Kinect / Xtrion etc)\n"
+" e.g. \"openni://'\n"
+" e.g. \"openni:[img1=rgb,img2=depth]//\"\n"
+" e.g. \"openni:[img1=ir]//\"\n"
+"\n"
+"convert - use FFMPEG to convert between video pixel formats\n"
+" e.g. \"convert:[fmt=RGB24]//v4l:///dev/video0\"\n"
+" e.g. \"convert:[fmt=GRAY8]//v4l:///dev/video0\"\n"
+"\n"
+"mjpeg - capture from (possibly networked) motion jpeg stream using FFMPEG\n"
+" e.g. \"mjpeg://http://127.0.0.1/?action=stream\"\n"
+"\n"
+"split - split a single stream video into a multi stream video based on Region of Interest\n"
+" e.g. \"split:[roi1=0+0+640x480,roi2=640+0+640x480]//files:///home/user/sequence/foo%03d.jpeg\"\n\n";
+
 int main( int argc, char** argv)
 {    
     if(argc != 2) {
         std::cout << "Usage:" << std::endl;
         std::cout << "\t" << argv[0] << " video_uri" << std::endl;
+        std::cout << "\n\n"<< sUriInfo << std::endl;
         return -1;
     }
 
@@ -47,7 +81,7 @@ int main( int argc, char** argv)
     const double grid_spacing = 0.02;
     const Eigen::Vector2i grid_size(19,10);
     const Eigen::Vector2i grid_center(9, 5);
-    Calibrator<Fov> calibrator;   
+    Calibrator<Fov> calibrator;
  
     // Setup GUI
     const int PANEL_WIDTH = 150;
@@ -132,31 +166,34 @@ int main( int argc, char** argv)
     conic_finder.Params().conic_min_area = 4.0;
     conic_finder.Params().conic_min_density = 0.6;
     conic_finder.Params().conic_min_aspect = 0.2;
-        
+ 
     TargetGridDot target(grid_spacing, grid_size, grid_center);
 
     for(size_t i=0; i<N; ++i) {
         // Add (arbitrary) starting camera params
         const pangolin::StreamInfo& si = video.Streams()[i];
         CameraModelSpecialization<Fov> default_cam( si.Width(), si.Height() );
+
+        default_cam.SetIndex( i );
+
         default_cam.Params()  << 300, 300, w/2.0, h/2.0, 0.2;
         calib_cams[i] = calibrator.AddCamera(default_cam);
-    }            
+    }
 
-    for(int frame=0; !pangolin::ShouldQuit();)
-    {     
+    for(int frame=0; !pangolin::ShouldQuit();){     
         if(pangolin::Pushed(reset) ) {
             calibrator.Clear();
             video.Reset();
             frame=0;
-            
+ 
             // Re-add camers
             for(size_t i=0; i<N; ++i) {
                 const pangolin::StreamInfo& si = video.Streams()[i];
                 CameraModelSpecialization<Fov> default_cam( si.Width(), si.Height() );
                 default_cam.Params()  << 300, 300, w/2.0, h/2.0, 0.2;
+                default_cam.SetIndex( i );
                 calib_cams[i] = calibrator.AddCamera(default_cam);
-            }            
+            }
         }
 
         const bool go = (frame==0) || run || pangolin::Pushed(step);
@@ -320,5 +357,9 @@ int main( int argc, char** argv)
     }
     
     calibrator.Stop();
+
+
+    calibrator.WriteCameraModels();
+
 }
 

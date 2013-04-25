@@ -165,73 +165,104 @@ namespace calibu
 
         /// Get Type, allocate and initialize specialized camera type
         std::string sType   = CameraModelType( pCamNode->Attribute("type"));
-        /*
         std::string sVer    = pCamNode->Attribute("version");
         std::string sName   = pCamNode->Attribute("name");
         std::string sIndex  = pCamNode->Attribute("index");
         std::string sSerial = pCamNode->Attribute("serialno");
 
-        cam = Camera
+        rCam.Init( sType );
+//        rCam.SetImageDimensions( nWidth, nHeight );
 
-        //        rCam.Init( sType );
-        //        rCam.SetType( sType );
-
-        /// Get version
-        const char* sVer = pCamNode->Attribute("version");
-        if( !sVer ){
-        fprintf( stderr, "ERROR: Unknown camera model version (no version attribute)" );
-        return;
+        /// Set version
+        if( sVer.empty() ){
+            fprintf( stderr, 
+                    "ERROR: Unknown camera model version (no version attribute)" );
+            return;
         }
-        rCam.SetVersion( atoi(sVer) );
 
-        /// Get name
-        rCam.SetName( pCamNode->Attribute("name") );
+        rCam.SetVersion( atoi(sVer.c_str()) );
+        rCam.SetName( sName );
+        rCam.SetIndex( sIndex.empty() ? 0 : atoi(sIndex.c_str()) );
+        rCam.SetSerialNumber( sSerial.empty() ? -1 : atoi(sSerial.c_str()) );
 
-        /// Get index
-        const char* sIndex = pCamNode->Attribute("index");
-        rCam.SetIndex( sIndex ? atoi(sIndex) : 0 );
+        if( rCam.Type() == "lut" ){
+            // Read camera model parameters
+            //        rCam.Params() << 
+        }
+        else if( rCam.Type() == "pinhole" ){
 
-        /// Get serial number
-        const char* sSerial = pCamNode->Attribute("serialno");
-        rCam.SetSerialNumber( sSerial ? atoi(sSerial) : -1 );
+        }
+        else if( rCam.Type() == "lut" ){
 
-        if( g_nMvlCameraModelVerbosityLevel > 0 &&
-        cam->version != CURRENT_CMOD_XML_FILE_VERSION ){
-        printf( "WARNING: Camera model v%d is outdated -- things should be fine, but you\n"
-        "         should consider updating your camera models.\n", cam->version );
-        printf( "         To do so, just run the 'cmodupdate' utility.\n\n" );
+        }
+
+        /*
+           if( g_nMvlCameraModelVerbosityLevel > 0 &&
+           cam->version != CURRENT_CMOD_XML_FILE_VERSION ){
+           printf( "WARNING: Camera model v%d is outdated -- things should be fine, but you\n"
+           "         should consider updating your camera models.\n", cam->version );
+           printf( "         To do so, just run the 'cmodupdate' utility.\n\n" );
         //        printf( "       *** WILL TRY TO CONTINUE BUT BEHAVIOUR IS UNDEFINED AFTER THIS POINT ***\n\n\n" );
         }
-         */
-        /*
-           rCam.Init( ); 
-
-           rCam.Read( 
-
-           if( rCam.Type() == "calibu_fov" ){
-           rCam = CameraModel<Fov>();
-           }
-         */
-
-        /*
-           if( rCam.m_sType == "calibu_poly" ){
-           CameraModel<Fov> cam;
-           }
-           if( rCam.m_sType == "calibu_pinhole" ){
-           CameraModel<Fov> cam;
-           }
          */
     }
 
     ///////////////////////////////////////////////////////
     ///
     void WriteCameraModelAndPose(
-            const CameraModel&, //< Input: camera to save.
-            const Eigen::Matrix4d&, //< Input: pose of the camera.
+            CameraModelInterface& rCam, //< Input: camera to save.
+            Eigen::Matrix4d& rPose, //< Input: pose of the camera.
             const std::string& sFile  //< Input: file name to write.
             )
     {
 
+        std::ofstream file( sFile.c_str() );
+        if( !file.is_open() ){
+            printf( "ERROR: opening '%s' -- %s\n", sFile.c_str(), strerror(errno) );
+            return;
+        }
+
+        // save camera model to a string
+        Eigen::Vector3d dEulerAngles = rPose.block<3,3>(0,0).eulerAngles( 0, 1, 2 );
+        std::stringstream ss;
+        ss << "<camera_model name=\"" << rCam.Name() << "\" "
+            << "index=\"" << rCam.Index() << "\" "
+            << "serialno=\"" << rCam.SerialNumber() << "\" "
+            << "type=\"" << rCam.Type() << "\" "
+            << "version=\"" << rCam.Version() << "\">\n";
+        ss << "    <width> " << rCam.Width() << " </width>\n";
+        ss << "    <height> " << rCam.Height() << " </height>\n";
+        ss << "    <pose> "
+            << rPose(0,3) << " "
+            << rPose(1,3) << " "
+            << rPose(2,3) << " "
+            << dEulerAngles[0] << " "
+            << dEulerAngles[1] << " "
+            << dEulerAngles[2] << " </pose>\n";
+
+        // now print the RDF info
+        ss << "    <right> "
+            << rCam.RDF()(0,0) << " "
+            << rCam.RDF()(1,0) << " "
+            << rCam.RDF()(2,0) << " </right>\n";
+
+        ss << "    <down> "
+            << rCam.RDF()(0,1) << " "
+            << rCam.RDF()(1,1) << " "
+            << rCam.RDF()(2,1) << " </down>\n";
+
+        ss << "    <forward> "
+            << rCam.RDF()(0,2) << " "
+            << rCam.RDF()(1,2) << " "
+            << rCam.RDF()(2,2) << " </forward>\n";
+
+        ss.precision(7);
+        ss << "    <params> "
+            << rCam.GenericParams().transpose()
+            << " </params>\n";
+        ss << "</camera_model>\n";
+
+        file << ss.str();
     }
 }
 

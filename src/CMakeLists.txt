@@ -53,9 +53,9 @@ SET(
     target/TargetGridDot.cpp
     target/TargetRandomDot.cpp
     utils/Utils.cpp
-    utils/Xml.cpp
-    utils/XmlError.cpp
-    utils/XmlParser.cpp
+#    utils/Xml.cpp
+#utils/XmlError.cpp
+#utils/XmlParser.cpp
 )
 
 #######################################################

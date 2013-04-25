@@ -178,21 +178,33 @@ namespace calibu
                 m_nHeight(0),
                 params(Eigen::Matrix<double,NUM_PARAMS,1>::Zero())
             {
+                m_RDF << 0,0,1, 1,0,0, 0,1,0; 
+                m_nIndex = 0;
+                m_nSerialNo = 0;
+                m_nVersion = 8;
             }    
 
             CameraModelSpecialization(int w, int h) :
-                m_nWidth(0),
-                m_nHeight(0),
+                m_nWidth(w),
+                m_nHeight(h),
                 params(Eigen::Matrix<double,NUM_PARAMS,1>::Zero())
             {
-            }    
+                m_RDF << 0,0,1, 1,0,0, 0,1,0; 
+                m_nIndex = 0;
+                m_nSerialNo = 0;
+                m_nVersion = 8;
+             }    
 
             CameraModelSpecialization( const Eigen::Matrix<double,NUM_PARAMS,1>& params) :
                 m_nWidth(0),
                 m_nHeight(0),
                 params(params)
             {
-            }    
+                m_RDF << 0,0,1, 1,0,0, 0,1,0; 
+                m_nIndex = 0;
+                m_nSerialNo = 0;
+                m_nVersion = 8;
+             }    
 
             CameraModelSpecialization( 
                     int w, 
@@ -202,36 +214,62 @@ namespace calibu
                 m_nHeight(h),
                 params(params)
             {
-            }
+                m_RDF << 0,0,1, 1,0,0, 0,1,0; 
+                m_nIndex = 0;
+                m_nSerialNo = 0;
+                m_nVersion = 8;
+             }
 
             CameraModelSpecialization(double* cam_params):
                 m_nWidth(0),
                 m_nHeight(0),
                 params(Eigen::Map<Eigen::Matrix<double,NUM_PARAMS,1> >(cam_params))
             {
-            }
+                m_RDF << 0,0,1, 1,0,0, 0,1,0; 
+                m_nIndex = 0;
+                m_nSerialNo = 0;
+                m_nVersion = 8;
+             }
 
             CameraModelSpecialization(int w, int h, double* cam_params) :
                 m_nWidth(w),
                 m_nHeight(h),
                 params(Eigen::Map<Eigen::Matrix<double,NUM_PARAMS,1> >(cam_params))
             {
-            }
+                m_RDF << 0,0,1, 1,0,0, 0,1,0; 
+                m_nIndex = 0;
+                m_nSerialNo = 0;
+                m_nVersion = 8;
+             }
 
-            CameraModelSpecialization(const CameraModelSpecialization& other) : 
-                params(other.params)
+            // copy constructor
+            CameraModelSpecialization( const CameraModelSpecialization& rRHS ) 
             {
-            }    
+                m_nWidth    = rRHS.m_nWidth;
+                m_nHeight   = rRHS.m_nHeight;
+                params      = rRHS.params;
+                m_RDF       = rRHS.m_RDF; 
+                m_nIndex    = rRHS.m_nIndex;
+                m_nSerialNo = rRHS.m_nSerialNo;
+                m_nVersion  = rRHS.m_nVersion;
+             }    
 
             ///////////////////////////////////////////////////////////////////////////
             // Member functions
             ///////////////////////////////////////////////////////////////////////////
 
-            Eigen::Matrix<double,NUM_PARAMS,1>& Params() {
+            Eigen::VectorXd GenericParams() 
+            {
                 return params;
             }
 
-            const Eigen::Matrix<double,NUM_PARAMS,1>& Params() const {
+            Eigen::Matrix<double,NUM_PARAMS,1>& Params() 
+            {
+                return params;
+            }
+
+            const Eigen::Matrix<double,NUM_PARAMS,1>& Params() const 
+            {
                 return params;
             }
 
@@ -295,7 +333,7 @@ namespace calibu
             }
 
             /// Report camera model 
-            const char* Type() const 
+            std::string Type() const 
             {
                 return m_sType.c_str();
             }
@@ -427,7 +465,7 @@ namespace calibu
                 m_pCam->SetVersion( nVersion );
             }
 
-            const char* Type() const
+            std::string Type() const
             {
                 return m_pCam->Type();
             }
@@ -474,6 +512,12 @@ namespace calibu
             int Height() const
             {
                 return m_pCam->Height();
+            }
+
+
+            Eigen::VectorXd GenericParams()
+            {  
+                return m_pCam->GenericParams();
             }
 
             void SetImageDimensions(
