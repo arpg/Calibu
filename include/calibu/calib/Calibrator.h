@@ -38,6 +38,8 @@
 #include <calibu/calib/ReprojectionCostFunctor.h>
 #include <calibu/calib/CostFunctionAndParams.h>
 
+#include <CVars/CVar.h>
+
 namespace calibu {
 
 template<typename T, typename ...Args>
@@ -63,8 +65,9 @@ class Calibrator
 {
 public:
     
-    Calibrator()
-        : m_running(false)
+    Calibrator() :
+        m_running(false),
+        m_dLossThreshold( CVarUtils::CreateCVar<>( "calib.LossThreshold", 0.5, "Robust loss function theshold." ) )
     {
         m_prob_options.cost_function_ownership = ceres::DO_NOT_TAKE_OWNERSHIP;
         m_prob_options.local_parameterization_ownership = ceres::DO_NOT_TAKE_OWNERSHIP;
@@ -167,11 +170,11 @@ public:
         cost->Cost() =  new ceres::AutoDiffCostFunction<ReprojectionCostFunctor<ProjModel>,
                 2, Sophus::SE3d::num_parameters, Sophus::SE3d::num_parameters,
                 ProjModel::NUM_PARAMS>(c);
-                
+
         cost->Params() = std::vector<double*>{
                 T_kw.data(), cp.T_ck.data(), cp.camera.data()
         };
-        cost->Loss() = nullptr;
+        cost->Loss() = new ceres::HuberLoss(m_dLossThreshold);
         m_costs.push_back(std::unique_ptr<CostFunctionAndParams>(cost));
         
         m_update_mutex.unlock();
@@ -259,7 +262,10 @@ protected:
     ceres::Problem::Options m_prob_options;
     ceres::Solver::Options  m_solver_options;
     LocalParameterizationSe3  m_LocalParamSe3; 
-    
+
+    double& m_dLossThreshold;
+
+
     double m_mse;
 };
 
