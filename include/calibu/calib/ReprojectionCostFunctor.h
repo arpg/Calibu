@@ -20,6 +20,11 @@
 
 #pragma once
 
+#include <Eigen/Eigen>
+#include <sophus/se3.hpp>
+
+#include <calibu/cam/ProjectionModel.h>
+
 namespace calibu
 {
 

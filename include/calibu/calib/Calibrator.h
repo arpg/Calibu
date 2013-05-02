@@ -31,8 +31,9 @@
 #include <calibu/cam/CameraModel.h>
 #include <calibu/cam/CameraModelIO.h>
 #include <calibu/calib/CostFunctionAndParams.h>
-#include <calibu/calib/AutoDiffArrayCostFunction.h>
 
+#include <ceres/ceres.h>
+#include <calibu/calib/CeresExtra.h>
 #include <calibu/calib/LocalParamSe3.h>
 
 #include <calibu/calib/ReprojectionCostFunctor.h>
