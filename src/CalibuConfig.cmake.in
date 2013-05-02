@@ -1,8 +1,12 @@
-SET( Calibu_LIBRARIES    "@LIB_LOC@;@LINK_LIBS@" )
-SET( Calibu_LIBRARY      "@LIB_LOC@;@LINK_LIBS@" )
-
+# Compute paths
+get_filename_component( CALIBU_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH )
 SET( Calibu_INCLUDE_DIRS "@USER_INC@" )
 SET( Calibu_INCLUDE_DIR  "@USER_INC@" )
 
-SET( Calibu_LIBRARY_DIRS "@LIB_DIRS@" )
-SET( Calibu_LIBRARY_DIR  "@LIB_DIRS@" )
+# Library dependencies (contains definitions for IMPORTED targets)
+if( NOT TARGET @LIBRARY_NAME@ AND NOT Calibu_BINARY_DIR )
+  include( "${CALIBU_CMAKE_DIR}/CalibuTargets.cmake" )
+endif()
+
+SET( Calibu_LIBRARIES    @LIBRARY_NAME@ )
+SET( Calibu_LIBRARY      @LIBRARY_NAME@ )

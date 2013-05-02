@@ -62,12 +62,14 @@ SET(
 ## Find required dependencies
 
 # git://github.com/stevenlovegrove/Sophus.git
+find_package( Eigen3 REQUIRED )
 find_package( Sophus REQUIRED )
 find_package( OpenCV REQUIRED )
 find_package( ZLIB REQUIRED )
 
 ## Apply project include directories
 list( APPEND USER_INC  "${PROJECT_SOURCE_DIR}/include;${CMAKE_CURRENT_BINARY_DIR}/include" )
+list( APPEND USER_INC   ${EIGEN3_INCLUDE_DIR} )
 list( APPEND USER_INC   ${Sophus_INCLUDE_DIR} )
 
 list( APPEND LINK_LIBS  ${OpenCV2_LIBRARIES} ${ZLIB_LIBRARIES} )
@@ -75,10 +77,9 @@ list( APPEND INTERNAL_INC ${OpenCV2_INCLUDE_DIRS} ${ZLIB_INCLUDE_DIR} )
 
 include_directories( ${INTERNAL_INC} )
 include_directories( ${USER_INC} )
-link_libraries( ${LINK_LIBS} )
-link_directories( ${LIB_DIRS} )
 
 add_library( ${LIBRARY_NAME} SHARED ${HEADERS} ${SOURCES} )
+target_link_libraries( ${LIBRARY_NAME} ${LINK_LIBS} )
 
 #######################################################
 ## Create configure file for inclusion in library
@@ -93,9 +94,44 @@ configure_file(
 )
 
 #######################################################
+## Install headers / targets
+
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/include/${LIBRARY_NAME}/config.h"
+  DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${LIBRARY_NAME}
+)
+install(DIRECTORY ${INCDIR}
+  DESTINATION ${CMAKE_INSTALL_PREFIX}/include
+)
+install(TARGETS ${LIBRARY_NAME}
+  EXPORT CalibuTargets
+  RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
+  LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+)
+
+#######################################################
+# Figure out the relative path from the installed Config.cmake file to the
+# install prefix. This relative path will be configured into CalibuConfig.cmake.
+set( CMAKECONFIG_INSTALL_DIR lib/cmake/Calibu )
+file( RELATIVE_PATH REL_INCLUDE_DIR
+    "${CMAKE_INSTALL_PREFIX}/${CMAKECONFIG_INSTALL_DIR}"
+    "${CMAKE_INSTALL_PREFIX}/include" )
+
+# Add package to CMake package registery for use from the build tree
+export( TARGETS ${LIBRARY_NAME}
+        FILE "${CMAKE_CURRENT_BINARY_DIR}/CalibuTargets.cmake" )
+EXPORT( PACKAGE Calibu )
+# Install the export set for use with the install tree
+install( EXPORT CalibuTargets DESTINATION ${CMAKECONFIG_INSTALL_DIR} )
+
 ## Export config file for easy inclusion into other projects: FIND_PACKAGE( Calibu )
-get_target_property( LIB_LOC ${LIBRARY_NAME} LOCATION )
+# ... for the build tree
 CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/CalibuConfig.cmake.in
     ${CMAKE_CURRENT_BINARY_DIR}/CalibuConfig.cmake @ONLY IMMEDIATE )
-EXPORT( PACKAGE Calibu )
+# ... for the install tree
+set( USER_INC "\${CALIBU_CMAKE_DIR}/${REL_INCLUDE_DIR}" )
+configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/CalibuConfig.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CalibuConfig.cmake @ONLY )
 
+INSTALL(FILES "${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CalibuConfig.cmake"
+        DESTINATION ${CMAKECONFIG_INSTALL_DIR} )
