@@ -14,3 +14,8 @@ include_directories( ${CeresSolver_INCLUDE_DIRS} )
 link_libraries( ${CeresSolver_LIBRARIES} )
 
 add_executable( calibgrid main.cpp )
+
+install(TARGETS calibgrid
+  EXPORT CalibuTargets
+  RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
+)
