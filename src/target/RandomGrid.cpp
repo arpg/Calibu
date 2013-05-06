@@ -100,10 +100,14 @@ int HammingDistance(const Eigen::MatrixXi& M, const Eigen::MatrixXi& m, int r, i
     for(int mr=0; mr<m.rows(); ++mr) {
         for(int mc=0; mc<m.cols(); ++mc) {
             const int vm = m(mr,mc);
-            const int Mr = mr+r;
-            const int Mc = mc+c;
-            if(vm >=0 && 0 <= Mr && Mr < M.rows() && 0 <= Mc && Mc < M.cols() ) {
-                diff += abs( M(Mr,Mc) - vm);
+            if(vm >=0) {
+                const int Mr = mr+r;
+                const int Mc = mc+c;
+                if(vm >=0 && 0 <= Mr && Mr < M.rows() && 0 <= Mc && Mc < M.cols() ) {
+                    diff += abs( M(Mr,Mc) - vm);
+                }else{
+                    diff += 1;
+                }
             }
         }
     }

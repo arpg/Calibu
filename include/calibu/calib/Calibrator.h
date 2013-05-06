@@ -39,8 +39,6 @@
 #include <calibu/calib/ReprojectionCostFunctor.h>
 #include <calibu/calib/CostFunctionAndParams.h>
 
-#include <CVars/CVar.h>
-
 namespace calibu {
 
 template<typename T, typename ...Args>
@@ -68,7 +66,7 @@ public:
     
     Calibrator() :
         m_running(false),
-        m_dLossThreshold( CVarUtils::CreateCVar<>( "calib.LossThreshold", 0.5, "Robust loss function theshold." ) )
+        m_LossFunction( new ceres::SoftLOneLoss(0.5), ceres::TAKE_OWNERSHIP )
     {
         m_prob_options.cost_function_ownership = ceres::DO_NOT_TAKE_OWNERSHIP;
         m_prob_options.local_parameterization_ownership = ceres::DO_NOT_TAKE_OWNERSHIP;
@@ -175,7 +173,7 @@ public:
         cost->Params() = std::vector<double*>{
                 T_kw.data(), cp.T_ck.data(), cp.camera.data()
         };
-        cost->Loss() = new ceres::HuberLoss(m_dLossThreshold);
+        cost->Loss() = &m_LossFunction;
         m_costs.push_back(std::unique_ptr<CostFunctionAndParams>(cost));
         
         m_update_mutex.unlock();
@@ -262,10 +260,8 @@ protected:
  
     ceres::Problem::Options m_prob_options;
     ceres::Solver::Options  m_solver_options;
+    ceres::LossFunctionWrapper m_LossFunction;
     LocalParameterizationSe3  m_LocalParamSe3; 
-
-    double& m_dLossThreshold;
-
 
     double m_mse;
 };

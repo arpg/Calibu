@@ -303,10 +303,11 @@ bool TargetGridDot::Match(std::map<Eigen::Vector2i, Vertex*>& obs, const std::ar
             if(val >= 0) ++num_valid;
         }
         
+        // TODO: Check best score is uniquely best.
         int bs,bg,br,bc;
         const int num_matches = NumExactMatches(PG,m,bs,bg,br,bc);
-//        if( num_matches <= 1 && bs < num_valid / 16 )
-        if( num_matches == 1 )
+        if( num_matches <= 1 && bs < num_valid / 8 )
+//        if( num_matches == 1 )
         {
             // Found unique match
             Sophus::SE2Group<int> T_0x[4] = {
