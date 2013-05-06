@@ -76,7 +76,7 @@ int main( int argc, char* argv[] )
     GlTexture tex(w,h,GL_LUMINANCE8);
         
     // Camera parameters
-    CameraModelSpecialization<Pinhole> cam(w, h, Eigen::Vector4d(525 , 525, w/2.0, h/2.0) );
+    CameraModelT<Pinhole> cam(w, h, Eigen::Vector4d(525 , 525, w/2.0, h/2.0) );
     
     // Variables
     Var<bool> step("ui.step", false, false);

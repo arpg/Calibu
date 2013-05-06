@@ -10,9 +10,11 @@ set(
     ${INCDIR}/calib/CostFunctionAndParams.h
     ${INCDIR}/calib/CeresExtra.h
     ${INCDIR}/calib/LocalParamSe3.h
+    ${INCDIR}/cam/CameraUtils.h
+    ${INCDIR}/cam/CameraModelInterface.h
+    ${INCDIR}/cam/CameraModelT.h
     ${INCDIR}/cam/CameraModel.h
     ${INCDIR}/cam/CameraModelIO.h
-    ${INCDIR}/cam/CameraModelBase.h
     ${INCDIR}/cam/DistortionModel.h
     ${INCDIR}/cam/ProjectionModel.h
     ${INCDIR}/conics/Conic.h

@@ -23,68 +23,10 @@
 
 #include <sophus/se3.hpp>
 
+#include "CameraUtils.h"
+
 namespace calibu
 {
-
-//////////////////////////////////////////////////////////////////////////////
-// Projection / Unprojection utilities
-//////////////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////////////
-/// Unproject returns .
-template<typename T> inline
-Eigen::Matrix<T,3,1> Unproject(
-        const Eigen::Matrix<T,2,1>& P //< Input:
-        )
-{
-    Eigen::Matrix<T,3,1> ret;
-    ret.template head<2>() = P;
-    ret[2] = (T)1.0;
-    return ret;
-}
-
-//////////////////////////////////////////////////////////////////////////////
-/// Unproject 
-template<typename T> inline
-Eigen::Matrix<T,4,1> Unproject(
-        const Eigen::Matrix<T,3,1>& P //< Input:
-        )
-{
-    Eigen::Matrix<T,4,1> ret;
-    ret.template head<3>() = P;
-    ret[3] = (T)1.0;
-    return ret;
-}
-
-//////////////////////////////////////////////////////////////////////////////
-/// This function Projects from 3D into an image, returning a 2x1 image point.
-template<typename T> inline
-Eigen::Matrix<T,2,1> Project(const Eigen::Matrix<T,3,1>& P)
-{
-    return Eigen::Matrix<T,2,1>(P(0)/P(2), P(1)/P(2));
-}
-
-//////////////////////////////////////////////////////////////////////////////
-/// This function Project from homogeneous 3D into an image, returning a 3x1
-//  image point.
-template<typename T> inline
-Eigen::Matrix<T,3,1> Project(
-        const Eigen::Matrix<T,4,1>& P //< Input:
-        )
-{
-    return Eigen::Matrix<T,3,1>(P(0)/P(3), P(1)/P(3), P(2)/P(3));
-}
-
-//////////////////////////////////////////////////////////////////////////////
-/// dNorm_dx returns ... TODO
-inline
-Eigen::Matrix<double,1,2> dNorm_dx(
-        const Eigen::Vector2d& x //< Input:
-        )
-{
-    const double normx = x.norm();
-    return Eigen::Matrix<double,1,2>(x(0)/normx, x(1)/normx);
-}
 
 //////////////////////////////////////////////////////////////////////////////
 // Interface for polymorphic camera class

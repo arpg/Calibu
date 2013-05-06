@@ -169,7 +169,7 @@ int main( int argc, char** argv)
     for(size_t i=0; i<N; ++i) {
         // Add (arbitrary) starting camera params
         const pangolin::StreamInfo& si = video.Streams()[i];
-        CameraModelSpecialization<Fov> default_cam( si.Width(), si.Height() );
+        CameraModelT<Fov> default_cam( si.Width(), si.Height() );
 
         default_cam.SetIndex( i );
 
@@ -186,7 +186,7 @@ int main( int argc, char** argv)
             // Re-add camers
             for(size_t i=0; i<N; ++i) {
                 const pangolin::StreamInfo& si = video.Streams()[i];
-                CameraModelSpecialization<Fov> default_cam( si.Width(), si.Height() );
+                CameraModelT<Fov> default_cam( si.Width(), si.Height() );
                 default_cam.Params()  << 300, 300, w/2.0, h/2.0, 0.2;
                 default_cam.SetIndex( i );
                 calib_cams[i] = calibrator.AddCamera(default_cam);

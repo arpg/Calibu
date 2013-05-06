@@ -64,7 +64,7 @@ bool Tracker::ProcessFrame(
     }
  
     // Find target given (approximately) undistorted conics
-    const static CameraModelSpecialization<ProjectionLinearId> idcam;
+    const static CameraModelT<ProjectionLinearId> idcam;
  
     target.FindTarget( idcam, imgs, conics_camframe, conics_target_map );
     conics_candidate_map_first_pass = conics_target_map;
