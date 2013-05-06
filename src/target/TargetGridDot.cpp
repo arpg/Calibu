@@ -305,8 +305,8 @@ bool TargetGridDot::Match(std::map<Eigen::Vector2i, Vertex*>& obs, const std::ar
         
         int bs,bg,br,bc;
         const int num_matches = NumExactMatches(PG,m,bs,bg,br,bc);
-        if( num_matches <= 1 && bs < num_valid / 16 )
-//        if( num_matches == 1 )
+//        if( num_matches <= 1 && bs < num_valid / 16 )
+        if( num_matches == 1 )
         {
             // Found unique match
             Sophus::SE2Group<int> T_0x[4] = {
@@ -494,7 +494,7 @@ bool TargetGridDot::FindTarget(
     for(std::map<Eigen::Vector2i, Vertex*>::const_iterator i = map_grid_ellipse.begin(); i != map_grid_ellipse.end(); ++i) {
         Vertex& v = *i->second;
         
-        if(v.neighbours.size() > 0) {
+        if(v.neighbours.size() > 2) {
             // TODO: just take min/max - no need to sort
             // Sort neightbours by circle area
             std::vector<Dist> vecrad;
@@ -515,7 +515,12 @@ bool TargetGridDot::FindTarget(
                 // is difference
                 const double d0 = std::abs(v.area-_area0);
                 const double d1 = std::abs(v.area-_area1);
-                v.value = ( d0 < d1 ) ? 0 : 1;
+                
+                if( std::abs((d0 - d1) / (d0+d1)) > 0.25 ) {
+                    v.value = ( d0 < d1 ) ? 0 : 1;
+                }else{
+                    v.value = -1;
+                }
             }
         }else{
             v.value = -1;
