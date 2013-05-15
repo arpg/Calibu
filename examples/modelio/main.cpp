@@ -8,10 +8,7 @@ using namespace calibu;
 
 int main( int argc, char* argv[] )
 {
-    Eigen::Matrix4d pose;
-
-    CameraModel cam;
-    ReadCameraModelAndPose( "lcmod.xml", cam, pose );
+    CameraModel cam = ReadXmlCameraModel("camera.xml");
 
     Eigen::Vector2d p;
     Eigen::Vector3d P;

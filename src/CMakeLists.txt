@@ -14,7 +14,8 @@ set(
     ${INCDIR}/cam/CameraModelInterface.h
     ${INCDIR}/cam/CameraModelT.h
     ${INCDIR}/cam/CameraModel.h
-    ${INCDIR}/cam/CameraModelIO.h
+    ${INCDIR}/cam/CameraRig.h
+    ${INCDIR}/cam/CameraXml.h
     ${INCDIR}/cam/DistortionModel.h
     ${INCDIR}/cam/ProjectionModel.h
     ${INCDIR}/conics/Conic.h
@@ -38,6 +39,8 @@ set(
     ${INCDIR}/utils/Rectangle.h
     ${INCDIR}/utils/Utils.h
     ${INCDIR}/utils/PlaneBasis.h
+    ${INCDIR}/utils/StreamOperatorsEigen.h
+    ${INCDIR}/utils/StreamOperatorsSophus.h
     ${INCDIR}/utils/Xml.h
 )
 

@@ -29,7 +29,7 @@
 #include <sophus/se3.hpp>
 
 #include <calibu/cam/CameraModel.h>
-#include <calibu/cam/CameraModelIO.h>
+#include <calibu/cam/CameraXml.h>
 #include <calibu/calib/CostFunctionAndParams.h>
 
 #include <ceres/ceres.h>
@@ -38,6 +38,8 @@
 
 #include <calibu/calib/ReprojectionCostFunctor.h>
 #include <calibu/calib/CostFunctionAndParams.h>
+
+#include <Eigen/Sparse>
 
 namespace calibu {
 
@@ -58,6 +60,68 @@ struct CameraAndPose
     CameraModelT<ProjModel> camera;
     Sophus::SE3d T_ck;
 };
+
+// https://svn.blender.org/svnroot/bf-blender/branches/soc-2011-tomato/extern/libmv/libmv/simple_pipeline/bundle.cc
+Eigen::MatrixXd ToEigenMatrix(const ceres::CRSMatrix &crs_matrix) {
+    Eigen::MatrixXd eigen_matrix(crs_matrix.num_rows, crs_matrix.num_cols);
+    eigen_matrix.setZero();
+    
+    for (int row = 0; row < crs_matrix.num_rows; ++row) {
+        const int start = crs_matrix.rows[row];
+        const int end = crs_matrix.rows[row + 1];
+        
+        for (int i = start; i < end; i++) {
+            const int col = crs_matrix.cols[i];
+            const double value = crs_matrix.values[i];
+            eigen_matrix(row, col) = value;
+        }
+    }
+    
+    return eigen_matrix;
+}
+
+// https://svn.blender.org/svnroot/bf-blender/branches/soc-2011-tomato/extern/libmv/libmv/simple_pipeline/bundle.cc
+Eigen::SparseMatrix<double,Eigen::RowMajor> ToSparseEigenMatrix(const ceres::CRSMatrix &crs_matrix) {
+    Eigen::SparseMatrix<double,Eigen::RowMajor> eigen_matrix(crs_matrix.num_rows, crs_matrix.num_cols);
+
+    for (int row = 0; row < crs_matrix.num_rows; ++row) {
+        const int row_start = crs_matrix.rows[row];
+        const int row_end = crs_matrix.rows[row + 1];
+        
+        eigen_matrix.startVec(row);
+        for (int i = row_start; i < row_end; i++) {
+            const int col = crs_matrix.cols[i];
+            const double value = crs_matrix.values[i];
+            eigen_matrix.insertBack(row,col) = value;
+        }
+    }
+
+    return eigen_matrix;
+}
+
+// https://svn.blender.org/svnroot/bf-blender/branches/soc-2011-tomato/extern/libmv/libmv/simple_pipeline/keyframe_selection.cc
+// Based on code from http://eigen.tuxfamily.org/index.php?title=FAQ
+Eigen::MatrixXd pseudoInverse(const Eigen::MatrixXd &matrix) {
+  typedef Eigen::JacobiSVD<Eigen::MatrixXd> JacobiSVD;
+  typedef JacobiSVD::SingularValuesType SingularValuesType;
+
+  JacobiSVD jacobiSvd(matrix, Eigen::ComputeThinU | Eigen::ComputeThinV);
+  const SingularValuesType singularValues = jacobiSvd.singularValues();
+  SingularValuesType singularValues_inv = singularValues;
+
+  double epsilon = std::numeric_limits<double>::epsilon();
+
+  for (int i = 0; i < singularValues.rows(); i++) {
+    if (singularValues(i) > epsilon)
+      singularValues_inv(i) = 1.0 / singularValues(i);
+    else
+      singularValues_inv(i) = 0.0;
+  }
+
+  return jacobiSvd.matrixV() *
+         singularValues_inv.asDiagonal() *
+         jacobiSvd.matrixU().transpose();
+}
 
 template<typename ProjModel>
 class Calibrator
@@ -91,12 +155,13 @@ public:
 
     void WriteCameraModels()
     {
+        CameraRig rig;
+        
         for(size_t c=0; c<m_camera.size(); ++c) {
-            std::stringstream sFile;
-            sFile << "CameraModel-" << m_camera[c]->camera.Index() << ".xml";
-            Eigen::Matrix4d pose = m_camera[c]->T_ck.matrix();
-            WriteCameraModelAndPose( m_camera[c]->camera, pose, sFile.str() );
+            rig.Add(m_camera[c]->camera, m_camera[c]->T_ck);
         }
+        
+        WriteXmlRig("cameras.xml", rig);
     }
     
     void Clear()
@@ -134,6 +199,7 @@ public:
     {
         int id = m_camera.size();
         m_camera.push_back( make_unique<CameraAndPose<ProjModel> >(cam,T_ck) );
+        m_camera.back()->camera.SetIndex(id);
         return id;
     }
  
@@ -204,34 +270,75 @@ public:
         return m_mse;
     }
     
+    void PrintResults()
+    {
+        std::cout << "----------------------------------------" << std::endl;
+        
+        ceres::Problem problem(m_prob_options);
+        SetupProblem(problem);
+
+        ceres::Problem::EvaluateOptions eval_options;
+//        for(size_t c=0; c < m_camera.size(); ++c) {
+//            eval_options.parameter_blocks.push_back(m_camera[c]->camera.data() );
+//            if(c==1) eval_options.parameter_blocks.push_back(m_camera[c]->T_ck.data() );            
+//        }
+        
+        double cost;
+        ceres::CRSMatrix crs_jacobian;        
+        problem.Evaluate(eval_options, &cost, nullptr, nullptr, &crs_jacobian);
+        std::cout << "Evaluated jacobian" << std::endl;
+        
+        Eigen::SparseMatrix<double,Eigen::RowMajor> J =
+                ToSparseEigenMatrix(crs_jacobian);
+        std::cout << "Converted to Eigen" << std::endl;
+        
+        Eigen::SparseMatrix<double> JTJ = J.transpose() * J;
+        std::cout << "Computed JTJ " << JTJ.rows() << "x" << JTJ.cols() << std::endl;
+        
+        
+//        Eigen::SimplicialCholesky<Eigen::SparseMatrix<double> > chol(JTJ);
+//        Eigen::MatrixXd invJTJ = chol.solve(Eigen::MatrixXd::Identity(JTJ.rows(), JTJ.cols()));
+                
+        Eigen::MatrixXd dJTJ = JTJ;
+        Eigen::MatrixXd invJTJ = pseudoInverse(dJTJ);
+        std::cout << "Inverted" << std::endl;
+        
+        std::cout << cost << std::endl << std::endl;
+        std::cout << invJTJ.squaredNorm() << std::endl;
+    }
+    
 protected:
+    
+    void SetupProblem(ceres::Problem& problem)
+    {
+        m_update_mutex.lock();
+        
+        // Add parameters
+        for(size_t c=0; c<m_camera.size(); ++c) {
+            problem.AddParameterBlock(m_camera[c]->T_ck.data(), 7, &m_LocalParamSe3 );
+            if(c==0) {
+                problem.SetParameterBlockConstant(m_camera[c]->T_ck.data());
+            }
+        }
+        for(size_t p=0; p<m_T_kw.size(); ++p) {
+            problem.AddParameterBlock(m_T_kw[p]->data(), 7, &m_LocalParamSe3 );
+        }
+        
+        // Add costs
+        for(size_t c=0; c<m_costs.size(); ++c) {
+            CostFunctionAndParams& cost = *m_costs[c];
+            problem.AddResidualBlock(cost.Cost(), cost.Loss(), cost.Params());
+        }
+        
+        m_update_mutex.unlock();        
+    }
     
     void SolveThread()
     {
         m_running = true;
         while( m_should_run ){
             ceres::Problem problem(m_prob_options);
-            
-            m_update_mutex.lock();
-            
-            // Add parameters
-            for(size_t c=0; c<m_camera.size(); ++c) {
-                problem.AddParameterBlock(m_camera[c]->T_ck.data(), 7, &m_LocalParamSe3 );
-                if(c==0) {
-                    problem.SetParameterBlockConstant(m_camera[c]->T_ck.data());
-                }
-            }
-            for(size_t p=0; p<m_T_kw.size(); ++p) {
-                problem.AddParameterBlock(m_T_kw[p]->data(), 7, &m_LocalParamSe3 );
-            }
-            
-            // Add costs
-            for(size_t c=0; c<m_costs.size(); ++c) {
-                CostFunctionAndParams& cost = *m_costs[c];
-                problem.AddResidualBlock(cost.Cost(), cost.Loss(), cost.Params());
-            }
-            
-            m_update_mutex.unlock();
+            SetupProblem(problem);            
             
             // Crank optimisation
             if(problem.NumResiduals() > 0) {

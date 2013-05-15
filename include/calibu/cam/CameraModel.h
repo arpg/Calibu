@@ -25,15 +25,38 @@
 #include "CameraModelT.h"
 
 #include <iostream>
+#include <memory>
 
 namespace calibu
 {
 
+struct CameraModelException : public std::exception
+{
+    CameraModelException(const std::string& what)
+        : m_sWhat(what)
+    {
+    }
+    
+    const char* what() const throw() {
+        return m_sWhat.c_str();
+    }
+
+    std::string m_sWhat;
+};
+
 ///////////////////////////////////////////////////////////////////////////
 inline CameraModelInterface* CameraModelFactory( const std::string sModelName )
 {
-    if ( sModelName == "Pinhole" ){
-        return new  CameraModelT<Pinhole>();
+    if ( sModelName == "calibu_id" ){
+        return new CameraModelT<Pinhole>();
+    }else if( sModelName == "calibu_f_u0_v0") {
+        return new CameraModelT<ProjectionLinearSquare<DistortionPinhole> >();
+    }else if( sModelName == "calibu_fu_fv_u0_v0") {
+        return new CameraModelT<ProjectionLinear<DistortionPinhole> >();
+    }else if( sModelName == "calibu_fu_fv_u0_v0_w") {
+        return new CameraModelT<ProjectionLinear<DistortionFov> >();
+    }else if( sModelName == "calibu_fu_fv_u0_v0_k1_k2_k3") {
+        return new CameraModelT<ProjectionLinear<DistortionPoly> >();
     }
     return NULL;
 }
@@ -44,27 +67,35 @@ inline CameraModelInterface* CameraModelFactory( const std::string sModelName )
 class CameraModel : public CameraModelInterface
 {
 public:
+
     /////////////////////////////////////////////////////////////////////////
     // Constructors
     /////////////////////////////////////////////////////////////////////////
     CameraModel() : 
-        m_pCam(NULL)
+        m_pCam(nullptr)
     {
     }
     
-    CameraModel( const CameraModel& rRHS )
+    CameraModel( const CameraModelInterface& rhs )
+        : m_pCam( CameraModelFactory( rhs.Type() ) )
     {
-        Init( rRHS.Type() );
+        CopySameType(rhs);
     }
     
-    CameraModel( CameraModelInterface* pCam )
+    CameraModel( std::string& sModelType)
+        : m_pCam( CameraModelFactory( sModelType ) )
     {
-        m_pCam = pCam;
     }
     
     /////////////////////////////////////////////////////////////////////////
     // Member functions
     /////////////////////////////////////////////////////////////////////////
+        
+    /// Returns if this CameraModel is initialised and can be used.
+    bool IsInitialised() const
+    {
+        return (bool)m_pCam;
+    }
     
     /// Report camera model version number.
     int Version() const
@@ -82,14 +113,8 @@ public:
     {
         return m_pCam->Type();
     }
-    
-    /// Set the camera model type.
-    void SetType( const std::string& sType )
-    {
-        m_pCam->SetType( sType );
-    }
-    
-    long int SerialNumber()
+        
+    long int SerialNumber() const
     {
         return m_pCam->SerialNumber();
     }
@@ -100,7 +125,7 @@ public:
         m_pCam->SetSerialNumber( nSerialNo );
     }
     
-    int Index()
+    int Index() const
     {
         return m_pCam->Index();
     }
@@ -117,31 +142,36 @@ public:
         return m_pCam->RDF();
     }
     
-    int Width() const
+    size_t Width() const
     {
         return m_pCam->Width();
     }
     
-    int Height() const
+    size_t Height() const
     {
         return m_pCam->Height();
     }
     
     
-    Eigen::VectorXd GenericParams()
+    Eigen::VectorXd GenericParams() const
     {  
         return m_pCam->GenericParams();
     }
     
+    void SetGenericParams(const Eigen::VectorXd& params)
+    {
+        m_pCam->SetGenericParams(params);
+    }
+    
     void SetImageDimensions(
-            int nWidth,  //< Input:
-            int nHeight  //< Input:
+            size_t nWidth,  //< Input:
+            size_t nHeight  //< Input:
             )
     {
         m_pCam->SetImageDimensions( nWidth, nHeight );
     }
     
-    std::string Name()
+    std::string Name() const
     {
         return m_pCam->Name();    
     } 
@@ -150,16 +180,6 @@ public:
     void SetName( const std::string& sName )
     {
         m_pCam->SetName( sName );
-    }
-    
-    
-    bool Init( const std::string& sType )
-    {
-        if( m_pCam ){
-            delete m_pCam;
-        }
-        m_pCam = CameraModelFactory( sType );
-        return true;
     }
     
     Eigen::Vector2d Map(const Eigen::Vector2d& proj) const
@@ -186,19 +206,18 @@ public:
         return m_pCam->Kinv();
     }
     
-/*
-    ///////////////////////////////////////////////////////
-    void Read(
-            const std::string& sFile, //< Input: file name to read from. 
-            Eigen::Matrix4d& rPose    //< Output: local pose of the camera.
-            )
-    {
-        // ReadCameraModelAndPose( sFile, *this, rPose );
-        ReadCameraModelHeaderAndPose( sFile, *this, rPose );
-    }
-    */
-    
 private:
+    void CopySameType( const CameraModelInterface& other )
+    {
+        assert( Type() == other.Type() );
+        SetGenericParams(other.GenericParams());
+        SetImageDimensions(other.Width(), other.Height());
+        SetIndex(other.Index());
+        SetName(other.Name());
+        SetSerialNumber(other.SerialNumber());
+        SetVersion(other.Version());
+    }    
+    
     ///////////////////////////////////////////////////////
     void _AssertInit() const
     {
@@ -210,7 +229,7 @@ private:
     }
     
 protected:
-    CameraModelInterface* m_pCam; // this will be a specialization
+    std::shared_ptr<CameraModelInterface> m_pCam;
 };
 
 }

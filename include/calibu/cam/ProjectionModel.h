@@ -32,9 +32,11 @@ namespace calibu {
 // Identity matrix projection
 struct ProjectionLinearId
 {
+    typedef ProjectionLinearId DistortionFreeModel;
+
     static const unsigned NUM_PARAMS = 0;
     
-    inline static std::string Name() { return "id"; }
+    inline static std::string Type() { return "id"; }
     
     template<typename T> inline
     static Eigen::Matrix<T,2,1> Map(const Eigen::Matrix<T,2,1>& proj, T const* /*params*/)
@@ -61,7 +63,7 @@ struct ProjectionLinearId
     }
     
     static inline
-    Eigen::Matrix<double,2,2> dMap_dp(const Eigen::Vector2d& p, const double* /*params*/)
+    Eigen::Matrix<double,2,2> dMap_dp(const Eigen::Vector2d& /*p*/, const double* /*params*/)
     {
         return Eigen::Matrix<double,2,2>::Identity();
     }   
@@ -71,10 +73,12 @@ struct ProjectionLinearId
 template<typename DistortionModel>
 struct ProjectionLinear
 {
+    typedef ProjectionLinear<DistortionPinhole> DistortionFreeModel;
+    
     static const unsigned NUM_LIN_PARAMS = 4;
     static const unsigned NUM_PARAMS = NUM_LIN_PARAMS + DistortionModel::NUM_PARAMS;
     
-    inline static std::string Name() { return "fu_fv_u0_v0_" + DistortionModel::Name(); }      
+    inline static std::string Type() { return "fu_fv_u0_v0_" + DistortionModel::Type(); }      
     
     template<typename T> inline
     static Eigen::Matrix<T,2,1> Map(const Eigen::Matrix<T,2,1>& proj, T const* params)
@@ -144,10 +148,12 @@ struct ProjectionLinear
 template<typename DistortionModel>
 struct ProjectionLinearSquare
 {
+    typedef ProjectionLinearSquare<DistortionPinhole> DistortionFreeModel;
+    
     static const unsigned NUM_LIN_PARAMS = 3;
     static const unsigned NUM_PARAMS = NUM_LIN_PARAMS + DistortionModel::NUM_PARAMS;
     
-    inline static std::string Name() { return "f_u0_v0_" + DistortionModel::Name(); }      
+    inline static std::string Type() { return "f_u0_v0_" + DistortionModel::Type(); }      
     
     template<typename T> inline
     static Eigen::Matrix<T,2,1> Map(const Eigen::Matrix<T,2,1>& proj, T const* params)

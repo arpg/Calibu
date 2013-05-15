@@ -33,17 +33,17 @@ struct DistortionPinhole
 {
     static const unsigned NUM_PARAMS = 0;
     
-    inline static std::string Name() {
+    inline static std::string Type() {
         return "";
     }
     
     template<typename T> inline
-    static double RFactor(double r, T const*) {
+    static double RFactor(double, T const*) {
         return 1;
     }
     
     template<typename T> inline
-    static double RinvFactor(double dr, T const*) {
+    static double RinvFactor(double, T const*) {
         return 1;
     }
 };
@@ -53,7 +53,7 @@ struct DistortionPoly
 {
     static const unsigned NUM_PARAMS = 3;
     
-    inline static std::string Name() { return "k1_k2_k3"; }    
+    inline static std::string Type() { return "k1_k2_k3"; }    
     
     template<typename T> inline
     static T RFactor(T r, const T* params)
@@ -64,7 +64,7 @@ struct DistortionPoly
     }
     
     template<typename T> inline
-    static T RinvFactor(T dr, const T* params)
+    static T RinvFactor(T /*dr*/, const T* /*params*/)
     {
         // TODO: imeplement
         throw std::exception();
@@ -76,7 +76,7 @@ struct DistortionFov
 {
     static const unsigned NUM_PARAMS = 1;
     
-    inline static std::string Name() { return "w"; }
+    inline static std::string Type() { return "w"; }
     
     template<typename T> inline
     static T RFactor(T r, const T* params)

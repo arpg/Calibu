@@ -32,17 +32,14 @@ template<typename ProjectionModel>
 class CameraModelT : public CameraModelInterface
 {
 public:
+    typedef typename ProjectionModel::DistortionFreeModel DistortionFreeModel;
+    
     static const unsigned NUM_PARAMS = ProjectionModel::NUM_PARAMS;
     
     /////////////////////////////////////////////////////////////////////////
     // Static Utilities
     /////////////////////////////////////////////////////////////////////////
-    
-    //            inline static std::string Name() 
-    //            {
-    //                return ProjectionModel::Name(); 
-    //            }
-    
+        
     /////////////////////////////////////////////////////////////////////////
     /// Map from image coordinates to z=1 plane.
     template<typename T> inline static
@@ -169,73 +166,45 @@ public:
     // Constructors
     /////////////////////////////////////////////////////////////////////////
     
-    CameraModelT() :  
-        m_nWidth(0),
-        m_nHeight(0),
-        params(Eigen::Matrix<double,NUM_PARAMS,1>::Zero())
-    {
-        m_RDF << 0,0,1, 1,0,0, 0,1,0; 
-        m_nIndex = 0;
-        m_nSerialNo = 0;
-        m_nVersion = 8;
-    }    
-    
-    CameraModelT(int w, int h) :
+    // Most general delegate constructor
+    CameraModelT( 
+            size_t w,  size_t h, 
+            const Eigen::Matrix<double,NUM_PARAMS,1>& params
+            ) :
         m_nWidth(w),
         m_nHeight(h),
-        params(Eigen::Matrix<double,NUM_PARAMS,1>::Zero())
+        m_params(params),
+        m_nVersion(8),
+        m_nSerialNo(0),
+        m_nIndex(0)
     {
-        m_RDF << 0,0,1, 1,0,0, 0,1,0; 
-        m_nIndex = 0;
-        m_nSerialNo = 0;
-        m_nVersion = 8;
+        m_RDF << 1,0,0, 0,1,0, 0,0,1; // vision
+//        m_RDF << 0,0,1, 1,0,0, 0,1,0; // robotics
+    }
+    
+    CameraModelT() :  
+        CameraModelT(0,0, Eigen::Matrix<double,NUM_PARAMS,1>::Zero())
+    {
+    }    
+    
+    CameraModelT(size_t w, size_t h) :
+        CameraModelT(w, h, Eigen::Matrix<double,NUM_PARAMS,1>::Zero())
+    {
     }    
     
     CameraModelT( const Eigen::Matrix<double,NUM_PARAMS,1>& params) :
-        m_nWidth(0),
-        m_nHeight(0),
-        params(params)
+        CameraModelT(0, 0, params)
     {
-        m_RDF << 0,0,1, 1,0,0, 0,1,0; 
-        m_nIndex = 0;
-        m_nSerialNo = 0;
-        m_nVersion = 8;
     }    
     
-    CameraModelT( 
-            int w, 
-            int h, 
-            const Eigen::Matrix<double,NUM_PARAMS,1>& params) :
-        m_nWidth(w),
-        m_nHeight(h),
-        params(params)
+    CameraModelT(double* cam_params) :
+        CameraModelT(0, 0, Eigen::Map<Eigen::Matrix<double,NUM_PARAMS,1> >(cam_params) )
     {
-        m_RDF << 0,0,1, 1,0,0, 0,1,0; 
-        m_nIndex = 0;
-        m_nSerialNo = 0;
-        m_nVersion = 8;
-    }
-    
-    CameraModelT(double* cam_params):
-        m_nWidth(0),
-        m_nHeight(0),
-        params(Eigen::Map<Eigen::Matrix<double,NUM_PARAMS,1> >(cam_params))
-    {
-        m_RDF << 0,0,1, 1,0,0, 0,1,0; 
-        m_nIndex = 0;
-        m_nSerialNo = 0;
-        m_nVersion = 8;
     }
     
     CameraModelT(int w, int h, double* cam_params) :
-        m_nWidth(w),
-        m_nHeight(h),
-        params(Eigen::Map<Eigen::Matrix<double,NUM_PARAMS,1> >(cam_params))
+        CameraModelT(w, h, Eigen::Map<Eigen::Matrix<double,NUM_PARAMS,1> >(cam_params) )
     {
-        m_RDF << 0,0,1, 1,0,0, 0,1,0; 
-        m_nIndex = 0;
-        m_nSerialNo = 0;
-        m_nVersion = 8;
     }
     
     // copy constructor
@@ -243,7 +212,7 @@ public:
     {
         m_nWidth    = rRHS.m_nWidth;
         m_nHeight   = rRHS.m_nHeight;
-        params      = rRHS.params;
+        m_params      = rRHS.m_params;
         m_RDF       = rRHS.m_RDF; 
         m_nIndex    = rRHS.m_nIndex;
         m_nSerialNo = rRHS.m_nSerialNo;
@@ -254,57 +223,71 @@ public:
     // Member functions
     ///////////////////////////////////////////////////////////////////////////
     
-    Eigen::VectorXd GenericParams() 
+    CameraModelT<DistortionFreeModel> DistortionFreeCamera() const
     {
-        return params;
+        CameraModelT<DistortionFreeModel> ret(
+            m_nWidth, m_nHeight, 
+            m_params.template head<DistortionFreeModel::NUM_PARAMS>()
+            );
+        return ret;
+    }
+    
+    Eigen::VectorXd GenericParams() const
+    {
+        return m_params;
+    }
+    
+    void SetGenericParams(const Eigen::VectorXd& params)
+    {
+        m_params = params;
     }
     
     Eigen::Matrix<double,NUM_PARAMS,1>& Params() 
     {
-        return params;
+        return m_params;
     }
     
     const Eigen::Matrix<double,NUM_PARAMS,1>& Params() const 
     {
-        return params;
+        return m_params;
     }
     
     const double* data() const {
-        return params.data();
+        return m_params.data();
     }
     
     double* data() {
-        return params.data();
+        return m_params.data();
     }
     
     inline Eigen::Vector2d Map(const Eigen::Vector2d& proj) const
     {
-        return Map(proj, params.data());
+        return Map(proj, m_params.data());
     }
     
     inline Eigen::Vector2d Unmap(const Eigen::Vector2d& img) const
     {
-        return Unmap(img, params.data());
+        return Unmap(img, m_params.data());
     }
     
     inline Eigen::Matrix3d K() const
     {
-        return ProjectionModel::MakeK(params.data());
+        return ProjectionModel::MakeK(m_params.data());
     }
     
     inline Eigen::Matrix3d Kinv() const
     {
-        return ProjectionModel::MakeKinv(params.data());
+        return ProjectionModel::MakeKinv(m_params.data());
     }
     
     inline Eigen::Vector2d ProjectMap(const Eigen::Vector3d& P) const
     {
-        return Map( Project(P) , params.data() );
+        return Map( Project(P) , m_params.data() );
     }
     
     inline Eigen::Vector3d UnmapUnproject(const Eigen::Vector2d& p) const
     {
-        return Unproject( Unmap( p, params.data()) );
+        return Unproject( Unmap( p, m_params.data()) );
     }
     
     inline Eigen::Vector2d Transfer(const Sophus::SE3d& T_ba, const Eigen::Vector2d& pa, double rho) const
@@ -326,20 +309,16 @@ public:
     /// Set the camera veriona nuber.
     void SetVersion( int nVersion )
     {
+        m_nVersion = nVersion;
     }
     
     /// Report camera model 
     std::string Type() const 
     {
-        return m_sType.c_str();
+        return "calibu_" + ProjectionModel::Type();
     }
-    
-    void SetType( const std::string& sType )
-    {
-        m_sType = sType;
-    }
-    
-    long int SerialNumber()
+        
+    long int SerialNumber() const
     {
         return m_nSerialNo;
     }
@@ -350,7 +329,7 @@ public:
         m_nSerialNo = nSerialNo;
     }
     
-    int Index()
+    int Index() const
     {
         return m_nIndex;
     }
@@ -367,26 +346,26 @@ public:
         return m_RDF;
     }
     
-    int Width() const
+    size_t Width() const
     {
         return m_nWidth;
     }
     
-    int Height() const
+    size_t Height() const
     {
         return m_nHeight;
     }
     
     void SetImageDimensions(
-            int nWidth,  //< Input:
-            int nHeight  //< Input:
+            size_t nWidth,  //< Input:
+            size_t nHeight  //< Input:
             )
     {
         m_nWidth = nWidth;
         m_nHeight = nHeight;
     }
     
-    std::string Name()
+    std::string Name() const
     {
         return m_sName;
     } 
@@ -399,9 +378,9 @@ public:
     
 protected:
     
-    int              m_nWidth;    //< Camera width, in pixels
-    int              m_nHeight;   //< Camera height, in pixels
-    Eigen::Matrix<double,NUM_PARAMS,1> params;
+    size_t           m_nWidth;    //< Camera width, in pixels
+    size_t           m_nHeight;   //< Camera height, in pixels
+    Eigen::Matrix<double,NUM_PARAMS,1> m_params;
     std::string      m_sName;     //< Model name, e.g., "left"
     std::string      m_sType;     //< Model type name.
     int              m_nVersion;  //< Calibu or MVL camera model version.

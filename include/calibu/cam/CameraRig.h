@@ -3,8 +3,7 @@
    https://robotics.gwu.edu/git/calibu
 
    Copyright (C) 2013 George Washington University,
-                      Steven Lovegrove
-                      Gabe Sibley 
+                      Gabe Sibley
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -21,4 +20,34 @@
 
 #pragma once
 
-#include <calibu/cam/CameraXml.h>
+#include <calibu/cam/CameraModel.h>
+#include <sophus/se3.hpp>
+#include <vector>
+
+namespace calibu
+{
+
+class CameraModelAndPose
+{
+public:
+    CameraModel camera;
+    Sophus::SE3d T_cw;
+};
+
+class CameraRig
+{
+public:
+    void Add(const CameraModelAndPose& cop) {
+        cameras.push_back(cop);
+    }
+    void Add(const CameraModelInterface& cam, Sophus::SE3d& T_cw) {
+        CameraModelAndPose cop;
+        cop.camera = CameraModel(cam);
+        cop.T_cw = T_cw;
+        cameras.push_back(cop);
+    }
+    
+    std::vector<CameraModelAndPose> cameras;
+};
+
+}

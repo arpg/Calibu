@@ -53,15 +53,17 @@ public:
     /// Return the perspective projection camera model inverse "K" matrix
     virtual Eigen::Matrix3d Kinv() const = 0;
 
-    virtual int Width() const = 0;
+    virtual size_t Width() const = 0;
  
-    virtual int Height() const = 0;
+    virtual size_t Height() const = 0;
 
-    virtual Eigen::VectorXd GenericParams() = 0;
+    virtual Eigen::VectorXd GenericParams() const = 0;
+
+    virtual void SetGenericParams(const Eigen::VectorXd& params) = 0;
  
     virtual void SetImageDimensions( 
-            int nWidth,  //< Input:
-            int nHeight  //< Input:
+            size_t nWidth,  //< Input:
+            size_t nHeight  //< Input:
             ) = 0;
  
     /// Report camera model version number.
@@ -73,22 +75,20 @@ public:
     /// Report camera model 
     virtual std::string Type() const = 0;
 
-    virtual void SetType( const std::string& sType ) = 0;
-
     /// Set the camera model name. e.g., "Left"
-    virtual std::string Name() = 0;
+    virtual std::string Name() const = 0;
 
     /// Set the camera model name. e.g., "Left"
     virtual void SetName( const std::string& sName ) = 0;
     
     /// Set the camera serial number.
-    virtual long int SerialNumber() = 0;
+    virtual long int SerialNumber() const = 0;
 
     /// Set the camera serial number.
     virtual void SetSerialNumber( const long int nSerialNo ) = 0;
 
     /// Set the camera index (for multi-camera rigs).
-    virtual int Index() = 0;
+    virtual int Index() const = 0;
 
     /// Set the camera index (for multi-camera rigs).
     virtual void SetIndex( const int nIndex ) = 0;

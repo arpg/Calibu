@@ -18,5 +18,6 @@ add_subdirectory( src )
 
 if( BUILD_APPLICATIONS )
     add_subdirectory( applications )
+    add_subdirectory( examples )
 endif()
 

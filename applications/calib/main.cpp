@@ -149,6 +149,7 @@ int main( int argc, char** argv)
     pangolin::RegisterKeyPressCallback(pangolin::PANGO_SPECIAL+ GLUT_KEY_RIGHT, [&](){step = true;} );
     pangolin::RegisterKeyPressCallback(' ', [&](){run = !run;} );
     pangolin::RegisterKeyPressCallback(pangolin::PANGO_CTRL + 'r', [&](){reset = true;} );
+    pangolin::RegisterKeyPressCallback('t', [&](){calibrator.PrintResults();} );
     
     ImageProcessing image_processing(w,h);
     image_processing.Params().black_on_white = true;
