@@ -177,7 +177,7 @@ inline void WriteXmlSE3(const std::string& filename, const Sophus::SE3d& T_cw)
 
 inline Sophus::SE3d ReadXmlSE3(TiXmlNode* xmlcampose)
 {
-    const std::string val = xmlcampose->ValueStr();
+    const std::string val = xmlcampose->FirstChildElement("T_cw")->GetText();
     Eigen::Matrix4d m = StrToVal<Eigen::Matrix4d>(val);
     return Sophus::SE3d(m);
 }
