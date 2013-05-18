@@ -36,6 +36,8 @@ struct CameraModelException : public std::exception
         : m_sWhat(what)
     {
     }
+
+    ~CameraModelException() throw() {}
     
     const char* what() const throw() {
         return m_sWhat.c_str();

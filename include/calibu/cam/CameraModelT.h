@@ -165,46 +165,57 @@ public:
     /////////////////////////////////////////////////////////////////////////
     // Constructors
     /////////////////////////////////////////////////////////////////////////
-    
+
+ private:
+  void ConstructorImpl(
+            size_t w,  size_t h, 
+            const Eigen::Matrix<double,NUM_PARAMS,1>& params
+            )
+    {
+        m_nWidth = w;
+        m_nHeight = h;
+        m_params = params;
+        m_nVersion = 8;
+        m_nSerialNo = 0;
+        m_nIndex = 0;
+        m_RDF << 1,0,0, 0,1,0, 0,0,1; // vision
+//        m_RDF << 0,0,1, 1,0,0, 0,1,0; // robotics
+    }
+
+ public:
+  
     // Most general delegate constructor
     CameraModelT( 
             size_t w,  size_t h, 
             const Eigen::Matrix<double,NUM_PARAMS,1>& params
-            ) :
-        m_nWidth(w),
-        m_nHeight(h),
-        m_params(params),
-        m_nVersion(8),
-        m_nSerialNo(0),
-        m_nIndex(0)
+            )
     {
-        m_RDF << 1,0,0, 0,1,0, 0,0,1; // vision
-//        m_RDF << 0,0,1, 1,0,0, 0,1,0; // robotics
+        ConstructorImpl(w, h, params);
     }
     
-    CameraModelT() :  
-        CameraModelT(0,0, Eigen::Matrix<double,NUM_PARAMS,1>::Zero())
+    CameraModelT()
     {
+        ConstructorImpl(0,0, Eigen::Matrix<double,NUM_PARAMS,1>::Zero());
     }    
     
-    CameraModelT(size_t w, size_t h) :
-        CameraModelT(w, h, Eigen::Matrix<double,NUM_PARAMS,1>::Zero())
+    CameraModelT(size_t w, size_t h)
     {
+        ConstructorImpl(w, h, Eigen::Matrix<double,NUM_PARAMS,1>::Zero());
     }    
     
-    CameraModelT( const Eigen::Matrix<double,NUM_PARAMS,1>& params) :
-        CameraModelT(0, 0, params)
+    CameraModelT( const Eigen::Matrix<double,NUM_PARAMS,1>& params)
     {
+        ConstructorImpl(0, 0, params);
     }    
     
-    CameraModelT(double* cam_params) :
-        CameraModelT(0, 0, Eigen::Map<Eigen::Matrix<double,NUM_PARAMS,1> >(cam_params) )
+    CameraModelT(double* cam_params)
     {
+        ConstructorImpl(0, 0, Eigen::Map<Eigen::Matrix<double,NUM_PARAMS,1> >(cam_params) );
     }
     
-    CameraModelT(int w, int h, double* cam_params) :
-        CameraModelT(w, h, Eigen::Map<Eigen::Matrix<double,NUM_PARAMS,1> >(cam_params) )
+    CameraModelT(int w, int h, double* cam_params)
     {
+        ConstructorImpl(w, h, Eigen::Map<Eigen::Matrix<double,NUM_PARAMS,1> >(cam_params) );
     }
     
     // copy constructor
