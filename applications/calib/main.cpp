@@ -20,7 +20,7 @@ const char* sUriInfo =
 "Video URI's take the following form:\n"
 " scheme:[param1=value1,param2=value2,...]//device\n"
 "\n"
-"scheme = file | dc1394 | v4l | openni | convert | mjpeg\n"
+"scheme = file | dc1394 | v4l | openni | convert | split | mjpeg\n"
 "\n"
 "file/files - read PVN file format (pangolin video) or other formats using ffmpeg\n"
 " e.g. \"file:[realtime=1]///home/user/video/movie.pvn\"\n"
@@ -51,15 +51,31 @@ const char* sUriInfo =
 
 int main( int argc, char** argv)
 {    
-    if(argc != 2) {
+    ////////////////////////////////////////////////////////////////////
+    // Parse command line
+    
+    if(argc < 2) {
         std::cout << "Usage:" << std::endl;
-        std::cout << "\t" << argv[0] << " video_uri" << std::endl;
+        std::cout << "\t" << argv[0] << " video_uri [grid_spacing]" << std::endl;
         std::cout << "\n\n"<< sUriInfo << std::endl;
         return -1;
     }
 
-    // Setup Video Source
+    // First argument - Video URI
     std::string video_uri = argv[1];
+    
+    // Second Argument - Distance in meters between dots.
+    double grid_spacing = 0.01337; // US Letter
+    const Eigen::Vector2i grid_size(19,10);
+    
+    if(argc >= 3) {
+        std::istringstream iss(argv[2]);
+        iss >> grid_spacing;
+    }
+    
+    ////////////////////////////////////////////////////////////////////
+    // Setup Video Source
+    
     pangolin::VideoInput video(video_uri);
     
     // Allocate stream buffer and vector of images (that will point into buffer)
@@ -71,19 +87,55 @@ int main( int argc, char** argv)
     const size_t w = video.Streams()[0].Width();
     const size_t h = video.Streams()[0].Height();
     
+    // Check all channels are greyscale
     for(size_t i=0; i<N; ++i) {
         if( video.Streams()[i].PixFormat().channels != 1) {
             throw pangolin::VideoException("Video channels must be GRAY8 format. Use Convert:// or fmt=GRAY8 option");
         }
-    }
+    } 
+    
+    ////////////////////////////////////////////////////////////////////
+    // Setup image processing pipeline
 
-    // Make grid of 3d points
-    const double grid_spacing = 0.02;
-    const Eigen::Vector2i grid_size(19,10);
-    const Eigen::Vector2i grid_center(9, 5);
-    Calibrator<Fov> calibrator;
+    ImageProcessing image_processing(w,h);
+    image_processing.Params().black_on_white = true;
+    image_processing.Params().at_threshold = 0.9;
+    image_processing.Params().at_window_ratio = 30.0;
+    
+    CVarUtils::AttachCVar("proc.adaptive.threshold", &image_processing.Params().at_threshold);
+    CVarUtils::AttachCVar("proc.adaptive.window_ratio", &image_processing.Params().at_window_ratio);
+    CVarUtils::AttachCVar("proc.black_on_white", &image_processing.Params().black_on_white);
+    
+    ////////////////////////////////////////////////////////////////////
+    // Setup Grid pattern
+    
+    ConicFinder conic_finder;
+    conic_finder.Params().conic_min_area = 4.0;
+    conic_finder.Params().conic_min_density = 0.6;
+    conic_finder.Params().conic_min_aspect = 0.2;
  
+    TargetGridDot target(grid_spacing, grid_size);  
+    
+    ////////////////////////////////////////////////////////////////////
+    // Initialise Calibration object and tracking params
+    
+    Calibrator<Fov> calibrator;    
+    int calib_cams[N];    
+    bool tracking_good[N];
+    Sophus::SE3d T_hw[N];    
+    
+    for(size_t i=0; i<N; ++i) {
+        const int w_i = video.Streams()[i].Width();
+        const int h_i = video.Streams()[i].Height();
+        CameraModelT<Fov> default_cam(w_i, h_i);
+        default_cam.SetIndex( i );
+        default_cam.Params()  << 300, 300, w_i/2.0, h_i/2.0, 0.2;
+        calib_cams[i] = calibrator.AddCamera(default_cam);
+    }
+     
+    ////////////////////////////////////////////////////////////////////
     // Setup GUI
+    
     const int PANEL_WIDTH = 150;
     pangolin::CreateGlutWindowAndBind("Main",(N+1)*w/2.0+PANEL_WIDTH,h/2.0);
  
@@ -121,8 +173,10 @@ int main( int argc, char** argv)
  
     // OpenGl Texture for video frame
     pangolin::GlTexture tex(w,h,GL_LUMINANCE8);
-
-    pangolin::Var<bool> reset("ui.reset", false, false);
+    
+    ////////////////////////////////////////////////////////////////////    
+    // Display Variables 
+    
     pangolin::Var<bool> step("ui.step", false, false);
     pangolin::Var<bool> run("ui.run", false, true);
     pangolin::Var<bool> add("ui.add", false, true);
@@ -134,66 +188,26 @@ int main( int argc, char** argv)
 
     pangolin::Var<double> disp_mse("ui.MSE");
     pangolin::Var<int> disp_frame("ui.frame");
-    
+                
+    ////////////////////////////////////////////////////////////////////    
+    // Key shortcuts
+
+    // 1,2,3,... keys hide and show viewports
     for(size_t i=0; i<container.NumChildren(); ++i) {
         pangolin::RegisterKeyPressCallback('1'+i, [&container,i](){container[i].ToggleShow();} );
     }
     
-    int calib_cams[N];    
-    bool tracking_good[N];
-    Sophus::SE3d T_hw[N];
-        
     pangolin::RegisterKeyPressCallback('[', [&](){calibrator.Start();} );
     pangolin::RegisterKeyPressCallback(']', [&](){calibrator.Stop();} );
 
     pangolin::RegisterKeyPressCallback(pangolin::PANGO_SPECIAL+ GLUT_KEY_RIGHT, [&](){step = true;} );
     pangolin::RegisterKeyPressCallback(' ', [&](){run = !run;} );
-    pangolin::RegisterKeyPressCallback(pangolin::PANGO_CTRL + 'r', [&](){reset = true;} );
     pangolin::RegisterKeyPressCallback('t', [&](){calibrator.PrintResults();} );
+
+    ////////////////////////////////////////////////////////////////////
+    // Main event loop
     
-    ImageProcessing image_processing(w,h);
-    image_processing.Params().black_on_white = true;
-    image_processing.Params().at_threshold = 0.9;
-    image_processing.Params().at_window_ratio = 30.0;
-    
-    CVarUtils::AttachCVar("proc.adaptive.threshold", &image_processing.Params().at_threshold);
-    CVarUtils::AttachCVar("proc.adaptive.window_ratio", &image_processing.Params().at_window_ratio);
-    CVarUtils::AttachCVar("proc.black_on_white", &image_processing.Params().black_on_white);
-    
-    ConicFinder conic_finder;
-    conic_finder.Params().conic_min_area = 4.0;
-    conic_finder.Params().conic_min_density = 0.6;
-    conic_finder.Params().conic_min_aspect = 0.2;
- 
-    TargetGridDot target(grid_spacing, grid_size, grid_center);
-
-    for(size_t i=0; i<N; ++i) {
-        // Add (arbitrary) starting camera params
-        const pangolin::StreamInfo& si = video.Streams()[i];
-        CameraModelT<Fov> default_cam( si.Width(), si.Height() );
-
-        default_cam.SetIndex( i );
-
-        default_cam.Params()  << 300, 300, w/2.0, h/2.0, 0.2;
-        calib_cams[i] = calibrator.AddCamera(default_cam);
-    }
-
     for(int frame=0; !pangolin::ShouldQuit();){     
-        if(pangolin::Pushed(reset) ) {
-            calibrator.Clear();
-            video.Reset();
-            frame=0;
- 
-            // Re-add camers
-            for(size_t i=0; i<N; ++i) {
-                const pangolin::StreamInfo& si = video.Streams()[i];
-                CameraModelT<Fov> default_cam( si.Width(), si.Height() );
-                default_cam.Params()  << 300, 300, w/2.0, h/2.0, 0.2;
-                default_cam.SetIndex( i );
-                calib_cams[i] = calibrator.AddCamera(default_cam);
-            }
-        }
-
         const bool go = (frame==0) || run || pangolin::Pushed(step);
         
         int calib_frame = -1;
@@ -217,7 +231,10 @@ int main( int argc, char** argv)
             const std::vector<Conic>& conics = conic_finder.Conics();
             std::vector<int> ellipse_target_map;
             
-            tracking_good[iI] = target.FindTarget(image_processing, conic_finder.Conics(), ellipse_target_map);
+            tracking_good[iI] = target.FindTarget(
+                        image_processing, conic_finder.Conics(),
+                        ellipse_target_map
+                        );
             
             if(tracking_good[iI]) {
                 // Generate map and point structures
@@ -338,7 +355,6 @@ int main( int argc, char** argv)
     }
     
     calibrator.Stop();
-
 
     calibrator.WriteCameraModels();
 

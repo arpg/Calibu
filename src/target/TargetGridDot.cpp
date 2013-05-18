@@ -30,8 +30,8 @@
 
 namespace calibu {
 
-TargetGridDot::TargetGridDot(double grid_spacing, Eigen::Vector2i grid_size, Eigen::Vector2i grid_center, uint32_t seed)
-    : grid_spacing(grid_spacing), grid_size(grid_size), grid_center(grid_center)
+TargetGridDot::TargetGridDot(double grid_spacing, Eigen::Vector2i grid_size, uint32_t seed)
+    : grid_spacing(grid_spacing), grid_size(grid_size)
 {
     // Create binary pattern (and rotated pattern) from seed
     PG = MakePatternGroup(grid_size(1), grid_size(0), seed);

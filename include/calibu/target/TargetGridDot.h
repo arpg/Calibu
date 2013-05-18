@@ -61,7 +61,7 @@ class TargetGridDot
         : public TargetInterface
 {
 public:
-    TargetGridDot(double grid_spacing, Eigen::Vector2i grid_size, Eigen::Vector2i grid_center, uint32_t seed = 71);
+    TargetGridDot(double grid_spacing, Eigen::Vector2i grid_size, uint32_t seed = 71);
     
     ////////////////////////////////////////////////////////////////////////////
     
@@ -121,7 +121,6 @@ protected:
     
     double grid_spacing;
     Eigen::Vector2i grid_size;
-    Eigen::Vector2i grid_center;
     std::array<Eigen::MatrixXi,4> PG;
     
     ParamsGridDot params;
