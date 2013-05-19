@@ -65,7 +65,7 @@ int main( int argc, char** argv)
     std::string video_uri = argv[1];
     
     // Second Argument - Distance in meters between dots.
-    double grid_spacing = 0.01337; // US Letter
+    double grid_spacing = 0.254 / (19-1); // US Letter
     const Eigen::Vector2i grid_size(19,10);
     
     if(argc >= 3) {
