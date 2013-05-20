@@ -95,14 +95,17 @@ public:
 
     //////////////////////////////////////////////////////////////////////////////
     /// Return 3x3 RDF matrix, describing the coordinate-frame convention.
+    /// Row0: Right vector in camera frame of reference
+    /// Row1: Down vector in camera frame of reference
+    /// Row2: Forward vector in camera frame of reference
     virtual Eigen::Matrix3d RDF() const = 0;
-
+    
 
     //////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////
     // Project point in 3d camera coordinates to image coordinates
-    Eigen::Vector2d ProjectMap(
+    inline Eigen::Vector2d ProjectMap(
             const Eigen::Vector3d& P //< Input:
             ) const
     {
@@ -111,7 +114,7 @@ public:
  
     //////////////////////////////////////////////////////////////////////////////
     // Create 3D camera coordinates ray from image space coordinates
-    Eigen::Vector3d UnmapUnproject(
+    inline Eigen::Vector3d UnmapUnproject(
             const Eigen::Vector2d& p //< Input:
             ) const
     {
@@ -122,7 +125,7 @@ public:
     /// Transfer point correspondence with known inv. depth to secondary camera frame.
     //  Points at infinity are supported (rho = 0)
     //  rhoPa = unproject(unmap(pa)).
-    Eigen::Vector2d Transfer3D(
+    inline Eigen::Vector2d Transfer3D(
             const Sophus::SE3d& T_ba,     //< Input:
             const Eigen::Vector3d& rhoPa, //< Input:
             const double rho              //< Input:
@@ -142,7 +145,7 @@ public:
     // Transfer point correspondence with known inv. depth to secondary camera frame.
     // Points at infinity are supported (rho = 0)
     // rhoPa = unproject(unmap(pa))
-    Eigen::Vector2d Transfer3D(
+    inline Eigen::Vector2d Transfer3D(
             const Sophus::SE3d& T_ba,     //< Input:
             const Eigen::Vector3d& rhoPa, //< Input:
             const double rho,             //< Input:
@@ -163,7 +166,7 @@ public:
     //////////////////////////////////////////////////////////////////////////////
     // Transfer point correspondence with known inv. depth to secondary camera frame.
     // Points at infinity are supported (rho = 0)
-    Eigen::Vector2d Transfer(
+    inline Eigen::Vector2d Transfer(
             const Sophus::SE3d& T_ba,  //< Input:
             const Eigen::Vector2d& pa, //< Input:
             const double rho           //< Output:
@@ -177,7 +180,7 @@ public:
     //////////////////////////////////////////////////////////////////////////////
     // Transfer point correspondence with known inv. depth to secondary camera frame.
     // Points at infinity are supported (rho = 0)
-    Eigen::Vector2d Transfer(
+    inline Eigen::Vector2d Transfer(
             const Sophus::SE3d& T_ba,  //< Input:
             const Eigen::Vector2d& pa, //< Input:
             const double rho,          //< Input:
@@ -188,7 +191,6 @@ public:
         const Eigen::Vector3d rhoPa = UnmapUnproject(pa);
         return Transfer3D(T_ba, rhoPa, rho, in_front);
     }
-
 };
 
 }
