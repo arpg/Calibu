@@ -31,7 +31,7 @@ class CameraModelAndPose
 {
 public:
     CameraModel camera;
-    Sophus::SE3d T_cw;
+    Sophus::SE3d T_wc;
 };
 
 class CameraRig
@@ -40,10 +40,10 @@ public:
     void Add(const CameraModelAndPose& cop) {
         cameras.push_back(cop);
     }
-    void Add(const CameraModelInterface& cam, Sophus::SE3d& T_cw) {
+    void Add(const CameraModelInterface& cam, const Sophus::SE3d& T_wc) {
         CameraModelAndPose cop;
         cop.camera = CameraModel(cam);
-        cop.T_cw = T_cw;
+        cop.T_wc = T_wc;
         cameras.push_back(cop);
     }
     

@@ -159,25 +159,25 @@ inline CameraModel ReadXmlCameraModel(const std::string& filename)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-inline void WriteXmlSE3(std::ostream& out, const Sophus::SE3d& T_cw, int indent = 0)
+inline void WriteXmlSE3(std::ostream& out, const Sophus::SE3d& T_wc, int indent = 0)
 {
     const std::string dd1 = IndentStr(indent);
     const std::string dd2 = IndentStr(indent+4);
     
     out << dd1 << AttribOpen(NODE_POSE) << std::endl;
-    out << dd2 << "<T_cw> " << T_cw.matrix3x4() << " </T_cw>\n";
+    out << dd2 << "<T_wc> " << T_wc.matrix3x4() << " </T_wc>\n";
     out << dd1 << AttribClose(NODE_POSE) << std::endl;
 }
 
-inline void WriteXmlSE3(const std::string& filename, const Sophus::SE3d& T_cw)
+inline void WriteXmlSE3(const std::string& filename, const Sophus::SE3d& T_wc)
 {
     std::ofstream of(filename);
-    WriteXmlSE3(of, T_cw);
+    WriteXmlSE3(of, T_wc);
 }
 
 inline Sophus::SE3d ReadXmlSE3(TiXmlNode* xmlcampose)
 {
-    const std::string val = xmlcampose->FirstChildElement("T_cw")->GetText();
+    const std::string val = xmlcampose->FirstChildElement("T_wc")->GetText();
     Eigen::Matrix4d m = StrToVal<Eigen::Matrix4d>(val);
     return Sophus::SE3d(m);
 }
@@ -200,7 +200,7 @@ inline void WriteXmlCameraModelAndPose(std::ostream& out, const CameraModelAndPo
     const std::string dd = IndentStr(indent);
     out << dd << AttribOpen(NODE_CAMMODEL_POSE) << std::endl;
     WriteXmlCameraModel(out, cop.camera, indent+4);
-    WriteXmlSE3(out, cop.T_cw, indent+4);
+    WriteXmlSE3(out, cop.T_wc, indent+4);
     out << dd << AttribClose(NODE_CAMMODEL_POSE) << std::endl;
 }
 
@@ -222,7 +222,7 @@ inline CameraModelAndPose ReadXmlCameraModelAndPose(TiXmlNode* xmlcampose)
     
     TiXmlNode* xmlpose = xmlcampose->FirstChild(NODE_POSE);
     if(xmlpose) {
-        cop.T_cw = ReadXmlSE3(xmlpose);
+        cop.T_wc = ReadXmlSE3(xmlpose);
     }   
     
     return cop;

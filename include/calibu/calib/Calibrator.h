@@ -98,7 +98,7 @@ public:
         CameraRig rig;
         
         for(size_t c=0; c<m_camera.size(); ++c) {
-            rig.Add(m_camera[c]->camera, m_camera[c]->T_ck);
+            rig.Add(m_camera[c]->camera, m_camera[c]->T_ck.inverse());
         }
         
         WriteXmlRig("cameras.xml", rig);
