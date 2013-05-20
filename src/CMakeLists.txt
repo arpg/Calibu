@@ -18,6 +18,7 @@ set(
     ${INCDIR}/cam/CameraXml.h
     ${INCDIR}/cam/DistortionModel.h
     ${INCDIR}/cam/ProjectionModel.h
+    ${INCDIR}/cam/StereoRectify.h
     ${INCDIR}/conics/Conic.h
     ${INCDIR}/conics/ConicFinder.h
     ${INCDIR}/conics/FindConics.h
@@ -46,6 +47,7 @@ set(
 
 SET(
     SOURCES
+    cam/StereoRectify.cpp
     conics/Conic.cpp
     conics/ConicFinder.cpp
     conics/FindConics.cpp
