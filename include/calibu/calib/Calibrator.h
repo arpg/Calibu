@@ -91,7 +91,6 @@ public:
     
     ~Calibrator()
     {
-        PrintResults();
     }
 
     void WriteCameraModels()

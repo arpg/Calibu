@@ -177,17 +177,17 @@ int main( int argc, char** argv)
     ////////////////////////////////////////////////////////////////////    
     // Display Variables 
     
-    pangolin::Var<bool> step("ui.step", false, false);
-    pangolin::Var<bool> run("ui.run", false, true);
-    pangolin::Var<bool> add("ui.add", false, true);
+    pangolin::Var<bool> run("ui.Play video", false, true);
+
+    pangolin::Var<double> disp_mse("ui.MSE");
+    pangolin::Var<int> disp_frame("ui.frame");
+
+    pangolin::Var<bool> add("ui.Add Frames", true, true);
     
     pangolin::Var<bool> disp_thresh("ui.Display Thresh",false);
     pangolin::Var<bool> disp_lines("ui.Display Lines",true);
     pangolin::Var<bool> disp_cross("ui.Display crosses",true);
     pangolin::Var<bool> disp_bbox("ui.Display bbox",true);
-
-    pangolin::Var<double> disp_mse("ui.MSE");
-    pangolin::Var<int> disp_frame("ui.frame");
                 
     ////////////////////////////////////////////////////////////////////    
     // Key shortcuts
@@ -200,9 +200,11 @@ int main( int argc, char** argv)
     pangolin::RegisterKeyPressCallback('[', [&](){calibrator.Start();} );
     pangolin::RegisterKeyPressCallback(']', [&](){calibrator.Stop();} );
 
+    bool step = false;
     pangolin::RegisterKeyPressCallback(pangolin::PANGO_SPECIAL+ GLUT_KEY_RIGHT, [&](){step = true;} );
     pangolin::RegisterKeyPressCallback(' ', [&](){run = !run;} );
-    pangolin::RegisterKeyPressCallback('t', [&](){calibrator.PrintResults();} );
+    
+    pangolin::RegisterKeyPressCallback('r', [&](){calibrator.PrintResults();} );
 
     ////////////////////////////////////////////////////////////////////
     // Main event loop
@@ -355,7 +357,7 @@ int main( int argc, char** argv)
     }
     
     calibrator.Stop();
-
+    calibrator.PrintResults();
     calibrator.WriteCameraModels();
 
 }
