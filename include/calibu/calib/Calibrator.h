@@ -21,6 +21,9 @@
 
 #pragma once
 
+// Compile against new ceres covarience interface.
+//#define CALIBU_CERES_COVAR
+
 #include <thread>
 #include <mutex>
 #include <memory>
@@ -33,6 +36,11 @@
 #include <calibu/calib/CostFunctionAndParams.h>
 
 #include <ceres/ceres.h>
+
+#ifdef CALIBU_CERES_COVAR
+#include <ceres/covariance.h>
+#endif // CALIBU_CERES_COVAR
+
 #include <calibu/calib/CeresExtra.h>
 #include <calibu/calib/LocalParamSe3.h>
 
@@ -61,68 +69,6 @@ struct CameraAndPose
     Sophus::SE3d T_ck;
 };
 
-// https://svn.blender.org/svnroot/bf-blender/branches/soc-2011-tomato/extern/libmv/libmv/simple_pipeline/bundle.cc
-Eigen::MatrixXd ToEigenMatrix(const ceres::CRSMatrix &crs_matrix) {
-    Eigen::MatrixXd eigen_matrix(crs_matrix.num_rows, crs_matrix.num_cols);
-    eigen_matrix.setZero();
-    
-    for (int row = 0; row < crs_matrix.num_rows; ++row) {
-        const int start = crs_matrix.rows[row];
-        const int end = crs_matrix.rows[row + 1];
-        
-        for (int i = start; i < end; i++) {
-            const int col = crs_matrix.cols[i];
-            const double value = crs_matrix.values[i];
-            eigen_matrix(row, col) = value;
-        }
-    }
-    
-    return eigen_matrix;
-}
-
-// https://svn.blender.org/svnroot/bf-blender/branches/soc-2011-tomato/extern/libmv/libmv/simple_pipeline/bundle.cc
-Eigen::SparseMatrix<double,Eigen::RowMajor> ToSparseEigenMatrix(const ceres::CRSMatrix &crs_matrix) {
-    Eigen::SparseMatrix<double,Eigen::RowMajor> eigen_matrix(crs_matrix.num_rows, crs_matrix.num_cols);
-
-    for (int row = 0; row < crs_matrix.num_rows; ++row) {
-        const int row_start = crs_matrix.rows[row];
-        const int row_end = crs_matrix.rows[row + 1];
-        
-        eigen_matrix.startVec(row);
-        for (int i = row_start; i < row_end; i++) {
-            const int col = crs_matrix.cols[i];
-            const double value = crs_matrix.values[i];
-            eigen_matrix.insertBack(row,col) = value;
-        }
-    }
-
-    return eigen_matrix;
-}
-
-// https://svn.blender.org/svnroot/bf-blender/branches/soc-2011-tomato/extern/libmv/libmv/simple_pipeline/keyframe_selection.cc
-// Based on code from http://eigen.tuxfamily.org/index.php?title=FAQ
-Eigen::MatrixXd pseudoInverse(const Eigen::MatrixXd &matrix) {
-  typedef Eigen::JacobiSVD<Eigen::MatrixXd> JacobiSVD;
-  typedef JacobiSVD::SingularValuesType SingularValuesType;
-
-  JacobiSVD jacobiSvd(matrix, Eigen::ComputeThinU | Eigen::ComputeThinV);
-  const SingularValuesType singularValues = jacobiSvd.singularValues();
-  SingularValuesType singularValues_inv = singularValues;
-
-  double epsilon = std::numeric_limits<double>::epsilon();
-
-  for (int i = 0; i < singularValues.rows(); i++) {
-    if (singularValues(i) > epsilon)
-      singularValues_inv(i) = 1.0 / singularValues(i);
-    else
-      singularValues_inv(i) = 0.0;
-  }
-
-  return jacobiSvd.matrixV() *
-         singularValues_inv.asDiagonal() *
-         jacobiSvd.matrixU().transpose();
-}
-
 template<typename ProjModel>
 class Calibrator
 {
@@ -145,12 +91,7 @@ public:
     
     ~Calibrator()
     {
-        std::cout << "------------------------------------------" << std::endl;
-        for(size_t c=0; c<m_camera.size(); ++c) {
-            std::cout << "Camera: " << c << std::endl;
-            std::cout << m_camera[c]->camera.Params().transpose() << std::endl;
-            std::cout << m_camera[c]->T_ck.matrix3x4() << std::endl << std::endl;
-        }        
+        PrintResults();
     }
 
     void WriteCameraModels()
@@ -270,42 +211,78 @@ public:
         return m_mse;
     }
     
+#ifdef CALIBU_CERES_COVAR    
     void PrintResults()
     {
-        std::cout << "----------------------------------------" << std::endl;
+        if(m_costs.size() < 10)
+            return;
         
         ceres::Problem problem(m_prob_options);
         SetupProblem(problem);
+        
+        ceres::Covariance::Options cov_options;
+        ceres::Covariance covariance(cov_options);
+        
+        std::vector<std::pair<const double*, const double*> > cov_blocks;
 
-        ceres::Problem::EvaluateOptions eval_options;
-//        for(size_t c=0; c < m_camera.size(); ++c) {
-//            eval_options.parameter_blocks.push_back(m_camera[c]->camera.data() );
-//            if(c==1) eval_options.parameter_blocks.push_back(m_camera[c]->T_ck.data() );            
-//        }
+        const int cam_block_size = CameraModelT<ProjModel>::NUM_PARAMS;
+        const int pose_block_size = Sophus::SE3d::num_parameters;
         
-        double cost;
-        ceres::CRSMatrix crs_jacobian;        
-        problem.Evaluate(eval_options, &cost, nullptr, nullptr, &crs_jacobian);
-        std::cout << "Evaluated jacobian" << std::endl;
+        // Setup which blocks of covarience to request.
+        for(size_t c=0; c < m_camera.size(); ++c) {
+            const double* cam_block = m_camera[c]->camera.data();
+            cov_blocks.push_back(std::make_pair(cam_block,cam_block) );
+            
+            if(c > 0) {
+                const double* pose_block = m_camera[c]->T_ck.data();
+                cov_blocks.push_back( std::make_pair(pose_block, pose_block) );
+            }
+            
+        }
         
-        Eigen::SparseMatrix<double,Eigen::RowMajor> J =
-                ToSparseEigenMatrix(crs_jacobian);
-        std::cout << "Converted to Eigen" << std::endl;
-        
-        Eigen::SparseMatrix<double> JTJ = J.transpose() * J;
-        std::cout << "Computed JTJ " << JTJ.rows() << "x" << JTJ.cols() << std::endl;
-        
-        
-//        Eigen::SimplicialCholesky<Eigen::SparseMatrix<double> > chol(JTJ);
-//        Eigen::MatrixXd invJTJ = chol.solve(Eigen::MatrixXd::Identity(JTJ.rows(), JTJ.cols()));
+        // Compute sparse covarience
+        if(covariance.Compute(cov_blocks, &problem)) {
+            std::cout << "------------------------------------------" << std::endl;        
+            
+            // Retrieve covariences for parameters
+            for(size_t c=0; c < m_camera.size(); ++c) {                
+                std::cout << "Camera: " << c << std::endl;
+
+                const double* cam_block = m_camera[c]->camera.data();
+                Eigen::Matrix<double,cam_block_size,cam_block_size> cam_cov;
+                covariance.GetCovarianceBlock(cam_block,cam_block, cam_cov.data());
+                std::cout << m_camera[c]->camera.Params().transpose() << std::endl;
+                std::cout << "Variance: " << cam_cov.diagonal() << std::endl;            
                 
-        Eigen::MatrixXd dJTJ = JTJ;
-        Eigen::MatrixXd invJTJ = pseudoInverse(dJTJ);
-        std::cout << "Inverted" << std::endl;
-        
-        std::cout << cost << std::endl << std::endl;
-        std::cout << invJTJ.squaredNorm() << std::endl;
+                if(c > 0) {
+                    const double* poseblock = m_camera[c]->T_ck.data();
+                    Eigen::Matrix<double,pose_block_size,pose_block_size> pose_cov;
+                    covariance.GetCovarianceBlock(poseblock,poseblock, pose_cov.data());
+                    std::cout << m_camera[c]->T_ck.matrix3x4() << std::endl << std::endl;
+                    std::cout << "Variance: " << pose_cov.diagonal() << std::endl;
+                }
+                
+            }        
+        }
     }
+    
+#else  // CALIBU_CERES_COVAR
+
+    void PrintResults()
+    {
+        std::cout << "------------------------------------------" << std::endl;        
+        
+        for(size_t c=0; c < m_camera.size(); ++c) {
+            std::cout << "Camera: " << c << std::endl;
+            std::cout << m_camera[c]->camera.Params().transpose() << std::endl;
+            
+            if(c > 0) {
+                std::cout << m_camera[c]->T_ck.matrix3x4() << std::endl;
+            }
+            std::cout << std::endl;
+        }        
+    }
+#endif // CALIBU_CERES_COVAR
     
 protected:
     
