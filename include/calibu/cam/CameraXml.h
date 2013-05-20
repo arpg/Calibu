@@ -108,8 +108,12 @@ inline void WriteXmlCameraModel(std::ostream& out, const CameraModelInterface& c
     
     out << dd2 << "<width> " << cam.Width() << " </width>\n";
     out << dd2 << "<height> " << cam.Height() << " </height>\n";
+    
+    out << dd2 << "<!-- [right'; down'; forward'] camera convention -->\n";
     out << dd2 << "<RDF> " << cam.RDF() << " </RDF>\n";
     out.precision(7);
+    
+    out << dd2 << "<!-- Camera parameters ordered as per type name. -->\n";    
     out << dd2 << "<params> " << cam.GenericParams() << " </params>\n";
     
     out << dd1 << AttribClose(NODE_CAMMODEL) << std::endl;
@@ -165,6 +169,7 @@ inline void WriteXmlSE3(std::ostream& out, const Sophus::SE3d& T_wc, int indent 
     const std::string dd2 = IndentStr(indent+4);
     
     out << dd1 << AttribOpen(NODE_POSE) << std::endl;
+    out << dd2 << "<!-- Camera pose. World from Camera point transfer. 3x4 matrix -->\n";
     out << dd2 << "<T_wc> " << T_wc.matrix3x4() << " </T_wc>\n";
     out << dd1 << AttribClose(NODE_POSE) << std::endl;
 }
