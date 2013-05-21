@@ -38,6 +38,7 @@ set(
     ${INCDIR}/target/TargetGridDot.h
     ${INCDIR}/target/TargetRandomDot.h
     ${INCDIR}/utils/Rectangle.h
+    ${INCDIR}/utils/Range.h
     ${INCDIR}/utils/Utils.h
     ${INCDIR}/utils/PlaneBasis.h
     ${INCDIR}/utils/StreamOperatorsEigen.h
