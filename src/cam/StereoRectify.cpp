@@ -123,10 +123,7 @@ calibu::CameraModelT<Pinhole> CreateScanlineRectifiedLookupAndCameras(
 //                MinMaxRotatedRow(cam_right, Rnl_l)
 //                );
 
-    // We want to map range width/height to image via K.
-    std::cout << range_width << std::endl;
-    std::cout << range_height << std::endl;
-    
+    // We want to map range width/height to image via K.    
     const double fu = (cam_left.Width()-1) / range_width.Size();
     const double fv = (cam_left.Height()-1) / range_height.Size();
     const double u0 = -fu * range_width.minr;

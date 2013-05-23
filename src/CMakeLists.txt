@@ -83,8 +83,9 @@ list( APPEND USER_INC   ${Sophus_INCLUDE_DIR} )
 list( APPEND LINK_LIBS  ${OpenCV2_LIBRARIES} ${ZLIB_LIBRARIES} )
 list( APPEND INTERNAL_INC ${OpenCV2_INCLUDE_DIRS} ${ZLIB_INCLUDE_DIR} )
 
-include_directories( ${INTERNAL_INC} )
+# Include source/build directories first to preempt any installed Calibu
 include_directories( ${USER_INC} )
+include_directories( ${INTERNAL_INC} )
 
 add_library( ${LIBRARY_NAME} SHARED ${HEADERS} ${SOURCES} )
 target_link_libraries( ${LIBRARY_NAME} ${LINK_LIBS} )
