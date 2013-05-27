@@ -77,9 +77,15 @@ struct ProjectionLinear
     
     static const unsigned NUM_LIN_PARAMS = 4;
     static const unsigned NUM_PARAMS = NUM_LIN_PARAMS + DistortionModel::NUM_PARAMS;
-    
-    inline static std::string Type() { return "fu_fv_u0_v0_" + DistortionModel::Type(); }      
-    
+ 
+    inline static std::string Type()
+    {
+        if(  DistortionModel::Type().empty() ){
+            return "fu_fv_u0_v0";
+        }
+        return "fu_fv_u0_v0_" + DistortionModel::Type();
+    }
+ 
     template<typename T> inline
     static Eigen::Matrix<T,2,1> Map(const Eigen::Matrix<T,2,1>& proj, T const* params)
     {
@@ -153,7 +159,13 @@ struct ProjectionLinearSquare
     static const unsigned NUM_LIN_PARAMS = 3;
     static const unsigned NUM_PARAMS = NUM_LIN_PARAMS + DistortionModel::NUM_PARAMS;
     
-    inline static std::string Type() { return "f_u0_v0_" + DistortionModel::Type(); }      
+    inline static std::string Type() 
+    {
+        if( DistortionModel::Type().empty() ){
+            return "f_u0_v0"; 
+        }
+        return "f_u0_v0_" + DistortionModel::Type();
+    }
     
     template<typename T> inline
     static Eigen::Matrix<T,2,1> Map(const Eigen::Matrix<T,2,1>& proj, T const* params)

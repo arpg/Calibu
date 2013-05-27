@@ -139,11 +139,28 @@ public:
     }
     
     /// Return 3x3 RDF matrix, describing the coordinate-frame convention.
+    /// Row0: Right vector in camera frame of reference
+    /// Row1: Down vector in camera frame of reference
+    /// Row2: Forward vector in camera frame of reference
     Eigen::Matrix3d RDF() const
     {
         return m_pCam->RDF();
     }
     
+    /// Set the 3x3 RDF matrix, describing the coordinate-frame convention.
+    /// Row0: Right vector in camera frame of reference
+    /// Row1: Down vector in camera frame of reference
+    /// Row2: Forward vector in camera frame of reference
+    virtual void SetRDF( const Eigen::Matrix3d& RDF )
+    {
+        m_pCam->SetRDF( RDF );    
+    }
+ 
+    void PrintInfo() 
+    {
+        m_pCam->PrintInfo();
+    }
+
     size_t Width() const
     {
         return m_pCam->Width();

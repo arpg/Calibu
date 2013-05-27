@@ -100,7 +100,17 @@ public:
     /// Row2: Forward vector in camera frame of reference
     virtual Eigen::Matrix3d RDF() const = 0;
     
+    //////////////////////////////////////////////////////////////////////////////
+    /// Set the 3x3 RDF matrix, describing the coordinate-frame convention.
+    /// Row0: Right vector in camera frame of reference
+    /// Row1: Down vector in camera frame of reference
+    /// Row2: Forward vector in camera frame of reference
+    virtual void SetRDF( const Eigen::Matrix3d& RDF ) = 0;
 
+
+    //////////////////////////////////////////////////////////////////////////////
+    virtual void PrintInfo() = 0;
+ 
     //////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////
@@ -151,7 +161,7 @@ public:
             const double rho,             //< Input:
             bool& in_front                //< Output:
             ) const
-    {            
+    {
         // Inverse depth point in a transformed to b (homogeneous 2D)
         const Eigen::Vector3d Pb = T_ba.rotationMatrix() * rhoPa + rho * T_ba.translation();
         
@@ -162,7 +172,7 @@ public:
         // apply distortion and linear cam
         return Map(proj); 
     }
-    
+ 
     //////////////////////////////////////////////////////////////////////////////
     // Transfer point correspondence with known inv. depth to secondary camera frame.
     // Points at infinity are supported (rho = 0)
@@ -176,7 +186,7 @@ public:
         const Eigen::Vector3d rhoPa = UnmapUnproject(pa);
         return Transfer3D(T_ba, rhoPa, rho);
     }
-    
+ 
     //////////////////////////////////////////////////////////////////////////////
     // Transfer point correspondence with known inv. depth to secondary camera frame.
     // Points at infinity are supported (rho = 0)
