@@ -235,6 +235,7 @@ private:
         SetName(other.Name());
         SetSerialNumber(other.SerialNumber());
         SetVersion(other.Version());
+        SetRDF( other.RDF() );
     }    
     
     ///////////////////////////////////////////////////////

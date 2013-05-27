@@ -32,6 +32,7 @@ const std::string NODE_RIG           = "rig";
 const std::string NODE_CAMMODEL_POSE = "camera";
 const std::string NODE_CAMMODEL      = "camera_model";
 const std::string NODE_POSE          = "pose";
+const std::string NODE_RDF           = "RDF";
 
 ///////////////////////////////////////////////////////////////////////////////
 template <class T> inline
@@ -229,7 +230,14 @@ inline CameraModelAndPose ReadXmlCameraModelAndPose(TiXmlNode* xmlcampose)
     if(xmlpose) {
         cop.T_wc = ReadXmlSE3(xmlpose);
     }   
-    
+
+    TiXmlNode* xmlrdf = xmlcampose->FirstChild(NODE_RDF);
+    if(xmlrdf) {
+        const std::string val = xmlrdf->FirstChildElement("RDF")->GetText();
+        Eigen::Matrix3d m = StrToVal<Eigen::Matrix3d>(val);
+        cop.camera.SetRDF( m );
+    } 
+ 
     return cop;
 }
 
