@@ -109,7 +109,8 @@ inline void WriteXmlCameraModel(std::ostream& out, const CameraModelInterface& c
     
     out << dd2 << "<width> " << cam.Width() << " </width>\n";
     out << dd2 << "<height> " << cam.Height() << " </height>\n";
-    
+
+    // hmm, is RDF a model parameter or should it be outside thie model, like the pose is? GTS
     out << dd2 << "<!-- [right'; down'; forward'] camera convention -->\n";
     out << dd2 << "<RDF> " << cam.RDF() << " </RDF>\n";
     out.precision(7);
@@ -231,9 +232,9 @@ inline CameraModelAndPose ReadXmlCameraModelAndPose(TiXmlNode* xmlcampose)
         cop.T_wc = ReadXmlSE3(xmlpose);
     }   
 
-    TiXmlNode* xmlrdf = xmlcampose->FirstChild(NODE_RDF);
+    TiXmlNode* xmlrdf = xmlcam->FirstChildElement(NODE_RDF);
     if(xmlrdf) {
-        const std::string val = xmlrdf->FirstChildElement("RDF")->GetText();
+        const std::string val = xmlcam->FirstChildElement("RDF")->GetText();
         Eigen::Matrix3d m = StrToVal<Eigen::Matrix3d>(val);
         cop.camera.SetRDF( m );
     } 

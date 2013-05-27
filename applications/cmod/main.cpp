@@ -54,14 +54,7 @@ CameraModelAndPose MvlToCalibu( const mvl::CameraModel& mvlcam )
 //                CamAndPose.camera = CameraModelT<Pinhole>(
 //                        mvlcam.Width(), mvlcam.Height(), params);
             }
-
-
-            cout << "calibu " << CamAndPose.camera.RDF() << endl;
-            cout << "mvl    " << mvlcam.RDF() << endl;
-
             CamAndPose.camera.SetRDF( mvlcam.RDF() );
-            
-            cout << "calibu " << CamAndPose.camera.RDF() << endl;
 
             break;
     }
@@ -77,7 +70,7 @@ CameraModelAndPose ReadCameraModel( const std::string& sFile )
     double pose[16]; 
     if( mvl_read_camera( sFile.c_str(), pose ) ){
         return MvlToCalibu( mvl::CameraModel(sFile) );
-    } 
+    }
     // else treat it as a normal calibu model
     return calibu::ReadXmlCameraModelAndPose( sFile );
 }
@@ -115,12 +108,10 @@ int UpgradeToMvl( int argc, char** argv )
         if( cam.camera.IsInitialised() ){
             std::ofstream out( std::string("calibu-")+s );
             calibu::WriteXmlCameraModelAndPose( out, cam );
-
-            cout << "calibu " << cam.camera.RDF() << endl;
             std::cout << "Wrote calibu model 'calibu-" << s << "'\n";
         }
         else{
-            std::cout << "WARNING: Failed to parse '" << s << "'\n";
+            std::cout << "\nWARNING: Failed to parse '" << s << "'\n";
         }
     }
 
@@ -142,7 +133,7 @@ int PrintInfo( int argc, char** argv )
             cam.camera.PrintInfo();
         }
         else{
-            std::cout << "WARNING: Failed to parse '" << s << "'\n";
+            std::cout << "\nWARNING: Failed to parse '" << s << "'\n";
         }
     }
     std::cout << "\n";
