@@ -5,7 +5,6 @@ link_libraries( ${LIBRARY_NAME} )
 # git://github.com/stevenlovegrove/Pangolin.git
 find_package( Pangolin REQUIRED )
 include_directories( ${Pangolin_INCLUDE_DIRS} )
-link_directories( ${Pangolin_LIBRARY_DIRS} )
 link_libraries( ${Pangolin_LIBRARIES} )
 
 # git clone https://ceres-solver.googlesource.com/ceres-solver
