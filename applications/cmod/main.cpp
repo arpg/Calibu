@@ -38,10 +38,11 @@ const char* sUsage =
 CameraModelAndPose MvlToCalibu( const mvl::CameraModel& mvlcam )
 {
     CameraModelAndPose CamAndPose;
+
+    Eigen::Matrix3d K = mvlcam.K(); // doesn't always make sense
+
     switch( mvlcam.Type() ){
         case MVL_CAMERA_LINEAR: 
-            CamAndPose.T_wc = Sophus::SE3d( mvlcam.GetPose() );
-            Eigen::Matrix3d K = mvlcam.K();
             if( K(0,1) == 0 ){
                 Eigen::Vector4d p; p << K(0,0), K(1,1), K(0,2), K(1,2);
                 CameraModelT<Pinhole> cam( mvlcam.Width(), mvlcam.Height(), p );
@@ -54,10 +55,22 @@ CameraModelAndPose MvlToCalibu( const mvl::CameraModel& mvlcam )
 //                CamAndPose.camera = CameraModelT<Pinhole>(
 //                        mvlcam.Width(), mvlcam.Height(), params);
             }
-            CamAndPose.camera.SetRDF( mvlcam.RDF() );
-
+            break;
+        case MVL_CAMERA_LUT:
+                Eigen::Vector4d p; p << K(0,0), K(1,1), K(0,2), K(1,2);
+                CameraModelT<Pinhole> cam( mvlcam.Width(), mvlcam.Height(), p );
+                CamAndPose.camera = cam;
             break;
     }
+
+    CamAndPose.camera.SetName( mvlcam.GetModel()->name );
+    CamAndPose.camera.SetSerialNumber( mvlcam.GetModel()->serialno );
+    CamAndPose.camera.SetIndex( mvlcam.GetModel()->index );
+//    CamAndPose.camera.SetVersion( mvlcam.GetModel()->version );
+    CamAndPose.camera.SetVersion( calibu::CAMRERA_MODEL_VERSION );
+    CamAndPose.camera.SetRDF( mvlcam.RDF() );
+    CamAndPose.T_wc = Sophus::SE3d( mvlcam.GetPose() );
+
     return CamAndPose;
 }
 
@@ -74,6 +87,46 @@ CameraModelAndPose ReadCameraModel( const std::string& sFile )
     // else treat it as a normal calibu model
     return calibu::ReadXmlCameraModelAndPose( sFile );
 }
+      
+////////////////////////////////////////////////////////////////////////////
+/// Read the lookup table into sLut, with tags
+bool ReadCameraModelLut( const std::string& sFile, std::string& sLut )
+{
+    double pose[16]; 
+    mvl_camera_t* pCam = mvl_read_camera( sFile.c_str(), pose );
+    if( !pCam || pCam->type != MVL_CAMERA_LUT ){
+        return false;
+    } 
+
+    // get the lookup table element
+    TiXmlDocument doc;
+    sLut.clear();
+    if( doc.LoadFile(sFile) ){
+        TiXmlElement* pNode = doc.FirstChildElement("camera_model");
+        pNode = pNode->FirstChildElement("lut");
+        if( !pNode ){
+            return false;
+        }
+
+        std::cout << "Converting lookup-tables...";
+
+        std::string sRest = pNode->GetText(); 
+        // every 6 terms insert a newline
+        unsigned int cnt = 1, start = 0, end = 0;
+        while( end < sRest.size() ){
+            end = sRest.find_first_of(" ",start);
+            std::string s = sRest.substr( start, end-start );
+            sLut += sRest.substr( start, end-start );
+            sLut += ( cnt++ % 6 == 0 ) ? "\n" : " ";
+            start = end+1;
+        }
+
+        std::cout << "done\n";
+    }
+    sLut = std::string("    <lut>\n") + sLut + "\n    </lut>\n";
+
+    return true;
+}
 
 ////////////////////////////////////////////////////////////////////////////
 /// Function to convert multiple cameras into a calibu camera rig file.
@@ -83,16 +136,27 @@ int MakeRig( int argc, char** argv )
     cl.search(2, "-c", "--combine-cameras");
 
     CameraRig rig;
+    std::string sLuts; // lookup tables, if present
     for( string s = cl.next(""); !s.empty(); s = cl.next("") ){
         CameraModelAndPose cam = ReadCameraModel( s );
         if( cam.camera.IsInitialised() ){
             rig.Add( cam );
         }
+        std::string sLut;
+        if( ReadCameraModelLut( s, sLut )){ // did the model have a lut?
+           sLuts += sLut;
+        }
     }
 
     std::cout << "Wrote calibu camera rig to 'cameras.xml'\n";
     std::ofstream out( "cameras.xml" );
-    calibu::WriteXmlRig( out, rig );
+    // calibu::WriteXmlRig( out, rig, sLuts );
+    out << AttribOpen(NODE_RIG) << std::endl;    
+    for(const CameraModelAndPose& cop : rig.cameras) {
+        WriteXmlCameraModelAndPose( out, cop, 4 );
+    }
+    out << sLuts; // empty if no looktables present
+    out << AttribClose(NODE_RIG) << std::endl;
 
     return 0;
 }
