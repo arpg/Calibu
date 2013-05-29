@@ -201,6 +201,24 @@ inline Sophus::SE3d ReadXmlSE3(const std::string& filename)
     return Sophus::SE3d();
 }
 
+////////////////////////////////////////////////////////////////////////////
+inline void WriteXmlCameraModelAndPoseWithLut( 
+        std::ostream& out,
+        std::string& sLutXmlElement,
+        const CameraModelAndPose& cop, 
+        int indent = 0
+        )
+{
+    const std::string dd = IndentStr(indent);
+    out << dd << AttribOpen(NODE_CAMMODEL_POSE) << std::endl;
+    WriteXmlCameraModel(out, cop.camera, indent+4);
+    WriteXmlSE3(out, cop.T_wc, indent+4);
+    
+    out << dd << sLutXmlElement << std::endl; // LUT, if there is one!
+    out << dd << AttribClose(NODE_CAMMODEL_POSE) << std::endl;
+}
+
+
 ///////////////////////////////////////////////////////////////////////////////
 inline void WriteXmlCameraModelAndPose(std::ostream& out, const CameraModelAndPose& cop, int indent = 0)
 {

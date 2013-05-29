@@ -66,7 +66,6 @@ CameraModelAndPose MvlToCalibu( const mvl::CameraModel& mvlcam )
     CamAndPose.camera.SetName( mvlcam.GetModel()->name );
     CamAndPose.camera.SetSerialNumber( mvlcam.GetModel()->serialno );
     CamAndPose.camera.SetIndex( mvlcam.GetModel()->index );
-//    CamAndPose.camera.SetVersion( mvlcam.GetModel()->version );
     CamAndPose.camera.SetVersion( calibu::CAMRERA_MODEL_VERSION );
     CamAndPose.camera.SetRDF( mvlcam.RDF() );
     CamAndPose.T_wc = Sophus::SE3d( mvlcam.GetPose() );
@@ -162,7 +161,7 @@ int MakeRig( int argc, char** argv )
 }
 
 ////////////////////////////////////////////////////////////////////////////
-int UpgradeToMvl( int argc, char** argv ) 
+int UpgradeToCalibu( int argc, char** argv ) 
 {
     GetPot cl( argc, argv );
     cl.search( 2, "--upgrade-mvl-to-calibu", "-u" );
@@ -171,7 +170,12 @@ int UpgradeToMvl( int argc, char** argv )
         CameraModelAndPose cam = ReadCameraModel( s );
         if( cam.camera.IsInitialised() ){
             std::ofstream out( std::string("calibu-")+s );
-            calibu::WriteXmlCameraModelAndPose( out, cam );
+
+            std::string sLut;
+            ReadCameraModelLut( s, sLut );
+
+            calibu::WriteXmlCameraModelAndPoseWithLut( out, sLut, cam );
+ 
             std::cout << "Wrote calibu model 'calibu-" << s << "'\n";
         }
         else{
@@ -217,11 +221,11 @@ int main( int argc, char** argv )
 
     // user wants us to make a camera rig
     if( cl.search(2, "-u", "--upgrade-mvl-to-calibu") ){
-        return UpgradeToMvl( argc, argv );
+        return UpgradeToCalibu( argc, argv );
     }
 
     // user wants camera model info
-    if( cl.search(2, "--info", "-i") ){
+    if( cl.search(2, "-i", "--info") ){
         return PrintInfo( argc, argv );
     }
 
