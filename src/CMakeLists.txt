@@ -48,6 +48,7 @@ set(
 
 SET(
     SOURCES
+    cam/CameraXml.cpp
     cam/StereoRectify.cpp
     conics/Conic.cpp
     conics/ConicFinder.cpp

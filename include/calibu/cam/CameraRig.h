@@ -27,6 +27,8 @@
 namespace calibu
 {
 
+//////////////////////////////////////////////////////////////////////////////
+
 class CameraModelAndPose
 {
 public:
@@ -34,13 +36,15 @@ public:
     Sophus::SE3d T_wc;
 };
 
+//////////////////////////////////////////////////////////////////////////////
+
 class CameraRig
 {
 public:
-    void Add(const CameraModelAndPose& cop) {
+    inline void Add(const CameraModelAndPose& cop) {
         cameras.push_back(cop);
     }
-    void Add(const CameraModelInterface& cam, const Sophus::SE3d& T_wc) {
+    inline void Add(const CameraModelInterface& cam, const Sophus::SE3d& T_wc) {
         CameraModelAndPose cop;
         cop.camera = CameraModel(cam);
         cop.T_wc = T_wc;
@@ -49,5 +53,37 @@ public:
     
     std::vector<CameraModelAndPose> cameras;
 };
+
+//////////////////////////////////////////////////////////////////////////////
+
+static const Sophus::SO3d RdfVision =
+        Sophus::SO3d( (Eigen::Matrix3d() << 1,0,0, 0,1,0, 0,0,1).finished() );
+
+static const Sophus::SO3d RdfRobotics = 
+        Sophus::SO3d( (Eigen::Matrix3d() << 0,1,0, 0,0,1, 1,0,0).finished() );
+
+// T_2b_1b = T_ba * T_2a_1a * T_ab
+inline Sophus::SE3d ToCoordinateConvention(
+        const Sophus::SE3d& T_2a_1a,
+        const Sophus::SO3d& R_ba
+        )
+{
+    Sophus::SE3d T_2b_1b;
+    T_2b_1b.so3() = R_ba * T_2a_1a.so3() * R_ba.inverse();
+    T_2b_1b.translation() = R_ba * T_2a_1a.translation();
+    return T_2b_1b;
+}
+
+inline CameraRig ToCoordinateConvention(const CameraRig& rig, const Sophus::SO3d& rdf)
+{
+    CameraRig ret = rig;
+    for(size_t c=0; c<ret.cameras.size(); ++c) {
+        const Sophus::SO3d M = rdf * Sophus::SO3d(rig.cameras[c].camera.RDF()).inverse();
+        ret.cameras[c].T_wc = ToCoordinateConvention(rig.cameras[c].T_wc, M);
+        ret.cameras[c].camera.SetRDF(rdf.matrix());
+    }
+    return ret;
+}
+
 
 }
