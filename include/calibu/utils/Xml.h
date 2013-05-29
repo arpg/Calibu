@@ -23,8 +23,8 @@ distribution.
 */
 
 
-#ifndef CVARS_TINYXML_INCLUDED
-#define CVARS_TINYXML_INCLUDED
+#ifndef CALIBU_TINYXML_INCLUDED
+#define CALIBU_TINYXML_INCLUDED
 
 #ifdef _MSC_VER
 #pragma warning( push )

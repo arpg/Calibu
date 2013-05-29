@@ -11,12 +11,14 @@
 #include <calibu/gl/Drawing.h>
 #include <calibu/pose/Pnp.h>
 #include <calibu/conics/ConicFinder.h>
+#include <calibu/utils/Xml.h>
 
 #include <CVars/CVar.h>
 #include <Mvlpp/Mvl.h>
 #include "GetPot"
 
 using namespace std;
+using namespace calibu;
 
 const char* sUsage = 
 "USAGE: cmod <options> <files>\n"
@@ -97,10 +99,10 @@ bool ReadCameraModelLut( const std::string& sFile, std::string& sLut )
     } 
 
     // get the lookup table element
-    TiXmlDocument doc;
+    calibu::TiXmlDocument doc;
     sLut.clear();
     if( doc.LoadFile(sFile) ){
-        TiXmlElement* pNode = doc.FirstChildElement("camera_model");
+        calibu::TiXmlElement* pNode = doc.FirstChildElement("camera_model");
         pNode = pNode->FirstChildElement("lut");
         if( !pNode ){
             return false;

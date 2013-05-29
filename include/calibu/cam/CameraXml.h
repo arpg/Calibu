@@ -61,6 +61,19 @@ std::string ValToStr( const T& t )
 ///////////////////////////////////////////////////////////////////////////////
 std::string CameraModelType( const std::string& sType );
 
+std::string IndentStr(int indent);
+
+std::string AttribOpen(const std::string& attrib);
+
+std::string AttribClose(const std::string& attrib);
+
+void WriteXmlSE3(std::ostream& out, const Sophus::SE3d& T_wc, int indent);
+
+void WriteXmlCameraModel(std::ostream& out, const CameraModelInterface& cam, int indent = 0);
+
+void WriteXmlCameraModel(const std::string& filename, const CameraModelInterface& cam);
+
+
 ////////////////////////////////////////////////////////////////////////////
 inline void WriteXmlCameraModelAndPoseWithLut( 
         std::ostream& out,
@@ -80,9 +93,6 @@ inline void WriteXmlCameraModelAndPoseWithLut(
 
 
 ///////////////////////////////////////////////////////////////////////////////
-
-void WriteXmlCameraModel(std::ostream& out, const CameraModelInterface& cam, int indent = 0);
-void WriteXmlCameraModel(const std::string& filename, const CameraModelInterface& cam);
 //CameraModel ReadXmlCameraModel(TiXmlElement* pEl);
 CameraModel ReadXmlCameraModel(const std::string& filename);
 
