@@ -35,16 +35,16 @@ const char* sUsage =
 
 ////////////////////////////////////////////////////////////////////////////
 /// Convert mvl model to calibu model.
-CameraModelAndPose MvlToCalibu( const mvl::CameraModel& mvlcam )
+calibu::CameraModelAndPose MvlToCalibu( const mvl::CameraModel& mvlcam )
 {
-    CameraModelAndPose CamAndPose;
+    calibu::CameraModelAndPose CamAndPose;
     switch( mvlcam.Type() ){
         case MVL_CAMERA_LINEAR: 
             CamAndPose.T_wc = Sophus::SE3d( mvlcam.GetPose() );
             Eigen::Matrix3d K = mvlcam.K();
             if( K(0,1) == 0 ){
                 Eigen::Vector4d p; p << K(0,0), K(1,1), K(0,2), K(1,2);
-                CameraModelT<Pinhole> cam( mvlcam.Width(), mvlcam.Height(), p );
+                calibu::CameraModelT<calibu::Pinhole> cam( mvlcam.Width(), mvlcam.Height(), p );
                 CamAndPose.camera = cam;
             }
             else{
@@ -64,7 +64,7 @@ CameraModelAndPose MvlToCalibu( const mvl::CameraModel& mvlcam )
 ////////////////////////////////////////////////////////////////////////////
 /// Backwards compatible camera model read function that automatically 
 //  updates old MVL models to calibu models.
-CameraModelAndPose ReadCameraModel( const std::string& sFile )
+calibu::CameraModelAndPose ReadCameraModel( const std::string& sFile )
 {
     // quick check if the file is an old MVL file:
     double pose[16]; 
@@ -82,9 +82,9 @@ int MakeRig( int argc, char** argv )
     GetPot cl( argc, argv );
     cl.search(2, "-c", "--combine-cameras");
 
-    CameraRig rig;
+    calibu::CameraRig rig;
     for( string s = cl.next(""); !s.empty(); s = cl.next("") ){
-        CameraModelAndPose cam = ReadCameraModel( s );
+        calibu::CameraModelAndPose cam = ReadCameraModel( s );
         if( cam.camera.IsInitialised() ){
             rig.Add( cam );
         }
@@ -104,7 +104,7 @@ int UpgradeToMvl( int argc, char** argv )
     cl.search( 2, "--upgrade-mvl-to-calibu", "-u" );
 
     for( string s = cl.next(""); !s.empty(); s = cl.next("") ){
-        CameraModelAndPose cam = ReadCameraModel( s );
+        calibu::CameraModelAndPose cam = ReadCameraModel( s );
         if( cam.camera.IsInitialised() ){
             std::ofstream out( std::string("calibu-")+s );
             calibu::WriteXmlCameraModelAndPose( out, cam );
@@ -119,15 +119,14 @@ int UpgradeToMvl( int argc, char** argv )
 }
 
 ////////////////////////////////////////////////////////////////////////////
-/// Function to convert multiple MVL cameras into a calibu camera rig file.
+/// Function to print info
 int PrintInfo( int argc, char** argv ) 
 {
     GetPot cl( argc, argv );
     cl.search(2, "--info", "-i");
 
-    CameraRig rig;
     for( string s = cl.next(""); !s.empty(); s = cl.next("") ){
-        CameraModelAndPose cam = ReadCameraModel( s );
+        calibu::CameraModelAndPose cam = ReadCameraModel( s );
         if( cam.camera.IsInitialised() ){
             std::cout << "\nFile '" << s << "': ";
             cam.camera.PrintInfo();
