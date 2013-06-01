@@ -4,6 +4,7 @@
 
    Copyright (C) 2013 George Washington University,
                       Steven Lovegrove,
+                      Gabe Sibley
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -28,17 +29,17 @@ namespace calibu
 
 ///////////////////////////////////////////////////////////////////////////////
 
-inline std::string IndentStr(int indent)
+std::string IndentStr(int indent)
 {
     return std::string(indent, ' ');
 }
 
-inline std::string AttribOpen(const std::string& attrib)
+std::string AttribOpen(const std::string& attrib)
 {
     return "<" + attrib + ">";
 }
 
-inline std::string AttribClose(const std::string& attrib)
+std::string AttribClose(const std::string& attrib)
 {
     return "</" + attrib + ">";
 }

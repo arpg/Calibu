@@ -61,10 +61,38 @@ std::string ValToStr( const T& t )
 ///////////////////////////////////////////////////////////////////////////////
 std::string CameraModelType( const std::string& sType );
 
-///////////////////////////////////////////////////////////////////////////////
+std::string IndentStr(int indent);
+
+std::string AttribOpen(const std::string& attrib);
+
+std::string AttribClose(const std::string& attrib);
+
+void WriteXmlSE3(std::ostream& out, const Sophus::SE3d& T_wc, int indent);
 
 void WriteXmlCameraModel(std::ostream& out, const CameraModelInterface& cam, int indent = 0);
+
 void WriteXmlCameraModel(const std::string& filename, const CameraModelInterface& cam);
+
+
+////////////////////////////////////////////////////////////////////////////
+inline void WriteXmlCameraModelAndPoseWithLut( 
+        std::ostream& out,
+        std::string& sLutXmlElement,
+        const CameraModelAndPose& cop, 
+        int indent = 0
+        )
+{
+    const std::string dd = IndentStr(indent);
+    out << dd << AttribOpen(NODE_CAMMODEL_POSE) << std::endl;
+    WriteXmlCameraModel(out, cop.camera, indent+4);
+    WriteXmlSE3(out, cop.T_wc, indent+4);
+    
+    out << dd << sLutXmlElement << std::endl; // LUT, if there is one!
+    out << dd << AttribClose(NODE_CAMMODEL_POSE) << std::endl;
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
 //CameraModel ReadXmlCameraModel(TiXmlElement* pEl);
 CameraModel ReadXmlCameraModel(const std::string& filename);
 
