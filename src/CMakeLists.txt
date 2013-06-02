@@ -88,7 +88,7 @@ list( APPEND INTERNAL_INC ${OpenCV2_INCLUDE_DIRS} ${ZLIB_INCLUDE_DIR} )
 include_directories( ${USER_INC} )
 include_directories( ${INTERNAL_INC} )
 
-add_library( ${LIBRARY_NAME} SHARED ${HEADERS} ${SOURCES} )
+add_library( ${LIBRARY_NAME} ${HEADERS} ${SOURCES} )
 target_link_libraries( ${LIBRARY_NAME} ${LINK_LIBS} )
 
 #######################################################

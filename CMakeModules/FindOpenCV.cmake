@@ -40,13 +40,16 @@ ELSE(WIN32)
 	)
 ENDIF(WIN32)
 
-
 # select exactly ONE OpenCV 2 base directory
 # to avoid mixing different version headers and libs
-FIND_PATH(OpenCV2_ROOT_DIR
-          NAMES include/opencv2/opencv.hpp
+FIND_PATH(OpenCV2_ROOT_INC_DIR
+          NAMES opencv2/opencv.hpp
           PATHS ${OpenCV2_POSSIBLE_ROOT_DIRS}
           )
+
+# Get parent of OpenCV2_ROOT_INC_DIR. We do this as it is more
+# reliable than finding include/opencv2/opencv.hpp directly.
+GET_FILENAME_COMPONENT(OpenCV2_ROOT_DIR ${OpenCV2_ROOT_INC_DIR} PATH)
 
 FIND_PATH(OpenCV2_CORE_INCLUDE_DIR
           NAMES core_c.h core.hpp wimage.hpp eigen.hpp internal.hpp
@@ -166,8 +169,11 @@ SET(OpenCV2_INCLUDE_DIRS
     ${OpenCV2_HIGHGUI_INCLUDE_DIR}
     ${OpenCV2_ML_INCLUDE_DIR}
     ${OpenCV2_VIDEO_INCLUDE_DIR}
-    ${OpenCV2_GPU_INCLUDE_DIR}
     )
+
+IF(NOT ANDROID)
+    LIST(APPEND OpenCV2_INCLUDE_DIRS ${OpenCV2_GPU_INCLUDE_DIR})
+ENDIF()
 
 SET(OpenCV2_LIBRARIES
     ${OpenCV2_CORE_LIBRARY}
@@ -181,8 +187,13 @@ SET(OpenCV2_LIBRARIES
     ${OpenCV2_HIGHGUI_LIBRARY}
     ${OpenCV2_ML_LIBRARY}
     ${OpenCV2_VIDEO_LIBRARY}
-    ${OpenCV2_GPU_LIBRARY}
     )
+
+IF(NOT ANDROID)
+    LIST(APPEND OpenCV2_LIBRARIES ${OpenCV2_GPU_LIBRARY})
+ENDIF()
+
+
 IF(WIN32)
     SET(OpenCV2_INCLUDE_DIRS
         ${OpenCV2_ROOT_DIR}/include
