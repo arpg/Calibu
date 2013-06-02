@@ -3,7 +3,8 @@
    https://robotics.gwu.edu/git/calibu
    
    Copyright (C) 2013 George Washington University,
-                      Steven Lovegrove
+                      Steven Lovegrove,
+                      Gabe Sibley
                       
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -35,6 +36,13 @@ void CreateLookupTable(
         const Eigen::Matrix3d R_onK,
         Eigen::Matrix<Eigen::Vector2f, Eigen::Dynamic, Eigen::Dynamic>& lookup_warp
         );
+/*
+void CreateLookupTable(
+        const calibu::CameraModelInterface& cam_from,
+        const Eigen::Matrix3d R_onK,
+        LookupTable lut
+        );
+        */
 
 /// Create left and right camera lookup tables from left and right camera models,
 /// and output their new intrinsics and extrinsics.

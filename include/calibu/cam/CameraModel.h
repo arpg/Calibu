@@ -48,7 +48,7 @@ struct CameraModelException : public std::exception
 
     std::string m_sWhat;
 };
-
+ 
 ///////////////////////////////////////////////////////////////////////////
 inline CameraModelInterface* CameraModelFactory( const std::string sModelName )
 {
@@ -71,6 +71,7 @@ inline CameraModelInterface* CameraModelFactory( const std::string sModelName )
 ///////////////////////////////////////////////////////////////////////////
 class CameraModel : public CameraModelInterface
 {
+    friend bool IsLinearModel( const CameraModel& cam );
 public:
 
     /////////////////////////////////////////////////////////////////////////

@@ -60,7 +60,8 @@ static const Sophus::SO3d RdfVision =
         Sophus::SO3d( (Eigen::Matrix3d() << 1,0,0, 0,1,0, 0,0,1).finished() );
 
 static const Sophus::SO3d RdfRobotics = 
-        Sophus::SO3d( (Eigen::Matrix3d() << 0,0,1, 1,0,0, 0,1,0).finished() );
+        Sophus::SO3d( (Eigen::Matrix3d() << 0,1,0, 0,0,1, 1,0,0).finished() );
+//        Sophus::SO3d( (Eigen::Matrix3d() << 0,0,1, 1,0,0, 0,1,0).finished() );  <-- no: RDF = [x';y';z'] x = forward, y = right, z = down. GTS
 
 // T_2b_1b = T_ba * T_2a_1a * T_ab
 inline Sophus::SE3d ToCoordinateConvention(
