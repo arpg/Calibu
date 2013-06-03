@@ -4,7 +4,13 @@ cmake_minimum_required( VERSION 2.8 )
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/CMakeModules/")
 
 option( BUILD_APPLICATIONS "Build Applications" ON )
-option( BUILD_SHARED_LIBS "Build Shared Library" ON )
+
+if(NOT ANDROID)
+    option(BUILD_SHARED_LIBS "Build Shared Library" ON)
+else()
+    set(BUILD_SHARED_LIBS OFF)
+    set( CMAKE_CXX_FLAGS "-llog ${CMAKE_CXX_FLAGS}" )
+endif()
 
 set( CMAKE_CXX_FLAGS "-std=c++0x -Wall ${CMAKE_CXX_FLAGS}" )
 

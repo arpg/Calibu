@@ -130,7 +130,12 @@ file( RELATIVE_PATH REL_INCLUDE_DIR
 # Add package to CMake package registery for use from the build tree
 export( TARGETS ${LIBRARY_NAME}
         FILE "${CMAKE_CURRENT_BINARY_DIR}/CalibuTargets.cmake" )
-EXPORT( PACKAGE Calibu )
+
+if(NOT ANDROID)
+        # Add package to CMake package registery for use from the build tree
+        export( PACKAGE Calibu )
+endif()
+
 # Install the export set for use with the install tree
 install( EXPORT CalibuTargets DESTINATION ${CMAKECONFIG_INSTALL_DIR} )
 
