@@ -33,15 +33,9 @@ namespace calibu {
 
 using namespace pangolin;
 
-inline void glDrawRectangle( const IRectangle& r )
+inline void glDrawRectPerimeter( const IRectangle& r )
 {
-    glBegin(GL_LINE_STRIP);
-    glVertex2f(r.x1,r.y1);
-    glVertex2f(r.x2,r.y1);
-    glVertex2f(r.x2,r.y2);
-    glVertex2f(r.x1,r.y2);
-    glVertex2f(r.x1,r.y1);
-    glEnd();
+    pangolin::glDrawRectPerimeter(r.x1,r.y1, r.x2, r.y2);
 }
 
 inline void glDrawPlane(const Eigen::Vector3d& nd_w, float scale, int grid)
