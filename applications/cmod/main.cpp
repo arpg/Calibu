@@ -11,7 +11,10 @@
 #include <calibu/gl/Drawing.h>
 #include <calibu/pose/Pnp.h>
 #include <calibu/conics/ConicFinder.h>
+#include <calibu/cam/Rectify.h>
 #include <calibu/utils/Xml.h>
+
+#include <opencv2/opencv.hpp>
 
 #include <CVars/CVar.h>
 #include <Mvlpp/Mvl.h>
@@ -140,7 +143,7 @@ int MakeRig( int argc, char** argv )
 
     for( string s = cl.next(""); !s.empty(); s = cl.next("") ){
         calibu::CameraModelAndPose cam = ReadCameraModel( s );
-        if( cam.camera.IsInitialised() ){
+        if( cam.camera.IsInitialized() ){
             rig.Add( cam );
         }
         std::string sLut;
@@ -170,7 +173,7 @@ int UpgradeToCalibu( int argc, char** argv )
 
     for( string s = cl.next(""); !s.empty(); s = cl.next("") ){
         calibu::CameraModelAndPose cam = ReadCameraModel( s );
-        if( cam.camera.IsInitialised() ){
+        if( cam.camera.IsInitialized() ){
             std::ofstream out( std::string("calibu-")+s );
 
             std::string sLut;
@@ -197,7 +200,7 @@ int PrintInfo( int argc, char** argv )
 
     for( string s = cl.next(""); !s.empty(); s = cl.next("") ){
         calibu::CameraModelAndPose cam = ReadCameraModel( s );
-        if( cam.camera.IsInitialised() ){
+        if( cam.camera.IsInitialized() ){
             std::cout << "\nFile '" << s << "': ";
             cam.camera.PrintInfo();
         }
@@ -214,6 +217,12 @@ int PrintInfo( int argc, char** argv )
 int main( int argc, char** argv )
 {
     GetPot cl( argc, argv );
+
+    // read camera model, create lut
+    calibu::CameraModelAndPose cp = ReadCameraModel( argv[1] );
+    if( !cp.camera.IsInitialized() ){
+        return -1;
+    }
 
     // user wants us to make a camera rig
     if( cl.search(2, "-c", "--combine-cameras") ){

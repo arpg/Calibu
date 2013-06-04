@@ -105,7 +105,7 @@ public:
         
 protected:
     void Clear();
-    void InitialiseFrom2DPts();
+    void InitializeFrom2DPts();
     void Match(
             const Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>& sorted_measurement_distance_matrix,
             std::vector<int>& measurement_label, int match_neighbours

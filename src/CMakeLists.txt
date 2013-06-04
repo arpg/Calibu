@@ -49,6 +49,7 @@ set(
 SET(
     SOURCES
     cam/CameraXml.cpp
+    cam/Rectify.cpp
     cam/StereoRectify.cpp
     conics/Conic.cpp
     conics/ConicFinder.cpp
@@ -62,9 +63,6 @@ SET(
     target/TargetGridDot.cpp
     target/TargetRandomDot.cpp
     utils/Utils.cpp
-#    utils/Xml.cpp
-#utils/XmlError.cpp
-#utils/XmlParser.cpp
 )
 
 #######################################################

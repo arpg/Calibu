@@ -27,23 +27,6 @@
 namespace calibu
 {
 
-/// Create lookup table which can be used to remap a general camera model
-/// 'cam_from' to a linear and potentially rotated model, 'R_onK'.
-/// R_onK is formed from the multiplication R_on (old form new) and the new
-/// camera intrinsics K.
-void CreateLookupTable(
-        const calibu::CameraModelInterface& cam_from,
-        const Eigen::Matrix3d R_onK,
-        Eigen::Matrix<Eigen::Vector2f, Eigen::Dynamic, Eigen::Dynamic>& lookup_warp
-        );
-/*
-void CreateLookupTable(
-        const calibu::CameraModelInterface& cam_from,
-        const Eigen::Matrix3d R_onK,
-        LookupTable lut
-        );
-        */
-
 /// Create left and right camera lookup tables from left and right camera models,
 /// and output their new intrinsics and extrinsics.
 /// Returns: New camera intrinsics shared by both cameras
@@ -53,8 +36,8 @@ calibu::CameraModelT<Pinhole> CreateScanlineRectifiedLookupAndCameras(
         const calibu::CameraModelInterface& cam_left,
         const calibu::CameraModelInterface& cam_right,
         Sophus::SE3d& T_nr_nl,
-        Eigen::Matrix<Eigen::Vector2f, Eigen::Dynamic, Eigen::Dynamic>& dlookup_left,
-        Eigen::Matrix<Eigen::Vector2f, Eigen::Dynamic, Eigen::Dynamic>& dlookup_right
+        LookupTable& left_lut,
+        LookupTable& right_lut
         );
 
 }

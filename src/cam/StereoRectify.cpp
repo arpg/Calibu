@@ -3,7 +3,8 @@
    https://robotics.gwu.edu/git/calibu
    
    Copyright (C) 2013 George Washington University,
-                      Steven Lovegrove
+                      Steven Lovegrove,
+                      Gabe Sibley
                       
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -18,70 +19,20 @@
    limitations under the License.
  */
 
+#include <calibu/cam/Rectify.h>
 #include <calibu/cam/StereoRectify.h>
 #include <calibu/utils/Range.h>
 
 namespace calibu
 {
 
-void CreateLookupTable(
-        const calibu::CameraModelInterface& cam_from,
-        const Eigen::Matrix3d R_onKinv,
-        Eigen::Matrix<Eigen::Vector2f, Eigen::Dynamic, Eigen::Dynamic>& lookup_warp
-        )
-{
-    for(size_t r = 0; r < cam_from.Height(); ++r) {
-        for(size_t c = 0; c < cam_from.Width(); ++c) {
-            // Remap
-            const Eigen::Vector3d p_o = R_onKinv * Eigen::Vector3d(c,r,1);
-            Eigen::Vector2d p_warped = cam_from.Map(calibu::Project(p_o));
-            
-            // Clamp to valid image coords
-            p_warped[0] = std::min(std::max(0.0, p_warped[0]), cam_from.Width() - 1.0 );
-            p_warped[1] = std::min(std::max(0.0, p_warped[1]), cam_from.Height() - 1.0 );
-
-//            // Set to (0,0)
-//            if(!(0 < p_warped[0] && p_warped[0] < (cam_from.Width()-1)
-//                 && 0 < p_warped[1] && p_warped[1] < (cam_from.Height()-1))) {
-//                p_warped = Eigen::Vector2d::Zero();
-//            }
-            
-            lookup_warp(r,c) = p_warped.cast<float>();
-        }
-    }
-}
-
-Range MinMaxRotatedCol( const calibu::CameraModelInterface& cam, const Eigen::Matrix3d& Rnl_l )
-{
-    Range range = Range::Open();
-    for(size_t row = 0; row < cam.Height(); ++row) {    
-        const Eigen::Vector2d ln = Project(Eigen::Vector3d(Rnl_l*Unproject(cam.Unmap(Eigen::Vector2d(0,row)))));
-        const Eigen::Vector2d rn = Project(Eigen::Vector3d(Rnl_l*Unproject(cam.Unmap(Eigen::Vector2d(cam.Width()-1,row)))));
-        range.ExcludeLessThan(ln[0]);
-        range.ExcludeGreaterThan(rn[0]);
-    }
-    return range;
-}
-
-Range MinMaxRotatedRow( const calibu::CameraModelInterface& cam, const Eigen::Matrix3d& Rnl_l )
-{
-    Range range = Range::Open();
-    for(size_t col = 0; col < cam.Width(); ++col) {    
-        const Eigen::Vector2d tn = Project(Eigen::Vector3d(Rnl_l*cam.UnmapUnproject(Eigen::Vector2d(col,0)) ));
-        const Eigen::Vector2d bn = Project(Eigen::Vector3d(Rnl_l*cam.UnmapUnproject(Eigen::Vector2d(col,cam.Height()-1)) ));
-        range.ExcludeLessThan(tn[1]);
-        range.ExcludeGreaterThan(bn[1]);
-    }
-    return range;
-}
-
 calibu::CameraModelT<Pinhole> CreateScanlineRectifiedLookupAndCameras(
         const Sophus::SE3d T_rl,
         const calibu::CameraModelInterface& cam_left,
         const calibu::CameraModelInterface& cam_right,
         Sophus::SE3d& T_nr_nl,        
-        Eigen::Matrix<Eigen::Vector2f, Eigen::Dynamic, Eigen::Dynamic>& dlookup_left,
-        Eigen::Matrix<Eigen::Vector2f, Eigen::Dynamic, Eigen::Dynamic>& dlookup_right
+        LookupTable& left_lut,
+        LookupTable& right_lut
         )
 {
     const Sophus::SO3d R_rl = T_rl.so3();
@@ -137,10 +88,10 @@ calibu::CameraModelT<Pinhole> CreateScanlineRectifiedLookupAndCameras(
     const Eigen::Matrix3d Rl_nlKlinv = Rnl_l.transpose() * new_cam.Kinv();
     const Eigen::Matrix3d Rr_nrKlinv = R_lr.inverse().matrix() * Rnl_l.transpose() * new_cam.Kinv();
     
-    CreateLookupTable(cam_left, Rl_nlKlinv, dlookup_left);
-    CreateLookupTable(cam_right, Rr_nrKlinv, dlookup_right);
-    
+    CreateLookupTable(cam_left, Rl_nlKlinv, left_lut );
+    CreateLookupTable(cam_right, Rr_nrKlinv, right_lut );     
     return new_cam;
 }
 
 }
+

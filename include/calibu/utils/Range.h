@@ -93,7 +93,7 @@ inline Range Intersection(const Range& lhs, const Range& rhs)
     return Range( std::max(lhs.minr, rhs.minr), std::min(lhs.maxr, rhs.maxr) );
 }
 
-std::ostream& operator<<(std::ostream& os, const Range& r)
+inline std::ostream& operator<<(std::ostream& os, const Range& r)
 {
     os << "[" << r.minr << ", " << r.maxr << "]";
     return os;

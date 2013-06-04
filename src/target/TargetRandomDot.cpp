@@ -77,7 +77,7 @@ void TargetRandomDot::Clear()
     tpts3d.clear();
 }
 
-void TargetRandomDot::InitialiseFrom2DPts()
+void TargetRandomDot::InitializeFrom2DPts()
 {
     for(vector<Vector2d >::const_iterator i = tpts.begin(); i != tpts.end(); ++i )
     {
@@ -118,7 +118,7 @@ void TargetRandomDot::LoadPattern( std::string filename, double radius, double s
         tpts.push_back(p);
     }
     
-    InitialiseFrom2DPts();
+    InitializeFrom2DPts();
 }
 
 void TargetRandomDot::GenerateCircular(unsigned int max_circles, double radius, double min_distance, double border, const Vector2d& size)
@@ -168,7 +168,7 @@ void TargetRandomDot::GenerateCircular(unsigned int max_circles, double radius, 
         }
     }
     
-    InitialiseFrom2DPts();
+    InitializeFrom2DPts();
 }
 
 void TargetRandomDot::GenerateEmptyCircle(unsigned int max_circles, double radius, double min_distance, double border, double clear_radius, const Vector2d& size)
@@ -214,7 +214,7 @@ void TargetRandomDot::GenerateEmptyCircle(unsigned int max_circles, double radiu
         }
     }
     
-    InitialiseFrom2DPts();
+    InitializeFrom2DPts();
 }
 
 void TargetRandomDot::GenerateRandom(unsigned int max_circles, double radius, double min_distance, double border, const Vector2d& size)
@@ -256,7 +256,7 @@ void TargetRandomDot::GenerateRandom(unsigned int max_circles, double radius, do
         }
     }
     
-    InitialiseFrom2DPts();
+    InitializeFrom2DPts();
 }
 
 void TargetRandomDot::SaveEPS(string filename, float points_per_unit)
@@ -345,7 +345,7 @@ bool TargetRandomDot::LoadEPS( std::string filename, float points_per_unit )
         }
         f.close();
         
-        InitialiseFrom2DPts();
+        InitializeFrom2DPts();
         cout << "Loaded " << tpts.size() << " circles (radius: " << CircleRadius() << ")" << endl;    
         return true;
     }else{

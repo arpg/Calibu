@@ -100,7 +100,7 @@ CameraModel ReadXmlCameraModel(TiXmlElement* pEl)
     std::string sType = CameraModelType( pEl->Attribute("type"));
     
     CameraModel rCam( sType );
-    if(rCam.IsInitialised()) {
+    if(rCam.IsInitialized()) {
         std::string sVer    = pEl->Attribute("version");
         std::string sName   = pEl->Attribute("name");
         std::string sIndex  = pEl->Attribute("index");
@@ -253,7 +253,7 @@ CameraRig ReadXmlRig(TiXmlNode* xmlrig)
     for( TiXmlNode* child = xmlrig->FirstChild(NODE_CAMMODEL_POSE); child; child = child->NextSibling(NODE_CAMMODEL_POSE) )
     {
         CameraModelAndPose cap = ReadXmlCameraModelAndPose(child);
-        if(cap.camera.IsInitialised()) {
+        if(cap.camera.IsInitialized()) {
             rig.cameras.push_back(cap);
         }
     }    

@@ -47,7 +47,8 @@ const char* sUriInfo =
 " e.g. \"mjpeg://http://127.0.0.1/?action=stream\"\n"
 "\n"
 "split - split a single stream video into a multi stream video based on Region of Interest\n"
-" e.g. \"split:[roi1=0+0+640x480,roi2=640+0+640x480]//files:///home/user/sequence/foo%03d.jpeg\"\n\n";
+" e.g. \"split:[roi1=0+0+640x480,roi2=640+0+640x480]//files:///home/user/sequence/foo%03d.jpeg\"\n"
+" e.g. \" split:[roi1=0+0+640x480,roi2=640+0+640x480]//uvc://\"\n\n";
 
 int main( int argc, char** argv)
 {    
@@ -117,7 +118,7 @@ int main( int argc, char** argv)
     TargetGridDot target(grid_spacing, grid_size);  
     
     ////////////////////////////////////////////////////////////////////
-    // Initialise Calibration object and tracking params
+    // Initialize Calibration object and tracking params
     
     Calibrator<Fov> calibrator;    
     int calib_cams[N];    
@@ -254,7 +255,7 @@ int main( int argc, char** argv)
                                 
                 if(calib_frame >= 0) {
                     if(iI==0 || !tracking_good[0]) {
-                        // Initialise pose of frame for least squares optimisation
+                        // Initialize pose of frame for least squares optimisation
                         calibrator.GetFrame(calib_frame) = T_hw[iI];
                     }
                     

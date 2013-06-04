@@ -22,3 +22,5 @@
 #pragma once
 
 #include <calibu/cam/CameraXml.h>
+#include <calibu/cam/Rectify.h>
+

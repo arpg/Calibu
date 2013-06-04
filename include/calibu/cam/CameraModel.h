@@ -97,8 +97,8 @@ public:
     // Member functions
     /////////////////////////////////////////////////////////////////////////
         
-    /// Returns if this CameraModel is initialised and can be used.
-    bool IsInitialised() const
+    /// Returns if this CameraModel is initialized and can be used.
+    bool IsInitialized() const
     {
         return (bool)m_pCam;
     }
