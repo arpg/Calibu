@@ -138,7 +138,7 @@ int main( int argc, char** argv)
     // Setup GUI
     
     const int PANEL_WIDTH = 150;
-    pangolin::CreateWindowAndBind("Main",(N+1)*w/2.0+PANEL_WIDTH,h/2.0);
+    pangolin::CreateGlutWindowAndBind("Main",(N+1)*w/2.0+PANEL_WIDTH,h/2.0);
  
     // Make things look prettier...        
     glEnable(GL_LINE_SMOOTH);
@@ -318,7 +318,7 @@ int main( int argc, char** argv)
                         const Eigen::Vector2i pg = tracking_good[iI] ? target.Map()[i].pg : Eigen::Vector2i(0,0);
                         if( 0<= pg(0) && pg(0) < grid_size(0) &&  0<= pg(1) && pg(1) < grid_size(1) ) {
                             glColorBin(pg(1)*grid_size(0)+pg(0), grid_size(0)*grid_size(1));
-                            glDrawRectPerimeter(conics[i].bbox);
+                            glDrawRectangle(conics[i].bbox);
                         }
                     }
                 }
@@ -354,7 +354,7 @@ int main( int argc, char** argv)
         disp_frame = frame;
         
         // Process window events via GLUT
-        pangolin::FinishFrame();    
+        pangolin::FinishGlutFrame();    
     }
     
     calibrator.Stop();

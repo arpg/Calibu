@@ -47,6 +47,8 @@
 #include <calibu/calib/ReprojectionCostFunctor.h>
 #include <calibu/calib/CostFunctionAndParams.h>
 
+#include <Eigen/Sparse>
+
 namespace calibu {
 
 template<typename T, typename ...Args>

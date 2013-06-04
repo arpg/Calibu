@@ -101,28 +101,28 @@ struct Triple
     std::array<Vertex*,3> vs;
 };
 
-inline bool operator==(const Vertex& lhs, const Vertex& rhs)
+bool operator==(const Vertex& lhs, const Vertex& rhs)
 {
     return lhs.id == rhs.id;
 }
 
-inline bool AreCollinear(const Triple& t1, const Triple& t2)
+bool AreCollinear(const Triple& t1, const Triple& t2)
 {
     return t1.Contains(t2.Center()) && t2.Contains(t1.Center());
 }
 
-inline double Distance(const Vertex& v1, const Vertex& v2)
+double Distance(const Vertex& v1, const Vertex& v2)
 {
     return (v2.pc - v1.pc).norm();
 }
 
-inline std::ostream& operator<<(std::ostream& os, const Vertex& v)
+std::ostream& operator<<(std::ostream& os, const Vertex& v)
 {
     os << "(" << v.pg.transpose() << ")";
     return os;
 }
 
-inline std::ostream& operator<<(std::ostream& os, const Triple& t)
+std::ostream& operator<<(std::ostream& os, const Triple& t)
 {
     os << t.Vert(0) << " - " << t.Vert(1) << " - " << t.Vert(2);
     return os;
