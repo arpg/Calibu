@@ -31,8 +31,6 @@
 
 namespace calibu {
 
-using namespace pangolin;
-
 inline void glDrawRectPerimeter( const IRectangle& r )
 {
     pangolin::glDrawRectPerimeter(r.x1,r.y1, r.x2, r.y2);
@@ -41,9 +39,9 @@ inline void glDrawRectPerimeter( const IRectangle& r )
 inline void glDrawPlane(const Eigen::Vector3d& nd_w, float scale, int grid)
 {
     const Sophus::SE3d T_wn = PlaneBasis_wp(nd_w);
-    glSetFrameOfReference(T_wn.matrix());
-    glDraw_z0(scale,grid);
-    glUnsetFrameOfReference();
+    pangolin::glSetFrameOfReference(T_wn.matrix());
+    pangolin::glDraw_z0(scale,grid);
+    pangolin::glUnsetFrameOfReference();
 }
 
 inline void glDrawPlane(const Eigen::Vector4d& N_w, float scale, int grid)
@@ -60,8 +58,8 @@ inline void glDrawTarget( const TargetInterface& t, const Eigen::Vector2d& offse
     for( unsigned int i=0; i<t.Circles2D().size(); ++i )
     {
         const Eigen::Vector2d p = t.Circles2D()[i] * scale + offset;
-        glColorBin(i,t.Circles2D().size(),sat,val);
-        glDrawCircle(p,r);
+        pangolin::glColorBin(i,t.Circles2D().size(),sat,val);
+        pangolin::glDrawCircle(p,r);
     }
 }
 
@@ -75,8 +73,8 @@ inline void glDrawTarget( const std::vector<int>& map, const TargetInterface& ta
         if( t >= 0 )
         {
             const Eigen::Vector2d p = target.Circles2D()[t] * scale + offset;
-            glColorBin(t,target.Circles2D().size(),sat,val);
-            glDrawCircle(p,r);
+            pangolin::glColorBin(t,target.Circles2D().size(),sat,val);
+            pangolin::glDrawCircle(p,r);
         }
     }
 }
