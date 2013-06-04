@@ -8,12 +8,6 @@ if(MVL_FOUND)
     include_directories( ${Calibu_INCLUDE_DIRS} )
     link_libraries( ${LIBRARY_NAME} )
 
-    set( CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_MODULE_PATH} )
-    find_package( OpenCV2 REQUIRED )
-    include_directories( ${OpenCV2_INCLUDE_DIRS} )
-    link_libraries( ${OpenCV2_LIBRARIES} )
-
-
     # git://github.com/stevenlovegrove/Pangolin.git
     find_package( Pangolin REQUIRED )
     include_directories( ${Pangolin_INCLUDE_DIRS} )
