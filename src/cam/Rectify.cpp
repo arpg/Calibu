@@ -40,14 +40,7 @@ namespace calibu
                 // Clamp to valid image coords
                 p_warped[0] = std::min(std::max(0.0, p_warped[0]), cam_from.Width() - 1.0 );
                 p_warped[1] = std::min(std::max(0.0, p_warped[1]), cam_from.Height() - 1.0 );
- 
-//                printf("dst[%d,%d] = in[%f,%f]\n", r, c, p_warped[1], p_warped[0] );
-                //            // Set to (0,0)
-                //            if(!(0 < p_warped[0] && p_warped[0] < (cam_from.Width()-1)
-                //                 && 0 < p_warped[1] && p_warped[1] < (cam_from.Height()-1))) {
-                //                p_warped = Eigen::Vector2d::Zero();
-                //            }
-
+                
                 lookup_warp(r,c) = p_warped.cast<float>();
             }
         }
@@ -60,17 +53,20 @@ namespace calibu
             LookupTable& lut  
             )
     {
-        int w = cam_from.Width();
-        int h = cam_from.Height();
+        const int w = cam_from.Width();
+        const int h = cam_from.Height();
+        
         for( int r = 0; r < h; ++r) {
             for( int c = 0; c < w; ++c) {
                 // Remap
                 const Eigen::Vector3d p_o = R_onKinv * Eigen::Vector3d(c,r,1);
                 Eigen::Vector2d p_warped = cam_from.Map(calibu::Project(p_o));
 
-                // Clamp to valid image coords
-                p_warped[0] = std::min(std::max(0.0, p_warped[0]), cam_from.Width() - 1.0 );
-                p_warped[1] = std::min(std::max(0.0, p_warped[1]), cam_from.Height() - 1.0 );
+                // Clamp to valid image coords. This will cause out of image
+                // data to be stretched from nearest valid coords with
+                // no branching in rectify function.
+                p_warped[0] = std::min(std::max(0.0, p_warped[0]), w - 1.0 );
+                p_warped[1] = std::min(std::max(0.0, p_warped[1]), h - 1.0 );
 
                 // Truncates the values for the left image
                 int u  = (int) p_warped[0];
@@ -78,50 +74,48 @@ namespace calibu
                 float su = p_warped[0] - (double)u;
                 float sv = p_warped[1] - (double)v;
 
+                // Fix pixel access for last row/column to ensure all are in bounds
+                if(u == (w-1)) {
+                    u -= 1;
+                    su = 1.0;
+                }
+                if(v == (w-1)) {
+                    v -= 1;
+                    sv = 1.0;
+                }
+                
                 // Pre-compute the bilinear interpolation weights
                 BilinearLutPoint p;
-                if( u<0 || v<0 || u >= w || v >= h ) {
-                    // To avoid branching this value is set to 
-                    // something 'reasonable', ie the top left pixel
-                    p.idx0 = 0;
-                    p.idx1 = 0;
-                    p.w00  = 1;
-                    p.w01  = 0;
-                    p.w10  = 0;
-                    p.w11  = 0;
-                } else {
-                    p.idx0 = u + v*w;
-                    p.idx1 = u + v*w + w;
-                    p.w00  = (1-su)*(1-sv);
-                    p.w01  =    su *(1-sv);
-                    p.w10  = (1-su)*sv;
-                    p.w11  =     su*sv;
-                }
+                p.idx0 = u + v*w;
+                p.idx1 = u + v*w + w;
+                p.w00  = (1-su)*(1-sv);
+                p.w01  =    su *(1-sv);
+                p.w10  = (1-su)*sv;
+                p.w11  =     su*sv;
                 lut.SetPoint( r, c, p );
             }
         }
     }
 
     void Rectify(
-            LookupTable& lut,
-            unsigned char* pInputImageData,
+            const LookupTable& lut,
+            const unsigned char* pInputImageData,
             unsigned char* pOutputRectImageData,
             int w,
             int h
             )
     {
         // Make the most of the continuous block of memory!
-        BilinearLutPoint* ptr   = &lut.m_vLutPixels[0];
-
+        const BilinearLutPoint* ptr   = &lut.m_vLutPixels[0];
+        
         const int nHeight = lut.Height();
         const int nWidth  = lut.Width();
-
-        // The top left pixel is used as default value in the LUT for out
-        // of image access to avoid an if statement
-        char cTopLeftPixelVal = pInputImageData[0];
-        pInputImageData[0] = 0; // To ensure black will be used when rectifying
-        for( int r = 0; r < nHeight; r++ ) {
-            for( int c = 0; c < nWidth; c++ ) {
+        
+        // Make sure we have been given a correct lookup table.
+        assert(w== nWidth && h == nHeight);
+        
+        for( int nRow = 0; nRow < nHeight; nRow++ ) {
+            for( int nCol = 0; nCol < nWidth; nCol++ ) {
                 *pOutputRectImageData++ =
                     (char) ( ptr->w00 * pInputImageData[ ptr->idx0 ] +
                              ptr->w01 * pInputImageData[ ptr->idx0 + 1 ] +
@@ -130,48 +124,7 @@ namespace calibu
                 ptr++;
             }
         }
-
-        // Set top left back to its initial value
-        pInputImageData[0] = cTopLeftPixelVal;
     }
-
-    /*
-    float lerp(unsigned char a, unsigned char b, float t)
-    {
-        return (float)a + t*((float)b-(float)a);
-    }           
-
-    void Rectify(
-            Eigen::Matrix<Eigen::Vector2f, Eigen::Dynamic, Eigen::Dynamic>& lookup_warp,
-            unsigned char* in,
-            unsigned char* out,
-            int w, 
-            int h
-            )
-    {
-        for(size_t r=0; r < h; ++r) {
-            for(size_t c=0; c < w; ++c) {
-                const Eigen::Vector2f p = lookup_warp(r,c);
-
-                const float ix = floorf(p[0]);
-                const float iy = floorf(p[1]);
-                const float fx = p[0] - ix;
-                const float fy = p[1] - iy;
-
-                const int pl = (int)ix;
-                const int pr = pl + 1;
-                const int pt = (int)iy;
-                const int pb = pt + 1;
-
-                out[r*w+c] = lerp(
-                        lerp( in[pt*w+pl], in[pt*w+pr], fx ),
-                        lerp( in[pb*w+pl], in[pb*w+pr], fx ),
-                        fy
-                        );
-            }
-        }
-    }
-    */
 
 } // end namespace
 
