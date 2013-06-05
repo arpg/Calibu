@@ -71,7 +71,7 @@ calibu::CameraModelAndPose MvlToCalibu( const mvl::CameraModel& mvlcam )
     CamAndPose.camera.SetSerialNumber( mvlcam.GetModel()->serialno );
     CamAndPose.camera.SetIndex( mvlcam.GetModel()->index );
     CamAndPose.camera.SetVersion( calibu::CAMRERA_MODEL_VERSION );
-    CamAndPose.camera.SetRDF( mvlcam.RDF() );
+    CamAndPose.camera.SetRDF( mvlcam.RDF().transpose() );
     CamAndPose.T_wc = Sophus::SE3d( mvlcam.GetPose() );
 
     return CamAndPose;
@@ -219,10 +219,10 @@ int main( int argc, char** argv )
     GetPot cl( argc, argv );
 
     // read camera model, create lut
-    calibu::CameraModelAndPose cp = ReadCameraModel( argv[1] );
-    if( !cp.camera.IsInitialized() ){
-        return -1;
-    }
+//    calibu::CameraModelAndPose cp = ReadCameraModel( argv[1] );
+//    if( !cp.camera.IsInitialized() ){
+//        return -1;
+//    }
 
     // user wants us to make a camera rig
     if( cl.search(2, "-c", "--combine-cameras") ){

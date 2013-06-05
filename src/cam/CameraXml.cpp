@@ -79,7 +79,7 @@ void WriteXmlCameraModel(std::ostream& out, const CameraModelInterface& cam, int
     out << dd2 << "<height> " << cam.Height() << " </height>\n";
 
     // hmm, is RDF a model parameter or should it be outside thie model, like the pose is? GTS
-    out << dd2 << "<!-- [right'; down'; forward'] camera convention -->\n";
+    out << dd2 << "<!-- [right down forward] camera convention (3 column vectors) -->\n";
     out << dd2 << "<RDF> " << cam.RDF() << " </RDF>\n";
     out.precision(7);
     
