@@ -308,8 +308,8 @@ int main( int argc, char** argv)
                 if(disp_cross) {          
                     for( size_t i=0; i < conics.size(); ++i ) {   
                         const Eigen::Vector2d pc = conics[i].center;
-                        glColorBin( target.Map()[i].value, 2);
-                        glDrawCross(pc, conics[i].bbox.Width()*0.75 );
+                        pangolin::glColorBin( target.Map()[i].value, 2);
+                        pangolin::glDrawCross(pc, conics[i].bbox.Width()*0.75 );
                     }
                 }
                 
@@ -317,7 +317,7 @@ int main( int argc, char** argv)
                     for( size_t i=0; i < conics.size(); ++i ) {   
                         const Eigen::Vector2i pg = tracking_good[iI] ? target.Map()[i].pg : Eigen::Vector2i(0,0);
                         if( 0<= pg(0) && pg(0) < grid_size(0) &&  0<= pg(1) && pg(1) < grid_size(1) ) {
-                            glColorBin(pg(1)*grid_size(0)+pg(0), grid_size(0)*grid_size(1));
+                            pangolin::glColorBin(pg(1)*grid_size(0)+pg(0), grid_size(0)*grid_size(1));
                             glDrawRectPerimeter(conics[i].bbox);
                         }
                     }
@@ -337,15 +337,15 @@ int main( int argc, char** argv)
                 const Sophus::SE3d T_ck = cap.T_ck;
     
                 // Draw keyframes
-                glColorBin(c, 2, 0.2);
+                pangolin::glColorBin(c, 2, 0.2);
                 for(size_t k=0; k< calibrator.NumFrames(); ++k) {
-                    glDrawAxis((T_ck * calibrator.GetFrame(k)).inverse().matrix(), 0.01);
+                    pangolin::glDrawAxis((T_ck * calibrator.GetFrame(k)).inverse().matrix(), 0.01);
                 }
                 
                 // Draw current camera
                 if(tracking_good[c]) {
-                    glColorBin(c, 2, 0.5);
-                    glDrawFrustrum(Kinv,w,h,T_hw[c].inverse().matrix(),0.05);
+                    pangolin::glColorBin(c, 2, 0.5);
+                    pangolin::glDrawFrustrum(Kinv,w,h,T_hw[c].inverse().matrix(),0.05);
                 }
             }
         }
