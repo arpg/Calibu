@@ -75,7 +75,7 @@ find_package( OpenCV REQUIRED )
 find_package( ZLIB REQUIRED )
 
 ## Apply project include directories
-list( APPEND USER_INC  "${PROJECT_SOURCE_DIR}/include;${CMAKE_CURRENT_BINARY_DIR}/include" )
+list( APPEND CALIBU_INC "${PROJECT_SOURCE_DIR}/include;${CMAKE_CURRENT_BINARY_DIR}/include" )
 list( APPEND USER_INC   ${EIGEN3_INCLUDE_DIR} )
 list( APPEND USER_INC   ${Sophus_INCLUDE_DIR} )
 
@@ -83,6 +83,7 @@ list( APPEND LINK_LIBS  ${OpenCV2_LIBRARIES} ${ZLIB_LIBRARIES} )
 list( APPEND INTERNAL_INC ${OpenCV2_INCLUDE_DIRS} ${ZLIB_INCLUDE_DIR} )
 
 # Include source/build directories first to preempt any installed Calibu
+include_directories( ${CALIBU_INC} )
 include_directories( ${USER_INC} )
 include_directories( ${INTERNAL_INC} )
 
@@ -102,6 +103,35 @@ configure_file(
 )
 
 #######################################################
+
+# This relative path allows installed files to be relocatable.
+set( CMAKECONFIG_INSTALL_DIR lib/cmake/Calibu )
+file( RELATIVE_PATH REL_INCLUDE_DIR
+    "${CMAKE_INSTALL_PREFIX}/${CMAKECONFIG_INSTALL_DIR}"
+    "${CMAKE_INSTALL_PREFIX}/include" )
+
+# Export library for easy inclusion from other cmake projects.
+export( TARGETS ${LIBRARY_NAME}
+        FILE "${CMAKE_CURRENT_BINARY_DIR}/CalibuTargets.cmake" )
+
+# Version information
+configure_file(CalibuConfigVersion.cmake.in
+  "${CMAKE_CURRENT_BINARY_DIR}/CalibuConfigVersion.cmake" @ONLY)
+
+# Build tree config
+set( EXPORT_CALIBU_INC "${CALIBU_INC}" )
+CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/CalibuConfig.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/CalibuConfig.cmake @ONLY IMMEDIATE )
+
+# Install tree config
+set( EXPORT_CALIBU_INC "\${CALIBU_CMAKE_DIR}/${REL_INCLUDE_DIR}" )
+configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/CalibuConfig.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CalibuConfig.cmake @ONLY )
+
+# Add package to CMake package registery for use from the build tree
+export( PACKAGE Calibu )
+
+#######################################################
 ## Install headers / targets
 
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/include/${LIBRARY_NAME}/config.h"
@@ -118,33 +148,11 @@ install(TARGETS ${LIBRARY_NAME}
 )
 
 #######################################################
-# Figure out the relative path from the installed Config.cmake file to the
-# install prefix. This relative path will be configured into CalibuConfig.cmake.
-set( CMAKECONFIG_INSTALL_DIR lib/cmake/Calibu )
-file( RELATIVE_PATH REL_INCLUDE_DIR
-    "${CMAKE_INSTALL_PREFIX}/${CMAKECONFIG_INSTALL_DIR}"
-    "${CMAKE_INSTALL_PREFIX}/include" )
+## Install CMake config
 
-# Add package to CMake package registery for use from the build tree
-export( TARGETS ${LIBRARY_NAME}
-        FILE "${CMAKE_CURRENT_BINARY_DIR}/CalibuTargets.cmake" )
+INSTALL(
+    FILES "${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CalibuConfig.cmake"
+          "${CMAKE_CURRENT_BINARY_DIR}/CalibuConfigVersion.cmake"
+    DESTINATION ${CMAKECONFIG_INSTALL_DIR} )
 
-if(NOT ANDROID)
-        # Add package to CMake package registery for use from the build tree
-        export( PACKAGE Calibu )
-endif()
-
-# Install the export set for use with the install tree
 install( EXPORT CalibuTargets DESTINATION ${CMAKECONFIG_INSTALL_DIR} )
-
-## Export config file for easy inclusion into other projects: FIND_PACKAGE( Calibu )
-# ... for the build tree
-CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/CalibuConfig.cmake.in
-    ${CMAKE_CURRENT_BINARY_DIR}/CalibuConfig.cmake @ONLY IMMEDIATE )
-# ... for the install tree
-set( USER_INC "\${CALIBU_CMAKE_DIR}/${REL_INCLUDE_DIR}" )
-configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/CalibuConfig.cmake.in
-    ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CalibuConfig.cmake @ONLY )
-
-INSTALL(FILES "${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CalibuConfig.cmake"
-        DESTINATION ${CMAKECONFIG_INSTALL_DIR} )

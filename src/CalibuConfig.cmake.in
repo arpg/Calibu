@@ -1,7 +1,7 @@
 # Compute paths
 get_filename_component( CALIBU_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH )
-SET( Calibu_INCLUDE_DIRS "@USER_INC@" )
-SET( Calibu_INCLUDE_DIR  "@USER_INC@" )
+SET( Calibu_INCLUDE_DIRS "@EXPORT_CALIBU_INC@;@USER_INC@" )
+SET( Calibu_INCLUDE_DIR  "@EXPORT_CALIBU_INC@;@USER_INC@" )
 
 # Library dependencies (contains definitions for IMPORTED targets)
 if( NOT TARGET @LIBRARY_NAME@ AND NOT Calibu_BINARY_DIR )

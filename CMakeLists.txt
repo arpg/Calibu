@@ -1,6 +1,9 @@
-project("Calibu")
-
 cmake_minimum_required( VERSION 2.8 )
+project("Calibu")
+set(CALIBU_VERSION_MAJOR 0)
+set(CALIBU_VERSION_MINOR 1)
+set(CALIBU_VERSION ${CALIBU_VERSION_MAJOR}.${CALIBU_VERSION_MINOR})
+
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/CMakeModules/")
 
 option( BUILD_APPLICATIONS "Build Applications" ON )

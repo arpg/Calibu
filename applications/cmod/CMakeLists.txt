@@ -4,12 +4,12 @@ if(MVL_FOUND)
     include_directories( ${MVL_INCLUDE_DIRS} )
     link_libraries( ${MVL_LIBRARIES} )
 
-    find_package( Calibu REQUIRED )
+    find_package( Calibu 0.1 REQUIRED )
     include_directories( ${Calibu_INCLUDE_DIRS} )
     link_libraries( ${LIBRARY_NAME} )
 
     # git://github.com/stevenlovegrove/Pangolin.git
-    find_package( Pangolin REQUIRED )
+    find_package( Pangolin 0.1 REQUIRED )
     include_directories( ${Pangolin_INCLUDE_DIRS} )
     link_libraries( ${Pangolin_LIBRARIES} )    
     
