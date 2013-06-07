@@ -75,7 +75,7 @@ find_package( OpenCV REQUIRED )
 find_package( ZLIB REQUIRED )
 
 ## Apply project include directories
-list( APPEND CALIBU_INC "${PROJECT_SOURCE_DIR}/include;${CMAKE_CURRENT_BINARY_DIR}/include" )
+list( APPEND CALIBU_INC "${CMAKE_CURRENT_SOURCE_DIR}/../include;${CMAKE_CURRENT_BINARY_DIR}/include" )
 list( APPEND USER_INC   ${EIGEN3_INCLUDE_DIR} )
 list( APPEND USER_INC   ${Sophus_INCLUDE_DIR} )
 
