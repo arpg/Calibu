@@ -228,6 +228,13 @@ public:
         _AssertInit();
         return m_pCam->Kinv();
     }
+
+    inline Eigen::Matrix<double,2,3> dMap_dP(
+            const Eigen::Vector3d& P //< Input:
+            ) const
+    {
+        return m_pCam->dMap_dP(P);
+    }
     
 private:
     void CopySameType( const CameraModelInterface& other )

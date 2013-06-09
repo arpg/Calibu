@@ -20,6 +20,8 @@
 
 #pragma once
 
+#include <stdexcept>
+
 namespace calibu {
 
 #define DIST_CAM_EPS 1E-5
@@ -46,6 +48,12 @@ struct DistortionPinhole
     static double RinvFactor(double, T const*) {
         return 1;
     }
+
+    inline static
+    double dRFactor_dr(double r, const double* params)
+    {
+        return 0;
+    }
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -69,6 +77,12 @@ struct DistortionPoly
         // TODO: imeplement
         throw std::exception();
     }    
+
+    inline static
+    double dRFactor_dr(double r, const double* params)
+    {
+        throw std::runtime_error("Not implemented.");
+    }
 };
 
 //////////////////////////////////////////////////////////////////////////////

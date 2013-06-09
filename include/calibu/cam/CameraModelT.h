@@ -82,6 +82,15 @@ namespace calibu
                 }    
 
             /////////////////////////////////////////////////////////////////////////
+            /// TODO doxygen comment
+            inline Eigen::Matrix<double,2,3> dMap_dP(
+                    const Eigen::Vector3d& P //< Input:
+                    ) const
+            {
+                return CameraModelT<ProjectionModel>::dMap_dP(P,data());
+            }
+
+            /////////////////////////////////////////////////////////////////////////
             /// Transfer point correspondence with known inv. depth to secondary camera
             //  frame.  Points at infinity are supported (rho = 0) rhoPa =
             //  unproject(unmap(pa))

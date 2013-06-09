@@ -138,12 +138,12 @@ struct ProjectionLinear
         
         Eigen::Matrix<double,2,2> J;
         J.col(0) = Eigen::Matrix<double,2,1>(
-                    dfac_dp(0) *params[0]*p(0) + fac*params[2],
+                    dfac_dp(0) *params[0]*p(0) + fac*params[0],
                 dfac_dp(0) *params[1]*p(1)
                 );
         J.col(1) = Eigen::Matrix<double,2,1>(
                     dfac_dp(1) *params[0]*p(0),
-                dfac_dp(1) *params[1]*p(1) + fac*params[3]
+                dfac_dp(1) *params[1]*p(1) + fac*params[1]
                 );
         
         return J;

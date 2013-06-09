@@ -107,6 +107,7 @@ public:
     /// Row2: Forward vector in camera frame of reference
     virtual void SetRDF( const Eigen::Matrix3d& RDF ) = 0;
 
+    virtual Eigen::Matrix<double,2,3> dMap_dP(const Eigen::Vector3d& P) const = 0;
 
     //////////////////////////////////////////////////////////////////////////////
     virtual void PrintInfo() = 0;
