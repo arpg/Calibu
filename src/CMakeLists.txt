@@ -93,9 +93,8 @@ target_link_libraries( ${LIBRARY_NAME} ${LINK_LIBS} )
 #######################################################
 ## Create configure file for inclusion in library
 
-IF( ${CMAKE_SYSTEM_NAME} MATCHES "Darwin" )
-   SET( _OSX_ 1 )
-ENDIF()
+# Platform configuration vars
+include(SetPlatformVars)
 
 configure_file(
   "${CMAKE_CURRENT_SOURCE_DIR}/config.h.in"
