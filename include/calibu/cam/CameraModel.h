@@ -229,11 +229,19 @@ public:
         return m_pCam->Kinv();
     }
 
-    inline Eigen::Matrix<double,2,3> dMap_dP(
+    Eigen::Matrix<double,2,3> dMap_dP(
             const Eigen::Vector3d& P //< Input:
             ) const
     {
         return m_pCam->dMap_dP(P);
+    }
+
+    Eigen::Matrix<double,2,4> dTransfer3D_dP(
+            const Sophus::SE3d& T_ba,   //< Input:
+            const Eigen::Matrix<double,3,1>& rhoPa, //< Input:
+            const double rho                        //< Input:
+            ) const{
+        return m_pCam->dTransfer3D_dP(T_ba,rhoPa,rho);
     }
     
 private:

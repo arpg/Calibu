@@ -91,6 +91,26 @@ namespace calibu
             }
 
             /////////////////////////////////////////////////////////////////////////
+            Eigen::Matrix<double,2,4> dTransfer3D_dP(
+                    const Sophus::SE3d& T_ba,   //< Input:
+                    const Eigen::Matrix<double,3,1>& rhoPa, //< Input:
+                    const double rho                        //< Input:
+                    ) const
+            {
+                // Inverse= depth point in a transformed to b (homogeneous 2D)
+                const Eigen::Matrix<double,3,1> Pb =
+                    T_ba.rotationMatrix() * rhoPa + rho * T_ba.translation();
+
+                Eigen::Matrix<double,2,3>dMap = dMap_dP(Pb);
+
+                Eigen::Matrix<double,2,4> J;
+                J.block<2,3>(0,0) = dMap*T_ba.rotationMatrix(); // dTransfer_dXYZ
+                J.block<2,1>(0,3) = dMap*T_ba.translation();    // dTransfer_dRho
+
+                return J;
+            }
+
+            /////////////////////////////////////////////////////////////////////////
             /// Transfer point correspondence with known inv. depth to secondary camera
             //  frame.  Points at infinity are supported (rho = 0) rhoPa =
             //  unproject(unmap(pa))

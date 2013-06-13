@@ -108,6 +108,11 @@ public:
     virtual void SetRDF( const Eigen::Matrix3d& RDF ) = 0;
 
     virtual Eigen::Matrix<double,2,3> dMap_dP(const Eigen::Vector3d& P) const = 0;
+    virtual Eigen::Matrix<double,2,4> dTransfer3D_dP(
+            const Sophus::SE3d& T_ba,   //< Input:
+            const Eigen::Matrix<double,3,1>& rhoPa, //< Input:
+            const double rho                        //< Input:
+            ) const  = 0;
 
     //////////////////////////////////////////////////////////////////////////////
     virtual void PrintInfo() = 0;
