@@ -14,9 +14,9 @@ if(MVL_FOUND)
     link_libraries( ${Pangolin_LIBRARIES} )    
     
     # git clone https://ceres-solver.googlesource.com/ceres-solver
-    find_package( CeresSolver REQUIRED )
-    include_directories( ${CeresSolver_INCLUDE_DIRS} )
-    link_libraries( ${CeresSolver_LIBRARIES} )
+    find_package( Ceres 1.6.0 REQUIRED )
+    include_directories( ${CERES_INCLUDE_DIRS} )
+    link_libraries( ${CERES_LIBRARIES} )
     
     add_executable( cmod main.cpp )
     
