@@ -7,6 +7,9 @@ find_package( Pangolin 0.1 REQUIRED )
 include_directories( ${Pangolin_INCLUDE_DIRS} )
 link_libraries( ${Pangolin_LIBRARIES} )
 
+# Make sure Ceres knows where to find Eigen
+list(APPEND SEARCH_HEADERS ${EIGEN3_INCLUDE_DIR})
+
 # git clone https://ceres-solver.googlesource.com/ceres-solver
 find_package( Ceres 1.6.0 REQUIRED )
 include_directories( ${CERES_INCLUDE_DIRS} )

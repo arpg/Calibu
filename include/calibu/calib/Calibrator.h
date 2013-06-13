@@ -41,11 +41,11 @@
 #include <ceres/covariance.h>
 #endif // CALIBU_CERES_COVAR
 
-#include <calibu/calib/CeresExtra.h>
 #include <calibu/calib/LocalParamSe3.h>
 
 #include <calibu/calib/ReprojectionCostFunctor.h>
 #include <calibu/calib/CostFunctionAndParams.h>
+
 
 namespace calibu {
 
@@ -289,6 +289,7 @@ protected:
     void SetupProblem(ceres::Problem& problem)
     {
         m_update_mutex.lock();
+
         
         // Add parameters
         for(size_t c=0; c<m_camera.size(); ++c) {
