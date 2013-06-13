@@ -266,6 +266,8 @@ int main( int argc, char** argv)
                         if( 0<= pg(0) && pg(0) < grid_size(0) &&  0<= pg(1) && pg(1) < grid_size(1) )
                         {
                             const Eigen::Vector3d pg3d = grid_spacing * Eigen::Vector3d(pg(0), pg(1), 0);
+                            // TODO: Add these correspondences in bulk to avoid
+                            //       hitting mutex each time.
                             calibrator.AddObservation(calib_frame, calib_cams[iI], pg3d, pc );
                         }
                     }

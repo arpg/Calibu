@@ -7,10 +7,13 @@ find_package( Pangolin 0.1 REQUIRED )
 include_directories( ${Pangolin_INCLUDE_DIRS} )
 link_libraries( ${Pangolin_LIBRARIES} )
 
+# Make sure Ceres knows where to find Eigen
+list(APPEND SEARCH_HEADERS ${EIGEN3_INCLUDE_DIR})
+
 # git clone https://ceres-solver.googlesource.com/ceres-solver
-find_package( CeresSolver REQUIRED )
-include_directories( ${CeresSolver_INCLUDE_DIRS} )
-link_libraries( ${CeresSolver_LIBRARIES} )
+find_package( Ceres 1.6.0 REQUIRED )
+include_directories( ${CERES_INCLUDE_DIRS} )
+link_libraries( ${CERES_LIBRARIES} )
 
 add_executable( calibgrid main.cpp )
 

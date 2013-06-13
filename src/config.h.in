@@ -1,12 +1,20 @@
 #ifndef _CALIBU_CONFIG_H_
 #define _CALIBU_CONFIG_H_
 
-/// Platform
-#cmakedefine _OSX_
+/// Version
+#define CALIBU_VERSION_MAJOR @CALIBU_VERSION_MAJOR@
+#define CALIBU_VERSION_MINOR @CALIBU_VERSION_MINOR@
+#define CALIBU_VERSION_STRING "@CALIBU_VERSION@"
 
-#ifdef _OSX_
-  // This alias is for libcvd
-  #define _OSX
-#endif
+/// Platform
+#cmakedefine _UNIX_
+#cmakedefine _WIN_
+#cmakedefine _OSX_
+#cmakedefine _LINUX_
+#cmakedefine _ANDROID_
+
+/// Compiler
+#cmakedefine _GCC_
+#cmakedefine _MSVC_
 
 #endif //_CALIBU_CONFIG_H_

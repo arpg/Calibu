@@ -8,7 +8,6 @@ set(
     ${INCDIR}/calib/AutoDiffArrayCostFunction.h
     ${INCDIR}/calib/Calibrator.h
     ${INCDIR}/calib/CostFunctionAndParams.h
-    ${INCDIR}/calib/CeresExtra.h
     ${INCDIR}/calib/LocalParamSe3.h
     ${INCDIR}/cam/CameraUtils.h
     ${INCDIR}/cam/CameraModelInterface.h
@@ -93,9 +92,8 @@ target_link_libraries( ${LIBRARY_NAME} ${LINK_LIBS} )
 #######################################################
 ## Create configure file for inclusion in library
 
-IF( ${CMAKE_SYSTEM_NAME} MATCHES "Darwin" )
-   SET( _OSX_ 1 )
-ENDIF()
+# Platform configuration vars
+include(SetPlatformVars)
 
 configure_file(
   "${CMAKE_CURRENT_SOURCE_DIR}/config.h.in"

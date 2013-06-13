@@ -41,11 +41,11 @@
 #include <ceres/covariance.h>
 #endif // CALIBU_CERES_COVAR
 
-#include <calibu/calib/CeresExtra.h>
 #include <calibu/calib/LocalParamSe3.h>
 
 #include <calibu/calib/ReprojectionCostFunctor.h>
 #include <calibu/calib/CostFunctionAndParams.h>
+
 
 namespace calibu {
 
@@ -143,8 +143,11 @@ public:
  
     int AddFrame(Sophus::SE3d T_kw = Sophus::SE3d())
     {
+        m_update_mutex.lock();
         int id = m_T_kw.size();
         m_T_kw.push_back( make_unique<Sophus::SE3d>(T_kw) );
+        m_update_mutex.unlock();
+        
         return id;
     }
  
@@ -286,6 +289,7 @@ protected:
     void SetupProblem(ceres::Problem& problem)
     {
         m_update_mutex.lock();
+
         
         // Add parameters
         for(size_t c=0; c<m_camera.size(); ++c) {
@@ -294,10 +298,11 @@ protected:
                 problem.SetParameterBlockConstant(m_camera[c]->T_ck.data());
             }
         }
+        
         for(size_t p=0; p<m_T_kw.size(); ++p) {
             problem.AddParameterBlock(m_T_kw[p]->data(), 7, &m_LocalParamSe3 );
         }
-        
+
         // Add costs
         for(size_t c=0; c<m_costs.size(); ++c) {
             CostFunctionAndParams& cost = *m_costs[c];

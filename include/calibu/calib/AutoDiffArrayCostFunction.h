@@ -23,7 +23,6 @@
 #include <type_traits>
 
 #include <ceres/ceres.h>
-#include "CeresExtra.h"
 
 namespace ceres
 {
