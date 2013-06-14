@@ -50,7 +50,7 @@ struct DistortionPinhole
     }
 
     inline static
-    double dRFactor_dr(double r, const double* params)
+    double dRFactor_dr(double /*r*/, const double* /*params*/)
     {
         return 0;
     }
