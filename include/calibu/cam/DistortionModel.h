@@ -79,7 +79,7 @@ struct DistortionPoly
     }    
 
     inline static
-    double dRFactor_dr(double r, const double* params)
+    double dRFactor_dr(double /*r*/, const double* /*params*/)
     {
         throw std::runtime_error("Not implemented.");
     }
