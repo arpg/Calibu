@@ -14,9 +14,26 @@
 
 #include <CVars/CVar.h>
 
+#include "GetPot"
+
 using namespace calibu;
 
+typedef calibu::Fov CalibModel;
+
 const char* sUriInfo = 
+"Usage:"
+"\tcalibgrid <options> video_uri\n"
+"Options:\n"
+"\t-output,-o <file>      Output XML file to write camera models to.\n"
+"\t                       By default calibgrid will output to cameras.xml\n"
+"\t-cameras,-c <file>     Input XML file to read starting intrinsics from.\n"
+"\t-grid-spacing <value>  Distance between circles in grid\n"
+"\t-grid-seed <value>     Random seed used when creating grid (=71)\n"
+"\t-fix-intrinsics,-f     Fix camera intrinsics during optimisation.\n"        
+"\t-paused,-p             Start video paused.\n"
+        
+"e.g.:\n"
+"\tcalibgrid -c leftcam.xml -c rightcaml.xml video_uri\n\n"              
 "Video URI's take the following form:\n"
 " scheme:[param1=value1,param2=value2,...]//device\n"
 "\n"
@@ -51,29 +68,68 @@ const char* sUriInfo =
 " e.g. \" split:[roi1=0+0+640x480,roi2=640+0+640x480]//uvc://\"\n\n";
 
 int main( int argc, char** argv)
-{    
+{        
     ////////////////////////////////////////////////////////////////////
-    // Parse command line
-    
-    if(argc < 2) {
-        std::cout << "Usage:" << std::endl;
-        std::cout << "\t" << argv[0] << " video_uri [grid_spacing]" << std::endl;
-        std::cout << "\n\n"<< sUriInfo << std::endl;
-        return -1;
-    }
+    // Default configuration values
 
-    // First argument - Video URI
-    std::string video_uri = argv[1];
-    
-    // Second Argument - Distance in meters between dots.
-    double grid_spacing = 0.254 / (19-1); // Printed on US Letter
+    // Default grid printed on US Letter
+    double grid_spacing = 0.254 / (19-1);
     const Eigen::Vector2i grid_size(19,10);
+    uint32_t grid_seed = 71;
     
-    if(argc >= 3) {
-        std::istringstream iss(argv[2]);
-        iss >> grid_spacing;
+    // Use no input cameras by default
+    std::vector<calibu::CameraModelT<CalibModel> > input_cameras;    
+
+    // Fix cameras intrinsic parameters during optimisation, changing
+    // only their relative poses.
+    bool fix_intrinsics = false;
+    
+    // Require user to start playing the video
+    bool start_paused = false;
+    
+    // Output file for camera rig
+    std::string output_filename = "cameras.xml";
+    
+    ////////////////////////////////////////////////////////////////////
+    // Parse command line    
+    
+    GetPot cl(argc,argv);
+    
+    if(cl.search(3, "-help", "-h", "?") || argc < 2) {
+        std::cout << sUriInfo << std::endl;
+        return -1;
+    }    
+    
+    grid_spacing = cl.follow(grid_spacing,"-grid-spacing");
+    grid_seed = cl.follow((int)grid_seed,"-grid-seed");
+    fix_intrinsics = cl.search(2, "-fix-intrinsics", "-f");
+    start_paused = cl.search(2, "-paused", "-p");
+    output_filename = cl.follow(output_filename.c_str(), 2, "-output", "-o");
+    
+    // Load camera hints from command line    
+    cl.disable_loop();
+    cl.reset_cursor();
+    for(std::string filename = cl.follow("",2,"-cameras","-c");
+        !filename.empty(); filename = cl.follow("",2,"-cameras","-c") ) {
+        const CameraRig rig = ReadXmlRig(filename);
+        for(const CameraModelAndPose& cop : rig.cameras ) {
+            const calibu::CameraModelT<CalibModel>* pcm =
+                    dynamic_cast<const CameraModelT<CalibModel>* >(
+                        &cop.camera.GetCameraModelInterface()
+                        );
+            if(pcm) {
+                input_cameras.push_back( *pcm );
+            }else{
+                std::cerr << "Unexpected camera model '" << cop.camera.Type() << "'" << std::endl;
+                std::cerr << "Calibgrid configured to use '" << CalibModel::Type() << "'." << std::endl;
+                return -1;
+            }
+        }
     }
-    
+          
+    // Last argument - Video URI
+    std::string video_uri = argv[argc-1];
+        
     ////////////////////////////////////////////////////////////////////
     // Setup Video Source
     
@@ -91,9 +147,14 @@ int main( int argc, char** argv)
     // Check all channels are greyscale
     for(size_t i=0; i<N; ++i) {
         if( video.Streams()[i].PixFormat().channels != 1) {
-            throw pangolin::VideoException("Video channels must be GRAY8 format. Use Convert:// or fmt=GRAY8 option");
+            throw pangolin::VideoException("Video channels must be GRAY8 format. Use Convert:[fmt=GRAY8]// video scheme.");
         }
     } 
+    
+    if(input_cameras.size() > 0 && input_cameras.size() != N) {
+        std::cerr << "Number of cameras specified in files does not match video source" << std::endl;
+        return -1;
+    }
     
     ////////////////////////////////////////////////////////////////////
     // Setup image processing pipeline
@@ -115,12 +176,14 @@ int main( int argc, char** argv)
     conic_finder.Params().conic_min_density = 0.6;
     conic_finder.Params().conic_min_aspect = 0.2;
  
-    TargetGridDot target(grid_spacing, grid_size);  
+    TargetGridDot target(grid_spacing, grid_size, grid_seed);  
     
     ////////////////////////////////////////////////////////////////////
     // Initialize Calibration object and tracking params
     
-    Calibrator<Fov> calibrator;    
+    Calibrator<CalibModel> calibrator;    
+    calibrator.FixCameraIntrinsics(fix_intrinsics);
+    
     int calib_cams[N];    
     bool tracking_good[N];
     Sophus::SE3d T_hw[N];    
@@ -128,12 +191,17 @@ int main( int argc, char** argv)
     for(size_t i=0; i<N; ++i) {
         const int w_i = video.Streams()[i].Width();
         const int h_i = video.Streams()[i].Height();
-        CameraModelT<Fov> default_cam(w_i, h_i);
-        default_cam.SetIndex( i );
-        default_cam.Params()  << 300, 300, w_i/2.0, h_i/2.0, 0.2;
-        calib_cams[i] = calibrator.AddCamera(default_cam);
+        CameraModelT<CalibModel> starting_cam(w_i, h_i);
+        if(input_cameras.size() == N) {
+            starting_cam = input_cameras[i];
+        }else{
+            // Generic starting set of parameters.
+            starting_cam.Params()  << 300, 300, w_i/2.0, h_i/2.0, 0.2;
+        }
+        starting_cam.SetIndex( i );
+        calib_cams[i] = calibrator.AddCamera(starting_cam);
     }
-     
+         
     ////////////////////////////////////////////////////////////////////
     // Setup GUI
     
@@ -178,7 +246,7 @@ int main( int argc, char** argv)
     ////////////////////////////////////////////////////////////////////    
     // Display Variables 
     
-    pangolin::Var<bool> run("ui.Play video", false, true);
+    pangolin::Var<bool> run("ui.Play video", !start_paused, true);
 
     pangolin::Var<double> disp_mse("ui.MSE");
     pangolin::Var<int> disp_frame("ui.frame");
@@ -335,7 +403,7 @@ int main( int argc, char** argv)
             for(size_t c=0; c< calibrator.NumCameras(); ++c) {
                 const Eigen::Matrix3d Kinv = calibrator.GetCamera(c).camera.Kinv();
                 
-                const CameraAndPose<Fov> cap = calibrator.GetCamera(c);
+                const CameraAndPose<CalibModel> cap = calibrator.GetCamera(c);
                 const Sophus::SE3d T_ck = cap.T_ck;
     
                 // Draw keyframes
@@ -361,7 +429,7 @@ int main( int argc, char** argv)
     
     calibrator.Stop();
     calibrator.PrintResults();
-    calibrator.WriteCameraModels();
+    calibrator.WriteCameraModels(output_filename);
 
 }
 

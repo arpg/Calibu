@@ -244,6 +244,16 @@ public:
         return m_pCam->dTransfer3D_dP(T_ba,rhoPa,rho);
     }
     
+    CameraModelInterface& GetCameraModelInterface()
+    {
+        return *m_pCam;
+    }
+
+    const CameraModelInterface& GetCameraModelInterface() const
+    {
+        return *m_pCam;
+    }
+    
 private:
     void CopySameType( const CameraModelInterface& other )
     {
@@ -262,7 +272,7 @@ private:
     {
         if( !m_pCam ){
             std::cerr << "ERROR: Camera model not initialized" << 
-                         " -- make srue to call Init()" << std::endl;
+                         " -- make sure to call Init()" << std::endl;
             assert(m_pCam);
         }
     }

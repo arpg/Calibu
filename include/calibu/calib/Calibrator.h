@@ -94,7 +94,7 @@ public:
     }
 
     /// Write XML file containing configuration of camera rig.
-    void WriteCameraModels(const std::string filename="cameras.xml")
+    void WriteCameraModels(const std::string filename)
     {
         CameraRig rig;
         
@@ -327,7 +327,7 @@ protected:
             }
             if(m_fix_intrinsics) {
                 problem.AddParameterBlock(m_camera[c]->camera.data(), ProjModel::NUM_PARAMS);
-                problem.SetParameterBlockConstant(m_camera[c]->T_ck.data());
+                problem.SetParameterBlockConstant(m_camera[c]->camera.data());
             }
         }
         

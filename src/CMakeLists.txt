@@ -9,14 +9,15 @@ set(
     ${INCDIR}/calib/Calibrator.h
     ${INCDIR}/calib/CostFunctionAndParams.h
     ${INCDIR}/calib/LocalParamSe3.h
-    ${INCDIR}/cam/CameraUtils.h
+    ${INCDIR}/cam/CameraModel.h
     ${INCDIR}/cam/CameraModelInterface.h
     ${INCDIR}/cam/CameraModelT.h
-    ${INCDIR}/cam/CameraModel.h
     ${INCDIR}/cam/CameraRig.h
+    ${INCDIR}/cam/CameraUtils.h
     ${INCDIR}/cam/CameraXml.h
     ${INCDIR}/cam/DistortionModel.h
     ${INCDIR}/cam/ProjectionModel.h
+    ${INCDIR}/cam/Rectify.h
     ${INCDIR}/cam/StereoRectify.h
     ${INCDIR}/conics/Conic.h
     ${INCDIR}/conics/ConicFinder.h

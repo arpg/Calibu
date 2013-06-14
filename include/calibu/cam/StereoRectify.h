@@ -23,6 +23,7 @@
 
 #include <sophus/se3.hpp>
 #include <calibu/cam/CameraModel.h>
+#include <calibu/cam/Rectify.h>
 
 namespace calibu
 {

@@ -377,7 +377,7 @@ bool TargetGridDot::FindTarget(
     }
     
     if(!central) {
-        std::cerr << "No central point found" << std::endl;
+//        std::cerr << "No central point found" << std::endl;
         return false;
     }
         
@@ -435,7 +435,7 @@ bool TargetGridDot::FindTarget(
                         // check
                         if(no.pg != go) {
                             // tracking bad!
-                            std::cerr << "fringe: Not consistent" << std::endl;                            
+//                            std::cerr << "fringe: Not consistent" << std::endl;                            
                             return false;
                         }
                     }else{
