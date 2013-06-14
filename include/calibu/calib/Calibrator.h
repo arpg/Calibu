@@ -72,8 +72,10 @@ class Calibrator
 {
 public:
     
+    /// Construct empty calibration object.
     Calibrator() :
         m_running(false),
+        m_fix_intrinsics(false),
         m_LossFunction( new ceres::SoftLOneLoss(0.5), ceres::TAKE_OWNERSHIP )
     {
         m_prob_options.cost_function_ownership = ceres::DO_NOT_TAKE_OWNERSHIP;
@@ -91,7 +93,8 @@ public:
     {
     }
 
-    void WriteCameraModels()
+    /// Write XML file containing configuration of camera rig.
+    void WriteCameraModels(const std::string filename="cameras.xml")
     {
         CameraRig rig;
         
@@ -99,9 +102,10 @@ public:
             rig.Add(m_camera[c]->camera, m_camera[c]->T_ck.inverse());
         }
         
-        WriteXmlRig("cameras.xml", rig);
+        WriteXmlRig(filename, rig);
     }
     
+    /// Clear all cameras / constraints
     void Clear()
     {
         Stop();
@@ -111,6 +115,7 @@ public:
         m_mse = 0;
     }
     
+    /// Start optimisation thread to modify intrinsic / extrinsic parameters
     void Start()
     {
         if(!m_running) {
@@ -121,6 +126,7 @@ public:
         }        
     }
     
+    /// Stop optimisation thread
     void Stop()
     {
         if(m_running) {
@@ -133,6 +139,8 @@ public:
         }
     }
  
+    /// Add camera to sensor rig. The returned ID should be used when adding
+    /// measurements for this camera
     int AddCamera(const CameraModelT<ProjModel>& cam, const Sophus::SE3d T_ck = Sophus::SE3d() )
     {
         int id = m_camera.size();
@@ -140,7 +148,18 @@ public:
         m_camera.back()->camera.SetIndex(id);
         return id;
     }
+    
+    /// Set whether intrinsics should be 'fixed' and left unchanged by the
+    /// minimization.
+    void FixCameraIntrinsics(bool v = true)
+    {
+        m_fix_intrinsics = v;
+    }
  
+    /// Add frame to optimiser. The returned ID should be used when adding
+    /// target measurements for a given moment in time. Measurements given
+    /// for any camera for a given frame are assumed to be simultaneous, with
+    /// camera extrinsics equal between all cameras for each frame.
     int AddFrame(Sophus::SE3d T_kw = Sophus::SE3d())
     {
         m_update_mutex.lock();
@@ -151,9 +170,12 @@ public:
         return id;
     }
  
+    /// Add observation p_c of 3D feature P_w from 'camera' for 'frame'
+    /// 'camera' and 'frame' id's can be obtained by calls to AddCamera and
+    /// AddFrame respectively.
     void AddObservation(
             size_t frame, size_t camera,
-            const Eigen::Vector3d& P_c,
+            const Eigen::Vector3d& P_w,
             const Eigen::Vector2d& p_c
             ) {
         m_update_mutex.lock();
@@ -168,11 +190,9 @@ public:
         Sophus::SE3d& T_kw = *m_T_kw[frame];
         
         // Create cost function
-//        CostFunctionAndParams* cost = new ReprojectionCost<ProjModel>(P_c, p_c);
-        
         CostFunctionAndParams* cost = new CostFunctionAndParams();
         ReprojectionCostFunctor<ProjModel>* c =
-                new ReprojectionCostFunctor<ProjModel>(P_c, p_c);
+                new ReprojectionCostFunctor<ProjModel>(P_w, p_c);
         cost->Cost() =  new ceres::AutoDiffCostFunction<ReprojectionCostFunctor<ProjModel>,
                 2, Sophus::SE3d::num_parameters, Sophus::SE3d::num_parameters,
                 ProjModel::NUM_PARAMS>(c);
@@ -186,32 +206,39 @@ public:
         m_update_mutex.unlock();
     }
     
+    /// Return number of synchronised camera rig frames
     size_t NumFrames() const
     {
         return m_T_kw.size();
     }
     
+    /// Return pose of camera rig frame i
     Sophus::SE3d& GetFrame(size_t i)
     {
         return *m_T_kw[i];
     }
     
+    /// Return number of cameras in camera rig
     size_t NumCameras() const
     {
         return m_camera.size();
     }
     
+    /// Return camera i of camera rig
     CameraAndPose<ProjModel> GetCamera(size_t i)
     {
         return *m_camera[i];
     }
     
+    /// Return current Mean Square reprojection Error - the objective function
+    /// being minimised by optimisation.
     double MeanSquareError() const
     {
         return m_mse;
     }
     
 #ifdef CALIBU_CERES_COVAR    
+    /// Print summary of calibration
     void PrintResults()
     {
         if(m_costs.size() < 10)
@@ -268,6 +295,7 @@ public:
     
 #else  // CALIBU_CERES_COVAR
 
+    /// Print summary of calibration
     void PrintResults()
     {
         std::cout << "------------------------------------------" << std::endl;        
@@ -295,6 +323,10 @@ protected:
         for(size_t c=0; c<m_camera.size(); ++c) {
             problem.AddParameterBlock(m_camera[c]->T_ck.data(), 7, &m_LocalParamSe3 );
             if(c==0) {
+                problem.SetParameterBlockConstant(m_camera[c]->T_ck.data());
+            }
+            if(m_fix_intrinsics) {
+                problem.AddParameterBlock(m_camera[c]->camera.data(), ProjModel::NUM_PARAMS);
                 problem.SetParameterBlockConstant(m_camera[c]->T_ck.data());
             }
         }
@@ -339,6 +371,8 @@ protected:
     std::thread m_thread;
     bool m_should_run;
     bool m_running;
+    
+    bool m_fix_intrinsics;
  
     std::vector< std::unique_ptr<Sophus::SE3d> > m_T_kw;
     std::vector< std::unique_ptr<CameraAndPose<ProjModel> > > m_camera;
