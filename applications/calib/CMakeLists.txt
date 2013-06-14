@@ -12,7 +12,7 @@ list(APPEND SEARCH_HEADERS ${EIGEN3_INCLUDE_DIR})
 
 # git clone https://ceres-solver.googlesource.com/ceres-solver
 find_package( Ceres 1.6.0 REQUIRED )
-include_directories( ${CERES_INCLUDE_DIRS} )
+include_directories( ${CERES_INCLUDES} )
 link_libraries( ${CERES_LIBRARIES} )
 
 add_executable( calibgrid main.cpp )
