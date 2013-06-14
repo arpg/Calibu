@@ -78,7 +78,7 @@ int main( int argc, char** argv)
     uint32_t grid_seed = 71;
     
     // Use no input cameras by default
-    std::vector<calibu::CameraModelT<CalibModel> > input_cameras;    
+    std::vector<calibu::CameraAndPose<CalibModel> > input_cameras;    
 
     // Fix cameras intrinsic parameters during optimisation, changing
     // only their relative poses.
@@ -118,7 +118,7 @@ int main( int argc, char** argv)
                         &cop.camera.GetCameraModelInterface()
                         );
             if(pcm) {
-                input_cameras.push_back( *pcm );
+                input_cameras.push_back( CameraAndPose<CalibModel>(*pcm,cop.T_wc.inverse()) );
             }else{
                 std::cerr << "Unexpected camera model '" << cop.camera.Type() << "'" << std::endl;
                 std::cerr << "Calibgrid configured to use '" << CalibModel::Type() << "'." << std::endl;
@@ -192,14 +192,16 @@ int main( int argc, char** argv)
         const int w_i = video.Streams()[i].Width();
         const int h_i = video.Streams()[i].Height();
         CameraModelT<CalibModel> starting_cam(w_i, h_i);
+        Sophus::SE3d T_ck;
         if(input_cameras.size() == N) {
-            starting_cam = input_cameras[i];
+            starting_cam = input_cameras[i].camera;
+            T_ck = input_cameras[i].T_ck;
         }else{
             // Generic starting set of parameters.
             starting_cam.Params()  << 300, 300, w_i/2.0, h_i/2.0, 0.2;
         }
         starting_cam.SetIndex( i );
-        calib_cams[i] = calibrator.AddCamera(starting_cam);
+        calib_cams[i] = calibrator.AddCamera(starting_cam, T_ck);
     }
          
     ////////////////////////////////////////////////////////////////////
