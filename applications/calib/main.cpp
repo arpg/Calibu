@@ -112,7 +112,7 @@ int main( int argc, char** argv)
     for(std::string filename = cl.follow("",2,"-cameras","-c");
         !filename.empty(); filename = cl.follow("",2,"-cameras","-c") ) {
         const CameraRig rig = ReadXmlRig(filename);
-        for(const CameraModelAndPose& cop : rig.cameras ) {
+        for(const CameraModelAndTransform& cop : rig.cameras ) {
             const calibu::CameraModelT<CalibModel>* pcm =
                     dynamic_cast<const CameraModelT<CalibModel>* >(
                         &cop.camera.GetCameraModelInterface()
