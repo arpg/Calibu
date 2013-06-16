@@ -80,9 +80,9 @@ void WriteXmlCameraModel(std::ostream& out, const CameraModelInterface& cam, int
 
     // hmm, is RDF a model parameter or should it be outside thie model, like the pose is? GTS
     out << dd2 << "<!-- Use RDF matrix, [right down forward], to define the coordinate frame convention -->\n";
-    out << dd2 << "<right> " << cam.RDF().col(0).transpose() << " </right>\n";
-    out << dd2 << "<down> " << cam.RDF().col(1).transpose() << " </down>\n";
-    out << dd2 << "<forward> " << cam.RDF().col(2).transpose() << " </forward>\n";
+    out << dd2 << "<right> " << (Eigen::Vector3d)cam.RDF().col(0) << " </right>\n";
+    out << dd2 << "<down> " << (Eigen::Vector3d)cam.RDF().col(1) << " </down>\n";
+    out << dd2 << "<forward> " << (Eigen::Vector3d)cam.RDF().col(2) << " </forward>\n";
     out.precision(7);
     
     out << dd2 << "<!-- Camera parameters ordered as per type name. -->\n";    
@@ -118,9 +118,9 @@ CameraModel ReadXmlCameraModel(TiXmlElement* pEl)
         std::string sParams = xmlp ? xmlp->GetText() : "";
         std::string sWidth  = xmlw ? xmlw->GetText() : "";
         std::string sHeight = xmlh ? xmlh->GetText() : "";
-        std::string sR = xmlRight ? xmlRight->GetText() : "1, 0 , 0";
-        std::string sD = xmlDown ? xmlDown->GetText() : "0, 1, 0";
-        std::string sF = xmlForward ? xmlForward->GetText() : "0, 0, 1";
+        std::string sR = xmlRight ? xmlRight->GetText() : "[ 1; 0; 0 ]";
+        std::string sD = xmlDown ? xmlDown->GetText() : "[0; 1; 0 ]";
+        std::string sF = xmlForward ? xmlForward->GetText() : "[ 0; 0; 1 ]";
 
         rCam.SetVersion( StrToVal<int>(sVer,0) );
         rCam.SetName( sName );
