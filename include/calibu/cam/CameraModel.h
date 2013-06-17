@@ -31,7 +31,7 @@
 namespace calibu
 {
 
-    const int CAMRERA_MODEL_VERSION = 8;
+    const int CAMERA_MODEL_VERSION = 8;
 
 struct CameraModelException : public std::exception
 {
