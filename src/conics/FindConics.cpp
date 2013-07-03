@@ -35,33 +35,37 @@ Eigen::Matrix3d FindEllipse(
     //Precise ellipse estimation without contour point extraction
     //Jean-Nicolas Ouellet, Patrick Hebert
     
-    const Eigen::Vector2d c = Eigen::Vector2d(
-                r.x1 + (r.x2-r.x1) / 2.0,
-                r.y1 + (r.y2-r.y1) / 2.0
-                );
+    // This normalisation is in the wrong space.
+    // We'd be better off normalising image values to [0,1] range.
+
+//    const Eigen::Vector2d c = Eigen::Vector2d(
+//                r.x1 + (r.x2-r.x1) / 2.0,
+//                r.y1 + (r.y2-r.y1) / 2.0
+//                );
     
-    const Eigen::Vector2d f = Eigen::Vector2d(
-                2.0 / r.Width(), 2.0 / r.Height()
-                );
+//    const Eigen::Vector2d f = Eigen::Vector2d(
+//                2.0 / r.Width(), 2.0 / r.Height()
+//                );
     
-    // Transform to approximately unit circle at origin
-    Eigen::Matrix3d H;
-    H <<
-         f(0), 0, c(0),
-            0, f(1), c(1),
-            0, 0, 1;
+//    // Transform to approximately unit circle at origin
+//    Eigen::Matrix3d H;
+//    H <<
+//         f(0), 0, c(0),
+//            0, f(1), c(1),
+//            0, 0, 1;
     
-    Eigen::Matrix3d Hinv;
-    Hinv <<
-            1/f(0), 0, -c(0)/f(0),
-            0, 1/f(1), -c(1)/f(1),
-            0, 0, 1;
+//    Eigen::Matrix3d Hinv;
+//    Hinv <<
+//            1/f(0), 0, -c(0)/f(0),
+//            0, 1/f(1), -c(1)/f(1),
+//            0, 0, 1;
+
     
     // Form system Ax = b to solve
     Eigen::Matrix<double,5,5> A = Eigen::Matrix<double,5,5>::Zero();
     Eigen::Matrix<double,5,1> b = Eigen::Matrix<double,5,1>::Zero();
     
-    float elementCount = 0;
+//    float elementCount = 0;
     for( int v=r.y1; v<=r.y2; ++v )
     {
         const TdI* dIv = dI + v*w;
@@ -70,13 +74,14 @@ Eigen::Matrix3d FindEllipse(
             // li = (ai,bi,ci)' = (I_ui,I_vi, -dI' x_i)'
             const Eigen::Vector3d d =
                     Eigen::Vector3d(dIv[u][0],dIv[u][1],-(dIv[u][0] * u + dIv[u][1] * v) );
-            const Eigen::Vector3d li = //H.T() * d;
-                    Eigen::Vector3d( d[0]*H(0,0), d[1]*H(1,1), d[0]*H(0,2) + d[1] * H(1,2) + d[2] );
+//            const Eigen::Vector3d li = //H.T() * d;
+//                    Eigen::Vector3d( d[0]*H(0,0), d[1]*H(1,1), d[0]*H(0,2) + d[1] * H(1,2) + d[2] );
+            const Eigen::Vector3d li = d;
             Eigen::Matrix<double,5,1> Ki;
             Ki << li[0]*li[0], li[0]*li[1], li[1]*li[1], li[0]*li[2], li[1]*li[2];
             A += Ki*Ki.transpose();
             b += -Ki*li[2]*li[2];
-            elementCount++;
+//            elementCount++;
         }
     }
     
@@ -91,7 +96,8 @@ Eigen::Matrix3d FindEllipse(
     Eigen::Matrix3d C_star_norm;
     C_star_norm << x[0],x[1]/2.0,x[3]/2.0,  x[1]/2.0,x[2],x[4]/2.0,  x[3]/2.0,x[4]/2.0,1.0;
     
-    const Eigen::Matrix3d C = Hinv.transpose() * C_star_norm.inverse() * Hinv;
+//    const Eigen::Matrix3d C = Hinv.transpose() * C_star_norm.inverse() * Hinv;
+    const Eigen::Matrix3d C = C_star_norm.inverse();
     //  const Matrix3d C_star = LU<3>(C).get_inverse();
     //  return C_star/C_star[2][2];
     
