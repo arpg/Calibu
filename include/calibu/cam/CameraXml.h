@@ -75,10 +75,10 @@ void WriteXmlCameraModel(const std::string& filename, const CameraModelInterface
 
 
 ////////////////////////////////////////////////////////////////////////////
-inline void WriteXmlCameraModelAndPoseWithLut( 
+inline void WriteXmlCameraModelAndTransformWithLut(
         std::ostream& out,
         std::string& sLutXmlElement,
-        const CameraModelAndPose& cop, 
+        const CameraModelAndTransform& cop,
         int indent = 0
         )
 {
@@ -105,10 +105,10 @@ Sophus::SE3d ReadXmlSE3(const std::string& filename);
 
 ////////////////////////////////////////////////////////////////////////
 
-void WriteXmlCameraModelAndPose(std::ostream& out, const CameraModelAndPose& cop, int indent = 0);
-void WriteXmlCameraModelAndPose(const std::string& filename, const CameraModelAndPose& cop);
-//CameraModelAndPose ReadXmlCameraModelAndPose(TiXmlNode* xmlcampose);
-CameraModelAndPose ReadXmlCameraModelAndPose(const std::string& filename);
+void WriteXmlCameraModelAndTransform(std::ostream& out, const CameraModelAndTransform& cop, int indent = 0);
+void WriteXmlCameraModelAndTransform(const std::string& filename, const CameraModelAndTransform& cop);
+//CameraModelAndTransform ReadXmlCameraModelAndTransform(TiXmlNode* xmlcampose);
+CameraModelAndTransform ReadXmlCameraModelAndTransform(const std::string& filename);
 
 ////////////////////////////////////////////////////////////////////////
 

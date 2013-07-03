@@ -79,8 +79,10 @@ void WriteXmlCameraModel(std::ostream& out, const CameraModelInterface& cam, int
     out << dd2 << "<height> " << cam.Height() << " </height>\n";
 
     // hmm, is RDF a model parameter or should it be outside thie model, like the pose is? GTS
-    out << dd2 << "<!-- [right down forward] camera convention (3 column vectors) -->\n";
-    out << dd2 << "<RDF> " << cam.RDF() << " </RDF>\n";
+    out << dd2 << "<!-- Use RDF matrix, [right down forward], to define the coordinate frame convention -->\n";
+    out << dd2 << "<right> " << (Eigen::Vector3d)cam.RDF().col(0) << " </right>\n";
+    out << dd2 << "<down> " << (Eigen::Vector3d)cam.RDF().col(1) << " </down>\n";
+    out << dd2 << "<forward> " << (Eigen::Vector3d)cam.RDF().col(2) << " </forward>\n";
     out.precision(7);
     
     out << dd2 << "<!-- Camera parameters ordered as per type name. -->\n";    
@@ -109,20 +111,28 @@ CameraModel ReadXmlCameraModel(TiXmlElement* pEl)
         TiXmlElement* xmlp = pEl->FirstChildElement("params");
         TiXmlElement* xmlw = pEl->FirstChildElement("width");
         TiXmlElement* xmlh = pEl->FirstChildElement("height");
-        TiXmlElement* xmlrdf = pEl->FirstChildElement("RDF");
+        TiXmlElement* xmlRight = pEl->FirstChildElement("right");
+        TiXmlElement* xmlDown = pEl->FirstChildElement("down");
+        TiXmlElement* xmlForward = pEl->FirstChildElement("forward");
 
         std::string sParams = xmlp ? xmlp->GetText() : "";
         std::string sWidth  = xmlw ? xmlw->GetText() : "";
         std::string sHeight = xmlh ? xmlh->GetText() : "";
-        std::string sRdf = xmlrdf ? xmlrdf->GetText() : "";
-        
+        std::string sR = xmlRight ? xmlRight->GetText() : "[ 1; 0; 0 ]";
+        std::string sD = xmlDown ? xmlDown->GetText() : "[0; 1; 0 ]";
+        std::string sF = xmlForward ? xmlForward->GetText() : "[ 0; 0; 1 ]";
+
         rCam.SetVersion( StrToVal<int>(sVer,0) );
         rCam.SetName( sName );
         rCam.SetIndex( StrToVal<int>(sIndex,0) );
         rCam.SetSerialNumber( StrToVal<int>(sSerial,-1) );
         rCam.SetGenericParams( StrToVal<Eigen::VectorXd>(sParams, rCam.GenericParams()) );
         rCam.SetImageDimensions( StrToVal<int>(sWidth), StrToVal<int>(sHeight) );
-        rCam.SetRDF( StrToVal<Eigen::Matrix3d>(sRdf, RdfVision.matrix() ) );
+        Eigen::Matrix3d rdf;
+        rdf.col(0) = StrToVal<Eigen::Vector3d>(sR);
+        rdf.col(1) = StrToVal<Eigen::Vector3d>(sD);
+        rdf.col(2) = StrToVal<Eigen::Vector3d>(sF);
+        rCam.SetRDF( rdf );
     }
     
     return rCam;
@@ -148,7 +158,7 @@ void WriteXmlSE3(std::ostream& out, const Sophus::SE3d& T_wc, int indent)
     const std::string dd2 = IndentStr(indent+4);
     
     out << dd1 << AttribOpen(NODE_POSE) << std::endl;
-    out << dd2 << "<!-- Camera pose. World from Camera point transfer. 3x4 matrix -->\n";
+    out << dd2 << "<!-- Camera pose. World from Camera point transfer. 3x4 matrix, in the RDF frame convention defined above -->\n";
     out << dd2 << "<T_wc> " << T_wc.matrix3x4() << " </T_wc>\n";
     out << dd1 << AttribClose(NODE_POSE) << std::endl;
 }
@@ -180,7 +190,7 @@ Sophus::SE3d ReadXmlSE3(const std::string& filename)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void WriteXmlCameraModelAndPose(std::ostream& out, const CameraModelAndPose& cop, int indent)
+void WriteXmlCameraModelAndTransform(std::ostream& out, const CameraModelAndTransform& cop, int indent)
 {
     const std::string dd = IndentStr(indent);
     out << dd << AttribOpen(NODE_CAMMODEL_POSE) << std::endl;
@@ -189,16 +199,16 @@ void WriteXmlCameraModelAndPose(std::ostream& out, const CameraModelAndPose& cop
     out << dd << AttribClose(NODE_CAMMODEL_POSE) << std::endl;
 }
 
-void WriteXmlCameraModelAndPose(const std::string& filename, const CameraModelAndPose& cop)
+void WriteXmlCameraModelAndTransform(const std::string& filename, const CameraModelAndTransform& cop)
 {
     std::ofstream of(filename);
-    WriteXmlCameraModelAndPose(of, cop);
+    WriteXmlCameraModelAndTransform(of, cop);
 }
 
 
-CameraModelAndPose ReadXmlCameraModelAndPose(TiXmlNode* xmlcampose)
+CameraModelAndTransform ReadXmlCameraModelAndTransform(TiXmlNode* xmlcampose)
 {
-    CameraModelAndPose cop;
+    CameraModelAndTransform cop;
     
     TiXmlElement* xmlcam  = xmlcampose->FirstChildElement(NODE_CAMMODEL);
     if(xmlcam) {
@@ -213,16 +223,16 @@ CameraModelAndPose ReadXmlCameraModelAndPose(TiXmlNode* xmlcampose)
     return cop;
 }
 
-CameraModelAndPose ReadXmlCameraModelAndPose(const std::string& filename)
+CameraModelAndTransform ReadXmlCameraModelAndTransform(const std::string& filename)
 {
     TiXmlDocument doc;
     if(doc.LoadFile(filename)) {
         TiXmlNode* pNode = doc.FirstChild(NODE_CAMMODEL_POSE);
         if(pNode) {
-            return ReadXmlCameraModelAndPose(pNode);
+            return ReadXmlCameraModelAndTransform(pNode);
         }
     }
-    return CameraModelAndPose();
+    return CameraModelAndTransform();
 }
 
 
@@ -233,8 +243,8 @@ void WriteXmlRig(std::ostream& out, const CameraRig& rig, int indent )
     const std::string dd = IndentStr(indent);
     
     out << dd << AttribOpen(NODE_RIG) << std::endl;    
-    for(const CameraModelAndPose& cop : rig.cameras) {
-        WriteXmlCameraModelAndPose(out, cop, indent + 4);
+    for(const CameraModelAndTransform& cop : rig.cameras) {
+        WriteXmlCameraModelAndTransform(out, cop, indent + 4);
     }
     out << dd << AttribClose(NODE_RIG) << std::endl;
 }
@@ -252,7 +262,7 @@ CameraRig ReadXmlRig(TiXmlNode* xmlrig)
     
     for( TiXmlNode* child = xmlrig->FirstChild(NODE_CAMMODEL_POSE); child; child = child->NextSibling(NODE_CAMMODEL_POSE) )
     {
-        CameraModelAndPose cap = ReadXmlCameraModelAndPose(child);
+        CameraModelAndTransform cap = ReadXmlCameraModelAndTransform(child);
         if(cap.camera.IsInitialized()) {
             rig.cameras.push_back(cap);
         }
