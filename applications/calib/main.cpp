@@ -186,7 +186,8 @@ int main( int argc, char** argv)
     
     int calib_cams[N];    
     bool tracking_good[N];
-    Sophus::SE3d T_hw[N];    
+    std::vector<Sophus::SE3d> T_hw;
+    T_hw.resize(N);
     
     for(size_t i=0; i<N; ++i) {
         const int w_i = video.Streams()[i].Width();
@@ -287,7 +288,7 @@ int main( int argc, char** argv)
         
         if( go ) {
             if( video.Grab(image_buffer, images, true, true) ) {
-                if(add) calib_frame = calibrator.AddFrame(Sophus::SE3d(Sophus::SO3(), Eigen::Vector3d(0,0,1000)) );
+                if(add) calib_frame = calibrator.AddFrame(Sophus::SE3d(Sophus::SO3d(), Eigen::Vector3d(0,0,1000)) );
                 ++frame;
             }else{
                 run = false;

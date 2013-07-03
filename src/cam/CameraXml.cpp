@@ -19,9 +19,9 @@
    limitations under the License.
  */
 
-#include <calibu/cam/CameraXml.h>
 #include <calibu/utils/Xml.h>
 #include <calibu/utils/StreamOperatorsEigen.h>
+#include <calibu/cam/CameraXml.h>
 #include <fstream>
 
 namespace calibu
@@ -120,7 +120,7 @@ CameraModel ReadXmlCameraModel(TiXmlElement* pEl)
         rCam.SetName( sName );
         rCam.SetIndex( StrToVal<int>(sIndex,0) );
         rCam.SetSerialNumber( StrToVal<int>(sSerial,-1) );
-        rCam.SetGenericParams( StrToVal(sParams, rCam.GenericParams()) );
+        rCam.SetGenericParams( StrToVal<Eigen::VectorXd>(sParams, rCam.GenericParams()) );
         rCam.SetImageDimensions( StrToVal<int>(sWidth), StrToVal<int>(sHeight) );
         rCam.SetRDF( StrToVal<Eigen::Matrix3d>(sRdf, RdfVision.matrix() ) );
     }

@@ -27,7 +27,7 @@
 
 namespace std {
 template<> struct less<Eigen::Vector2i> {
-    bool operator() (const Eigen::Vector2i& lhs, const Eigen::Vector2i& rhs) {
+    bool operator() (const Eigen::Vector2i& lhs, const Eigen::Vector2i& rhs) const {
         return (lhs[0] < rhs[0]) || (lhs[0]==rhs[0] && lhs[1] < rhs[1]);
     }
 };

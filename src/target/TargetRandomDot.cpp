@@ -143,7 +143,7 @@ void TargetRandomDot::GenerateCircular(unsigned int max_circles, double radius, 
     while( tpts.size() < max_circles && fails < MAX_FAILS )
     {
         const double x = ((double)rand() * 2 * big_circle_radius / (double)RAND_MAX) - big_circle_radius;
-        const double y = (signbit((int)rand() - (int)RAND_MAX/2) ? 1 : -1) * sqrt(big_circle_radius*big_circle_radius - x*x);
+        const double y = ( ((int)rand() - (int)RAND_MAX/2) < 0 ? 1:-1) * sqrt(big_circle_radius*big_circle_radius - x*x);
         
         Vector2d p = Vector2d(
                     radius + border + big_circle_radius + x,

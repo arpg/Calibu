@@ -104,8 +104,9 @@ namespace calibu
                 Eigen::Matrix<double,2,3>dMap = dMap_dP(Pb);
 
                 Eigen::Matrix<double,2,4> J;
-                J.block<2,3>(0,0) = dMap*T_ba.rotationMatrix(); // dTransfer_dXYZ
-                J.block<2,1>(0,3) = dMap*T_ba.translation();    // dTransfer_dRho
+                // Using operator= to get around clang bug.
+                J.block<2,3>(0,0).operator=( dMap*T_ba.rotationMatrix() ); // dTransfer_dXYZ
+                J.block<2,1>(0,3).operator=( dMap*T_ba.translation() );    // dTransfer_dRho
 
                 return J;
             }
