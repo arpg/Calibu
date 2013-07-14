@@ -31,7 +31,8 @@ namespace calibu {
 //////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////
-struct DistortionPinhole
+template<typename Scalar=double>
+struct DistortionPinholeT
 {
     static const unsigned NUM_PARAMS = 0;
     
@@ -40,24 +41,27 @@ struct DistortionPinhole
     }
     
     template<typename T> inline
-    static double RFactor(double, T const*) {
+    static Scalar RFactor(Scalar, T const*) {
         return 1;
     }
     
     template<typename T> inline
-    static double RinvFactor(double, T const*) {
+    static Scalar RinvFactor(Scalar, T const*) {
         return 1;
     }
 
     inline static
-    double dRFactor_dr(double /*r*/, const double* /*params*/)
+    Scalar dRFactor_dr(Scalar /*r*/, const Scalar* /*params*/)
     {
         return 0;
     }
 };
 
+typedef DistortionPinholeT<double> DistortionPinhole;
+
 //////////////////////////////////////////////////////////////////////////////
-struct DistortionPoly
+template<typename Scalar=double>
+struct DistortionPolyT
 {
     static const unsigned NUM_PARAMS = 3;
     
@@ -79,14 +83,16 @@ struct DistortionPoly
     }    
 
     inline static
-    double dRFactor_dr(double /*r*/, const double* /*params*/)
+    Scalar dRFactor_dr(Scalar /*r*/, const Scalar* /*params*/)
     {
         throw std::runtime_error("Not implemented.");
     }
 };
+typedef DistortionPolyT<double> DistortionPoly;
 
 //////////////////////////////////////////////////////////////////////////////
-struct DistortionFov
+template<typename Scalar=double>
+struct DistortionFovT
 {
     static const unsigned NUM_PARAMS = 1;
     
@@ -131,7 +137,7 @@ struct DistortionFov
     }
     
     inline static
-    double dRFactor_dr(double r, const double* params)
+    Scalar dRFactor_dr(Scalar r, const Scalar* params)
     {
         if(params[0]*params[0] < DIST_CAM_EPS) {
             return 0;
@@ -139,14 +145,15 @@ struct DistortionFov
             if(r*r < DIST_CAM_EPS) {
                 return 0;
             }else{
-                const double wby2 = params[0]/2.0;
-                const double tanwby2 = tan(wby2);
-                const double sq_tanwby2 = tanwby2 * tanwby2;
-                const double rr=r*r;
+                const Scalar wby2 = params[0]/2.0;
+                const Scalar tanwby2 = tan(wby2);
+                const Scalar sq_tanwby2 = tanwby2 * tanwby2;
+                const Scalar rr=r*r;
                 return (2*tanwby2)/(r*params[0]*(4*rr*sq_tanwby2+1))-atan(2*r*tanwby2)/(rr*params[0]);
             }
         }
     }
 };
+typedef DistortionFovT<double> DistortionFov;
 
 }

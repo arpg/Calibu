@@ -28,31 +28,33 @@ namespace calibu
 {
 
 //////////////////////////////////////////////////////////////////////////////
-
-class CameraModelAndTransform
+template<typename Scalar=double>
+class CameraModelAndTransformT
 {
 public:
-    CameraModel camera;
-    Sophus::SE3d T_wc;
+    CameraModelGeneric<Scalar> camera;
+    Sophus::SE3Group<Scalar> T_wc;
 };
+typedef CameraModelAndTransformT<double> CameraModelAndTransform;
 
 //////////////////////////////////////////////////////////////////////////////
-
-class CameraRig
+template<typename Scalar=double>
+class CameraRigT
 {
 public:
-    inline void Add(const CameraModelAndTransform& cop) {
+    inline void Add(const CameraModelAndTransformT<Scalar>& cop) {
         cameras.push_back(cop);
     }
-    inline void Add(const CameraModelInterface& cam, const Sophus::SE3d& T_wc) {
-        CameraModelAndTransform cop;
-        cop.camera = CameraModel(cam);
+    inline void Add(const CameraModelInterfaceT<Scalar>& cam, const Sophus::SE3Group<Scalar>& T_wc) {
+        CameraModelAndTransformT<Scalar> cop;
+        cop.camera = CameraModelGeneric<Scalar>(cam);
         cop.T_wc = T_wc;
         cameras.push_back(cop);
     }
     
-    std::vector<CameraModelAndTransform> cameras;
+    std::vector<CameraModelAndTransformT<Scalar> > cameras;
 };
+typedef CameraRigT<double> CameraRig;
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -75,11 +77,12 @@ inline Sophus::SE3d ToCoordinateConvention(
     return T_2b_1b;
 }
 
-inline CameraRig ToCoordinateConvention(const CameraRig& rig, const Sophus::SO3d& rdf)
+template<typename Scalar=double>
+inline CameraRigT<Scalar> ToCoordinateConvention(const CameraRigT<Scalar>& rig, const Sophus::SO3Group<Scalar>& rdf)
 {
-    CameraRig ret = rig;
+    CameraRigT<Scalar> ret = rig;
     for(size_t c=0; c<ret.cameras.size(); ++c) {
-        const Sophus::SO3d M = rdf * Sophus::SO3d(rig.cameras[c].camera.RDF()).inverse();
+        const Sophus::SO3Group<Scalar> M = rdf * Sophus::SO3Group<Scalar>(rig.cameras[c].camera.RDF()).inverse();
         ret.cameras[c].T_wc = ToCoordinateConvention(rig.cameras[c].T_wc, M);
         ret.cameras[c].camera.SetRDF(rdf.matrix());
     }

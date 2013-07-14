@@ -30,12 +30,12 @@ namespace calibu {
 //////////////////////////////////////////////////////////////////////////////
 
 // Identity matrix projection
-struct ProjectionLinearId
+template<typename Scalar=double>
+struct ProjectionLinearIdT
 {
-    typedef ProjectionLinearId DistortionFreeModel;
-
+    typedef ProjectionLinearIdT<Scalar> DistortionFreeModel;
     static const unsigned NUM_PARAMS = 0;
-    
+
     inline static std::string Type() { return "id"; }
     
     template<typename T> inline
@@ -63,18 +63,21 @@ struct ProjectionLinearId
     }
     
     static inline
-    Eigen::Matrix<double,2,2> dMap_dp(const Eigen::Vector2d& /*p*/, const double* /*params*/)
+    Eigen::Matrix<Scalar,2,2> dMap_dp(const Eigen::Vector2d& /*p*/, const Scalar* /*params*/)
     {
-        return Eigen::Matrix<double,2,2>::Identity();
+        return Eigen::Matrix<Scalar,2,2>::Identity();
     }   
 };
 
+typedef ProjectionLinearIdT<double> ProjectionLinearId;
+
 // Four parameters: fu, fv, u0, v0
-template<typename DistortionModel>
+template<typename DistortionModel,typename Scalar=double>
 struct ProjectionLinear
 {
-    typedef ProjectionLinear<DistortionPinhole> DistortionFreeModel;
-    
+    typedef Eigen::Matrix<Scalar,2,1> Vector2t;
+    typedef ProjectionLinear<DistortionPinhole,Scalar> DistortionFreeModel;
+
     static const unsigned NUM_LIN_PARAMS = 4;
     static const unsigned NUM_PARAMS = NUM_LIN_PARAMS + DistortionModel::NUM_PARAMS;
  
@@ -128,20 +131,20 @@ struct ProjectionLinear
     }
     
     static inline
-    Eigen::Matrix<double,2,2> dMap_dp(const Eigen::Vector2d& p, const double* params)
+    Eigen::Matrix<Scalar,2,2> dMap_dp(const Vector2t& p, const Scalar* params)
     {
-        const double r = p.norm();    
-        const Eigen::Vector2d dNorm_dp(p(0)/r, p(1)/r);
+        const Scalar r = p.norm();
+        const Vector2t dNorm_dp(p(0)/r, p(1)/r);
         
-        const double fac = DistortionModel::RFactor(r, params + NUM_LIN_PARAMS );
-        const Eigen::Vector2d dfac_dp = DistortionModel::dRFactor_dr(r,params + NUM_LIN_PARAMS) * dNorm_dp;
+        const Scalar fac = DistortionModel::RFactor(r, params + NUM_LIN_PARAMS );
+        const Vector2t dfac_dp = DistortionModel::dRFactor_dr(r,params + NUM_LIN_PARAMS) * dNorm_dp;
         
-        Eigen::Matrix<double,2,2> J;
-        J.col(0).operator=( Eigen::Matrix<double,2,1>(
+        Eigen::Matrix<Scalar,2,2> J;
+        J.col(0).operator=( Eigen::Matrix<Scalar,2,1>(
                     dfac_dp(0) *params[0]*p(0) + fac*params[0],
                 dfac_dp(0) *params[1]*p(1)
                 ) );
-        J.col(1).operator=( Eigen::Matrix<double,2,1>(
+        J.col(1).operator=( Eigen::Matrix<Scalar,2,1>(
                     dfac_dp(1) *params[0]*p(0),
                 dfac_dp(1) *params[1]*p(1) + fac*params[1]
                 ) );
@@ -151,10 +154,11 @@ struct ProjectionLinear
 };
 
 // Four parameters: f, u0, v0
-template<typename DistortionModel>
+template<typename DistortionModel,typename Scalar=double>
 struct ProjectionLinearSquare
 {
-    typedef ProjectionLinearSquare<DistortionPinhole> DistortionFreeModel;
+    typedef Eigen::Matrix<Scalar,2,1> Vector2t;
+    typedef ProjectionLinearSquare<DistortionPinhole,Scalar> DistortionFreeModel;
     
     static const unsigned NUM_LIN_PARAMS = 3;
     static const unsigned NUM_PARAMS = NUM_LIN_PARAMS + DistortionModel::NUM_PARAMS;
@@ -206,24 +210,24 @@ struct ProjectionLinearSquare
                 0, 1.0/params[0], -params[2] / params[0],
                 0, 0, 1;
         return K;
-    }    
+    }
     
     static inline
-    Eigen::Matrix<double,2,2> dMap_dp(const Eigen::Vector2d& p, const double* params)
+    Eigen::Matrix<Scalar,2,2> dMap_dp(const Vector2t& p, const Scalar* params)
     {
-        const double r = p.norm();    
-        const Eigen::Vector2d dNorm_dp(p(0)/r, p(1)/r);
+        const Scalar r = p.norm();
+        const Vector2t dNorm_dp(p(0)/r, p(1)/r);
         
-        const double fac = DistortionModel::RFactor(r, params + NUM_LIN_PARAMS );
-        const Eigen::Vector2d dfac_dp = DistortionModel::dRFactor_dr(r,params + NUM_LIN_PARAMS) * dNorm_dp;
+        const Scalar fac = DistortionModel::RFactor(r, params + NUM_LIN_PARAMS );
+        const Vector2t dfac_dp = DistortionModel::dRFactor_dr(r,params + NUM_LIN_PARAMS) * dNorm_dp;
         
-        Eigen::Matrix<double,2,2> J;
+        Eigen::Matrix<Scalar,2,2> J;
         // Using operator= to get around clang bug.
-        J.col(0).operator=( Eigen::Matrix<double,2,1>(
+        J.col(0).operator=( Eigen::Matrix<Scalar,2,1>(
                     dfac_dp(0) *params[0]*p(0) + fac*params[1],
                 dfac_dp(0) *params[0]*p(1)
                 ) );
-        J.col(1).operator=( Eigen::Matrix<double,2,1>(
+        J.col(1).operator=( Eigen::Matrix<Scalar,2,1>(
                     dfac_dp(1) *params[0]*p(0),
                 dfac_dp(1) *params[0]*p(1) + fac*params[1]
                 ) );

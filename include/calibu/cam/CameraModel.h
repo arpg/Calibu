@@ -50,18 +50,19 @@ struct CameraModelException : public std::exception
 };
  
 ///////////////////////////////////////////////////////////////////////////
-inline CameraModelInterface* CameraModelFactory( const std::string sModelName )
+template<typename Scalar=double>
+inline CameraModelInterfaceT<Scalar>* CameraModelFactory( const std::string sModelName )
 {
     if ( sModelName == "calibu_id" ){
-        return new CameraModelT<Pinhole>();
+        return new CameraModelT<Pinhole,Scalar>();
     }else if( sModelName == "calibu_f_u0_v0") {
-        return new CameraModelT<ProjectionLinearSquare<DistortionPinhole> >();
+        return new CameraModelT<ProjectionLinearSquare<DistortionPinholeT<Scalar>, Scalar >,Scalar >();
     }else if( sModelName == "calibu_fu_fv_u0_v0") {
-        return new CameraModelT<ProjectionLinear<DistortionPinhole> >();
+        return new CameraModelT<ProjectionLinear<DistortionPinholeT<Scalar>, Scalar >,Scalar >();
     }else if( sModelName == "calibu_fu_fv_u0_v0_w") {
-        return new CameraModelT<ProjectionLinear<DistortionFov> >();
+        return new CameraModelT<ProjectionLinear<DistortionFovT<Scalar>, Scalar>,Scalar >();
     }else if( sModelName == "calibu_fu_fv_u0_v0_k1_k2_k3") {
-        return new CameraModelT<ProjectionLinear<DistortionPoly> >();
+        return new CameraModelT<ProjectionLinear<DistortionPolyT<Scalar>, Scalar>,Scalar >();
     }
     return NULL;
 }
@@ -69,26 +70,34 @@ inline CameraModelInterface* CameraModelFactory( const std::string sModelName )
 ///////////////////////////////////////////////////////////////////////////
 /// Generic CameraModel class.  Manual polymorphism.
 ///////////////////////////////////////////////////////////////////////////
-class CameraModel : public CameraModelInterface
+template<typename Scalar=double>
+class CameraModelGeneric : public CameraModelInterfaceT<Scalar>
 {
-    friend bool IsLinearModel( const CameraModel& cam );
+    typedef Eigen::Matrix<Scalar,2,1> Vector2t;
+    typedef Eigen::Matrix<Scalar,3,1> Vector3t;
+    typedef Eigen::Matrix<Scalar,Eigen::Dynamic,1> VectorXt;
+    typedef Eigen::Matrix<Scalar,3,3> Matrix3t;
+    typedef Sophus::SE3Group<Scalar> SE3t;
+
+    template<typename S>
+    friend bool IsLinearModel( const CameraModelGeneric<S>& cam );
 public:
 
     /////////////////////////////////////////////////////////////////////////
     // Constructors
     /////////////////////////////////////////////////////////////////////////
-    CameraModel() : 
+    CameraModelGeneric() :
         m_pCam(nullptr)
     {
     }
     
-    CameraModel( const CameraModelInterface& rhs )
+    CameraModelGeneric( const CameraModelInterfaceT<Scalar>& rhs )
         : m_pCam( CameraModelFactory( rhs.Type() ) )
     {
         CopySameType(rhs);
     }
     
-    CameraModel( std::string& sModelType)
+    CameraModelGeneric( std::string& sModelType)
         : m_pCam( CameraModelFactory( sModelType ) )
     {
     }
@@ -146,7 +155,7 @@ public:
     /// Row0: Right vector in camera frame of reference
     /// Row1: Down vector in camera frame of reference
     /// Row2: Forward vector in camera frame of reference
-    Eigen::Matrix3d RDF() const
+    Matrix3t RDF() const
     {
         return m_pCam->RDF();
     }
@@ -155,7 +164,7 @@ public:
     /// Row0: Right vector in camera frame of reference
     /// Row1: Down vector in camera frame of reference
     /// Row2: Forward vector in camera frame of reference
-    virtual void SetRDF( const Eigen::Matrix3d& RDF )
+    virtual void SetRDF( const Matrix3t& RDF )
     {
         m_pCam->SetRDF( RDF );    
     }
@@ -176,12 +185,12 @@ public:
     }
     
     
-    Eigen::VectorXd GenericParams() const
+    VectorXt GenericParams() const
     {  
         return m_pCam->GenericParams();
     }
     
-    void SetGenericParams(const Eigen::VectorXd& params)
+    void SetGenericParams(const VectorXt& params)
     {
         m_pCam->SetGenericParams(params);
     }
@@ -205,41 +214,41 @@ public:
         m_pCam->SetName( sName );
     }
     
-    Eigen::Vector2d Map(const Eigen::Vector2d& proj) const
+    Vector2t Map(const Vector2t& proj) const
     {
         _AssertInit();
         return m_pCam->Map( proj );
     }
     
-    Eigen::Vector2d Unmap(const Eigen::Vector2d& img) const
+    Vector2t Unmap(const Vector2t& img) const
     {
         _AssertInit();
         return m_pCam->Unmap( img );
     }
     
-    Eigen::Matrix3d K() const
+    Matrix3t K() const
     {
         _AssertInit();
         return m_pCam->K();
     }
     
-    Eigen::Matrix3d Kinv() const
+    Matrix3t Kinv() const
     {
         _AssertInit();
         return m_pCam->Kinv();
     }
 
-    Eigen::Matrix<double,2,3> dMap_dP(
-            const Eigen::Vector3d& P //< Input:
+    Eigen::Matrix<Scalar,2,3> dMap_dP(
+            const Vector3t& P //< Input:
             ) const
     {
         return m_pCam->dMap_dP(P);
     }
 
-    Eigen::Matrix<double,2,4> dTransfer3D_dP(
-            const Sophus::SE3d& T_ba,   //< Input:
-            const Eigen::Matrix<double,3,1>& rhoPa, //< Input:
-            const double rho                        //< Input:
+    Eigen::Matrix<Scalar,2,4> dTransfer3D_dP(
+            const SE3t& T_ba,   //< Input:
+            const Eigen::Matrix<Scalar,3,1>& rhoPa, //< Input:
+            const Scalar rho                        //< Input:
             ) const{
         return m_pCam->dTransfer3D_dP(T_ba,rhoPa,rho);
     }
@@ -281,6 +290,7 @@ protected:
     std::shared_ptr<CameraModelInterface> m_pCam;
 };
 
+typedef CameraModelGeneric<double> CameraModel;
 }
 
 

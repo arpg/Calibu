@@ -28,9 +28,15 @@ namespace calibu
     //////////////////////////////////////////////////////////////////////////////
     // Linear Projection and Distortion
     //////////////////////////////////////////////////////////////////////////////
-    template<typename ProjectionModel>
-        class CameraModelT : public CameraModelInterface
+    template<typename ProjectionModel, typename Scalar=double>
+        class CameraModelT : public CameraModelInterfaceT<Scalar>
     {
+            typedef Eigen::Matrix<Scalar,2,1> Vector2t;
+            typedef Eigen::Matrix<Scalar,3,1> Vector3t;
+            typedef Eigen::Matrix<Scalar,Eigen::Dynamic,1> VectorXt;
+            typedef Eigen::Matrix<Scalar,3,3> Matrix3t;
+            typedef Sophus::SE3Group<Scalar> SE3t;
+
         public:
             typedef typename ProjectionModel::DistortionFreeModel DistortionFreeModel;
 
@@ -65,15 +71,15 @@ namespace calibu
             /////////////////////////////////////////////////////////////////////////
             /// TODO doxygen comment    
             static inline
-                Eigen::Matrix<double,2,3> dMap_dP(
-                        const Eigen::Vector3d& P, //< Input:
-                        const double* params      //< Input:
+                Eigen::Matrix<Scalar,2,3> dMap_dP(
+                        const Vector3t& P, //< Input:
+                        const Scalar* params      //< Input:
                         )
                 {
-                    const Eigen::Vector2d p(P(0) / P(2), P(1) / P(2));
-                    const Eigen::Matrix<double,2,2> _dMap_dp = ProjectionModel::dMap_dp(p, params);
+                    const Vector2t p(P(0) / P(2), P(1) / P(2));
+                    const Eigen::Matrix<Scalar,2,2> _dMap_dp = ProjectionModel::dMap_dp(p, params);
 
-                    Eigen::Matrix<double,2,3> _dp_dP;
+                    Eigen::Matrix<Scalar,2,3> _dp_dP;
                     _dp_dP << 
                         1.0/P(2), 0, -P(0)/(P(2)*P(2)),
                         0, 1.0/P(2), -P(1)/(P(2)*P(2));
@@ -83,30 +89,30 @@ namespace calibu
 
             /////////////////////////////////////////////////////////////////////////
             /// TODO doxygen comment
-            inline Eigen::Matrix<double,2,3> dMap_dP(
-                    const Eigen::Vector3d& P //< Input:
+            inline Eigen::Matrix<Scalar,2,3> dMap_dP(
+                    const Vector3t& P //< Input:
                     ) const
             {
                 return CameraModelT<ProjectionModel>::dMap_dP(P,data());
             }
 
             /////////////////////////////////////////////////////////////////////////
-            Eigen::Matrix<double,2,4> dTransfer3D_dP(
-                    const Sophus::SE3d& T_ba,   //< Input:
-                    const Eigen::Matrix<double,3,1>& rhoPa, //< Input:
-                    const double rho                        //< Input:
+            Eigen::Matrix<Scalar,2,4> dTransfer3D_dP(
+                    const SE3t& T_ba,   //< Input:
+                    const Eigen::Matrix<Scalar,3,1>& rhoPa, //< Input:
+                    const Scalar rho                        //< Input:
                     ) const
             {
                 // Inverse= depth point in a transformed to b (homogeneous 2D)
-                const Eigen::Matrix<double,3,1> Pb =
+                const Eigen::Matrix<Scalar,3,1> Pb =
                     T_ba.rotationMatrix() * rhoPa + rho * T_ba.translation();
 
-                Eigen::Matrix<double,2,3>dMap = dMap_dP(Pb);
+                Eigen::Matrix<Scalar,2,3>dMap = dMap_dP(Pb);
 
-                Eigen::Matrix<double,2,4> J;
+                Eigen::Matrix<Scalar,2,4> J;
                 // Using operator= to get around clang bug.
-                J.block<2,3>(0,0).operator=( dMap*T_ba.rotationMatrix() ); // dTransfer_dXYZ
-                J.block<2,1>(0,3).operator=( dMap*T_ba.translation() );    // dTransfer_dRho
+                J.template block<2,3>(0,0).operator=( dMap*T_ba.rotationMatrix() ); // dTransfer_dXYZ
+                J.template block<2,1>(0,3).operator=( dMap*T_ba.translation() );    // dTransfer_dRho
 
                 return J;
             }
@@ -199,7 +205,7 @@ namespace calibu
         private:
             void ConstructorImpl(
                     size_t w,  size_t h, 
-                    const Eigen::Matrix<double,NUM_PARAMS,1>& params
+                    const Eigen::Matrix<Scalar,NUM_PARAMS,1>& params
                     )
             {
                 m_nWidth = w;
@@ -217,7 +223,7 @@ namespace calibu
             // Most general delegate constructor
             CameraModelT( 
                     size_t w,  size_t h, 
-                    const Eigen::Matrix<double,NUM_PARAMS,1>& params
+                    const Eigen::Matrix<Scalar,NUM_PARAMS,1>& params
                     )
             {
                 ConstructorImpl(w, h, params);
@@ -225,27 +231,27 @@ namespace calibu
 
             CameraModelT()
             {
-                ConstructorImpl(0,0, Eigen::Matrix<double,NUM_PARAMS,1>::Zero());
+                ConstructorImpl(0,0, Eigen::Matrix<Scalar,NUM_PARAMS,1>::Zero());
             }    
 
             CameraModelT(size_t w, size_t h)
             {
-                ConstructorImpl(w, h, Eigen::Matrix<double,NUM_PARAMS,1>::Zero());
+                ConstructorImpl(w, h, Eigen::Matrix<Scalar,NUM_PARAMS,1>::Zero());
             }    
 
-            CameraModelT( const Eigen::Matrix<double,NUM_PARAMS,1>& params)
+            CameraModelT( const Eigen::Matrix<Scalar,NUM_PARAMS,1>& params)
             {
                 ConstructorImpl(0, 0, params);
             }    
 
-            CameraModelT(double* cam_params)
+            CameraModelT(Scalar* cam_params)
             {
-                ConstructorImpl(0, 0, Eigen::Map<Eigen::Matrix<double,NUM_PARAMS,1> >(cam_params) );
+                ConstructorImpl(0, 0, Eigen::Map<Eigen::Matrix<Scalar,NUM_PARAMS,1> >(cam_params) );
             }
 
-            CameraModelT(int w, int h, double* cam_params)
+            CameraModelT(int w, int h, Scalar* cam_params)
             {
-                ConstructorImpl(w, h, Eigen::Map<Eigen::Matrix<double,NUM_PARAMS,1> >(cam_params) );
+                ConstructorImpl(w, h, Eigen::Map<Eigen::Matrix<Scalar,NUM_PARAMS,1> >(cam_params) );
             }
 
             // copy constructor
@@ -283,62 +289,62 @@ namespace calibu
                 m_params = params;
             }
 
-            Eigen::Matrix<double,NUM_PARAMS,1>& Params() 
+            Eigen::Matrix<Scalar,NUM_PARAMS,1>& Params()
             {
                 return m_params;
             }
 
-            const Eigen::Matrix<double,NUM_PARAMS,1>& Params() const 
+            const Eigen::Matrix<Scalar,NUM_PARAMS,1>& Params() const
             {
                 return m_params;
             }
 
-            const double* data() const {
+            const Scalar* data() const {
                 return m_params.data();
             }
 
-            double* data() {
+            Scalar* data() {
                 return m_params.data();
             }
 
-            inline Eigen::Vector2d Map(const Eigen::Vector2d& proj) const
+            inline Vector2t Map(const Vector2t& proj) const
             {
                 return Map(proj, m_params.data());
             }
 
-            inline Eigen::Vector2d Unmap(const Eigen::Vector2d& img) const
+            inline Vector2t Unmap(const Vector2t& img) const
             {
                 return Unmap(img, m_params.data());
             }
 
-            inline Eigen::Matrix3d K() const
+            inline Matrix3t K() const
             {
                 return ProjectionModel::MakeK(m_params.data());
             }
 
-            inline Eigen::Matrix3d Kinv() const
+            inline Matrix3t Kinv() const
             {
                 return ProjectionModel::MakeKinv(m_params.data());
             }
 
-            inline Eigen::Vector2d ProjectMap(const Eigen::Vector3d& P) const
+            inline Vector2t ProjectMap(const Vector3t& P) const
             {
                 return Map( Project(P) , m_params.data() );
             }
 
-            inline Eigen::Vector3d UnmapUnproject(const Eigen::Vector2d& p) const
+            inline Vector3t UnmapUnproject(const Vector2t& p) const
             {
                 return Unproject( Unmap( p, m_params.data()) );
             }
 
-            inline Eigen::Vector2d Transfer(const Sophus::SE3d& T_ba, const Eigen::Vector2d& pa, double rho) const
+            inline Vector2t Transfer(const SE3t& T_ba, const Vector2t& pa, Scalar rho) const
             {
-                return Transfer<double>(data(), T_ba, pa, rho);
+                return Transfer<Scalar>(data(), T_ba, pa, rho);
             }
 
-            inline Eigen::Vector2d Transfer(const Sophus::SE3d& T_ba, const Eigen::Vector2d& pa, double rho, bool& in_front) const
+            inline Vector2t Transfer(const SE3t& T_ba, const Vector2t& pa, Scalar rho, bool& in_front) const
             {
-                return Transfer<double>(data(), T_ba, pa, rho, in_front);
+                return Transfer<Scalar>(data(), T_ba, pa, rho, in_front);
             }
 
             /// Report camera model version number.
@@ -382,13 +388,13 @@ namespace calibu
             }
 
             /// Return 3x3 RDF matrix, describing the coordinate-frame convention.
-            Eigen::Matrix3d RDF() const
+            Matrix3t RDF() const
             {
                 return m_RDF;
             }
 
             /// Set the camera model coordinate frame convention
-            void SetRDF( const Eigen::Matrix3d& RDF )
+            void SetRDF( const Matrix3t& RDF )
             {
                 m_RDF = RDF;
             }
@@ -443,12 +449,12 @@ namespace calibu
 
             size_t           m_nWidth;    //< Camera width, in pixels
             size_t           m_nHeight;   //< Camera height, in pixels
-            Eigen::Matrix<double,NUM_PARAMS,1> m_params;
+            Eigen::Matrix<Scalar,NUM_PARAMS,1> m_params;
             std::string      m_sName;     //< Model name, e.g., "left"
             int              m_nVersion;  //< Calibu or MVL camera model version.
             long int         m_nSerialNo; //< Camera serial number, if appropriate.
             int              m_nIndex;    //< Camera index, for multi-camera systems.
-            Eigen::Matrix3d  m_RDF;       //< Define coordinate-frame convention from Right, Down, Forward vectors.
+            Matrix3t  m_RDF;       //< Define coordinate-frame convention from Right, Down, Forward vectors.
     };
 
 }
