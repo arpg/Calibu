@@ -280,7 +280,7 @@ CameraRig ReadXmlRig(const std::string& filename)
             return ReadXmlRig(pNode);
         }
     }else{
-        std::cerr << doc.ErrorDesc() << std::endl;
+        std::cerr << doc.ErrorDesc() << ": '" << filename << "'" << std::endl;
     }
     return CameraRig();
 }

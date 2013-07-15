@@ -287,7 +287,7 @@ private:
     }
     
 protected:
-    std::shared_ptr<CameraModelInterface> m_pCam;
+    std::shared_ptr<CameraModelInterfaceT<Scalar>> m_pCam;
 };
 
 typedef CameraModelGeneric<double> CameraModel;
