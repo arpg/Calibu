@@ -1,4 +1,3 @@
 Calibu
 ======
-
 Calibration library.
