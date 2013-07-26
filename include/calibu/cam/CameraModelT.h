@@ -31,13 +31,13 @@ namespace calibu
     template<typename ProjectionModel, typename Scalar=double>
         class CameraModelT : public CameraModelInterfaceT<Scalar>
     {
-            typedef Eigen::Matrix<Scalar,2,1> Vector2t;
-            typedef Eigen::Matrix<Scalar,3,1> Vector3t;
-            typedef Eigen::Matrix<Scalar,Eigen::Dynamic,1> VectorXt;
-            typedef Eigen::Matrix<Scalar,3,3> Matrix3t;
-            typedef Sophus::SE3Group<Scalar> SE3t;
-
         public:
+            typedef typename CameraModelInterfaceT<Scalar>::Vector2t Vector2t;
+            typedef typename CameraModelInterfaceT<Scalar>::Vector3t Vector3t;
+            typedef typename CameraModelInterfaceT<Scalar>::VectorXt VectorXt;
+            typedef typename CameraModelInterfaceT<Scalar>::Matrix3t Matrix3t;
+            typedef typename CameraModelInterfaceT<Scalar>::SE3t SE3t;
+            
             typedef typename ProjectionModel::DistortionFreeModel DistortionFreeModel;
 
             static const unsigned NUM_PARAMS = ProjectionModel::NUM_PARAMS;
@@ -454,7 +454,7 @@ namespace calibu
             int              m_nVersion;  //< Calibu or MVL camera model version.
             long int         m_nSerialNo; //< Camera serial number, if appropriate.
             int              m_nIndex;    //< Camera index, for multi-camera systems.
-            Matrix3t  m_RDF;       //< Define coordinate-frame convention from Right, Down, Forward vectors.
+            Matrix3t         m_RDF;       //< Define coordinate-frame convention from Right, Down, Forward vectors.
     };
 
 }

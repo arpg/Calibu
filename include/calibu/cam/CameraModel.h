@@ -31,7 +31,7 @@
 namespace calibu
 {
 
-    const int CAMERA_MODEL_VERSION = 8;
+const int CAMERA_MODEL_VERSION = 8;
 
 struct CameraModelException : public std::exception
 {
@@ -56,13 +56,13 @@ inline CameraModelInterfaceT<Scalar>* CameraModelFactory( const std::string sMod
     if ( sModelName == "calibu_id" ){
         return new CameraModelT<Pinhole,Scalar>();
     }else if( sModelName == "calibu_f_u0_v0") {
-        return new CameraModelT<ProjectionLinearSquare<DistortionPinholeT<Scalar>, Scalar >,Scalar >();
+        return new CameraModelT<ProjectionLinearSquare<DistortionPinhole>,Scalar >();
     }else if( sModelName == "calibu_fu_fv_u0_v0") {
-        return new CameraModelT<ProjectionLinear<DistortionPinholeT<Scalar>, Scalar >,Scalar >();
+        return new CameraModelT<ProjectionLinear<DistortionPinhole>,Scalar >();
     }else if( sModelName == "calibu_fu_fv_u0_v0_w") {
-        return new CameraModelT<ProjectionLinear<DistortionFovT<Scalar>, Scalar>,Scalar >();
+        return new CameraModelT<ProjectionLinear<DistortionFov>,Scalar >();
     }else if( sModelName == "calibu_fu_fv_u0_v0_k1_k2_k3") {
-        return new CameraModelT<ProjectionLinear<DistortionPolyT<Scalar>, Scalar>,Scalar >();
+        return new CameraModelT<ProjectionLinear<DistortionPoly>,Scalar >();
     }
     return NULL;
 }
