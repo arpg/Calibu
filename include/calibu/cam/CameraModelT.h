@@ -77,7 +77,8 @@ namespace calibu
                         )
                 {
                     const Vector2t p(P(0) / P(2), P(1) / P(2));
-                    const Eigen::Matrix<Scalar,2,2> _dMap_dp = ProjectionModel::dMap_dp(p, params);
+                    const Eigen::Matrix<Scalar,2,2> _dMap_dp = 
+                            ProjectionModel::dMap_dp(p, params);
 
                     Eigen::Matrix<Scalar,2,3> _dp_dP;
                     _dp_dP << 
@@ -93,7 +94,7 @@ namespace calibu
                     const Vector3t& P //< Input:
                     ) const
             {
-                return CameraModelT<ProjectionModel>::dMap_dP(P,data());
+                return CameraModelT<ProjectionModel,Scalar>::dMap_dP(P,data());
             }
 
             /////////////////////////////////////////////////////////////////////////
@@ -270,21 +271,21 @@ namespace calibu
             // Member functions
             ///////////////////////////////////////////////////////////////////////////
 
-            CameraModelT<DistortionFreeModel> DistortionFreeCamera() const
+            CameraModelT<DistortionFreeModel,Scalar> DistortionFreeCamera() const
             {
-                CameraModelT<DistortionFreeModel> ret(
+                CameraModelT<DistortionFreeModel,Scalar> ret(
                         m_nWidth, m_nHeight, 
                         m_params.template head<DistortionFreeModel::NUM_PARAMS>()
                         );
                 return ret;
             }
 
-            Eigen::VectorXd GenericParams() const
+            VectorXt GenericParams() const
             {
                 return m_params;
             }
 
-            void SetGenericParams(const Eigen::VectorXd& params)
+            void SetGenericParams(const VectorXt& params)
             {
                 m_params = params;
             }

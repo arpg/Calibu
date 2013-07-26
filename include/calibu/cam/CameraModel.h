@@ -73,15 +73,15 @@ inline CameraModelInterfaceT<Scalar>* CameraModelFactory( const std::string sMod
 template<typename Scalar=double>
 class CameraModelGeneric : public CameraModelInterfaceT<Scalar>
 {
-    typedef Eigen::Matrix<Scalar,2,1> Vector2t;
-    typedef Eigen::Matrix<Scalar,3,1> Vector3t;
-    typedef Eigen::Matrix<Scalar,Eigen::Dynamic,1> VectorXt;
-    typedef Eigen::Matrix<Scalar,3,3> Matrix3t;
-    typedef Sophus::SE3Group<Scalar> SE3t;
+public:
+    typedef typename CameraModelInterfaceT<Scalar>::Vector2t Vector2t;
+    typedef typename CameraModelInterfaceT<Scalar>::Vector3t Vector3t;
+    typedef typename CameraModelInterfaceT<Scalar>::VectorXt VectorXt;
+    typedef typename CameraModelInterfaceT<Scalar>::Matrix3t Matrix3t;
+    typedef typename CameraModelInterfaceT<Scalar>::SE3t SE3t;
 
     template<typename S>
     friend bool IsLinearModel( const CameraModelGeneric<S>& cam );
-public:
 
     /////////////////////////////////////////////////////////////////////////
     // Constructors
@@ -91,14 +91,15 @@ public:
     {
     }
     
-    CameraModelGeneric( const CameraModelInterfaceT<Scalar>& rhs )
-        : m_pCam( CameraModelFactory( rhs.Type() ) )
+    template<typename T>
+    CameraModelGeneric( const CameraModelInterfaceT<T>& rhs )
+        : m_pCam( CameraModelFactory<Scalar>( rhs.Type() ) )
     {
         CopySameType(rhs);
     }
     
     CameraModelGeneric( std::string& sModelType)
-        : m_pCam( CameraModelFactory( sModelType ) )
+        : m_pCam( CameraModelFactory<Scalar>( sModelType ) )
     {
     }
     
@@ -264,16 +265,17 @@ public:
     }
     
 private:
-    void CopySameType( const CameraModelInterface& other )
+    template<typename T>
+    void CopySameType( const CameraModelInterfaceT<T>& other )
     {
         assert( Type() == other.Type() );
-        SetGenericParams(other.GenericParams());
+        SetGenericParams( other.GenericParams().template cast<Scalar>() );
         SetImageDimensions(other.Width(), other.Height());
         SetIndex(other.Index());
         SetName(other.Name());
         SetSerialNumber(other.SerialNumber());
         SetVersion(other.Version());
-        SetRDF( other.RDF() );
+        SetRDF( other.RDF().template cast<Scalar>() );
     }    
     
     ///////////////////////////////////////////////////////
