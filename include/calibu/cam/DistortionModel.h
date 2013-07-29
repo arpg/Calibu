@@ -31,8 +31,7 @@ namespace calibu {
 //////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////
-template<typename Scalar=double>
-struct DistortionPinholeT
+struct DistortionPinhole
 {
     static const unsigned NUM_PARAMS = 0;
     
@@ -41,27 +40,24 @@ struct DistortionPinholeT
     }
     
     template<typename T> inline
-    static Scalar RFactor(Scalar, T const*) {
-        return 1;
+    static T RFactor(T /*r*/, T const* /*params*/) {
+        return (T)1.0;
     }
     
     template<typename T> inline
-    static Scalar RinvFactor(Scalar, T const*) {
-        return 1;
+    static T RinvFactor(T /*dr*/, T const* /*params*/) {
+        return (T)1.0;
     }
 
-    inline static
-    Scalar dRFactor_dr(Scalar /*r*/, const Scalar* /*params*/)
+    template<typename T> inline
+    static T dRFactor_dr(T /*r*/, const T* /*params*/)
     {
-        return 0;
+        return (T)0.0;
     }
 };
 
-typedef DistortionPinholeT<double> DistortionPinhole;
-
 //////////////////////////////////////////////////////////////////////////////
-template<typename Scalar=double>
-struct DistortionPolyT
+struct DistortionPoly
 {
     static const unsigned NUM_PARAMS = 3;
     
@@ -78,21 +74,18 @@ struct DistortionPolyT
     template<typename T> inline
     static T RinvFactor(T /*dr*/, const T* /*params*/)
     {
-        // TODO: imeplement
-        throw std::exception();
+        throw std::runtime_error("Not implemented.");
     }    
 
-    inline static
-    Scalar dRFactor_dr(Scalar /*r*/, const Scalar* /*params*/)
+    template<typename T> inline
+    static T dRFactor_dr(T /*r*/, const T* /*params*/)
     {
         throw std::runtime_error("Not implemented.");
     }
 };
-typedef DistortionPolyT<double> DistortionPoly;
 
 //////////////////////////////////////////////////////////////////////////////
-template<typename Scalar=double>
-struct DistortionFovT
+struct DistortionFov
 {
     static const unsigned NUM_PARAMS = 1;
     
@@ -136,8 +129,8 @@ struct DistortionFovT
         }
     }
     
-    inline static
-    Scalar dRFactor_dr(Scalar r, const Scalar* params)
+    template<typename T> inline
+    static T dRFactor_dr(T r, const T* params)
     {
         if(params[0]*params[0] < DIST_CAM_EPS) {
             return 0;
@@ -145,15 +138,14 @@ struct DistortionFovT
             if(r*r < DIST_CAM_EPS) {
                 return 0;
             }else{
-                const Scalar wby2 = params[0]/2.0;
-                const Scalar tanwby2 = tan(wby2);
-                const Scalar sq_tanwby2 = tanwby2 * tanwby2;
-                const Scalar rr=r*r;
+                const T wby2 = params[0]/2.0;
+                const T tanwby2 = tan(wby2);
+                const T sq_tanwby2 = tanwby2 * tanwby2;
+                const T rr=r*r;
                 return (2*tanwby2)/(r*params[0]*(4*rr*sq_tanwby2+1))-atan(2*r*tanwby2)/(rr*params[0]);
             }
         }
     }
 };
-typedef DistortionFovT<double> DistortionFov;
 
 }

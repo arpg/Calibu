@@ -6,9 +6,10 @@
 
 using namespace calibu;
 
-int main( int argc, char* argv[] )
+void Test1()
 {
-    CameraModel cam = ReadXmlCameraModel("camera.xml");
+    CameraRig rig = ReadXmlRig("cameras.xml");
+    CameraModel cam = rig.cameras[0].camera;
 
     Eigen::Vector2d p;
     Eigen::Vector3d P;
@@ -21,9 +22,23 @@ int main( int argc, char* argv[] )
     // unproject form the image back into 3D
     Eigen::Vector3d P2;
     P2 = d*cam.UnmapUnproject( p );
+}
 
-//    cam.PrintInfo();
+void Test2()
+{
+    CameraRigT<float> rig = ReadXmlRig("cameras.xml");
+    
+    for(size_t i=0; i< rig.cameras.size(); ++i) {
+        CameraModelGeneric<float>& cam = rig.cameras[i].camera;
+        cam.PrintInfo();
+        std::cout << "    Params       = " << cam.GenericParams().transpose() << std::endl;
+    }    
+}
 
+int main( int argc, char* argv[] )
+{
+    Test1();
+    Test2();
     return 0;
 }
 

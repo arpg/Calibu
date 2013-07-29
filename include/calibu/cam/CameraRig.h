@@ -32,6 +32,18 @@ template<typename Scalar=double>
 class CameraModelAndTransformT
 {
 public:
+    // Default constructor
+    CameraModelAndTransformT()
+    {
+    }
+
+    // Templated Copy Constructor
+    template<typename T>
+    CameraModelAndTransformT(const CameraModelAndTransformT<T>& other) {
+        camera = other.camera;
+        T_wc = other.T_wc.template cast<Scalar>();
+    }
+    
     CameraModelGeneric<Scalar> camera;
     Sophus::SE3Group<Scalar> T_wc;
 };
@@ -42,10 +54,22 @@ template<typename Scalar=double>
 class CameraRigT
 {
 public:
-    inline void Add(const CameraModelAndTransformT<Scalar>& cop) {
+    // Default Constructor
+    CameraRigT() {
+    }
+    
+    // Templated Copy Constructor
+    template<typename T>
+    CameraRigT(const CameraRigT<T>& other) {
+        for( const CameraModelAndTransformT<T>& cmat : other.cameras ) {
+            cameras.push_back( CameraModelAndTransformT<Scalar>(cmat) );
+        }
+    }
+    
+    void Add(const CameraModelAndTransformT<Scalar>& cop) {
         cameras.push_back(cop);
     }
-    inline void Add(const CameraModelInterfaceT<Scalar>& cam, const Sophus::SE3Group<Scalar>& T_wc) {
+    void Add(const CameraModelInterfaceT<Scalar>& cam, const Sophus::SE3Group<Scalar>& T_wc) {
         CameraModelAndTransformT<Scalar> cop;
         cop.camera = CameraModelGeneric<Scalar>(cam);
         cop.T_wc = T_wc;

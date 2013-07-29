@@ -31,13 +31,13 @@ namespace calibu
     template<typename ProjectionModel, typename Scalar=double>
         class CameraModelT : public CameraModelInterfaceT<Scalar>
     {
-            typedef Eigen::Matrix<Scalar,2,1> Vector2t;
-            typedef Eigen::Matrix<Scalar,3,1> Vector3t;
-            typedef Eigen::Matrix<Scalar,Eigen::Dynamic,1> VectorXt;
-            typedef Eigen::Matrix<Scalar,3,3> Matrix3t;
-            typedef Sophus::SE3Group<Scalar> SE3t;
-
         public:
+            typedef typename CameraModelInterfaceT<Scalar>::Vector2t Vector2t;
+            typedef typename CameraModelInterfaceT<Scalar>::Vector3t Vector3t;
+            typedef typename CameraModelInterfaceT<Scalar>::VectorXt VectorXt;
+            typedef typename CameraModelInterfaceT<Scalar>::Matrix3t Matrix3t;
+            typedef typename CameraModelInterfaceT<Scalar>::SE3t SE3t;
+            
             typedef typename ProjectionModel::DistortionFreeModel DistortionFreeModel;
 
             static const unsigned NUM_PARAMS = ProjectionModel::NUM_PARAMS;
@@ -77,7 +77,8 @@ namespace calibu
                         )
                 {
                     const Vector2t p(P(0) / P(2), P(1) / P(2));
-                    const Eigen::Matrix<Scalar,2,2> _dMap_dp = ProjectionModel::dMap_dp(p, params);
+                    const Eigen::Matrix<Scalar,2,2> _dMap_dp = 
+                            ProjectionModel::dMap_dp(p, params);
 
                     Eigen::Matrix<Scalar,2,3> _dp_dP;
                     _dp_dP << 
@@ -93,7 +94,7 @@ namespace calibu
                     const Vector3t& P //< Input:
                     ) const
             {
-                return CameraModelT<ProjectionModel>::dMap_dP(P,data());
+                return CameraModelT<ProjectionModel,Scalar>::dMap_dP(P,data());
             }
 
             /////////////////////////////////////////////////////////////////////////
@@ -270,21 +271,21 @@ namespace calibu
             // Member functions
             ///////////////////////////////////////////////////////////////////////////
 
-            CameraModelT<DistortionFreeModel> DistortionFreeCamera() const
+            CameraModelT<DistortionFreeModel,Scalar> DistortionFreeCamera() const
             {
-                CameraModelT<DistortionFreeModel> ret(
+                CameraModelT<DistortionFreeModel,Scalar> ret(
                         m_nWidth, m_nHeight, 
                         m_params.template head<DistortionFreeModel::NUM_PARAMS>()
                         );
                 return ret;
             }
 
-            Eigen::VectorXd GenericParams() const
+            VectorXt GenericParams() const
             {
                 return m_params;
             }
 
-            void SetGenericParams(const Eigen::VectorXd& params)
+            void SetGenericParams(const VectorXt& params)
             {
                 m_params = params;
             }
@@ -454,7 +455,7 @@ namespace calibu
             int              m_nVersion;  //< Calibu or MVL camera model version.
             long int         m_nSerialNo; //< Camera serial number, if appropriate.
             int              m_nIndex;    //< Camera index, for multi-camera systems.
-            Matrix3t  m_RDF;       //< Define coordinate-frame convention from Right, Down, Forward vectors.
+            Matrix3t         m_RDF;       //< Define coordinate-frame convention from Right, Down, Forward vectors.
     };
 
 }
