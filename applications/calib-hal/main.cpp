@@ -20,8 +20,6 @@
 
 using namespace calibu;
 
-typedef calibu::Fov CalibModel;
-
 const char* sUriInfo = 
 "Usage:"
 "\tcalibgrid <options> video_uri\n"
@@ -85,7 +83,7 @@ int main( int argc, char** argv)
     uint32_t grid_seed = 71;
     
     // Use no input cameras by default
-    std::vector<calibu::CameraAndPose<CalibModel> > input_cameras;    
+    std::vector<calibu::CameraAndPose > input_cameras;    
 
     // Fix cameras intrinsic parameters during optimisation, changing
     // only their relative poses.
@@ -96,49 +94,15 @@ int main( int argc, char** argv)
     
     // Output file for camera rig
     std::string output_filename = "cameras.xml";
-    
-    ////////////////////////////////////////////////////////////////////
-    // Parse command line    
-    
+
     GetPot cl(argc,argv);
-    
-    if(cl.search(3, "-help", "-h", "?") || argc < 2) {
-        std::cout << sUriInfo << std::endl;
-        return -1;
-    }    
-    
-    grid_spacing = cl.follow(grid_spacing,"-grid-spacing");
-    grid_seed = cl.follow((int)grid_seed,"-grid-seed");
-    fix_intrinsics = cl.search(2, "-fix-intrinsics", "-f");
-    start_paused = cl.search(2, "-paused", "-p");
-    output_filename = cl.follow(output_filename.c_str(), 2, "-output", "-o");
-    
-    // Load camera hints from command line    
-    cl.disable_loop();
-    cl.reset_cursor();
-    for(std::string filename = cl.follow("",2,"-cameras","-c");
-        !filename.empty(); filename = cl.follow("",2,"-cameras","-c") ) {
-        const CameraRig rig = ReadXmlRig(filename);
-        for(const CameraModelAndTransform& cop : rig.cameras ) {
-            const calibu::CameraModelT<CalibModel>* pcm =
-                    dynamic_cast<const CameraModelT<CalibModel>* >(
-                        &cop.camera.GetCameraModelInterface()
-                        );
-            if(pcm) {
-                input_cameras.push_back( CameraAndPose<CalibModel>(*pcm,cop.T_wc.inverse()) );
-            }else{
-                std::cerr << "Unexpected camera model '" << cop.camera.Type() << "'" << std::endl;
-                std::cerr << "Calibgrid configured to use '" << CalibModel::Type() << "'." << std::endl;
-                return -1;
-            }
-        }
-    }
-          
+
+    ////////////////////////////////////////////////////////////////////
+    // Setup Video Source
+
     // Last argument - Video URI
     std::string video_uri = argv[argc-1];
         
-    ////////////////////////////////////////////////////////////////////
-    // Setup Video Source
     hal::Camera  cam = hal::Camera( cl.follow( video_uri.c_str(), "-video_url" ) );
 
     // Vector of images (that will point into buffer)
@@ -156,6 +120,52 @@ int main( int argc, char** argv)
            std::cerr << "Input channels must be GRAY8 format. Use "
                "Convert:[fmt=GRAY8]// video scheme." << std::endl;
         }
+    }
+    
+    ////////////////////////////////////////////////////////////////////
+    // Parse command line    
+        
+    if(cl.search(3, "-help", "-h", "?") || argc < 2) {
+        std::cout << sUriInfo << std::endl;
+        return -1;
+    }    
+    
+    grid_spacing = cl.follow(grid_spacing,"-grid-spacing");
+    grid_seed = cl.follow((int)grid_seed,"-grid-seed");
+    fix_intrinsics = cl.search(2, "-fix-intrinsics", "-f");
+    start_paused = cl.search(2, "-paused", "-p");
+    output_filename = cl.follow(output_filename.c_str(), 2, "-output", "-o");
+    
+    // Load camera hints from command line    
+    cl.disable_loop();
+    cl.reset_cursor();
+    for(std::string filename = cl.follow("",2,"-cameras","-c");
+        !filename.empty(); filename = cl.follow("",2,"-cameras","-c") ) {
+        const size_t i = input_cameras.size();
+        if(i < N) {
+            if(filename == "fov") {
+                CameraModelT<Fov> starting_cam(w, h);
+                starting_cam.Params()  << 300, 300, w/2.0, h/2.0, 0.2;
+                input_cameras.push_back( CameraAndPose(CameraModel(starting_cam), Sophus::SE3d() ) );
+            }else if(filename == "poly"){
+                CameraModelT<Poly> starting_cam(w, h);
+                starting_cam.Params()  << 300, 300, w/2.0, h/2.0, 0.1, 0.1, 0.1;
+                input_cameras.push_back( CameraAndPose(CameraModel(starting_cam), Sophus::SE3d() ) );
+            }else{
+                const CameraRig rig = ReadXmlRig(filename);
+                for(const CameraModelAndTransform& cop : rig.cameras ) {
+                    input_cameras.push_back( CameraAndPose(cop.camera, cop.T_wc.inverse()) );
+                }
+            }
+        }else{
+            throw std::runtime_error("Too many camera files provided.");
+        }
+    }
+    
+    
+    if(input_cameras.size() > 0 && input_cameras.size() != N) {
+        std::cerr << "Number of cameras specified in files does not match video source" << std::endl;
+        return -1;
     }
 
     ////////////////////////////////////////////////////////////////////
@@ -183,7 +193,7 @@ int main( int argc, char** argv)
     ////////////////////////////////////////////////////////////////////
     // Initialize Calibration object and tracking params
     
-    Calibrator<CalibModel> calibrator;    
+    Calibrator calibrator;    
     calibrator.FixCameraIntrinsics(fix_intrinsics);
     
     int calib_cams[N];    
@@ -194,17 +204,20 @@ int main( int argc, char** argv)
     for(size_t i=0; i<N; ++i) {
         const int w_i = cam.Width();
         const int h_i = cam.Height();
-        CameraModelT<CalibModel> starting_cam(w_i, h_i);
-        Sophus::SE3d T_ck;
-        if(input_cameras.size() == N) {
-            starting_cam = input_cameras[i].camera;
-            T_ck = input_cameras[i].T_ck;
+        if(i < input_cameras.size() ) {
+            calib_cams[i] = calibrator.AddCamera(
+                        input_cameras[i].camera, input_cameras[i].T_ck
+                        );
         }else{
             // Generic starting set of parameters.
+            CameraModelT<Fov> starting_cam(w_i, h_i);
             starting_cam.Params()  << 300, 300, w_i/2.0, h_i/2.0, 0.2;
+            
+            calib_cams[i] = calibrator.AddCamera(
+                        CameraModel(starting_cam),
+                        Sophus::SE3d()
+                        );
         }
-        starting_cam.SetIndex( i );
-        calib_cams[i] = calibrator.AddCamera(starting_cam, T_ck);
     }
          
     ////////////////////////////////////////////////////////////////////
@@ -285,22 +298,24 @@ int main( int argc, char** argv)
     
     for(int frame=0; !pangolin::ShouldQuit();){     
         const bool go = (frame==0) || run || pangolin::Pushed(step);
+        
         int calib_frame = -1;
+        
         if( go ) {
-//            if( cam.Capture( image_buffer, images, true, true) ) {
             if( cam.Capture( vImages ) ){
                 if(add) {
                     calib_frame = calibrator.AddFrame(Sophus::SE3d(Sophus::SO3d(), Eigen::Vector3d(0,0,1000)) );
                 }
-
                 ++frame;
             }else{
                 run = false;
             }
         }  
         
-        glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);            
-        for(size_t iI = 0; iI < N; ++iI) {
+        glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+       
+        for(size_t iI = 0; iI < N; ++iI)
+        {
             image_processing.Process( vImages[iI].data, vImages[iI].cols );
             conic_finder.Find( image_processing );
 
@@ -408,7 +423,7 @@ int main( int argc, char** argv)
             for(size_t c=0; c< calibrator.NumCameras(); ++c) {
                 const Eigen::Matrix3d Kinv = calibrator.GetCamera(c).camera.Kinv();
                 
-                const CameraAndPose<CalibModel> cap = calibrator.GetCamera(c);
+                const CameraAndPose cap = calibrator.GetCamera(c);
                 const Sophus::SE3d T_ck = cap.T_ck;
     
                 // Draw keyframes

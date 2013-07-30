@@ -96,7 +96,7 @@ int main( int argc, char** argv)
     
     pangolin::VideoInput video(video_uri);
     
-    // Allocate stream buffer and vector of images (that will point into buffer)
+    // Vector of images (that will point into buffer)
     unsigned char image_buffer[video.SizeBytes()];
     std::vector<pangolin::Image<unsigned char> > images;
     
@@ -113,7 +113,7 @@ int main( int argc, char** argv)
     } 
     
     ////////////////////////////////////////////////////////////////////
-    // Parse command line        
+    // Parse command line    
     
     GetPot cl(argc,argv);
     
@@ -298,19 +298,21 @@ int main( int argc, char** argv)
         
         if( go ) {
             if( video.Grab(image_buffer, images, true, true) ) {
-                if(add) calib_frame = calibrator.AddFrame(Sophus::SE3d(Sophus::SO3d(), Eigen::Vector3d(0,0,1000)) );
+                if(add) {
+                    calib_frame = calibrator.AddFrame(Sophus::SE3d(Sophus::SO3d(), Eigen::Vector3d(0,0,1000)) );
+                }
                 ++frame;
             }else{
                 run = false;
             }
         }  
         
-        glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);            
+        glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
                 
         for(size_t iI = 0; iI < N; ++iI)
         {
             image_processing.Process( images[iI].ptr, images[iI].pitch );
-            conic_finder.Find(image_processing);
+            conic_finder.Find( image_processing );
             
             const std::vector<Conic>& conics = conic_finder.Conics();
             std::vector<int> ellipse_target_map;
