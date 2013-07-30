@@ -18,8 +18,6 @@
 
 using namespace calibu;
 
-typedef calibu::Fov CalibModel;
-
 const char* sUriInfo = 
 "Usage:"
 "\tcalibgrid <options> video_uri\n"
@@ -78,7 +76,7 @@ int main( int argc, char** argv)
     uint32_t grid_seed = 71;
     
     // Use no input cameras by default
-    std::vector<calibu::CameraAndPose<CalibModel> > input_cameras;    
+    std::vector<calibu::CameraAndPose > input_cameras;    
 
     // Fix cameras intrinsic parameters during optimisation, changing
     // only their relative poses.
@@ -89,9 +87,33 @@ int main( int argc, char** argv)
     
     // Output file for camera rig
     std::string output_filename = "cameras.xml";
+                
+    ////////////////////////////////////////////////////////////////////
+    // Setup Video Source
+    
+    // Last argument - Video URI
+    std::string video_uri = argv[argc-1];
+    
+    pangolin::VideoInput video(video_uri);
+    
+    // Allocate stream buffer and vector of images (that will point into buffer)
+    unsigned char image_buffer[video.SizeBytes()];
+    std::vector<pangolin::Image<unsigned char> > images;
+    
+    // For the moment, assume all N cameras have same resolution
+    const size_t N = video.Streams().size();
+    const size_t w = video.Streams()[0].Width();
+    const size_t h = video.Streams()[0].Height();
+    
+    // Check all channels are greyscale
+    for(size_t i=0; i<N; ++i) {
+        if( video.Streams()[i].PixFormat().channels != 1) {
+            throw pangolin::VideoException("Video channels must be GRAY8 format. Use Convert:[fmt=GRAY8]// video scheme.");
+        }
+    } 
     
     ////////////////////////////////////////////////////////////////////
-    // Parse command line    
+    // Parse command line        
     
     GetPot cl(argc,argv);
     
@@ -111,45 +133,30 @@ int main( int argc, char** argv)
     cl.reset_cursor();
     for(std::string filename = cl.follow("",2,"-cameras","-c");
         !filename.empty(); filename = cl.follow("",2,"-cameras","-c") ) {
-        const CameraRig rig = ReadXmlRig(filename);
-        for(const CameraModelAndTransform& cop : rig.cameras ) {
-            const calibu::CameraModelT<CalibModel>* pcm =
-                    dynamic_cast<const CameraModelT<CalibModel>* >(
-                        &cop.camera.GetCameraModelInterface()
-                        );
-            if(pcm) {
-                input_cameras.push_back( CameraAndPose<CalibModel>(*pcm,cop.T_wc.inverse()) );
+        const size_t i = input_cameras.size();
+        if(i < N) {
+            const int w_i = video.Streams()[i].Width();
+            const int h_i = video.Streams()[i].Height();        
+            
+            if(filename == "fov") {
+                CameraModelT<Fov> starting_cam(w_i, h_i);
+                starting_cam.Params()  << 300, 300, w_i/2.0, h_i/2.0, 0.2;
+                input_cameras.push_back( CameraAndPose(CameraModel(starting_cam), Sophus::SE3d() ) );
+            }else if(filename == "poly"){
+                CameraModelT<Poly> starting_cam(w_i, h_i);
+                starting_cam.Params()  << 300, 300, w_i/2.0, h_i/2.0, 0.1, 0.1, 0.1;
+                input_cameras.push_back( CameraAndPose(CameraModel(starting_cam), Sophus::SE3d() ) );
             }else{
-                std::cerr << "Unexpected camera model '" << cop.camera.Type() << "'" << std::endl;
-                std::cerr << "Calibgrid configured to use '" << CalibModel::Type() << "'." << std::endl;
-                return -1;
+                const CameraRig rig = ReadXmlRig(filename);
+                for(const CameraModelAndTransform& cop : rig.cameras ) {
+                    input_cameras.push_back( CameraAndPose(cop.camera, cop.T_wc.inverse()) );
+                }
             }
+        }else{
+            throw std::runtime_error("Too many camera files provided.");
         }
     }
-          
-    // Last argument - Video URI
-    std::string video_uri = argv[argc-1];
-        
-    ////////////////////////////////////////////////////////////////////
-    // Setup Video Source
     
-    pangolin::VideoInput video(video_uri);
-    
-    // Allocate stream buffer and vector of images (that will point into buffer)
-    unsigned char image_buffer[video.SizeBytes()];
-    std::vector<pangolin::Image<unsigned char> > images;
-    
-    // For the moment, assume all N cameras have same resolution
-    const size_t N = video.Streams().size();
-    const size_t w = video.Streams()[0].Width();
-    const size_t h = video.Streams()[0].Height();
-    
-    // Check all channels are greyscale
-    for(size_t i=0; i<N; ++i) {
-        if( video.Streams()[i].PixFormat().channels != 1) {
-            throw pangolin::VideoException("Video channels must be GRAY8 format. Use Convert:[fmt=GRAY8]// video scheme.");
-        }
-    } 
     
     if(input_cameras.size() > 0 && input_cameras.size() != N) {
         std::cerr << "Number of cameras specified in files does not match video source" << std::endl;
@@ -181,7 +188,7 @@ int main( int argc, char** argv)
     ////////////////////////////////////////////////////////////////////
     // Initialize Calibration object and tracking params
     
-    Calibrator<CalibModel> calibrator;    
+    Calibrator calibrator;    
     calibrator.FixCameraIntrinsics(fix_intrinsics);
     
     int calib_cams[N];    
@@ -192,17 +199,20 @@ int main( int argc, char** argv)
     for(size_t i=0; i<N; ++i) {
         const int w_i = video.Streams()[i].Width();
         const int h_i = video.Streams()[i].Height();
-        CameraModelT<CalibModel> starting_cam(w_i, h_i);
-        Sophus::SE3d T_ck;
-        if(input_cameras.size() == N) {
-            starting_cam = input_cameras[i].camera;
-            T_ck = input_cameras[i].T_ck;
+        if(i < input_cameras.size() ) {
+            calib_cams[i] = calibrator.AddCamera(
+                        input_cameras[i].camera, input_cameras[i].T_ck
+                        );
         }else{
             // Generic starting set of parameters.
+            CameraModelT<Fov> starting_cam(w_i, h_i);
             starting_cam.Params()  << 300, 300, w_i/2.0, h_i/2.0, 0.2;
+            
+            calib_cams[i] = calibrator.AddCamera(
+                        CameraModel(starting_cam),
+                        Sophus::SE3d()
+                        );
         }
-        starting_cam.SetIndex( i );
-        calib_cams[i] = calibrator.AddCamera(starting_cam, T_ck);
     }
          
     ////////////////////////////////////////////////////////////////////
@@ -406,7 +416,7 @@ int main( int argc, char** argv)
             for(size_t c=0; c< calibrator.NumCameras(); ++c) {
                 const Eigen::Matrix3d Kinv = calibrator.GetCamera(c).camera.Kinv();
                 
-                const CameraAndPose<CalibModel> cap = calibrator.GetCamera(c);
+                const CameraAndPose cap = calibrator.GetCamera(c);
                 const Sophus::SE3d T_ck = cap.T_ck;
     
                 // Draw keyframes

@@ -299,12 +299,19 @@ namespace calibu
             {
                 return m_params;
             }
-
-            const Scalar* data() const {
+            
+            size_t NumParams() const
+            {
+                return NUM_PARAMS;
+            }
+                
+            const Scalar* data() const
+            {
                 return m_params.data();
             }
 
-            Scalar* data() {
+            Scalar* data()
+            {
                 return m_params.data();
             }
 

@@ -36,6 +36,13 @@ public:
     CameraModelAndTransformT()
     {
     }
+    
+    CameraModelAndTransformT( const CameraModelGeneric<Scalar>& camera,
+                              const Sophus::SE3Group<Scalar>& T_wc )
+        : camera(camera), T_wc(T_wc)
+    {
+        
+    }
 
     // Templated Copy Constructor
     template<typename T>

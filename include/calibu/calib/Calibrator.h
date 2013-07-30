@@ -55,19 +55,17 @@ std::unique_ptr<T> make_unique( Args&& ...args )
     return std::unique_ptr<T>( new T( std::forward<Args>(args)... ) );
 }
 
-template<typename ProjModel>
 struct CameraAndPose
 {
-    CameraAndPose( const CameraModelT<ProjModel>& camera, const Sophus::SE3d& T_ck)
+    CameraAndPose( const CameraModel& camera, const Sophus::SE3d& T_ck)
         : camera(camera), T_ck(T_ck)
     {
     }
     
-    CameraModelT<ProjModel> camera;
+    CameraModel camera;
     Sophus::SE3d T_ck;
 };
 
-template<typename ProjModel>
 class Calibrator
 {
 public:
@@ -141,10 +139,10 @@ public:
  
     /// Add camera to sensor rig. The returned ID should be used when adding
     /// measurements for this camera
-    int AddCamera(const CameraModelT<ProjModel>& cam, const Sophus::SE3d T_ck = Sophus::SE3d() )
+    int AddCamera(const CameraModel& cam, const Sophus::SE3d& T_ck = Sophus::SE3d() )
     {
         int id = m_camera.size();
-        m_camera.push_back( make_unique<CameraAndPose<ProjModel> >(cam,T_ck) );
+        m_camera.push_back( make_unique<CameraAndPose>(cam,T_ck) );
         m_camera.back()->camera.SetIndex(id);
         return id;
     }
@@ -182,20 +180,29 @@ public:
  
         // Ensure index is valid
         while( NumFrames() < frame) { AddFrame(); }
-        while( NumCameras() < camera ) { AddCamera(CameraModelT<ProjModel>()); }
+        if( NumCameras() < camera ) { throw std::runtime_error("Bad camera index. Add all cameras first."); }
         
         // new camera pose to bundle adjust
         
-        CameraAndPose<ProjModel>& cp = *m_camera[camera];
+        CameraAndPose& cp = *m_camera[camera];
         Sophus::SE3d& T_kw = *m_T_kw[frame];
         
         // Create cost function
         CostFunctionAndParams* cost = new CostFunctionAndParams();
-        ReprojectionCostFunctor<ProjModel>* c =
-                new ReprojectionCostFunctor<ProjModel>(P_w, p_c);
-        cost->Cost() =  new ceres::AutoDiffCostFunction<ReprojectionCostFunctor<ProjModel>,
-                2, Sophus::SE3d::num_parameters, Sophus::SE3d::num_parameters,
-                ProjModel::NUM_PARAMS>(c);
+        
+        if( dynamic_cast<CameraModelT<Fov>* >(&cp.camera.GetCameraModelInterface()) )
+        {
+            cost->Cost() =  new ceres::AutoDiffCostFunction<ReprojectionCostFunctor<Fov>,
+                    2, Sophus::SE3d::num_parameters, Sophus::SE3d::num_parameters,
+                    Fov::NUM_PARAMS>( new ReprojectionCostFunctor<Fov>(P_w, p_c) );            
+        } else if( dynamic_cast<CameraModelT<Poly>* >(&cp.camera.GetCameraModelInterface()) )
+        {
+            cost->Cost() =  new ceres::AutoDiffCostFunction<ReprojectionCostFunctor<Poly>,
+                    2, Sophus::SE3d::num_parameters, Sophus::SE3d::num_parameters,
+                    Poly::NUM_PARAMS>( new ReprojectionCostFunctor<Poly>(P_w, p_c) );            
+        } else {
+            throw std::runtime_error("Don't know how to optimize CameraModel");
+        }
 
         cost->Params() = std::vector<double*>{
                 T_kw.data(), cp.T_ck.data(), cp.camera.data()
@@ -225,7 +232,7 @@ public:
     }
     
     /// Return camera i of camera rig
-    CameraAndPose<ProjModel> GetCamera(size_t i)
+    CameraAndPose GetCamera(size_t i)
     {
         return *m_camera[i];
     }
@@ -302,7 +309,7 @@ public:
         
         for(size_t c=0; c < m_camera.size(); ++c) {
             std::cout << "Camera: " << c << std::endl;
-            std::cout << m_camera[c]->camera.Params().transpose() << std::endl;
+            std::cout << m_camera[c]->camera.GenericParams().transpose() << std::endl;
             
             if(c > 0) {
                 std::cout << m_camera[c]->T_ck.matrix3x4() << std::endl;
@@ -326,7 +333,7 @@ protected:
                 problem.SetParameterBlockConstant(m_camera[c]->T_ck.data());
             }
             if(m_fix_intrinsics) {
-                problem.AddParameterBlock(m_camera[c]->camera.data(), ProjModel::NUM_PARAMS);
+                problem.AddParameterBlock(m_camera[c]->camera.data(), m_camera[c]->camera.NumParams() );
                 problem.SetParameterBlockConstant(m_camera[c]->camera.data());
             }
         }
@@ -375,7 +382,7 @@ protected:
     bool m_fix_intrinsics;
  
     std::vector< std::unique_ptr<Sophus::SE3d> > m_T_kw;
-    std::vector< std::unique_ptr<CameraAndPose<ProjModel> > > m_camera;
+    std::vector< std::unique_ptr<CameraAndPose> > m_camera;
     std::vector< std::unique_ptr<CostFunctionAndParams > > m_costs;
  
     ceres::Problem::Options m_prob_options;

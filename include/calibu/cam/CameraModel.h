@@ -196,6 +196,19 @@ public:
         m_pCam->SetGenericParams(params);
     }
     
+    size_t NumParams() const
+    {
+        return m_pCam->NumParams();
+    }    
+    
+    const Scalar* data() const {
+        return m_pCam->data();
+    }
+
+    Scalar* data() {
+        return m_pCam->data();
+    }    
+    
     void SetImageDimensions(
             size_t nWidth,  //< Input:
             size_t nHeight  //< Input:

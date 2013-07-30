@@ -67,6 +67,12 @@ public:
     virtual VectorXt GenericParams() const = 0;
 
     virtual void SetGenericParams(const VectorXt& params) = 0;
+
+    virtual size_t NumParams() const = 0;
+    
+    virtual const Scalar* data() const = 0;
+
+    virtual Scalar* data() = 0;
  
     virtual void SetImageDimensions( 
             size_t nWidth,  //< Input:
