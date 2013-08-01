@@ -46,7 +46,16 @@ TargetGridDot::TargetGridDot(double grid_spacing, Eigen::Vector2i grid_size, uin
             tpts2d[r*grid_size(0)+c] = grid_spacing * Eigen::Vector2d(p(0), p(1));
             tpts3d[r*grid_size(0)+c] = grid_spacing * Eigen::Vector3d(p(0), p(1), 0);
         }
-    }    
+    }
+
+    // create binary pattern coords
+    codepts3d.resize( 8 );
+    double r = grid_spacing*(grid_size(1)+2.5);
+    double dx =  (grid_spacing*(grid_size(0)-1))/8;
+    Eigen::Vector3d base( dx/2.0, 0, 0 );
+    for( int c = 0; c < 8; c++ ){
+        codepts3d[c] = base + Eigen::Vector3d( dx*c, r, 0 );
+    }
 }
 
 std::vector<std::vector<Dist> > ClosestPoints( std::vector<Vertex>& pts)
@@ -550,4 +559,68 @@ bool TargetGridDot::FindTarget(
 }
 
 
+void TargetGridDot::SaveEPS( 
+        std::string filename, 
+        const Eigen::Vector2d& offset,
+        double rad0, 
+        double rad1,
+        double pts_per_unit,
+        unsigned char id
+        ) const
+{
+    Eigen::MatrixXi M = GetBinaryPattern(2);
+    rad0 = 0.003;
+    rad1 = 0.005;
+
+    const double border = 3*rad1;
+    const Eigen::Vector2d border2d(border,border);
+    const Eigen::Vector2d max_pts(
+            pts_per_unit * ((M.cols()-1) * grid_spacing + 2*border),
+            pts_per_unit * ((M.rows()-1) * grid_spacing + 2*border)
+            );
+
+    std::ofstream f;
+    f.open(filename.c_str());
+    f << "%!PS-Adobe EPSF-3.0" << std::endl;
+    f << "%%Creator: CalibuCalibrationTarget" << std::endl;
+    f << "%%Title: Calibration Target" << std::endl;
+    f << "%%Origin: 0 0" << std::endl;
+    // usletter BoundingBox is 0, 0, 612, 792 
+    f << "%%BoundingBox: 0 0 " << max_pts[0] << " " << max_pts[1] << std::endl; 
+    f << std::endl;
+    f << "270 rotate 0 " << -max_pts[0] << " 0 translate" << std::endl;
+
+    for( int r=0; r<M.rows(); ++r ) {
+        for( int c=0; c<M.cols(); ++c) {
+            const double rad_pts = pts_per_unit * ((M(r,c) == 1) ? rad1 : rad0);
+            const Eigen::Vector2d p_pts = pts_per_unit* (offset + border2d + grid_spacing * Eigen::Vector2d(c,r));
+            f << p_pts[0] << " " << max_pts[1] - p_pts[1] << " "
+                << rad_pts << " 0 360 arc closepath" << std::endl
+                << "0.0 setgray fill" << std::endl
+                << std::endl;            
+        }
+    }
+
+    // output the binary code -- blank if id == 0, which is the default
+    double r = grid_spacing*( M.rows()+2.5 );
+    double dx =  (grid_spacing*(M.cols()-1))/8;
+    double hw = (pts_per_unit*dx)/2;
+    Eigen::Vector2d base( dx/2.0, 0 );
+    for( int c = 0; c < 8; c++ ){
+        if( id & 1<<c ){
+            const Eigen::Vector2d p = 
+                pts_per_unit*( offset + base + border2d + Eigen::Vector2d(dx*c,r));
+            f   << "newpath\n"
+                <<  p[0]-hw <<" " <<  p[1]-hw << " moveto\n"
+                <<  p[0]+hw <<" " <<  p[1]-hw << " lineto\n"
+                <<  p[0]+hw <<" " <<  p[1]+2*hw << " lineto\n"
+                <<  p[0]-hw <<" " <<  p[1]+2*hw << " lineto\n"
+                <<  "closepath\n"
+                <<  " 0.0 setgray fill\n";
+        }
+    }
+    f.close();
 }
+
+}
+

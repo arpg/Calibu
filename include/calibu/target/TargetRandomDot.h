@@ -96,7 +96,11 @@ public:
     const std::vector<Eigen::Vector3d >& Circles3D() const {
         return tpts3d;
     }
-    
+ 
+    const std::vector<Eigen::Vector3d >& Code3D() const {
+        return codepts3d;
+    }
+   
     ////////////////////////////////////////////////////////////////////////////
     
     inline Eigen::Vector2d Size() const {
@@ -118,6 +122,7 @@ protected:
     std::vector<Eigen::Vector2d > tpts;
     std::vector<Eigen::Vector2d > tpts_reflected;
     std::vector<Eigen::Vector3d > tpts3d;
+    std::vector<Eigen::Vector3d > codepts3d;
     Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>* dt;
     
     ParamsRandomDot params;

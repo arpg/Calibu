@@ -34,7 +34,8 @@ namespace calibu
 void SaveEPS(
     std::string filename, const Eigen::MatrixXi& M,
     const Eigen::Vector2d& offset, double grid_spacing,
-    double rad0, double rad1, double pts_per_unit
+    double rad0, double rad1, double pts_per_unit,
+    unsigned char id
 );
 
 Eigen::MatrixXi MakePattern(int r, int c, uint32_t seed = 0);

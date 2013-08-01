@@ -68,6 +68,7 @@ public:
     // Return canonical set of known 2D/3D points.
     virtual const std::vector<Eigen::Vector2d>& Circles2D() const = 0;
     virtual const std::vector<Eigen::Vector3d>& Circles3D() const = 0;
+    virtual const std::vector<Eigen::Vector3d>& Code3D() const = 0;
 };
 
 }

@@ -88,19 +88,25 @@ public:
     
     ////////////////////////////////////////////////////////////////////////////
 
-    inline double CircleRadius() const {
+    inline double CircleRadius() const 
+    {
         // TODO: Load this from eps or something.
         return grid_spacing / 10.0;
     }
     
-    inline const std::vector<Eigen::Vector2d >& Circles2D() const {
+    inline const std::vector<Eigen::Vector2d >& Circles2D() const 
+    {
         return tpts2d;
     }
     
     inline const std::vector<Eigen::Vector3d >& Circles3D() const {
         return tpts3d;
     }
-    
+
+    inline const std::vector<Eigen::Vector3d >& Code3D() const {
+        return codepts3d;
+    }
+
     ////////////////////////////////////////////////////////////////////////////
     
     const std::vector<Vertex>& Map() const {
@@ -110,7 +116,21 @@ public:
     const std::list<LineGroup>& LineGroups() const {
         return line_groups;
     }
-        
+
+    Eigen::MatrixXi GetBinaryPattern( unsigned int idx = 0 ) const
+    {
+        return PG[idx];
+    }
+
+    void SaveEPS( 
+            std::string filename, 
+            const Eigen::Vector2d& offset,
+            double rad0, 
+            double rad1,
+            double pts_per_unit,
+            unsigned char id = 0
+            ) const;
+
 protected:
     void Clear();
     void SetGrid(Vertex& v, const Eigen::Vector2i& g);
@@ -118,7 +138,9 @@ protected:
     
     std::vector<Eigen::Vector2d > tpts2d;
     std::vector<Eigen::Vector3d > tpts3d;
-    
+ 
+    std::vector<Eigen::Vector3d > codepts3d;
+ 
     double grid_spacing;
     Eigen::Vector2i grid_size;
     std::array<Eigen::MatrixXi,4> PG;

@@ -8,6 +8,7 @@
 #include <calibu/calib/Calibrator.h>
 #include <calibu/image/ImageProcessing.h>
 #include <calibu/target/TargetGridDot.h>
+#include <calibu/target/RandomGrid.h>
 #include <calibu/gl/Drawing.h>
 #include <calibu/pose/Pnp.h>
 #include <calibu/conics/ConicFinder.h>
@@ -76,7 +77,7 @@ int main( int argc, char** argv)
     double grid_spacing = 0.254 / (19-1);
     const Eigen::Vector2i grid_size(19,10);
     uint32_t grid_seed = 71;
-    
+
     // Use no input cameras by default
     std::vector<calibu::CameraAndPose<CalibModel> > input_cameras;    
 
@@ -176,8 +177,14 @@ int main( int argc, char** argv)
     conic_finder.Params().conic_min_density = 0.6;
     conic_finder.Params().conic_min_aspect = 0.2;
  
-    TargetGridDot target(grid_spacing, grid_size, grid_seed);  
-    
+    TargetGridDot target( grid_spacing, grid_size, grid_seed );
+ 
+    double rad0 = 0.003; // cm
+    double rad1 = 0.005; // cm
+    double pts_per_unit = 2834.64567;
+    int id = 213;
+    target.SaveEPS( "test.eps", Eigen::Vector2d(0,0), rad0, rad1, pts_per_unit, id );
+
     ////////////////////////////////////////////////////////////////////
     // Initialize Calibration object and tracking params
     
@@ -316,7 +323,7 @@ int main( int argc, char** argv)
                 for( size_t i=0; i < conics.size(); ++i ) {
                     ellipses.push_back(conics[i].center);
                 }
-                                    
+                
                 // find camera pose given intrinsics
                 PosePnPRansac(
                     calibrator.GetCamera(iI).camera, ellipses, target.Circles3D(),
@@ -334,12 +341,11 @@ int main( int argc, char** argv)
                         const Eigen::Vector2d pc = ellipses[p];
                         const Eigen::Vector2i pg = target.Map()[p].pg;
                         
-                        if( 0<= pg(0) && pg(0) < grid_size(0) &&  0<= pg(1) && pg(1) < grid_size(1) )
-                        {
+                        if( 0<= pg(0) && pg(0) < grid_size(0) &&  0<= pg(1) && pg(1) < grid_size(1) ) {
                             const Eigen::Vector3d pg3d = grid_spacing * Eigen::Vector3d(pg(0), pg(1), 0);
                             // TODO: Add these correspondences in bulk to avoid
                             //       hitting mutex each time.
-                            calibrator.AddObservation(calib_frame, calib_cams[iI], pg3d, pc );
+                            calibrator.AddObservation( calib_frame, calib_cams[iI], pg3d, pc );
                         }
                     }
                 }
@@ -365,8 +371,7 @@ int main( int argc, char** argv)
                 glMatrixMode(GL_MODELVIEW);
                                 
                 if(disp_lines) { 
-                    for(std::list<LineGroup>::const_iterator i = target.LineGroups().begin(); i != target.LineGroups().end(); ++i)
-                    {
+                    for(std::list<LineGroup>::const_iterator i = target.LineGroups().begin(); i != target.LineGroups().end(); ++i) {
                         glColor3f(0.5,0.5,0.5);
                         glBegin(GL_LINE_STRIP);
                         for(std::list<size_t>::const_iterator el = i->ops.begin(); el != i->ops.end(); ++el)
@@ -375,17 +380,47 @@ int main( int argc, char** argv)
                             glVertex2d(p(0), p(1));
                         }
                         glEnd();
-                    }            
+                    }
                 }
 
-                if(disp_cross) {          
+                if( tracking_good[iI] ){
+                    const std::vector<Eigen::Vector3d>& codepts = target.Code3D();
+                    const CameraAndPose<CalibModel> cap= calibrator.GetCamera(0);
+                    const unsigned char* im = image_processing.ImgThresh();
+                    unsigned char id = 0;
+                    bool found = true;
+                    for( size_t c = 0; c < codepts.size(); c++ ){
+                        const Eigen::Vector3d& xwp = codepts[c];
+                        Eigen::Vector2d pt;
+                        pt = cap.camera.ProjectMap( T_hw[0]*xwp );
+                        if( pt[0] < 10 || pt[0] >= images[0].w-10 || 
+                                pt[1] < 10 || pt[1] >= images[0].h-10 ) {
+                            found = false;
+                            continue;
+                        }
+                        int idx = images[0].pitch * round(pt(1)) + round(pt(0));
+                        if( im[ idx ] == 0 ){
+                            glColor3f( 0.0, 1.0, 0.0 );
+                            id |= 1<<c; 
+                        }
+                        else{
+                            glColor3f( 1.0, 0.0, 0.0 );
+                        }
+                        pangolin::glDrawRect( pt(0), pt(1), pt(0)+10, pt(1)+10 );
+                    }
+                    if( found ){
+                        printf( "ID: %d\n", id );
+                    }
+                }
+
+                if(disp_cross) {
                     for( size_t i=0; i < conics.size(); ++i ) {   
                         const Eigen::Vector2d pc = conics[i].center;
                         pangolin::glColorBin( target.Map()[i].value, 2);
                         pangolin::glDrawCross(pc, conics[i].bbox.Width()*0.75 );
                     }
                 }
-                
+
                 if(disp_bbox) {
                     for( size_t i=0; i < conics.size(); ++i ) {   
                         const Eigen::Vector2i pg = tracking_good[iI] ? target.Map()[i].pg : Eigen::Vector2i(0,0);
@@ -402,7 +437,13 @@ int main( int argc, char** argv)
             v3D.ActivateScissorAndClear(stacks);
             
             calibu::glDrawTarget(target, Eigen::Vector2d(0,0), 1.0, 0.8, 1.0);
-                        
+
+            const std::vector<Eigen::Vector3d>& codepts = target.Code3D();
+            for( const Eigen::Vector3d& xwp : codepts ){
+                glColor3f( 1.0, 0.0, 1.0 );
+                pangolin::glDrawCircle( xwp.head<2>(), target.CircleRadius() );
+            }
+
             for(size_t c=0; c< calibrator.NumCameras(); ++c) {
                 const Eigen::Matrix3d Kinv = calibrator.GetCamera(c).camera.Kinv();
                 

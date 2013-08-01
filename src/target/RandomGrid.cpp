@@ -3,7 +3,8 @@
    http://robotics.gwu.edu/git/?p=calibu
 
    Copyright (C) 2013 George Washington University,
-                      Steven Lovegrove
+                      Steven Lovegrove,
+                      Gabe Sibley
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -26,24 +27,28 @@ namespace calibu
 void SaveEPS(
     std::string filename, const Eigen::MatrixXi& M,
     const Eigen::Vector2d& offset, double grid_spacing,
-    double rad0, double rad1, double pts_per_unit
-) {
+    double rad0, double rad1, double pts_per_unit,
+    unsigned char id
+)
+{
     const double border = 3*rad1;
     const Eigen::Vector2d border2d(border,border);
     const Eigen::Vector2d max_pts(
                 pts_per_unit * ((M.cols()-1) * grid_spacing + 2*border),
                 pts_per_unit * ((M.rows()-1) * grid_spacing + 2*border)
                 );
-    
+  
     std::ofstream f;
     f.open(filename.c_str());
     f << "%!PS-Adobe EPSF-3.0" << std::endl;
     f << "%%Creator: CalibuCalibrationTarget" << std::endl;
     f << "%%Title: Calibration Target" << std::endl;
     f << "%%Origin: 0 0" << std::endl;
-    f << "%%BoundingBox: 0 0 " << max_pts[0] << " " << max_pts[1] << std::endl;
+    // usletter BoundingBox is 0, 0, 612, 792 
+    f << "%%BoundingBox: 0 0 " << max_pts[0] << " " << max_pts[1] << std::endl; 
     f << std::endl;
-    
+    f << "270 rotate 0 " << -max_pts[0] << " 0 translate" << std::endl;
+ 
     for( int r=0; r<M.rows(); ++r ) {
         for( int c=0; c<M.cols(); ++c) {
             const double rad_pts = pts_per_unit * ((M(r,c) == 1) ? rad1 : rad0);
@@ -54,7 +59,25 @@ void SaveEPS(
                    << std::endl;            
         }
     }
-    
+
+    double r = grid_spacing*( M.rows()+2.5 );
+    double dx =  (grid_spacing*(M.cols()-1))/8;
+    double hw = (pts_per_unit*dx)/2;
+    Eigen::Vector2d base( dx/2.0, 0 );
+    for( int c = 0; c < 8; c++ ){
+        if( id & 1<<c ){
+            const Eigen::Vector2d p = 
+                pts_per_unit*( offset + base + border2d + Eigen::Vector2d(dx*c,r));
+            f   << "newpath\n"
+                <<  p[0]-hw <<" " <<  p[1]-hw << " moveto\n"
+                <<  p[0]+hw <<" " <<  p[1]-hw << " lineto\n"
+                <<  p[0]+hw <<" " <<  p[1]+2*hw << " lineto\n"
+                <<  p[0]-hw <<" " <<  p[1]+2*hw << " lineto\n"
+                <<  "closepath\n"
+                <<  " 0.0 setgray fill\n";
+        }
+    }
+
     f.close();
 }
 
