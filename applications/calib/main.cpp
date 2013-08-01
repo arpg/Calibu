@@ -400,7 +400,7 @@ int main( int argc, char** argv)
 
                 if( tracking_good[iI] ){
                     const std::vector<Eigen::Vector3d>& codepts = target.Code3D();
-                    const CameraAndPose<CalibModel> cap= calibrator.GetCamera(0);
+                    const calibu::CameraAndPose cap= calibrator.GetCamera(0);
                     const unsigned char* im = image_processing.ImgThresh();
                     unsigned char id = 0;
                     bool found = true;
