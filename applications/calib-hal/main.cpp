@@ -105,8 +105,6 @@ int main( int argc, char** argv)
     // Output file for camera rig
     std::string output_filename = "cameras.xml";
 
-    GetPot cl(argc,argv);
-
     ////////////////////////////////////////////////////////////////////
     // Setup Video Source
 
