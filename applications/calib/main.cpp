@@ -68,6 +68,16 @@ const char* sUriInfo =
 int main( int argc, char** argv)
 {        
     ////////////////////////////////////////////////////////////////////
+    // Create command line options. Check if we should print usage.
+    
+    GetPot cl(argc,argv);
+    
+    if(cl.search(3, "-help", "-h", "?") || argc < 2) {
+        std::cout << sUriInfo << std::endl;
+        return -1;
+    }
+    
+    ////////////////////////////////////////////////////////////////////
     // Default configuration values
 
     // Default grid printed on US Letter
@@ -114,14 +124,7 @@ int main( int argc, char** argv)
     
     ////////////////////////////////////////////////////////////////////
     // Parse command line    
-    
-    GetPot cl(argc,argv);
-    
-    if(cl.search(3, "-help", "-h", "?") || argc < 2) {
-        std::cout << sUriInfo << std::endl;
-        return -1;
-    }    
-    
+        
     grid_spacing = cl.follow(grid_spacing,"-grid-spacing");
     grid_seed = cl.follow((int)grid_seed,"-grid-seed");
     fix_intrinsics = cl.search(2, "-fix-intrinsics", "-f");

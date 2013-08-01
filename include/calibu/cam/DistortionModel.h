@@ -64,23 +64,53 @@ struct DistortionPoly
     inline static std::string Type() { return "k1_k2_k3"; }    
     
     template<typename T> inline
-    static T RFactor(T r, const T* params)
+    static T RFactor(T ru, const T* params)
     {
-        const T r2 = r*r;
+        const T r2 = ru*ru;
         const T r4 = r2*r2;
         return (T)1.0 + params[0]*r2 + params[1]*r4 + params[2]*r4*r2;
     }
     
     template<typename T> inline
-    static T RinvFactor(T /*dr*/, const T* /*params*/)
+    static T sq(const T& val)
     {
-        throw std::runtime_error("Not implemented.");
+        return val*val;
+    }
+    
+    template<typename T> inline
+    static T RinvFactor(T rd, const T* params)
+    {
+        const T k1 = params[0];
+        const T k2 = params[1];
+        const T k3 = params[2];
+        
+        // Use Newton's method to solve (fixed number of iterations)
+        T ru = rd;
+        for (int i=0; i<5; i++)
+        {
+            // Common sub-expressions of d, d2
+            const T ru2 = sq(ru);
+            const T ru4 = sq(ru2);
+            const T ru6 = ru4*ru2;
+            const T pol = k1*ru2 + k2*ru4 + k3*ru6 + 1;
+            const T pol2 = 2*ru2*(k1 + 2*k2*ru2 + 3*k3*ru4);
+            // 1st derivative
+            const T d = (ru*(pol) - rd) * 2*(pol + pol2 );
+            // 2nd derivative
+            const T d2 = 4*ru*(ru*pol - rd)*(3*k1 + 10*k2*ru2 + 21*k3*ru4) + 2*sq(pol + pol2 );
+            // Delta update
+            const T delta = d / d2;
+            ru -= delta;
+        }
+        return ru / rd;
     }    
 
     template<typename T> inline
-    static T dRFactor_dr(T /*r*/, const T* /*params*/)
+    static T dRFactor_dr(T r, const T* params)
     {
-        throw std::runtime_error("Not implemented.");
+        const T r2 = r*r;
+        const T r3 = r2*r;
+        return 2.0*params[0]*r + 4.0*params[1]*r3 + 6.0*params[2]*r3*r2;
     }
 };
 
