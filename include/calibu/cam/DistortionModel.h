@@ -31,8 +31,7 @@ namespace calibu {
 //////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////
-template<typename Scalar=double>
-struct DistortionPinholeT
+struct DistortionPinhole
 {
     static const unsigned NUM_PARAMS = 0;
     
@@ -41,58 +40,82 @@ struct DistortionPinholeT
     }
     
     template<typename T> inline
-    static Scalar RFactor(Scalar, T const*) {
-        return 1;
+    static T RFactor(T /*r*/, T const* /*params*/) {
+        return (T)1.0;
     }
     
     template<typename T> inline
-    static Scalar RinvFactor(Scalar, T const*) {
-        return 1;
+    static T RinvFactor(T /*dr*/, T const* /*params*/) {
+        return (T)1.0;
     }
 
-    inline static
-    Scalar dRFactor_dr(Scalar /*r*/, const Scalar* /*params*/)
+    template<typename T> inline
+    static T dRFactor_dr(T /*r*/, const T* /*params*/)
     {
-        return 0;
+        return (T)0.0;
     }
 };
 
-typedef DistortionPinholeT<double> DistortionPinhole;
-
 //////////////////////////////////////////////////////////////////////////////
-template<typename Scalar=double>
-struct DistortionPolyT
+struct DistortionPoly
 {
     static const unsigned NUM_PARAMS = 3;
     
     inline static std::string Type() { return "k1_k2_k3"; }    
     
     template<typename T> inline
-    static T RFactor(T r, const T* params)
+    static T RFactor(T ru, const T* params)
     {
-        const T r2 = r*r;
+        const T r2 = ru*ru;
         const T r4 = r2*r2;
         return (T)1.0 + params[0]*r2 + params[1]*r4 + params[2]*r4*r2;
     }
     
     template<typename T> inline
-    static T RinvFactor(T /*dr*/, const T* /*params*/)
+    static T sq(const T& val)
     {
-        // TODO: imeplement
-        throw std::exception();
+        return val*val;
+    }
+    
+    template<typename T> inline
+    static T RinvFactor(T rd, const T* params)
+    {
+        const T k1 = params[0];
+        const T k2 = params[1];
+        const T k3 = params[2];
+        
+        // Use Newton's method to solve (fixed number of iterations)
+        T ru = rd;
+        for (int i=0; i<5; i++)
+        {
+            // Common sub-expressions of d, d2
+            const T ru2 = sq(ru);
+            const T ru4 = sq(ru2);
+            const T ru6 = ru4*ru2;
+            const T pol = k1*ru2 + k2*ru4 + k3*ru6 + 1;
+            const T pol2 = 2*ru2*(k1 + 2*k2*ru2 + 3*k3*ru4);
+            // 1st derivative
+            const T d = (ru*(pol) - rd) * 2*(pol + pol2 );
+            // 2nd derivative
+            const T d2 = 4*ru*(ru*pol - rd)*(3*k1 + 10*k2*ru2 + 21*k3*ru4) + 2*sq(pol + pol2 );
+            // Delta update
+            const T delta = d / d2;
+            ru -= delta;
+        }
+        return ru / rd;
     }    
 
-    inline static
-    Scalar dRFactor_dr(Scalar /*r*/, const Scalar* /*params*/)
+    template<typename T> inline
+    static T dRFactor_dr(T r, const T* params)
     {
-        throw std::runtime_error("Not implemented.");
+        const T r2 = r*r;
+        const T r3 = r2*r;
+        return 2.0*params[0]*r + 4.0*params[1]*r3 + 6.0*params[2]*r3*r2;
     }
 };
-typedef DistortionPolyT<double> DistortionPoly;
 
 //////////////////////////////////////////////////////////////////////////////
-template<typename Scalar=double>
-struct DistortionFovT
+struct DistortionFov
 {
     static const unsigned NUM_PARAMS = 1;
     
@@ -136,8 +159,8 @@ struct DistortionFovT
         }
     }
     
-    inline static
-    Scalar dRFactor_dr(Scalar r, const Scalar* params)
+    template<typename T> inline
+    static T dRFactor_dr(T r, const T* params)
     {
         if(params[0]*params[0] < DIST_CAM_EPS) {
             return 0;
@@ -145,15 +168,14 @@ struct DistortionFovT
             if(r*r < DIST_CAM_EPS) {
                 return 0;
             }else{
-                const Scalar wby2 = params[0]/2.0;
-                const Scalar tanwby2 = tan(wby2);
-                const Scalar sq_tanwby2 = tanwby2 * tanwby2;
-                const Scalar rr=r*r;
+                const T wby2 = params[0]/2.0;
+                const T tanwby2 = tan(wby2);
+                const T sq_tanwby2 = tanwby2 * tanwby2;
+                const T rr=r*r;
                 return (2*tanwby2)/(r*params[0]*(4*rr*sq_tanwby2+1))-atan(2*r*tanwby2)/(rr*params[0]);
             }
         }
     }
 };
-typedef DistortionFovT<double> DistortionFov;
 
 }

@@ -67,6 +67,12 @@ public:
     virtual VectorXt GenericParams() const = 0;
 
     virtual void SetGenericParams(const VectorXt& params) = 0;
+
+    virtual size_t NumParams() const = 0;
+    
+    virtual const Scalar* data() const = 0;
+
+    virtual Scalar* data() = 0;
  
     virtual void SetImageDimensions( 
             size_t nWidth,  //< Input:
@@ -212,6 +218,37 @@ public:
     {
         // rho*P1 (undo distortion, unproject, avoid division by inv depth)
         const Vector3t rhoPa = UnmapUnproject(pa);
+        return Transfer3D(T_ba, rhoPa, rho, in_front);
+    }
+    
+    //////////////////////////////////////////////////////////////////////////////
+    // Transfer point correspondence with known inv. depth to secondary camera frame.
+    // Points at infinity are supported (rho = 0)
+    inline Vector2t Transfer(
+            const CameraModelInterfaceT<Scalar>& cam_a,
+            const SE3t& T_ba,  //< Input:
+            const Vector2t& pa, //< Input:
+            const Scalar rho           //< Output:
+            ) const
+    {
+        // rho*Pa (undo distortion, unproject, avoid division by inv depth)
+        const Vector3t rhoPa = cam_a.UnmapUnproject(pa);
+        return Transfer3D(T_ba, rhoPa, rho);
+    }
+    
+    //////////////////////////////////////////////////////////////////////////////
+    // Transfer point correspondence with known inv. depth to secondary camera frame.
+    // Points at infinity are supported (rho = 0)
+    inline Vector2t Transfer(
+            const CameraModelInterfaceT<Scalar>& cam_a,            
+            const SE3t& T_ba,  //< Input:
+            const Vector2t& pa, //< Input:
+            const Scalar rho,          //< Input:
+            bool& in_front             //< Output:
+            ) const
+    {
+        // rho*P1 (undo distortion, unproject, avoid division by inv depth)
+        const Vector3t rhoPa = cam_a.UnmapUnproject(pa);
         return Transfer3D(T_ba, rhoPa, rho, in_front);
     }
 };

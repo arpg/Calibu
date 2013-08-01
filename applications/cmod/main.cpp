@@ -17,13 +17,14 @@
 #include <opencv2/opencv.hpp>
 
 #include <CVars/CVar.h>
-#include <Mvlpp/Mvl.h>
+
+#include "MVL/CameraModel.h"
 #include "GetPot"
 
 using namespace std;
 using namespace calibu;
 
-const char* sUsage = 
+const char* sUsage =
 "USAGE: cmod <options> <files>\n"
 "\n"
 "Command line tool for manipulating camera models (both MVL and calibu)\n"
@@ -46,7 +47,7 @@ calibu::CameraModelAndTransform MvlToCalibu( const mvl::CameraModel& mvlcam )
     calibu::CameraModelAndTransform CamAndPose;
 
     switch( mvlcam.Type() ){
-        case MVL_CAMERA_LINEAR: 
+        case MVL_CAMERA_LINEAR:
             if( K(0,1) == 0 ){
                 Eigen::Vector4d p; p << K(0,0), K(1,1), K(0,2), K(1,2);
                 calibu::CameraModelT<calibu::Pinhole> cam( mvlcam.Width(), mvlcam.Height(), p );
@@ -70,7 +71,7 @@ calibu::CameraModelAndTransform MvlToCalibu( const mvl::CameraModel& mvlcam )
     CamAndPose.camera.SetName( mvlcam.GetModel()->name );
     CamAndPose.camera.SetSerialNumber( mvlcam.GetModel()->serialno );
     CamAndPose.camera.SetIndex( mvlcam.GetModel()->index );
-    CamAndPose.camera.SetVersion( calibu::CAMRERA_MODEL_VERSION );
+    CamAndPose.camera.SetVersion( calibu::CAMERA_MODEL_VERSION );
     CamAndPose.camera.SetRDF( mvlcam.RDF().transpose() );
     CamAndPose.T_wc = Sophus::SE3d( mvlcam.GetPose() );
 
@@ -78,28 +79,28 @@ calibu::CameraModelAndTransform MvlToCalibu( const mvl::CameraModel& mvlcam )
 }
 
 ////////////////////////////////////////////////////////////////////////////
-/// Backwards compatible camera model read function that automatically 
+/// Backwards compatible camera model read function that automatically
 //  updates old MVL models to calibu models.
 calibu::CameraModelAndTransform ReadCameraModel( const std::string& sFile )
 {
     // quick check if the file is an old MVL file:
-    double pose[16]; 
+    double pose[16];
     if( mvl_read_camera( sFile.c_str(), pose ) ){
         return MvlToCalibu( mvl::CameraModel(sFile) );
     }
     // else treat it as a normal calibu model
     return calibu::ReadXmlCameraModelAndTransform( sFile );
 }
-      
+
 ////////////////////////////////////////////////////////////////////////////
 /// Read the lookup table into sLut, with tags
 bool ReadCameraModelLut( const std::string& sFile, std::string& sLut )
 {
-    double pose[16]; 
+    double pose[16];
     mvl_camera_t* pCam = mvl_read_camera( sFile.c_str(), pose );
     if( !pCam || pCam->type != MVL_CAMERA_LUT ){
         return false;
-    } 
+    }
 
     // get the lookup table element
     calibu::TiXmlDocument doc;
@@ -113,7 +114,7 @@ bool ReadCameraModelLut( const std::string& sFile, std::string& sLut )
 
         std::cout << "Converting lookup-tables...";
 
-        std::string sRest = pNode->GetText(); 
+        std::string sRest = pNode->GetText();
         // every 6 terms insert a newline
         unsigned int cnt = 1, start = 0, end = 0;
         while( end < sRest.size() ){
@@ -133,7 +134,7 @@ bool ReadCameraModelLut( const std::string& sFile, std::string& sLut )
 
 ////////////////////////////////////////////////////////////////////////////
 /// Function to convert multiple cameras into a calibu camera rig file.
-int MakeRig( int argc, char** argv ) 
+int MakeRig( int argc, char** argv )
 {
     GetPot cl( argc, argv );
     cl.search(2, "-c", "--combine-cameras");
@@ -155,7 +156,7 @@ int MakeRig( int argc, char** argv )
     std::cout << "Wrote calibu camera rig to 'cameras.xml'\n";
     std::ofstream out( "cameras.xml" );
     // calibu::WriteXmlRig( out, rig, sLuts );
-    out << AttribOpen(NODE_RIG) << std::endl;    
+    out << AttribOpen(NODE_RIG) << std::endl;
     for(const CameraModelAndTransform& cop : rig.cameras) {
         WriteXmlCameraModelAndTransform( out, cop, 4 );
     }
@@ -166,7 +167,7 @@ int MakeRig( int argc, char** argv )
 }
 
 ////////////////////////////////////////////////////////////////////////////
-int UpgradeToCalibu( int argc, char** argv ) 
+int UpgradeToCalibu( int argc, char** argv )
 {
     GetPot cl( argc, argv );
     cl.search( 2, "--upgrade-mvl-to-calibu", "-u" );
@@ -180,7 +181,7 @@ int UpgradeToCalibu( int argc, char** argv )
             ReadCameraModelLut( s, sLut );
 
             calibu::WriteXmlCameraModelAndTransformWithLut( out, sLut, cam );
- 
+
             std::cout << "Wrote calibu model 'calibu-" << s << "'\n";
         }
         else{
@@ -193,7 +194,7 @@ int UpgradeToCalibu( int argc, char** argv )
 
 ////////////////////////////////////////////////////////////////////////////
 /// Function to print info
-int PrintInfo( int argc, char** argv ) 
+int PrintInfo( int argc, char** argv )
 {
     GetPot cl( argc, argv );
     cl.search(2, "--info", "-i");
