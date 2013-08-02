@@ -148,7 +148,7 @@ int main( int argc, char** argv)
                 input_cameras.push_back( CameraAndPose(CameraModel(starting_cam), Sophus::SE3d() ) );
             }else if(filename == "poly"){
                 CameraModelT<Poly> starting_cam(w_i, h_i);
-                starting_cam.Params()  << 300, 300, w_i/2.0, h_i/2.0, 0.1, 0.1, 0.1;
+                starting_cam.Params()  << 300, 300, w_i/2.0, h_i/2.0, 0.0, 0.0, 0.0;
                 input_cameras.push_back( CameraAndPose(CameraModel(starting_cam), Sophus::SE3d() ) );
             }else{
                 const CameraRig rig = ReadXmlRig(filename);
