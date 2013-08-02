@@ -63,6 +63,7 @@ SET(
     target/TargetGridDot.cpp
     target/TargetRandomDot.cpp
     utils/Utils.cpp
+    utils/Xml.cpp
 )
 
 #######################################################
