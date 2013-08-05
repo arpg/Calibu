@@ -280,6 +280,7 @@ int main( int argc, char** argv)
     pangolin::Var<bool> disp_lines("ui.Display Lines",true);
     pangolin::Var<bool> disp_cross("ui.Display crosses",true);
     pangolin::Var<bool> disp_bbox("ui.Display bbox",true);
+    pangolin::Var<bool> disp_barcode("ui.Display barcode",false);
                 
     ////////////////////////////////////////////////////////////////////    
     // Key shortcuts
@@ -398,30 +399,29 @@ int main( int argc, char** argv)
                     }
                 }
 
-                if( tracking_good[iI] ){
+                if( tracking_good[iI] && disp_barcode ) {
                     const std::vector<Eigen::Vector3d>& codepts = target.Code3D();
-                    const calibu::CameraAndPose cap= calibrator.GetCamera(0);
+                    const calibu::CameraAndPose cap= calibrator.GetCamera(iI);
                     const unsigned char* im = image_processing.ImgThresh();
                     unsigned char id = 0;
                     bool found = true;
                     for( size_t c = 0; c < codepts.size(); c++ ){
                         const Eigen::Vector3d& xwp = codepts[c];
                         Eigen::Vector2d pt;
-                        pt = cap.camera.ProjectMap( T_hw[0]*xwp );
-                        if( pt[0] < 10 || pt[0] >= images[0].w-10 || 
-                                pt[1] < 10 || pt[1] >= images[0].h-10 ) {
+                        pt = cap.camera.ProjectMap( T_hw[iI]*xwp );
+                        if( pt[0] < 10 || pt[0] >= images[iI].w-10 || 
+                                pt[1] < 10 || pt[1] >= images[iI].h-10 ) {
                             found = false;
                             continue;
                         }
-                        int idx = images[0].pitch * round(pt(1)) + round(pt(0));
+                        int idx = image_processing.Width() * round(pt(1)) + round(pt(0));
                         if( im[ idx ] == 0 ){
                             glColor3f( 0.0, 1.0, 0.0 );
                             id |= 1<<c; 
-                        }
-                        else{
+                        } else {
                             glColor3f( 1.0, 0.0, 0.0 );
                         }
-                        pangolin::glDrawRect( pt(0), pt(1), pt(0)+10, pt(1)+10 );
+                        pangolin::glDrawRect( pt(0)-5, pt(1)-5, pt(0)+5, pt(1)+5 );
                     }
                     if( found ){
                         printf( "ID: %d\n", id );
@@ -453,10 +453,12 @@ int main( int argc, char** argv)
             
             calibu::glDrawTarget(target, Eigen::Vector2d(0,0), 1.0, 0.8, 1.0);
 
-            const std::vector<Eigen::Vector3d>& codepts = target.Code3D();
-            for( const Eigen::Vector3d& xwp : codepts ){
-                glColor3f( 1.0, 0.0, 1.0 );
-                pangolin::glDrawCircle( xwp.head<2>(), target.CircleRadius() );
+            if(disp_barcode) {
+                const std::vector<Eigen::Vector3d>& codepts = target.Code3D();
+                for( const Eigen::Vector3d& xwp : codepts ){
+                    glColor3f( 1.0, 0.0, 1.0 );
+                    pangolin::glDrawCircle( xwp.head<2>(), target.CircleRadius() );
+                }
             }
 
             for(size_t c=0; c< calibrator.NumCameras(); ++c) {
