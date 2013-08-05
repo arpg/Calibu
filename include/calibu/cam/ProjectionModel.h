@@ -50,6 +50,18 @@ struct ProjectionLinearId
     }
     
     template<typename T> inline
+    static Eigen::Matrix<T,2,1> ProjectMap(const Eigen::Matrix<T,3,1>& P, T const* /*params*/)
+    {
+        return Project(P);
+    }
+
+    template<typename T> inline
+    static Eigen::Matrix<T,3,1> UnmapUnproject(const Eigen::Matrix<T,2,1>& p, T const* /*params*/)
+    {
+        return Unproject(p);
+    }
+    
+    template<typename T> inline
     static Eigen::Matrix<T,3,3> MakeK(T const* /*params*/)
     {
         return Eigen::Matrix<T,3,3>::Identity();
@@ -102,6 +114,18 @@ struct ProjectionLinear
         const T fac = DistortionModel::RinvFactor(dproj.norm(), params + NUM_LIN_PARAMS);
         return fac*dproj;
     }
+    
+    template<typename T> inline
+    static Eigen::Matrix<T,2,1> ProjectMap(const Eigen::Matrix<T,3,1>& P, T const* params)
+    {
+        return Map( Project(P) , params );
+    }
+
+    template<typename T> inline
+    static Eigen::Matrix<T,3,1> UnmapUnproject(const Eigen::Matrix<T,2,1>& p, T const* params)
+    {
+        return Unproject( Unmap( p, params) );
+    }    
     
     template<typename T> inline
     static Eigen::Matrix<T,3,3> MakeK(T const* params)
@@ -180,6 +204,18 @@ struct ProjectionLinearSquare
         const T fac = DistortionModel::RinvFactor(dproj.norm(), params + NUM_LIN_PARAMS);
         return fac*dproj;
     }  
+    
+    template<typename T> inline
+    static Eigen::Matrix<T,2,1> ProjectMap(const Eigen::Matrix<T,3,1>& P, T const* params)
+    {
+        return Map( Project(P) , params );
+    }
+
+    template<typename T> inline
+    static Eigen::Matrix<T,3,1> UnmapUnproject(const Eigen::Matrix<T,2,1>& p, T const* params)
+    {
+        return Unproject( Unmap( p, params) );
+    }    
     
     template<typename T> inline
     static Eigen::Matrix<T,3,3> MakeK(T const* params)

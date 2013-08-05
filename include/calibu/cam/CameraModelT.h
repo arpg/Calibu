@@ -47,28 +47,6 @@ namespace calibu
             /////////////////////////////////////////////////////////////////////////
 
             /////////////////////////////////////////////////////////////////////////
-            /// Map from image coordinates to z=1 plane.
-            template<typename T> inline static
-                Eigen::Matrix<T,2,1> Map(
-                        const Eigen::Matrix<T,2,1>& proj, //< Input:
-                        T const* params                   //< Input:
-                        )
-                {
-                    return ProjectionModel::Map( proj, params );
-                }
-
-            /////////////////////////////////////////////////////////////////////////
-            /// Map from z=1 plane to image coordinates.
-            template<typename T> inline static 
-                Eigen::Matrix<T,2,1> Unmap(
-                        const Eigen::Matrix<T,2,1>& img, //< Input:
-                        T const* params                  //< Input:
-                        )
-                {    
-                    return ProjectionModel::Unmap(img, params);
-                }
-
-            /////////////////////////////////////////////////////////////////////////
             /// TODO doxygen comment    
             static inline
                 Eigen::Matrix<Scalar,2,3> dMap_dP(
@@ -134,11 +112,8 @@ namespace calibu
                     const Eigen::Matrix<T,3,1> Pb =
                         T_ba.rotationMatrix() * rhoPa + rho * T_ba.translation();
 
-                    // to non-homogeneous 2D
-                    const Eigen::Matrix<T,2,1> proj( Pb(0)/Pb(2), Pb(1)/Pb(2) );
-
-                    // apply distortion and linear cam
-                    return Map(proj, camparam); 
+                    // apply projection, distortion and linear cam
+                    return ProjectionModel::ProjectMap(Pb, camparam);
                 }
 
             /////////////////////////////////////////////////////////////////////////
@@ -157,13 +132,11 @@ namespace calibu
                     // Inverse depth point in a transformed to b (homogeneous 2D)
                     const Eigen::Matrix<T,3,1> Pb =
                         T_ba.rotationMatrix() * rhoPa + rho * T_ba.translation();
-
-                    // to non-homogeneous 2D
-                    const Eigen::Matrix<T,2,1> proj( Pb(0)/Pb(2), Pb(1)/Pb(2) );
+                    
                     in_front = Pb(2) > 0;
 
-                    // apply distortion and linear cam
-                    return Map(proj, camparam); 
+                    // apply projection, distortion and linear cam
+                    return ProjectionModel::ProjectMap(Pb, camparam);
                 }
 
             ///////////////////////////////////////////////////////////////////////////
@@ -178,7 +151,7 @@ namespace calibu
                         )
                 {
                     // rho*Pa (undo distortion, unproject, avoid division by inv depth)
-                    const Eigen::Matrix<T,3,1> rhoPa = Unproject<T>( Unmap<T>(pa, camparam)); 
+                    const Eigen::Matrix<T,3,1> rhoPa = ProjectionModel::UnmapUnproject(pa, camparam);
                     return Transfer3D(camparam, T_ba, rhoPa, rho);
                 }
 
@@ -195,7 +168,7 @@ namespace calibu
                         )
                 {
                     // rho*P1 (undo distortion, unproject, avoid division by inv depth)
-                    const Eigen::Matrix<T,3,1> rhoPa = Unproject<T>( Unmap<T>(pa, camparam) ); 
+                    const Eigen::Matrix<T,3,1> rhoPa = ProjectionModel::UnmapUnproject(pa, camparam);
                     return Transfer3D(camparam, T_ba, rhoPa, rho, in_front);
                 }
 
@@ -315,15 +288,27 @@ namespace calibu
                 return m_params.data();
             }
 
+            // @ Deprecated - doesn't work for generic camera
             inline Vector2t Map(const Vector2t& proj) const
             {
-                return Map(proj, m_params.data());
+                return ProjectionModel::Map(proj, m_params.data());
             }
 
+            // @ Deprecated - doesn't work for generic camera
             inline Vector2t Unmap(const Vector2t& img) const
             {
-                return Unmap(img, m_params.data());
+                return ProjectionModel::Unmap(img, m_params.data());
             }
+            
+            inline Vector2t ProjectMap(const Vector3t& P) const
+            {
+                return ProjectionModel::ProjectMap(P, m_params.data());
+            }
+
+            inline Vector3t UnmapUnproject(const Vector2t& p) const
+            {
+                return ProjectionModel::UnmapUnproject(p, m_params.data());
+            }            
 
             inline Matrix3t K() const
             {
@@ -333,16 +318,6 @@ namespace calibu
             inline Matrix3t Kinv() const
             {
                 return ProjectionModel::MakeKinv(m_params.data());
-            }
-
-            inline Vector2t ProjectMap(const Vector3t& P) const
-            {
-                return Map( Project(P) , m_params.data() );
-            }
-
-            inline Vector3t UnmapUnproject(const Vector2t& p) const
-            {
-                return Unproject( Unmap( p, m_params.data()) );
             }
 
             inline Vector2t Transfer(const SE3t& T_ba, const Vector2t& pa, Scalar rho) const
