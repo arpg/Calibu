@@ -79,10 +79,7 @@ struct ProjectionLinear
  
     inline static std::string Type()
     {
-        if(  DistortionModel::Type().empty() ){
-            return "fu_fv_u0_v0";
-        }
-        return "fu_fv_u0_v0_" + DistortionModel::Type();
+        return "fu_fv_u0_v0" + DistortionModel::Type();
     }
  
     template<typename T> inline
@@ -160,10 +157,7 @@ struct ProjectionLinearSquare
     
     inline static std::string Type() 
     {
-        if( DistortionModel::Type().empty() ){
-            return "f_u0_v0"; 
-        }
-        return "f_u0_v0_" + DistortionModel::Type();
+        return "f_u0_v0" + DistortionModel::Type();
     }
     
     template<typename T> inline

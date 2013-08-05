@@ -61,7 +61,7 @@ struct DistortionPoly
 {
     static const unsigned NUM_PARAMS = 3;
     
-    inline static std::string Type() { return "k1_k2_k3"; }    
+    inline static std::string Type() { return "_k1_k2_k3"; }    
     
     template<typename T> inline
     static T RFactor(T ru, const T* params)
@@ -119,7 +119,7 @@ struct DistortionFov
 {
     static const unsigned NUM_PARAMS = 1;
     
-    inline static std::string Type() { return "w"; }
+    inline static std::string Type() { return "_w"; }
     
     template<typename T> inline
     static T RFactor(T r, const T* params)
