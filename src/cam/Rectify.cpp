@@ -35,7 +35,7 @@ namespace calibu
             for(size_t c = 0; c < cam_from.Width(); ++c) {
                 // Remap
                 const Eigen::Vector3d p_o = R_onKinv * Eigen::Vector3d(c,r,1);
-                Eigen::Vector2d p_warped = cam_from.Map(calibu::Project(p_o));
+                Eigen::Vector2d p_warped = cam_from.ProjectMap(p_o);
 
                 // Clamp to valid image coords
                 p_warped[0] = std::min(std::max(0.0, p_warped[0]), cam_from.Width() - 1.0 );
@@ -60,7 +60,7 @@ namespace calibu
             for( int c = 0; c < w; ++c) {
                 // Remap
                 const Eigen::Vector3d p_o = R_onKinv * Eigen::Vector3d(c,r,1);
-                Eigen::Vector2d p_warped = cam_from.Map(calibu::Project(p_o));
+                Eigen::Vector2d p_warped = cam_from.ProjectMap(p_o);
 
                 // Clamp to valid image coords. This will cause out of image
                 // data to be stretched from nearest valid coords with

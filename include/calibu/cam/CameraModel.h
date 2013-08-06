@@ -116,39 +116,46 @@ public:
     /// Report camera model version number.
     int Version() const
     {
+        _AssertInit();
         return m_pCam->Version();
     }
     
     /// Set the camera veriona nuber.
     void SetVersion( int nVersion )
     {
+        _AssertInit();
         m_pCam->SetVersion( nVersion );
     }
     
     std::string Type() const
     {
+        _AssertInit();
         return m_pCam->Type();
     }
         
     long int SerialNumber() const
     {
+        _AssertInit();
         return m_pCam->SerialNumber();
     }
     
     /// Set the camera serial number.
     void SetSerialNumber( const long int nSerialNo )
     {
+        _AssertInit();
         m_pCam->SetSerialNumber( nSerialNo );
     }
     
     int Index() const
     {
+        _AssertInit();
         return m_pCam->Index();
     }
     
     /// Set the camera index (for multi-camera rigs).
     void SetIndex( const int nIndex )
     {
+        _AssertInit();
         m_pCam->SetIndex( nIndex );
     }
     
@@ -158,6 +165,7 @@ public:
     /// Row2: Forward vector in camera frame of reference
     Matrix3t RDF() const
     {
+        _AssertInit();
         return m_pCam->RDF();
     }
     
@@ -165,47 +173,56 @@ public:
     /// Row0: Right vector in camera frame of reference
     /// Row1: Down vector in camera frame of reference
     /// Row2: Forward vector in camera frame of reference
-    virtual void SetRDF( const Matrix3t& RDF )
+    void SetRDF( const Matrix3t& RDF )
     {
+        _AssertInit();
         m_pCam->SetRDF( RDF );    
     }
  
     void PrintInfo() 
     {
+        _AssertInit();
         m_pCam->PrintInfo();
     }
 
     size_t Width() const
     {
+        _AssertInit();
         return m_pCam->Width();
     }
     
     size_t Height() const
     {
+        _AssertInit();
         return m_pCam->Height();
     }
     
     
     VectorXt GenericParams() const
     {  
+        _AssertInit();
         return m_pCam->GenericParams();
     }
     
     void SetGenericParams(const VectorXt& params)
     {
+        _AssertInit();
         m_pCam->SetGenericParams(params);
     }
     
     size_t NumParams() const
     {
+        _AssertInit();
         return m_pCam->NumParams();
     }    
     
     const Scalar* data() const {
+        _AssertInit();
         return m_pCam->data();
     }
 
     Scalar* data() {
+        _AssertInit();
         return m_pCam->data();
     }    
     
@@ -214,30 +231,21 @@ public:
             size_t nHeight  //< Input:
             )
     {
+        _AssertInit();
         m_pCam->SetImageDimensions( nWidth, nHeight );
     }
     
     std::string Name() const
     {
+        _AssertInit();
         return m_pCam->Name();    
     } 
     
     /// Set the camera model name. e.g., "Left"
     void SetName( const std::string& sName )
     {
+        _AssertInit();
         m_pCam->SetName( sName );
-    }
-    
-    Vector2t Map(const Vector2t& proj) const
-    {
-        _AssertInit();
-        return m_pCam->Map( proj );
-    }
-    
-    Vector2t Unmap(const Vector2t& img) const
-    {
-        _AssertInit();
-        return m_pCam->Unmap( img );
     }
     
     Matrix3t K() const
@@ -252,10 +260,87 @@ public:
         return m_pCam->Kinv();
     }
 
-    Eigen::Matrix<Scalar,2,3> dMap_dP(
-            const Vector3t& P //< Input:
+    Vector2t Map(const Vector2t& proj) const
+    {
+        _AssertInit();
+        return m_pCam->Map( proj );
+    }
+    
+    Vector2t Unmap(const Vector2t& img) const
+    {
+        _AssertInit();
+        return m_pCam->Unmap( img );
+    }
+    
+    Vector2t ProjectMap( const Vector3t& P ) const
+    {
+        _AssertInit();
+        return m_pCam->ProjectMap(P);
+    }
+ 
+    Vector3t UnmapUnproject( const Vector2t& p ) const
+    {
+        _AssertInit();
+        return m_pCam->UnmapUnproject(p);
+    }
+ 
+    Vector2t Transfer3D(
+            const SE3t& T_ba, const Vector3t& rhoPa, const Scalar rho
             ) const
     {
+        _AssertInit();
+        return m_pCam->Transfer3D(T_ba, rhoPa, rho);
+    }
+    
+    Vector2t Transfer3D(
+            const SE3t& T_ba, const Vector3t& rhoPa, const Scalar rho,
+            bool& in_front         
+            ) const 
+    {
+        _AssertInit();
+        return m_pCam->Transfer3D(T_ba, rhoPa, rho, in_front);
+    }
+ 
+    Vector2t Transfer(
+            const SE3t& T_ba, const Vector2t& pa, const Scalar rho    
+            ) const
+    {
+        _AssertInit();
+        return m_pCam->Transfer(T_ba, pa, rho);
+    }
+ 
+    Vector2t Transfer(
+            const SE3t& T_ba, const Vector2t& pa,  const Scalar rho,   
+            bool& in_front
+            ) const
+    {
+        _AssertInit();
+        return m_pCam->Transfer(T_ba, pa, rho, in_front);
+    }
+    
+    Vector2t Transfer(
+            const CameraModelInterfaceT<Scalar>& cam_a,
+            const SE3t& T_ba, const Vector2t& pa, 
+            const Scalar rho    
+            ) const
+    {
+        _AssertInit();
+        return m_pCam->Transfer(cam_a, T_ba, pa, rho);
+    }
+    
+    Vector2t Transfer(
+            const CameraModelInterfaceT<Scalar>& cam_a,            
+            const SE3t& T_ba,  const Vector2t& pa, 
+            const Scalar rho, bool& in_front      
+            ) const
+    {
+        _AssertInit();
+        return m_pCam->Transfer(cam_a, T_ba, pa, rho, in_front);
+    }
+
+    Eigen::Matrix<Scalar,2,3> dMap_dP( const Vector3t& P ) const
+    {
+        _AssertInit();
         return m_pCam->dMap_dP(P);
     }
 
@@ -263,7 +348,9 @@ public:
             const SE3t& T_ba,   //< Input:
             const Eigen::Matrix<Scalar,3,1>& rhoPa, //< Input:
             const Scalar rho                        //< Input:
-            ) const{
+            ) const
+    {
+        _AssertInit();
         return m_pCam->dTransfer3D_dP(T_ba,rhoPa,rho);
     }
     
@@ -297,12 +384,12 @@ private:
         if( !m_pCam ){
             std::cerr << "ERROR: Camera model not initialized" << 
                          " -- make sure to call Init()" << std::endl;
-            assert(m_pCam);
+            throw std::runtime_error("Camera model not initialized.");
         }
     }
     
 protected:
-    std::shared_ptr<CameraModelInterfaceT<Scalar>> m_pCam;
+    std::shared_ptr<CameraModelInterfaceT<Scalar> > m_pCam;
 };
 
 typedef CameraModelGeneric<double> CameraModel;

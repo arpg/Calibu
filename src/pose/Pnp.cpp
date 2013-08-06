@@ -120,7 +120,7 @@ double ReprojectionErrorRMS(const CameraModelInterface& cam,
         const int ti = map2d_3d[i];
         if( ti >= 0 )
         {
-            const Vector2d t = cam.Map(Project(T_cw * pts3d[ti]));
+            const Vector2d t = cam.ProjectMap(T_cw * pts3d[ti]);
             Vector2d err = t - pts2d[i].head<2>();
             sse += (err).squaredNorm();
             ++n;

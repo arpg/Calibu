@@ -28,7 +28,7 @@
 namespace calibu
 {
 
-//////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 // Interface for polymorphic camera class
 template<typename Scalar>
 class CameraModelInterfaceT
@@ -40,7 +40,7 @@ public:
     typedef Eigen::Matrix<Scalar,3,3> Matrix3t;
     typedef Sophus::SE3Group<Scalar> SE3t;
 
-    //////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
     // Virtual member functions
     virtual ~CameraModelInterfaceT(){}
 
@@ -106,151 +106,106 @@ public:
     /// Set the camera index (for multi-camera rigs).
     virtual void SetIndex( const int nIndex ) = 0;
 
-    //////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
     /// Return 3x3 RDF matrix, describing the coordinate-frame convention.
     /// Row0: Right vector in camera frame of reference
     /// Row1: Down vector in camera frame of reference
     /// Row2: Forward vector in camera frame of reference
     virtual Matrix3t RDF() const = 0;
     
-    //////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
     /// Set the 3x3 RDF matrix, describing the coordinate-frame convention.
     /// Row0: Right vector in camera frame of reference
     /// Row1: Down vector in camera frame of reference
     /// Row2: Forward vector in camera frame of reference
     virtual void SetRDF( const Matrix3t& RDF ) = 0;
 
+    ////////////////////////////////////////////////////////////////////////////
+    virtual void PrintInfo() = 0;
+ 
+    ////////////////////////////////////////////////////////////////////////////
+    // Project point in 3d camera coordinates to image coordinates
+    virtual Vector2t ProjectMap(
+            const Vector3t& P      //< Input:
+            ) const = 0;
+ 
+    ////////////////////////////////////////////////////////////////////////////
+    // Create 3D camera coordinates ray from image space coordinates
+    virtual Vector3t UnmapUnproject(
+            const Vector2t& p      //< Input:
+            ) const = 0;
+ 
+    ////////////////////////////////////////////////////////////////////////////
+    /// Transfer point correspondence with known inv. depth to secondary camera frame.
+    //  Points at infinity are supported (rho = 0)
+    //  rhoPa = unproject(unmap(pa)).
+    virtual Vector2t Transfer3D(
+            const SE3t& T_ba,      //< Input:
+            const Vector3t& rhoPa, //< Input:
+            const Scalar rho       //< Input:
+            ) const = 0;
+    
+    ////////////////////////////////////////////////////////////////////////////
+    // Transfer point correspondence with known inv. depth to secondary camera frame.
+    // Points at infinity are supported (rho = 0)
+    // rhoPa = unproject(unmap(pa))
+    virtual Vector2t Transfer3D(
+            const SE3t& T_ba,      //< Input:
+            const Vector3t& rhoPa, //< Input:
+            const Scalar rho,      //< Input:
+            bool& in_front         //< Output:
+            ) const = 0;
+ 
+    ////////////////////////////////////////////////////////////////////////////
+    // Transfer point correspondence with known inv. depth to secondary camera frame.
+    // Points at infinity are supported (rho = 0)
+    virtual Vector2t Transfer(
+            const SE3t& T_ba,   //< Input:
+            const Vector2t& pa, //< Input:
+            const Scalar rho    //< Input:
+            ) const = 0;
+ 
+    ////////////////////////////////////////////////////////////////////////////
+    // Transfer point correspondence with known inv. depth to secondary camera frame.
+    // Points at infinity are supported (rho = 0)
+    virtual Vector2t Transfer(
+            const SE3t& T_ba,   //< Input:
+            const Vector2t& pa, //< Input:
+            const Scalar rho,   //< Input:
+            bool& in_front      //< Output:
+            ) const = 0;
+    
+    ////////////////////////////////////////////////////////////////////////////
+    // Transfer point correspondence with known inv. depth to secondary camera frame.
+    // Points at infinity are supported (rho = 0)
+    virtual Vector2t Transfer(
+            const CameraModelInterfaceT<Scalar>& cam_a,
+            const SE3t& T_ba,   //< Input:
+            const Vector2t& pa, //< Input:
+            const Scalar rho    //< Input:
+            ) const = 0;
+    
+    ////////////////////////////////////////////////////////////////////////////
+    // Transfer point correspondence with known inv. depth to secondary camera frame.
+    // Points at infinity are supported (rho = 0)
+    virtual Vector2t Transfer(
+            const CameraModelInterfaceT<Scalar>& cam_a,            
+            const SE3t& T_ba,   //< Input:
+            const Vector2t& pa, //< Input:
+            const Scalar rho,   //< Input:
+            bool& in_front      //< Output:
+            ) const = 0;
+    
+    ////////////////////////////////////////////////////////////////////////////
     virtual Eigen::Matrix<Scalar,2,3> dMap_dP(const Vector3t& P) const = 0;
+
+    ////////////////////////////////////////////////////////////////////////////
     virtual Eigen::Matrix<Scalar,2,4> dTransfer3D_dP(
             const SE3t& T_ba,   //< Input:
             const Eigen::Matrix<Scalar,3,1>& rhoPa, //< Input:
             const Scalar rho                        //< Input:
             ) const  = 0;
-
-    //////////////////////////////////////////////////////////////////////////////
-    virtual void PrintInfo() = 0;
- 
-    //////////////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////////////
-    // Project point in 3d camera coordinates to image coordinates
-    inline Vector2t ProjectMap(
-            const Vector3t& P //< Input:
-            ) const
-    {
-        return Map( Project(P) );
-    }
- 
-    //////////////////////////////////////////////////////////////////////////////
-    // Create 3D camera coordinates ray from image space coordinates
-    inline Vector3t UnmapUnproject(
-            const Vector2t& p //< Input:
-            ) const
-    {
-        return Unproject( Unmap(p) );
-    }        
- 
-    //////////////////////////////////////////////////////////////////////////////
-    /// Transfer point correspondence with known inv. depth to secondary camera frame.
-    //  Points at infinity are supported (rho = 0)
-    //  rhoPa = unproject(unmap(pa)).
-    inline Vector2t Transfer3D(
-            const SE3t& T_ba,     //< Input:
-            const Vector3t& rhoPa, //< Input:
-            const Scalar rho              //< Input:
-            ) const
-    {
-        // Inverse depth point in a transformed to b (homogeneous 2D)
-        const Vector3t Pb = T_ba.rotationMatrix() * rhoPa + rho * T_ba.translation();
-        
-        // to non-homogeneous 2D
-        const Vector2t proj( Pb(0)/Pb(2), Pb(1)/Pb(2) );
-        
-        // apply distortion and linear cam
-        return Map(proj); 
-    }
     
-    //////////////////////////////////////////////////////////////////////////////
-    // Transfer point correspondence with known inv. depth to secondary camera frame.
-    // Points at infinity are supported (rho = 0)
-    // rhoPa = unproject(unmap(pa))
-    inline Vector2t Transfer3D(
-            const SE3t& T_ba,     //< Input:
-            const Vector3t& rhoPa, //< Input:
-            const Scalar rho,             //< Input:
-            bool& in_front                //< Output:
-            ) const
-    {
-        // Inverse depth point in a transformed to b (homogeneous 2D)
-        const Vector3t Pb = T_ba.rotationMatrix() * rhoPa + rho * T_ba.translation();
-        
-        // to non-homogeneous 2D
-        const Vector2t proj( Pb(0)/Pb(2), Pb(1)/Pb(2) );
-        in_front = Pb(2) > 0;
-        
-        // apply distortion and linear cam
-        return Map(proj); 
-    }
- 
-    //////////////////////////////////////////////////////////////////////////////
-    // Transfer point correspondence with known inv. depth to secondary camera frame.
-    // Points at infinity are supported (rho = 0)
-    inline Vector2t Transfer(
-            const SE3t& T_ba,  //< Input:
-            const Vector2t& pa, //< Input:
-            const Scalar rho           //< Output:
-            ) const
-    {
-        // rho*Pa (undo distortion, unproject, avoid division by inv depth)
-        const Vector3t rhoPa = UnmapUnproject(pa);
-        return Transfer3D(T_ba, rhoPa, rho);
-    }
- 
-    //////////////////////////////////////////////////////////////////////////////
-    // Transfer point correspondence with known inv. depth to secondary camera frame.
-    // Points at infinity are supported (rho = 0)
-    inline Vector2t Transfer(
-            const SE3t& T_ba,  //< Input:
-            const Vector2t& pa, //< Input:
-            const Scalar rho,          //< Input:
-            bool& in_front             //< Output:
-            ) const
-    {
-        // rho*P1 (undo distortion, unproject, avoid division by inv depth)
-        const Vector3t rhoPa = UnmapUnproject(pa);
-        return Transfer3D(T_ba, rhoPa, rho, in_front);
-    }
-    
-    //////////////////////////////////////////////////////////////////////////////
-    // Transfer point correspondence with known inv. depth to secondary camera frame.
-    // Points at infinity are supported (rho = 0)
-    inline Vector2t Transfer(
-            const CameraModelInterfaceT<Scalar>& cam_a,
-            const SE3t& T_ba,  //< Input:
-            const Vector2t& pa, //< Input:
-            const Scalar rho           //< Output:
-            ) const
-    {
-        // rho*Pa (undo distortion, unproject, avoid division by inv depth)
-        const Vector3t rhoPa = cam_a.UnmapUnproject(pa);
-        return Transfer3D(T_ba, rhoPa, rho);
-    }
-    
-    //////////////////////////////////////////////////////////////////////////////
-    // Transfer point correspondence with known inv. depth to secondary camera frame.
-    // Points at infinity are supported (rho = 0)
-    inline Vector2t Transfer(
-            const CameraModelInterfaceT<Scalar>& cam_a,            
-            const SE3t& T_ba,  //< Input:
-            const Vector2t& pa, //< Input:
-            const Scalar rho,          //< Input:
-            bool& in_front             //< Output:
-            ) const
-    {
-        // rho*P1 (undo distortion, unproject, avoid division by inv depth)
-        const Vector3t rhoPa = cam_a.UnmapUnproject(pa);
-        return Transfer3D(T_ba, rhoPa, rho, in_front);
-    }
 };
 
 typedef CameraModelInterfaceT<double> CameraModelInterface;

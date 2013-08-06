@@ -117,8 +117,8 @@ namespace calibu
     {
         Range range = Range::Open();
         for(size_t row = 0; row < cam.Height(); ++row) {    
-            const Eigen::Vector2d ln = Project(Eigen::Vector3d(Rnl_l*Unproject(cam.Unmap(Eigen::Vector2d(0,row)))));
-            const Eigen::Vector2d rn = Project(Eigen::Vector3d(Rnl_l*Unproject(cam.Unmap(Eigen::Vector2d(cam.Width()-1,row)))));
+            const Eigen::Vector2d ln = Project(Eigen::Vector3d(Rnl_l* cam.UnmapUnproject(Eigen::Vector2d(0,row)) ));
+            const Eigen::Vector2d rn = Project(Eigen::Vector3d(Rnl_l* cam.UnmapUnproject(Eigen::Vector2d(cam.Width()-1,row)) ));
             range.ExcludeLessThan(ln[0]);
             range.ExcludeGreaterThan(rn[0]);
         }

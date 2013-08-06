@@ -287,6 +287,16 @@ namespace calibu
             {
                 return m_params.data();
             }
+            
+            inline Matrix3t K() const
+            {
+                return ProjectionModel::MakeK(m_params.data());
+            }
+
+            inline Matrix3t Kinv() const
+            {
+                return ProjectionModel::MakeKinv(m_params.data());
+            }
 
             // @ Deprecated - doesn't work for generic camera
             inline Vector2t Map(const Vector2t& proj) const
@@ -310,16 +320,6 @@ namespace calibu
                 return ProjectionModel::UnmapUnproject(p, m_params.data());
             }            
 
-            inline Matrix3t K() const
-            {
-                return ProjectionModel::MakeK(m_params.data());
-            }
-
-            inline Matrix3t Kinv() const
-            {
-                return ProjectionModel::MakeKinv(m_params.data());
-            }
-
             inline Vector2t Transfer(const SE3t& T_ba, const Vector2t& pa, Scalar rho) const
             {
                 return Transfer<Scalar>(data(), T_ba, pa, rho);
@@ -328,6 +328,48 @@ namespace calibu
             inline Vector2t Transfer(const SE3t& T_ba, const Vector2t& pa, Scalar rho, bool& in_front) const
             {
                 return Transfer<Scalar>(data(), T_ba, pa, rho, in_front);
+            }
+            
+            inline Vector2t Transfer3D(
+                    const Sophus::SE3Group<Scalar>& T_ba,
+                    const Vector3t& rhoPa, const Scalar rho
+                    ) const
+            {
+                return Transfer3D<Scalar>(m_params.data(), T_ba, rhoPa, rho);
+            }
+            
+            inline Vector2t Transfer3D(
+                    const Sophus::SE3Group<Scalar>& T_ba,
+                    const Vector3t& rhoPa, const Scalar rho,
+                    bool& in_front
+                    ) const
+            {
+                return Transfer3D<Scalar>(m_params.data(), T_ba, rhoPa, rho, in_front);
+            }
+            
+            inline Vector2t Transfer(
+                    const CameraModelInterfaceT<Scalar>& cam_a,
+                    const SE3t& T_ba,   
+                    const Vector2t& pa, 
+                    const Scalar rho    
+                    ) const
+            {
+                // rho*Pa (undo distortion, unproject, avoid division by inv depth)
+                const Vector3t rhoPa = cam_a.UnmapUnproject(pa);
+                return Transfer3D(T_ba, rhoPa, rho);
+            }
+            
+            inline Vector2t Transfer(
+                    const CameraModelInterfaceT<Scalar>& cam_a,            
+                    const SE3t& T_ba,
+                    const Vector2t& pa, 
+                    const Scalar rho,
+                    bool& in_front
+                    ) const
+            {
+                // rho*P1 (undo distortion, unproject, avoid division by inv depth)
+                const Vector3t rhoPa = cam_a.UnmapUnproject(pa);
+                return Transfer3D(T_ba, rhoPa, rho, in_front);
             }
 
             /// Report camera model version number.
