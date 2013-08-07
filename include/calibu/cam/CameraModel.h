@@ -63,6 +63,8 @@ inline CameraModelInterfaceT<Scalar>* CameraModelFactory( const std::string sMod
         return new CameraModelT<ProjectionLinear<DistortionFov>,Scalar >();
     }else if( sModelName == "calibu_fu_fv_u0_v0_k1_k2_k3") {
         return new CameraModelT<ProjectionLinear<DistortionPoly>,Scalar >();
+    }else if( sModelName == "calibu_fu_fv_u0_v0_KannalaBrandt4") {
+        return new CameraModelT<ProjectionKannalaBrandt,Scalar>();
     }
     return NULL;
 }

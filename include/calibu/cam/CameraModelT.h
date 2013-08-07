@@ -21,6 +21,7 @@ limitations under the License.
 
 #include "CameraModelInterface.h"
 #include "ProjectionModel.h"
+#include "ProjectionKannalaBrandt.h"
 
 namespace calibu
 {
