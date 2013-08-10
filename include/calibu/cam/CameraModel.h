@@ -49,20 +49,19 @@ struct CameraModelException : public std::exception
     std::string m_sWhat;
 };
  
-///////////////////////////////////////////////////////////////////////////
 template<typename Scalar=double>
-inline CameraModelInterfaceT<Scalar>* CameraModelFactory( const std::string sModelName )
+inline std::shared_ptr<CameraModelInterfaceT<Scalar> > CameraModelFactory( const std::string sModelName )
 {
     if ( sModelName == "calibu_id" ){
-        return new CameraModelT<Pinhole,Scalar>();
+        return std::shared_ptr<CameraModelInterfaceT<Scalar> >(new CameraModelT<Pinhole,Scalar>());
     }else if( sModelName == "calibu_f_u0_v0") {
-        return new CameraModelT<ProjectionLinearSquare<DistortionPinhole>,Scalar >();
+        return std::shared_ptr<CameraModelInterfaceT<Scalar> >(new CameraModelT<ProjectionLinearSquare<DistortionPinhole>,Scalar >());
     }else if( sModelName == "calibu_fu_fv_u0_v0") {
-        return new CameraModelT<ProjectionLinear<DistortionPinhole>,Scalar >();
+        return std::shared_ptr<CameraModelInterfaceT<Scalar> >(new CameraModelT<ProjectionLinear<DistortionPinhole>,Scalar >());
     }else if( sModelName == "calibu_fu_fv_u0_v0_w") {
-        return new CameraModelT<ProjectionLinear<DistortionFov>,Scalar >();
+        return std::shared_ptr<CameraModelInterfaceT<Scalar> >(new CameraModelT<ProjectionLinear<DistortionFov>,Scalar >());
     }else if( sModelName == "calibu_fu_fv_u0_v0_k1_k2_k3") {
-        return new CameraModelT<ProjectionLinear<DistortionPoly>,Scalar >();
+        return std::shared_ptr<CameraModelInterfaceT<Scalar> >(new CameraModelT<ProjectionLinear<DistortionPoly>,Scalar >());
     }
     return NULL;
 }
@@ -110,7 +109,7 @@ public:
     /// Returns if this CameraModel is initialized and can be used.
     bool IsInitialized() const
     {
-        return (bool)m_pCam;
+        return m_pCam.get();
     }
     
     /// Report camera model version number.

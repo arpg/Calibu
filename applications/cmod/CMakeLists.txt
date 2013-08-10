@@ -15,7 +15,8 @@
 
     # git clone https://ceres-solver.googlesource.com/ceres-solver
     find_package( Ceres 1.6.0 QUIET )
-    include_directories( ${CERES_INCLUDE_DIRS} )
+    #include_directories( ${CERES_INCLUDE_DIRS} )
+    include_directories( ${CERES_INCLUDES} )
     link_libraries( ${CERES_LIBRARIES} )
 
     if( Pangolin_FOUND AND Ceres_FOUND )

@@ -77,7 +77,7 @@ namespace calibu
 
             /////////////////////////////////////////////////////////////////////////
             Eigen::Matrix<Scalar,2,4> dTransfer3D_dP(
-                    const SE3t& T_ba,   //< Input:
+                    const SE3t& T_ba,                       //< Input:
                     const Eigen::Matrix<Scalar,3,1>& rhoPa, //< Input:
                     const Scalar rho                        //< Input:
                     ) const
@@ -233,11 +233,12 @@ namespace calibu
             {
                 m_nWidth    = rRHS.m_nWidth;
                 m_nHeight   = rRHS.m_nHeight;
-                m_params      = rRHS.m_params;
+                m_params    = rRHS.m_params;
                 m_RDF       = rRHS.m_RDF; 
                 m_nIndex    = rRHS.m_nIndex;
                 m_nSerialNo = rRHS.m_nSerialNo;
                 m_nVersion  = rRHS.m_nVersion;
+                m_sName     = rRHS.m_sName;
             }    
 
             ///////////////////////////////////////////////////////////////////////////

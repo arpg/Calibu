@@ -1,4 +1,4 @@
-/* 
+/*
    This file is part of the Calibu Project.
    https://robotics.gwu.edu/git/calibu
 
@@ -100,8 +100,8 @@ void WriteXmlCameraModel(const std::string& filename, const CameraModelInterface
 CameraModel ReadXmlCameraModel(TiXmlElement* pEl)
 {    
     std::string sType = CameraModelType( pEl->Attribute("type"));
-    
-    CameraModel rCam( sType );
+
+    CameraModel rCam(sType);
     if(rCam.IsInitialized()) {
         std::string sVer    = pEl->Attribute("version");
         std::string sName   = pEl->Attribute("name");
@@ -125,7 +125,7 @@ CameraModel ReadXmlCameraModel(TiXmlElement* pEl)
         rCam.SetVersion( StrToVal<int>(sVer,0) );
         rCam.SetName( sName );
         rCam.SetIndex( StrToVal<int>(sIndex,0) );
-        rCam.SetSerialNumber( StrToVal<int>(sSerial,-1) );
+        rCam.SetSerialNumber( StrToVal<long int>(sSerial,-1) );
         rCam.SetGenericParams( StrToVal<Eigen::VectorXd>(sParams, rCam.GenericParams()) );
         rCam.SetImageDimensions( StrToVal<int>(sWidth), StrToVal<int>(sHeight) );
         Eigen::Matrix3d rdf;
