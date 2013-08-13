@@ -98,7 +98,7 @@ struct ProjectionKannalaBrandt
 
         const T un = p(0) - u0;
         const T vn = p(1) - v0;
-        const T psi = atan2( fu*un, fv*vn );
+        const T psi = atan2( fu*vn, fv*un );
         
         const T rth = un / (fu * cos(psi) );
         
@@ -119,6 +119,7 @@ struct ProjectionKannalaBrandt
             th -= delta;
         }
         
+//        return Eigen::Matrix<T,3,1>( sin(th)*cos(psi)/cos(th), sin(th)*sin(psi)/cos(th), 1 );
         return Eigen::Matrix<T,3,1>( sin(th)*cos(psi), sin(th)*sin(psi), cos(th) );
     }    
     
@@ -129,8 +130,8 @@ struct ProjectionKannalaBrandt
 //        throw std::runtime_error("Unsupported");
 
         Eigen::Matrix<T,3,3> K;
-        K << params[0], 0, params[1],
-                0, params[0], params[2],
+        K << params[0], 0, params[2],
+                0, params[1], params[3],
                 0, 0, 1;
         return K;
     }
@@ -142,8 +143,8 @@ struct ProjectionKannalaBrandt
 //        throw std::runtime_error("Unsupported");
         
         Eigen::Matrix<T,3,3> K;
-        K << 1.0/params[0], 0, -params[1] / params[0],
-                0, 1.0/params[0], -params[2] / params[0],
+        K << 1.0/params[0], 0, -params[2] / params[0],
+                0, 1.0/params[1], -params[3] / params[1],
                 0, 0, 1;
         return K;
     }

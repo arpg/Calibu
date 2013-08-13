@@ -56,8 +56,10 @@ vector<int> PosePnPRansac(
         int ideal_point_id = candidate_map[i];
         if (ideal_point_id>=0)
         {
-            //        const Eigen::Vector2d & center = img_pts[i];
-            const Eigen::Vector2d center = cam.Unmap(img_pts[i]);
+            // TODO: This is really bad for cameras > 180 FOV
+            //       Replace with PNP for general camera.
+            const Eigen::Vector2d center = Project(cam.UnmapUnproject(img_pts[i]));
+            // const Eigen::Vector2d center = cam.Unmap(img_pts[i]);
             const Eigen::Vector3d & c3d = ideal_pts[ideal_point_id];
             cv_img.push_back(cv::Point2f(center.x(), center.y()));
             cv_obj.push_back(cv::Point3f(c3d.x(), c3d.y(), c3d.z()));

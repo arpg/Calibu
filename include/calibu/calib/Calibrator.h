@@ -190,16 +190,18 @@ public:
         // Create cost function
         CostFunctionAndParams* cost = new CostFunctionAndParams();
         
-        if( dynamic_cast<CameraModelT<Fov>* >(&cp.camera.GetCameraModelInterface()) )
-        {
+        if( dynamic_cast<CameraModelT<Fov>* >(&cp.camera.GetCameraModelInterface()) ) {
             cost->Cost() =  new ceres::AutoDiffCostFunction<ReprojectionCostFunctor<Fov>,
                     2, Sophus::SE3d::num_parameters, Sophus::SE3d::num_parameters,
                     Fov::NUM_PARAMS>( new ReprojectionCostFunctor<Fov>(P_w, p_c) );            
-        } else if( dynamic_cast<CameraModelT<Poly>* >(&cp.camera.GetCameraModelInterface()) )
-        {
+        } else if( dynamic_cast<CameraModelT<Poly>* >(&cp.camera.GetCameraModelInterface()) ) {
             cost->Cost() =  new ceres::AutoDiffCostFunction<ReprojectionCostFunctor<Poly>,
                     2, Sophus::SE3d::num_parameters, Sophus::SE3d::num_parameters,
                     Poly::NUM_PARAMS>( new ReprojectionCostFunctor<Poly>(P_w, p_c) );            
+        } else if( dynamic_cast<CameraModelT<ProjectionKannalaBrandt>* >(&cp.camera.GetCameraModelInterface()) ) {
+            cost->Cost() =  new ceres::AutoDiffCostFunction<ReprojectionCostFunctor<ProjectionKannalaBrandt>,
+                    2, Sophus::SE3d::num_parameters, Sophus::SE3d::num_parameters,
+                    ProjectionKannalaBrandt::NUM_PARAMS>( new ReprojectionCostFunctor<ProjectionKannalaBrandt>(P_w, p_c) );            
         } else {
             throw std::runtime_error("Don't know how to optimize CameraModel");
         }

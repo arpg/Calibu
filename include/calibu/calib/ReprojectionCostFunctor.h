@@ -50,7 +50,7 @@ struct ReprojectionCostFunctor
         const Eigen::Map<const Sophus::SE3Group<T> > T_ck(pT_ck);
         
         const Eigen::Matrix<T,3,1> Pc = T_ck * (T_kw * m_Pw.cast<T>());
-        const Eigen::Matrix<T,2,1> pc = ProjModel::template Map<T>(Project<T>(Pc), camparam);
+        const Eigen::Matrix<T,2,1> pc = ProjModel::template ProjectMap<T>(Pc, camparam);
         r = pc - m_pc.cast<T>();
         return true;
     }    
