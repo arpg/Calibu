@@ -36,19 +36,7 @@ struct ProjectionLinearId
     static const unsigned NUM_PARAMS = 0;
 
     inline static std::string Type() { return "id"; }
-    
-    template<typename T> inline
-    static Eigen::Matrix<T,2,1> Map(const Eigen::Matrix<T,2,1>& proj, T const* /*params*/)
-    {
-        return proj;
-    }
-    
-    template<typename T> inline
-    static Eigen::Matrix<T,2,1> Unmap(const Eigen::Matrix<T,2,1>& img, T const* /*params*/)
-    {    
-        return img;
-    }
-    
+        
     template<typename T> inline
     static Eigen::Matrix<T,2,1> ProjectMap(const Eigen::Matrix<T,3,1>& P, T const* /*params*/)
     {
@@ -74,10 +62,15 @@ struct ProjectionLinearId
     }
     
     template<typename T> inline
-    static Eigen::Matrix<T,2,2> dMap_dp(const Eigen::Matrix<T,2,1>& /*p*/, const T* /*params*/)
+    static Eigen::Matrix<T,2,3> dMap_dP(const Eigen::Matrix<T,3,1>& P, const T* /*params*/)
     {
-        return Eigen::Matrix<T,2,2>::Identity();
-    }   
+        Eigen::Matrix<T,2,3> _dp_dP;
+        _dp_dP << 
+            1.0/P(2), 0, -P(0)/(P(2)*P(2)),
+            0, 1.0/P(2), -P(1)/(P(2)*P(2));
+
+        return _dp_dP;        
+    }
 };
 
 // Four parameters: fu, fv, u0, v0
@@ -156,18 +149,32 @@ struct ProjectionLinear
         const T fac = DistortionModel::RFactor(r, params + NUM_LIN_PARAMS );
         const Eigen::Matrix<T,2,1> dfac_dp = DistortionModel::dRFactor_dr(r,params + NUM_LIN_PARAMS) * dNorm_dp;
         
-        Eigen::Matrix<T,2,2> J;
-        J.col(0).operator=( Eigen::Matrix<T,2,1>(
+        Eigen::Matrix<T,2,2> Jmap;
+        Jmap.col(0).operator=( Eigen::Matrix<T,2,1>(
                     dfac_dp(0) *params[0]*p(0) + fac*params[0],
                 dfac_dp(0) *params[1]*p(1)
                 ) );
-        J.col(1).operator=( Eigen::Matrix<T,2,1>(
+        Jmap.col(1).operator=( Eigen::Matrix<T,2,1>(
                     dfac_dp(1) *params[0]*p(0),
                 dfac_dp(1) *params[1]*p(1) + fac*params[1]
                 ) );
         
-        return J;
+        return Jmap;
     }   
+    
+    template<typename T> inline
+    static Eigen::Matrix<T,2,3> dMap_dP(const Eigen::Matrix<T,3,1>& P, const T* params)
+    {
+        const Eigen::Matrix<T,2,1> p(P(0) / P(2), P(1) / P(2));
+        const Eigen::Matrix<T,2,2> _dMap_dp = dMap_dp(p, params);
+
+        Eigen::Matrix<T,2,3> _dp_dP;
+        _dp_dP << 
+            1.0/P(2), 0, -P(0)/(P(2)*P(2)),
+            0, 1.0/P(2), -P(1)/(P(2)*P(2));
+
+        return _dMap_dp * _dp_dP;        
+    }    
 };
 
 // Four parameters: f, u0, v0
@@ -259,6 +266,20 @@ struct ProjectionLinearSquare
         
         return J;
     }
+    
+    template<typename T> inline
+    static Eigen::Matrix<T,2,3> dMap_dP(const Eigen::Matrix<T,3,1>& P, const T* params)
+    {
+        const Eigen::Matrix<T,2,1> p(P(0) / P(2), P(1) / P(2));
+        const Eigen::Matrix<T,2,2> _dMap_dp = dMap_dp(p, params);
+
+        Eigen::Matrix<T,2,3> _dp_dP;
+        _dp_dP << 
+            1.0/P(2), 0, -P(0)/(P(2)*P(2)),
+            0, 1.0/P(2), -P(1)/(P(2)*P(2));
+
+        return _dMap_dp * _dp_dP;        
+    }    
 };
 
 //////////////////////////////////////////////////////////////////////////////

@@ -48,56 +48,6 @@ namespace calibu
             /////////////////////////////////////////////////////////////////////////
 
             /////////////////////////////////////////////////////////////////////////
-            /// TODO doxygen comment    
-            static inline
-                Eigen::Matrix<Scalar,2,3> dMap_dP(
-                        const Vector3t& P, //< Input:
-                        const Scalar* params      //< Input:
-                        )
-                {
-                    const Vector2t p(P(0) / P(2), P(1) / P(2));
-                    const Eigen::Matrix<Scalar,2,2> _dMap_dp = 
-                            ProjectionModel::dMap_dp(p, params);
-
-                    Eigen::Matrix<Scalar,2,3> _dp_dP;
-                    _dp_dP << 
-                        1.0/P(2), 0, -P(0)/(P(2)*P(2)),
-                        0, 1.0/P(2), -P(1)/(P(2)*P(2));
-
-                    return _dMap_dp * _dp_dP;
-                }    
-
-            /////////////////////////////////////////////////////////////////////////
-            /// TODO doxygen comment
-            inline Eigen::Matrix<Scalar,2,3> dMap_dP(
-                    const Vector3t& P //< Input:
-                    ) const
-            {
-                return CameraModelT<ProjectionModel,Scalar>::dMap_dP(P,data());
-            }
-
-            /////////////////////////////////////////////////////////////////////////
-            Eigen::Matrix<Scalar,2,4> dTransfer3D_dP(
-                    const SE3t& T_ba,                       //< Input:
-                    const Eigen::Matrix<Scalar,3,1>& rhoPa, //< Input:
-                    const Scalar rho                        //< Input:
-                    ) const
-            {
-                // Inverse= depth point in a transformed to b (homogeneous 2D)
-                const Eigen::Matrix<Scalar,3,1> Pb =
-                    T_ba.rotationMatrix() * rhoPa + rho * T_ba.translation();
-
-                Eigen::Matrix<Scalar,2,3>dMap = dMap_dP(Pb);
-
-                Eigen::Matrix<Scalar,2,4> J;
-                // Using operator= to get around clang bug.
-                J.template block<2,3>(0,0).operator=( dMap*T_ba.rotationMatrix() ); // dTransfer_dXYZ
-                J.template block<2,1>(0,3).operator=( dMap*T_ba.translation() );    // dTransfer_dRho
-
-                return J;
-            }
-
-            /////////////////////////////////////////////////////////////////////////
             /// Transfer point correspondence with known inv. depth to secondary camera
             //  frame.  Points at infinity are supported (rho = 0) rhoPa =
             //  unproject(unmap(pa))
@@ -246,134 +196,6 @@ namespace calibu
             // Member functions
             ///////////////////////////////////////////////////////////////////////////
 
-            CameraModelT<DistortionFreeModel,Scalar> DistortionFreeCamera() const
-            {
-                CameraModelT<DistortionFreeModel,Scalar> ret(
-                        m_nWidth, m_nHeight, 
-                        m_params.template head<DistortionFreeModel::NUM_PARAMS>()
-                        );
-                return ret;
-            }
-
-            VectorXt GenericParams() const
-            {
-                return m_params;
-            }
-
-            void SetGenericParams(const VectorXt& params)
-            {
-                m_params = params;
-            }
-
-            Eigen::Matrix<Scalar,NUM_PARAMS,1>& Params()
-            {
-                return m_params;
-            }
-
-            const Eigen::Matrix<Scalar,NUM_PARAMS,1>& Params() const
-            {
-                return m_params;
-            }
-            
-            size_t NumParams() const
-            {
-                return NUM_PARAMS;
-            }
-                
-            const Scalar* data() const
-            {
-                return m_params.data();
-            }
-
-            Scalar* data()
-            {
-                return m_params.data();
-            }
-            
-            inline Matrix3t K() const
-            {
-                return ProjectionModel::MakeK(m_params.data());
-            }
-
-            inline Matrix3t Kinv() const
-            {
-                return ProjectionModel::MakeKinv(m_params.data());
-            }
-
-            // @ Deprecated - doesn't work for generic camera
-            inline Vector2t Map(const Vector2t& proj) const
-            {
-                return ProjectionModel::Map(proj, m_params.data());
-            }
-
-            // @ Deprecated - doesn't work for generic camera
-            inline Vector2t Unmap(const Vector2t& img) const
-            {
-                return ProjectionModel::Unmap(img, m_params.data());
-            }
-            
-            inline Vector2t ProjectMap(const Vector3t& P) const
-            {
-                return ProjectionModel::ProjectMap(P, m_params.data());
-            }
-
-            inline Vector3t UnmapUnproject(const Vector2t& p) const
-            {
-                return ProjectionModel::UnmapUnproject(p, m_params.data());
-            }            
-
-            inline Vector2t Transfer(const SE3t& T_ba, const Vector2t& pa, Scalar rho) const
-            {
-                return Transfer<Scalar>(data(), T_ba, pa, rho);
-            }
-
-            inline Vector2t Transfer(const SE3t& T_ba, const Vector2t& pa, Scalar rho, bool& in_front) const
-            {
-                return Transfer<Scalar>(data(), T_ba, pa, rho, in_front);
-            }
-            
-            inline Vector2t Transfer3D(
-                    const Sophus::SE3Group<Scalar>& T_ba,
-                    const Vector3t& rhoPa, const Scalar rho
-                    ) const
-            {
-                return Transfer3D<Scalar>(m_params.data(), T_ba, rhoPa, rho);
-            }
-            
-            inline Vector2t Transfer3D(
-                    const Sophus::SE3Group<Scalar>& T_ba,
-                    const Vector3t& rhoPa, const Scalar rho,
-                    bool& in_front
-                    ) const
-            {
-                return Transfer3D<Scalar>(m_params.data(), T_ba, rhoPa, rho, in_front);
-            }
-            
-            inline Vector2t Transfer(
-                    const CameraModelInterfaceT<Scalar>& cam_a,
-                    const SE3t& T_ba,   
-                    const Vector2t& pa, 
-                    const Scalar rho    
-                    ) const
-            {
-                // rho*Pa (undo distortion, unproject, avoid division by inv depth)
-                const Vector3t rhoPa = cam_a.UnmapUnproject(pa);
-                return Transfer3D(T_ba, rhoPa, rho);
-            }
-            
-            inline Vector2t Transfer(
-                    const CameraModelInterfaceT<Scalar>& cam_a,            
-                    const SE3t& T_ba,
-                    const Vector2t& pa, 
-                    const Scalar rho,
-                    bool& in_front
-                    ) const
-            {
-                // rho*P1 (undo distortion, unproject, avoid division by inv depth)
-                const Vector3t rhoPa = cam_a.UnmapUnproject(pa);
-                return Transfer3D(T_ba, rhoPa, rho, in_front);
-            }
-
             /// Report camera model version number.
             int Version() const
             {
@@ -470,6 +292,150 @@ namespace calibu
             void SetName( const std::string& sName )
             {
                 m_sName = sName;
+            }
+            
+            CameraModelT<DistortionFreeModel,Scalar> DistortionFreeCamera() const
+            {
+                CameraModelT<DistortionFreeModel,Scalar> ret(
+                        m_nWidth, m_nHeight, 
+                        m_params.template head<DistortionFreeModel::NUM_PARAMS>()
+                        );
+                return ret;
+            }
+
+            VectorXt GenericParams() const
+            {
+                return m_params;
+            }
+
+            void SetGenericParams(const VectorXt& params)
+            {
+                m_params = params;
+            }
+
+            Eigen::Matrix<Scalar,NUM_PARAMS,1>& Params()
+            {
+                return m_params;
+            }
+
+            const Eigen::Matrix<Scalar,NUM_PARAMS,1>& Params() const
+            {
+                return m_params;
+            }
+            
+            size_t NumParams() const
+            {
+                return NUM_PARAMS;
+            }
+                
+            const Scalar* data() const
+            {
+                return m_params.data();
+            }
+
+            Scalar* data()
+            {
+                return m_params.data();
+            }
+            
+            inline Matrix3t K() const
+            {
+                return ProjectionModel::MakeK(m_params.data());
+            }
+
+            inline Matrix3t Kinv() const
+            {
+                return ProjectionModel::MakeKinv(m_params.data());
+            }
+            
+            inline Vector2t ProjectMap(const Vector3t& P) const
+            {
+                return ProjectionModel::ProjectMap(P, m_params.data());
+            }
+
+            inline Vector3t UnmapUnproject(const Vector2t& p) const
+            {
+                return ProjectionModel::UnmapUnproject(p, m_params.data());
+            }            
+
+            inline Vector2t Transfer(const SE3t& T_ba, const Vector2t& pa, Scalar rho) const
+            {
+                return Transfer<Scalar>(data(), T_ba, pa, rho);
+            }
+
+            inline Vector2t Transfer(const SE3t& T_ba, const Vector2t& pa, Scalar rho, bool& in_front) const
+            {
+                return Transfer<Scalar>(data(), T_ba, pa, rho, in_front);
+            }
+            
+            inline Vector2t Transfer3D(
+                    const Sophus::SE3Group<Scalar>& T_ba,
+                    const Vector3t& rhoPa, const Scalar rho
+                    ) const
+            {
+                return Transfer3D<Scalar>(m_params.data(), T_ba, rhoPa, rho);
+            }
+            
+            inline Vector2t Transfer3D(
+                    const Sophus::SE3Group<Scalar>& T_ba,
+                    const Vector3t& rhoPa, const Scalar rho,
+                    bool& in_front
+                    ) const
+            {
+                return Transfer3D<Scalar>(m_params.data(), T_ba, rhoPa, rho, in_front);
+            }
+            
+            inline Vector2t Transfer(
+                    const CameraModelInterfaceT<Scalar>& cam_a,
+                    const SE3t& T_ba,   
+                    const Vector2t& pa, 
+                    const Scalar rho    
+                    ) const
+            {
+                // rho*Pa (undo distortion, unproject, avoid division by inv depth)
+                const Vector3t rhoPa = cam_a.UnmapUnproject(pa);
+                return Transfer3D(T_ba, rhoPa, rho);
+            }
+            
+            inline Vector2t Transfer(
+                    const CameraModelInterfaceT<Scalar>& cam_a,            
+                    const SE3t& T_ba,
+                    const Vector2t& pa, 
+                    const Scalar rho,
+                    bool& in_front
+                    ) const
+            {
+                // rho*P1 (undo distortion, unproject, avoid division by inv depth)
+                const Vector3t rhoPa = cam_a.UnmapUnproject(pa);
+                return Transfer3D(T_ba, rhoPa, rho, in_front);
+            }
+            
+            inline Eigen::Matrix<Scalar,2,3> dMap_dP(
+                    const Vector3t& P //< Input:
+                    ) const
+            {
+                return ProjectionModel::dMap_dP(P,data());
+            }
+
+            inline Eigen::Matrix<Scalar,2,4> dTransfer3D_dP(
+                    const SE3t& T_ba,                       //< Input:
+                    const Eigen::Matrix<Scalar,3,1>& rhoPa, //< Input:
+                    const Scalar rho                        //< Input:
+                    ) const
+            {
+                // Inverse= depth point in a transformed to b (homogeneous 2D)
+                const Eigen::Matrix<Scalar,3,1> Pb =
+                    T_ba.rotationMatrix() * rhoPa + rho * T_ba.translation();
+
+                Eigen::Matrix<Scalar,2,3>dMap =
+                    ProjectionModel::dMap_dP(Pb,data());
+
+                Eigen::Matrix<Scalar,2,4> J;
+                // Using operator= to get around clang bug.
+                J.template block<2,3>(0,0).operator=( dMap*T_ba.rotationMatrix() ); // dTransfer_dXYZ
+                J.template block<2,1>(0,3).operator=( dMap*T_ba.translation() );    // dTransfer_dRho
+
+                return J;
             }
 
         protected:

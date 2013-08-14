@@ -260,18 +260,6 @@ public:
         _AssertInit();
         return m_pCam->Kinv();
     }
-
-    Vector2t Map(const Vector2t& proj) const
-    {
-        _AssertInit();
-        return m_pCam->Map( proj );
-    }
-    
-    Vector2t Unmap(const Vector2t& img) const
-    {
-        _AssertInit();
-        return m_pCam->Unmap( img );
-    }
     
     Vector2t ProjectMap( const Vector3t& P ) const
     {

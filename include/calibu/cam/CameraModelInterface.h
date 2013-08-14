@@ -44,65 +44,66 @@ public:
     // Virtual member functions
     virtual ~CameraModelInterfaceT(){}
 
-    /// Map from image coordinates to z=1 plane.
-    virtual Vector2t Map(
-            const Vector2t& proj  //< Input:
-            ) const = 0;
-
-    /// Map from z=1 plane to image coordinates.
-    virtual Vector2t Unmap(
-            const Vector2t& img //< Input:
-            ) const = 0;
-
-    /// Return the perspective projection camera model "K" matrix    
-    virtual Matrix3t K() const = 0;
- 
-    /// Return the perspective projection camera model inverse "K" matrix
-    virtual Matrix3t Kinv() const = 0;
-
+    ////////////////////////////////////////////////////////////////////////////
     virtual size_t Width() const = 0;
  
+    ////////////////////////////////////////////////////////////////////////////
     virtual size_t Height() const = 0;
 
+    ////////////////////////////////////////////////////////////////////////////
     virtual VectorXt GenericParams() const = 0;
 
+    ////////////////////////////////////////////////////////////////////////////
     virtual void SetGenericParams(const VectorXt& params) = 0;
 
+    ////////////////////////////////////////////////////////////////////////////
     virtual size_t NumParams() const = 0;
     
+    ////////////////////////////////////////////////////////////////////////////
     virtual const Scalar* data() const = 0;
 
+    ////////////////////////////////////////////////////////////////////////////
     virtual Scalar* data() = 0;
  
+    ////////////////////////////////////////////////////////////////////////////
     virtual void SetImageDimensions( 
             size_t nWidth,  //< Input:
             size_t nHeight  //< Input:
             ) = 0;
  
+    ////////////////////////////////////////////////////////////////////////////
     /// Report camera model version number.
     virtual int Version() const = 0;
 
+    ////////////////////////////////////////////////////////////////////////////
     /// Set the camera veriona nuber.
     virtual void SetVersion( int nVersion ) = 0;
 
+    ////////////////////////////////////////////////////////////////////////////
     /// Report camera model 
     virtual std::string Type() const = 0;
 
+    ////////////////////////////////////////////////////////////////////////////
     /// Set the camera model name. e.g., "Left"
     virtual std::string Name() const = 0;
 
+    ////////////////////////////////////////////////////////////////////////////
     /// Set the camera model name. e.g., "Left"
     virtual void SetName( const std::string& sName ) = 0;
     
+    ////////////////////////////////////////////////////////////////////////////
     /// Set the camera serial number.
     virtual long int SerialNumber() const = 0;
 
+    ////////////////////////////////////////////////////////////////////////////
     /// Set the camera serial number.
     virtual void SetSerialNumber( const long int nSerialNo ) = 0;
 
+    ////////////////////////////////////////////////////////////////////////////
     /// Set the camera index (for multi-camera rigs).
     virtual int Index() const = 0;
 
+    ////////////////////////////////////////////////////////////////////////////
     /// Set the camera index (for multi-camera rigs).
     virtual void SetIndex( const int nIndex ) = 0;
 
@@ -122,6 +123,16 @@ public:
 
     ////////////////////////////////////////////////////////////////////////////
     virtual void PrintInfo() = 0;
+    
+    ////////////////////////////////////////////////////////////////////////////
+    // Return closest linear approximation of model as intrinsic matrix 'K'
+    // Please avoid this function if possible - it may be deprecated in future.
+    virtual Matrix3t K() const = 0;
+ 
+    ////////////////////////////////////////////////////////////////////////////
+    // Return closest linear approximation of model as inverse intrinsic matrix 'K^-1'
+    // Please avoid this function if possible - it may be deprecated in future.
+    virtual Matrix3t Kinv() const = 0;
  
     ////////////////////////////////////////////////////////////////////////////
     // Project point in 3d camera coordinates to image coordinates
@@ -197,9 +208,11 @@ public:
             ) const = 0;
     
     ////////////////////////////////////////////////////////////////////////////
+    // Return Jacobian of ProjectMap \in RR^2 wrt P \in RR^3.
     virtual Eigen::Matrix<Scalar,2,3> dMap_dP(const Vector3t& P) const = 0;
 
     ////////////////////////////////////////////////////////////////////////////
+    // Return Jacobian of Transfer3D \in RR^2 wrt homogeneous P \in RR^4.
     virtual Eigen::Matrix<Scalar,2,4> dTransfer3D_dP(
             const SE3t& T_ba,   //< Input:
             const Eigen::Matrix<Scalar,3,1>& rhoPa, //< Input:

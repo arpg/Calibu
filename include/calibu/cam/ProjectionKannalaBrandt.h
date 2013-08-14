@@ -39,21 +39,7 @@ struct ProjectionKannalaBrandt
     {
         return "fu_fv_u0_v0_KannalaBrandt4";
     }
- 
-    template<typename T> inline
-    static Eigen::Matrix<T,2,1> Map(const Eigen::Matrix<T,2,1>& proj, T const* params)
-    {
-        // This isn't really supported for this model.
-        throw std::runtime_error("Not implemented");
-    }
-    
-    template<typename T> inline
-    static Eigen::Matrix<T,2,1> Unmap(const Eigen::Matrix<T,2,1>& img, T const* params)
-    {    
-        // This isn't really supported for this model.
-        throw std::runtime_error("Not implemented");
-    }
-    
+     
     template<typename T> inline
     static Eigen::Matrix<T,2,1> ProjectMap(const Eigen::Matrix<T,3,1>& P, T const* params)
     {
@@ -119,16 +105,12 @@ struct ProjectionKannalaBrandt
             th -= delta;
         }
         
-//        return Eigen::Matrix<T,3,1>( sin(th)*cos(psi)/cos(th), sin(th)*sin(psi)/cos(th), 1 );
         return Eigen::Matrix<T,3,1>( sin(th)*cos(psi), sin(th)*sin(psi), cos(th) );
     }    
     
     template<typename T> inline
     static Eigen::Matrix<T,3,3> MakeK(T const* params)
     {
-//        // This isn't really supported for this model.
-//        throw std::runtime_error("Unsupported");
-
         Eigen::Matrix<T,3,3> K;
         K << params[0], 0, params[2],
                 0, params[1], params[3],
@@ -139,9 +121,6 @@ struct ProjectionKannalaBrandt
     template<typename T> inline
     static Eigen::Matrix<T,3,3> MakeKinv(T const* params)
     {
-//        // This isn't really supported for this model.
-//        throw std::runtime_error("Unsupported");
-        
         Eigen::Matrix<T,3,3> K;
         K << 1.0/params[0], 0, -params[2] / params[0],
                 0, 1.0/params[1], -params[3] / params[1],
@@ -150,7 +129,7 @@ struct ProjectionKannalaBrandt
     }
     
     template<typename T> inline
-    static Eigen::Matrix<T,2,2> dMap_dp(const Eigen::Matrix<T,2,1>& p, const T* params)
+    static Eigen::Matrix<T,2,3> dMap_dP(const Eigen::Matrix<T,3,1>& P, const T* params)
     {
         throw std::runtime_error("Not implemented");
     }
