@@ -122,7 +122,7 @@ public:
     virtual void SetRDF( const Matrix3t& RDF ) = 0;
 
     ////////////////////////////////////////////////////////////////////////////
-    virtual void PrintInfo() = 0;
+    virtual void PrintInfo() const = 0;
     
     ////////////////////////////////////////////////////////////////////////////
     // Return closest linear approximation of model as intrinsic matrix 'K'
@@ -218,6 +218,10 @@ public:
             const Eigen::Matrix<Scalar,3,1>& rhoPa, //< Input:
             const Scalar rho                        //< Input:
             ) const  = 0;
+    
+    ////////////////////////////////////////////////////////////////////////////
+    // Scale 
+    virtual void Scale( Scalar scale) = 0;
     
 };
 

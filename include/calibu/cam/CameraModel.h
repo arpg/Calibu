@@ -92,6 +92,24 @@ public:
     {
     }
     
+    // Actually create deep copy
+    CameraModelGeneric(const CameraModelGeneric<Scalar>& rhs )
+        : m_pCam( CameraModelFactory<Scalar>( rhs.Type() ) )
+    {
+        CopySameType(rhs);
+    }
+
+    // Or use move semantics if possible.
+    CameraModelGeneric(CameraModelGeneric<Scalar>&& rhs)
+        : m_pCam( std::move(rhs.m_pCam) )
+    {
+    }
+    
+    void operator=(CameraModelGeneric<Scalar>&& rhs)
+    {
+        m_pCam = std::move(rhs.m_pCam);
+    }
+    
     template<typename T>
     CameraModelGeneric( const CameraModelInterfaceT<T>& rhs )
         : m_pCam( CameraModelFactory<Scalar>( rhs.Type() ) )
@@ -99,7 +117,7 @@ public:
         CopySameType(rhs);
     }
     
-    CameraModelGeneric( std::string& sModelType)
+    CameraModelGeneric( const std::string& sModelType)
         : m_pCam( CameraModelFactory<Scalar>( sModelType ) )
     {
     }
@@ -180,7 +198,7 @@ public:
         m_pCam->SetRDF( RDF );    
     }
  
-    void PrintInfo() 
+    void PrintInfo() const
     {
         _AssertInit();
         m_pCam->PrintInfo();
@@ -341,6 +359,19 @@ public:
     {
         _AssertInit();
         return m_pCam->dTransfer3D_dP(T_ba,rhoPa,rho);
+    }
+    
+    void Scale( Scalar scale) {
+        _AssertInit();
+        m_pCam->Scale(scale);        
+    }   
+    
+    CameraModelGeneric<Scalar> Scaled(Scalar scale) const
+    {
+        _AssertInit();
+        CameraModelGeneric<Scalar> scaled_cam(*this);
+        scaled_cam.Scale( scale );
+        return scaled_cam;
     }
     
     CameraModelInterface& GetCameraModelInterface()

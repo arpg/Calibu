@@ -133,6 +133,18 @@ struct ProjectionKannalaBrandt
     {
         throw std::runtime_error("Not implemented");
     }
+    
+    // Scale parameters to cope with scaled image.
+    // Scale = width_to / width_from
+    template<typename T> inline
+    static void Scale(T scale, T* params)
+    {
+        params[0] *= scale;
+        params[1] *= scale;
+        params[2] = scale*(params[2]+0.5) - 0.5;
+        params[3] = scale*(params[3]+0.5) - 0.5;      
+        // Distortion cooefficients aren't effected by scale
+    }    
 };
 
 }

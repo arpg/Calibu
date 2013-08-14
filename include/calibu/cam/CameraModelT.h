@@ -248,7 +248,7 @@ namespace calibu
                 m_RDF = RDF;
             }
 
-            void PrintInfo() 
+            void PrintInfo() const
             {
                 printf("camera model info:\n" );
                 printf("    Right        = [%d; %d; %d] unit vector\n", (int)m_RDF(0,0), (int)m_RDF(0,1), (int)m_RDF(0,2) );
@@ -437,6 +437,12 @@ namespace calibu
 
                 return J;
             }
+            
+            inline void Scale( Scalar scale) {
+                m_nWidth  *= scale;
+                m_nHeight *= scale;
+                ProjectionModel::Scale(scale, m_params.data() );
+            }            
 
         protected:
 

@@ -71,6 +71,12 @@ struct ProjectionLinearId
 
         return _dp_dP;        
     }
+    
+    template<typename T> inline
+    static void Scale(T /*scale*/, T* /*params*/)
+    {
+        throw std::runtime_error("Cannot scale ProjectionLinearId camera");        
+    }
 };
 
 // Four parameters: fu, fv, u0, v0
@@ -174,6 +180,15 @@ struct ProjectionLinear
             0, 1.0/P(2), -P(1)/(P(2)*P(2));
 
         return _dMap_dp * _dp_dP;        
+    }    
+    
+    template<typename T> inline
+    static void Scale(T scale, T* params)
+    {
+        params[0] *= scale;
+        params[1] *= scale;
+        params[2] = scale*(params[2]+0.5) - 0.5;
+        params[3] = scale*(params[3]+0.5) - 0.5;      
     }    
 };
 
@@ -279,6 +294,14 @@ struct ProjectionLinearSquare
             0, 1.0/P(2), -P(1)/(P(2)*P(2));
 
         return _dMap_dp * _dp_dP;        
+    }    
+    
+    template<typename T> inline
+    static void Scale(T scale, T* params)
+    {
+        params[0] *= scale;
+        params[1] = scale*(params[1]+0.5) - 0.5;
+        params[2] = scale*(params[2]+0.5) - 0.5;      
     }    
 };
 
