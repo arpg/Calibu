@@ -595,7 +595,7 @@ bool TargetRandomDot::FindTarget(
     vector<int> vis_t_map;
     for( unsigned int i=0; i < tpts3d.size(); ++i )
     {
-        const Vector2d t = cam.ProjectMap(T_cw * tpts3d[i] );
+        const Vector2d t = cam.Project(T_cw * tpts3d[i] );
         if( img_rect.Contains(t) )
         {
             vis_t.push_back(t);
@@ -631,7 +631,7 @@ Eigen::Vector3d IntersectCamFeaturePlane(
         )
 {
     const Vector3d nd_k = nd_b(T_wk.inverse(), Project(N_w));
-    const Vector3d kinvp = cam.UnmapUnproject(p);
+    const Vector3d kinvp = cam.Unproject(p);
     const double denom = nd_k.dot(kinvp);
     if( denom !=0 ) {
         const Vector3d r_k = -kinvp / denom;

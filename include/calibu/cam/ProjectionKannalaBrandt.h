@@ -41,7 +41,7 @@ struct ProjectionKannalaBrandt
     }
      
     template<typename T> inline
-    static Eigen::Matrix<T,2,1> ProjectMap(const Eigen::Matrix<T,3,1>& P, T const* params)
+    static Eigen::Matrix<T,2,1> Project(const Eigen::Matrix<T,3,1>& P, T const* params)
     {
         // Projection
         const T fu = params[0];
@@ -69,7 +69,7 @@ struct ProjectionKannalaBrandt
     }
 
     template<typename T> inline
-    static Eigen::Matrix<T,3,1> UnmapUnproject(const Eigen::Matrix<T,2,1>& p, T const* params)
+    static Eigen::Matrix<T,3,1> Unproject(const Eigen::Matrix<T,2,1>& p, T const* params)
     {
         // Unprojection
         const T fu = params[0];
@@ -129,7 +129,7 @@ struct ProjectionKannalaBrandt
     }
     
     template<typename T> inline
-    static Eigen::Matrix<T,2,3> dMap_dP(const Eigen::Matrix<T,3,1>& P, const T* params)
+    static Eigen::Matrix<T,2,3> dProject_dP(const Eigen::Matrix<T,3,1>& P, const T* params)
     {
         throw std::runtime_error("Not implemented");
     }

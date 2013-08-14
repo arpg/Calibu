@@ -58,7 +58,7 @@ vector<int> PosePnPRansac(
         {
             // TODO: This is really bad for cameras > 180 FOV
             //       Replace with PNP for general camera.
-            const Eigen::Vector2d center = Project(cam.UnmapUnproject(img_pts[i]));
+            const Eigen::Vector2d center = Project(cam.Unproject(img_pts[i]));
             // const Eigen::Vector2d center = cam.Unmap(img_pts[i]);
             const Eigen::Vector3d & c3d = ideal_pts[ideal_point_id];
             cv_img.push_back(cv::Point2f(center.x(), center.y()));
@@ -122,7 +122,7 @@ double ReprojectionErrorRMS(const CameraModelInterface& cam,
         const int ti = map2d_3d[i];
         if( ti >= 0 )
         {
-            const Vector2d t = cam.ProjectMap(T_cw * pts3d[ti]);
+            const Vector2d t = cam.Project(T_cw * pts3d[ti]);
             Vector2d err = t - pts2d[i].head<2>();
             sse += (err).squaredNorm();
             ++n;

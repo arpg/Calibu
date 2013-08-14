@@ -136,13 +136,13 @@ public:
  
     ////////////////////////////////////////////////////////////////////////////
     // Project point in 3d camera coordinates to image coordinates
-    virtual Vector2t ProjectMap(
+    virtual Vector2t Project(
             const Vector3t& P      //< Input:
             ) const = 0;
  
     ////////////////////////////////////////////////////////////////////////////
     // Create 3D camera coordinates ray from image space coordinates
-    virtual Vector3t UnmapUnproject(
+    virtual Vector3t Unproject(
             const Vector2t& p      //< Input:
             ) const = 0;
  
@@ -208,8 +208,8 @@ public:
             ) const = 0;
     
     ////////////////////////////////////////////////////////////////////////////
-    // Return Jacobian of ProjectMap \in RR^2 wrt P \in RR^3.
-    virtual Eigen::Matrix<Scalar,2,3> dMap_dP(const Vector3t& P) const = 0;
+    // Return Jacobian of Project \in RR^2 wrt P \in RR^3.
+    virtual Eigen::Matrix<Scalar,2,3> dProject_dP(const Vector3t& P) const = 0;
 
     ////////////////////////////////////////////////////////////////////////////
     // Return Jacobian of Transfer3D \in RR^2 wrt homogeneous P \in RR^4.

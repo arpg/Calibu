@@ -64,7 +64,7 @@ namespace calibu
                         T_ba.rotationMatrix() * rhoPa + rho * T_ba.translation();
 
                     // apply projection, distortion and linear cam
-                    return ProjectionModel::ProjectMap(Pb, camparam);
+                    return ProjectionModel::Project(Pb, camparam);
                 }
 
             /////////////////////////////////////////////////////////////////////////
@@ -87,7 +87,7 @@ namespace calibu
                     in_front = Pb(2) > 0;
 
                     // apply projection, distortion and linear cam
-                    return ProjectionModel::ProjectMap(Pb, camparam);
+                    return ProjectionModel::Project(Pb, camparam);
                 }
 
             ///////////////////////////////////////////////////////////////////////////
@@ -102,7 +102,7 @@ namespace calibu
                         )
                 {
                     // rho*Pa (undo distortion, unproject, avoid division by inv depth)
-                    const Eigen::Matrix<T,3,1> rhoPa = ProjectionModel::UnmapUnproject(pa, camparam);
+                    const Eigen::Matrix<T,3,1> rhoPa = ProjectionModel::Unproject(pa, camparam);
                     return Transfer3D(camparam, T_ba, rhoPa, rho);
                 }
 
@@ -119,7 +119,7 @@ namespace calibu
                         )
                 {
                     // rho*P1 (undo distortion, unproject, avoid division by inv depth)
-                    const Eigen::Matrix<T,3,1> rhoPa = ProjectionModel::UnmapUnproject(pa, camparam);
+                    const Eigen::Matrix<T,3,1> rhoPa = ProjectionModel::Unproject(pa, camparam);
                     return Transfer3D(camparam, T_ba, rhoPa, rho, in_front);
                 }
 
@@ -348,14 +348,14 @@ namespace calibu
                 return ProjectionModel::MakeKinv(m_params.data());
             }
             
-            inline Vector2t ProjectMap(const Vector3t& P) const
+            inline Vector2t Project(const Vector3t& P) const
             {
-                return ProjectionModel::ProjectMap(P, m_params.data());
+                return ProjectionModel::Project(P, m_params.data());
             }
 
-            inline Vector3t UnmapUnproject(const Vector2t& p) const
+            inline Vector3t Unproject(const Vector2t& p) const
             {
-                return ProjectionModel::UnmapUnproject(p, m_params.data());
+                return ProjectionModel::Unproject(p, m_params.data());
             }            
 
             inline Vector2t Transfer(const SE3t& T_ba, const Vector2t& pa, Scalar rho) const
@@ -393,7 +393,7 @@ namespace calibu
                     ) const
             {
                 // rho*Pa (undo distortion, unproject, avoid division by inv depth)
-                const Vector3t rhoPa = cam_a.UnmapUnproject(pa);
+                const Vector3t rhoPa = cam_a.Unproject(pa);
                 return Transfer3D(T_ba, rhoPa, rho);
             }
             
@@ -406,15 +406,15 @@ namespace calibu
                     ) const
             {
                 // rho*P1 (undo distortion, unproject, avoid division by inv depth)
-                const Vector3t rhoPa = cam_a.UnmapUnproject(pa);
+                const Vector3t rhoPa = cam_a.Unproject(pa);
                 return Transfer3D(T_ba, rhoPa, rho, in_front);
             }
             
-            inline Eigen::Matrix<Scalar,2,3> dMap_dP(
+            inline Eigen::Matrix<Scalar,2,3> dProject_dP(
                     const Vector3t& P //< Input:
                     ) const
             {
-                return ProjectionModel::dMap_dP(P,data());
+                return ProjectionModel::dProject_dP(P,data());
             }
 
             inline Eigen::Matrix<Scalar,2,4> dTransfer3D_dP(
@@ -428,7 +428,7 @@ namespace calibu
                     T_ba.rotationMatrix() * rhoPa + rho * T_ba.translation();
 
                 Eigen::Matrix<Scalar,2,3>dMap =
-                    ProjectionModel::dMap_dP(Pb,data());
+                    ProjectionModel::dProject_dP(Pb,data());
 
                 Eigen::Matrix<Scalar,2,4> J;
                 // Using operator= to get around clang bug.

@@ -135,7 +135,7 @@ Conic UnmapConic( const Conic& c, const CameraModelInterface& cam )
     d.push_back(Eigen::Vector2d(c.bbox.x2,c.bbox.y2));
     
     for( int i=0; i<5; ++i )
-        u.push_back( Project(cam.UnmapUnproject(d[i])) );
+        u.push_back( Project(cam.Unproject(d[i])) );
     
     // Distortion locally estimated by homography
     const Matrix3d H_du = EstimateH_ba(u,d);

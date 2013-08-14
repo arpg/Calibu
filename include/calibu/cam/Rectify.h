@@ -117,8 +117,8 @@ namespace calibu
     {
         Range range = Range::Open();
         for(size_t row = 0; row < cam.Height(); ++row) {    
-            const Eigen::Vector2d ln = Project(Eigen::Vector3d(Rnl_l* cam.UnmapUnproject(Eigen::Vector2d(0,row)) ));
-            const Eigen::Vector2d rn = Project(Eigen::Vector3d(Rnl_l* cam.UnmapUnproject(Eigen::Vector2d(cam.Width()-1,row)) ));
+            const Eigen::Vector2d ln = Project(Eigen::Vector3d(Rnl_l* cam.Unproject(Eigen::Vector2d(0,row)) ));
+            const Eigen::Vector2d rn = Project(Eigen::Vector3d(Rnl_l* cam.Unproject(Eigen::Vector2d(cam.Width()-1,row)) ));
             range.ExcludeLessThan(ln[0]);
             range.ExcludeGreaterThan(rn[0]);
         }
@@ -130,8 +130,8 @@ namespace calibu
     {
         Range range = Range::Open();
         for(size_t col = 0; col < cam.Width(); ++col) {    
-            const Eigen::Vector2d tn = Project(Eigen::Vector3d(Rnl_l*cam.UnmapUnproject(Eigen::Vector2d(col,0)) ));
-            const Eigen::Vector2d bn = Project(Eigen::Vector3d(Rnl_l*cam.UnmapUnproject(Eigen::Vector2d(col,cam.Height()-1)) ));
+            const Eigen::Vector2d tn = Project(Eigen::Vector3d(Rnl_l*cam.Unproject(Eigen::Vector2d(col,0)) ));
+            const Eigen::Vector2d bn = Project(Eigen::Vector3d(Rnl_l*cam.Unproject(Eigen::Vector2d(col,cam.Height()-1)) ));
             range.ExcludeLessThan(tn[1]);
             range.ExcludeGreaterThan(bn[1]);
         }

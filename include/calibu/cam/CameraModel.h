@@ -279,16 +279,16 @@ public:
         return m_pCam->Kinv();
     }
     
-    Vector2t ProjectMap( const Vector3t& P ) const
+    Vector2t Project( const Vector3t& P ) const
     {
         _AssertInit();
-        return m_pCam->ProjectMap(P);
+        return m_pCam->Project(P);
     }
  
-    Vector3t UnmapUnproject( const Vector2t& p ) const
+    Vector3t Unproject( const Vector2t& p ) const
     {
         _AssertInit();
-        return m_pCam->UnmapUnproject(p);
+        return m_pCam->Unproject(p);
     }
  
     Vector2t Transfer3D(
@@ -345,10 +345,10 @@ public:
         return m_pCam->Transfer(cam_a, T_ba, pa, rho, in_front);
     }
 
-    Eigen::Matrix<Scalar,2,3> dMap_dP( const Vector3t& P ) const
+    Eigen::Matrix<Scalar,2,3> dProject_dP( const Vector3t& P ) const
     {
         _AssertInit();
-        return m_pCam->dMap_dP(P);
+        return m_pCam->dProject_dP(P);
     }
 
     Eigen::Matrix<Scalar,2,4> dTransfer3D_dP(

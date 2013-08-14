@@ -38,15 +38,15 @@ struct ProjectionLinearId
     inline static std::string Type() { return "id"; }
         
     template<typename T> inline
-    static Eigen::Matrix<T,2,1> ProjectMap(const Eigen::Matrix<T,3,1>& P, T const* /*params*/)
+    static Eigen::Matrix<T,2,1> Project(const Eigen::Matrix<T,3,1>& P, T const* /*params*/)
     {
-        return Project(P);
+        return calibu::Project(P);
     }
 
     template<typename T> inline
-    static Eigen::Matrix<T,3,1> UnmapUnproject(const Eigen::Matrix<T,2,1>& p, T const* /*params*/)
+    static Eigen::Matrix<T,3,1> Unproject(const Eigen::Matrix<T,2,1>& p, T const* /*params*/)
     {
-        return Unproject(p);
+        return calibu::Unproject(p);
     }
     
     template<typename T> inline
@@ -62,7 +62,7 @@ struct ProjectionLinearId
     }
     
     template<typename T> inline
-    static Eigen::Matrix<T,2,3> dMap_dP(const Eigen::Matrix<T,3,1>& P, const T* /*params*/)
+    static Eigen::Matrix<T,2,3> dProject_dP(const Eigen::Matrix<T,3,1>& P, const T* /*params*/)
     {
         Eigen::Matrix<T,2,3> _dp_dP;
         _dp_dP << 
@@ -115,15 +115,15 @@ struct ProjectionLinear
     }
     
     template<typename T> inline
-    static Eigen::Matrix<T,2,1> ProjectMap(const Eigen::Matrix<T,3,1>& P, T const* params)
+    static Eigen::Matrix<T,2,1> Project(const Eigen::Matrix<T,3,1>& P, T const* params)
     {
-        return Map( Project(P) , params );
+        return Map( calibu::Project(P) , params );
     }
 
     template<typename T> inline
-    static Eigen::Matrix<T,3,1> UnmapUnproject(const Eigen::Matrix<T,2,1>& p, T const* params)
+    static Eigen::Matrix<T,3,1> Unproject(const Eigen::Matrix<T,2,1>& p, T const* params)
     {
-        return Unproject( Unmap( p, params) );
+        return calibu::Unproject( Unmap( p, params) );
     }    
     
     template<typename T> inline
@@ -169,7 +169,7 @@ struct ProjectionLinear
     }   
     
     template<typename T> inline
-    static Eigen::Matrix<T,2,3> dMap_dP(const Eigen::Matrix<T,3,1>& P, const T* params)
+    static Eigen::Matrix<T,2,3> dProject_dP(const Eigen::Matrix<T,3,1>& P, const T* params)
     {
         const Eigen::Matrix<T,2,1> p(P(0) / P(2), P(1) / P(2));
         const Eigen::Matrix<T,2,2> _dMap_dp = dMap_dp(p, params);
@@ -228,15 +228,15 @@ struct ProjectionLinearSquare
     }  
     
     template<typename T> inline
-    static Eigen::Matrix<T,2,1> ProjectMap(const Eigen::Matrix<T,3,1>& P, T const* params)
+    static Eigen::Matrix<T,2,1> Project(const Eigen::Matrix<T,3,1>& P, T const* params)
     {
-        return Map( Project(P) , params );
+        return Map( calibu::Project(P) , params );
     }
 
     template<typename T> inline
-    static Eigen::Matrix<T,3,1> UnmapUnproject(const Eigen::Matrix<T,2,1>& p, T const* params)
+    static Eigen::Matrix<T,3,1> Unproject(const Eigen::Matrix<T,2,1>& p, T const* params)
     {
-        return Unproject( Unmap( p, params) );
+        return calibu::Unproject( Unmap( p, params) );
     }    
     
     template<typename T> inline
@@ -283,7 +283,7 @@ struct ProjectionLinearSquare
     }
     
     template<typename T> inline
-    static Eigen::Matrix<T,2,3> dMap_dP(const Eigen::Matrix<T,3,1>& P, const T* params)
+    static Eigen::Matrix<T,2,3> dProject_dP(const Eigen::Matrix<T,3,1>& P, const T* params)
     {
         const Eigen::Matrix<T,2,1> p(P(0) / P(2), P(1) / P(2));
         const Eigen::Matrix<T,2,2> _dMap_dp = dMap_dp(p, params);

@@ -412,7 +412,7 @@ int main( int argc, char** argv)
                     for( size_t c = 0; c < codepts.size(); c++ ){
                         const Eigen::Vector3d& xwp = codepts[c];
                         Eigen::Vector2d pt;
-                        pt = cap.camera.ProjectMap( T_hw[iI]*xwp );
+                        pt = cap.camera.Project( T_hw[iI]*xwp );
                         if( pt[0] < 10 || pt[0] >= images[iI].w-10 || 
                                 pt[1] < 10 || pt[1] >= images[iI].h-10 ) {
                             found = false;
