@@ -49,7 +49,6 @@ struct CameraModelException : public std::exception
     std::string m_sWhat;
 };
  
-///////////////////////////////////////////////////////////////////////////
 template<typename Scalar=double>
 inline CameraModelInterfaceT<Scalar>* CameraModelFactory( const std::string sModelName )
 {
@@ -112,7 +111,7 @@ public:
     /// Returns if this CameraModel is initialized and can be used.
     bool IsInitialized() const
     {
-        return (bool)m_pCam;
+        return m_pCam.get();
     }
     
     /// Report camera model version number.
