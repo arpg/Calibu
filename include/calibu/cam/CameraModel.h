@@ -99,6 +99,14 @@ public:
         CopySameType(rhs);
     }
 
+    void operator=(const CameraModelGeneric<Scalar>& rhs)
+    {
+        m_pCam = std::shared_ptr<CameraModelInterfaceT<Scalar> >(
+                    CameraModelFactory<Scalar>( rhs.Type() )
+                    );
+        CopySameType(rhs);
+    }
+    
     // Or use move semantics if possible.
     CameraModelGeneric(CameraModelGeneric<Scalar>&& rhs)
         : m_pCam( std::move(rhs.m_pCam) )
