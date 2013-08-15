@@ -17,6 +17,7 @@ set(
     ${INCDIR}/cam/CameraXml.h
     ${INCDIR}/cam/DistortionModel.h
     ${INCDIR}/cam/ProjectionModel.h
+    ${INCDIR}/cam/ProjectionKannalaBrandt.h
     ${INCDIR}/cam/Rectify.h
     ${INCDIR}/cam/StereoRectify.h
     ${INCDIR}/conics/Conic.h

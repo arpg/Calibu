@@ -37,7 +37,7 @@ struct ProjectionKannalaBrandt
  
     inline static std::string Type()
     {
-        return "fu_fv_u0_v0_KannalaBrandt4";
+        return "fu_fv_u0_v0_kb4";
     }
      
     template<typename T> inline
