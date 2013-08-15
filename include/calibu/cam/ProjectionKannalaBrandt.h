@@ -129,9 +129,43 @@ struct ProjectionKannalaBrandt
     }
     
     template<typename T> inline
-    static Eigen::Matrix<T,2,3> dProject_dP(const Eigen::Matrix<T,3,1>& P, const T* params)
+    static Eigen::Matrix<T,2,3> dProject_dP(const Eigen::Matrix<T,3,1>& P, const T* ps)
     {
-        throw std::runtime_error("Not implemented");
+        const T fu = ps[0];
+        const T fv = ps[1];
+        const T k0 = ps[4];
+        const T k1 = ps[5];
+        const T k2 = ps[6];
+        const T k3 = ps[7];
+        
+        const T x0 = P(0)*P(0);
+        const T x1 = P(1)*P(1);
+        const T x2 = x0 + x1;
+        const T x3 = sqrt(x2);
+        const T x4 = std::pow(x2,3.0/2.0);
+        const T x5 = P(2)*P(2) + x2;
+        const T a = atan2(x3, P(2));
+        const T a2 = a*a;
+        const T a4 = a2*a2;
+        const T a6 = a4*a2;
+        const T a8 = a4*a4;
+        const T x11 = k0*a2 + k1*a4 + k2*a6 + k3*a8 + 1;
+        const T x12 = 3*k0*a2 + 5*k1*a4 + 7*k2*a6 + 9*k3*a8 + 1;
+        const T x13 = P(2)*x12/(x2*x5) - x11*a/x4;
+        const T x14 = P(0)*fu;
+        const T x15 = P(1)*fv;
+        const T x16 = -1/x4;
+        const T x17 = x11*a;
+        const T x18 = -x12/x5;
+        const T x19 = x17/x3;
+        const T x20 = P(2)*x12/(x2*x5);
+              
+        Eigen::Matrix<T,2,3> _dProj_dP;
+        _dProj_dP << 
+            fu*(x0*x16*x17 + x0*x20 + x19), P(1)*x13*x14, x14*x18,
+            P(0)*x13*x15, fv*(x1*x16*x17 + x1*x20 + x19), x15*x18;
+        
+        return _dProj_dP;
     }
     
     // Scale parameters to cope with scaled image.
