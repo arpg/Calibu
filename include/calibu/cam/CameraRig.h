@@ -1,4 +1,4 @@
-/* 
+/*
    This file is part of the Calibu Project.
    https://robotics.gwu.edu/git/calibu
 
@@ -36,12 +36,12 @@ public:
     CameraModelAndTransformT()
     {
     }
-    
+
     CameraModelAndTransformT( const CameraModelGeneric<Scalar>& camera,
                               const Sophus::SE3Group<Scalar>& T_wc )
         : camera(camera), T_wc(T_wc)
     {
-        
+
     }
 
     // Templated Copy Constructor
@@ -50,7 +50,7 @@ public:
         camera = other.camera;
         T_wc = other.T_wc.template cast<Scalar>();
     }
-    
+
     CameraModelGeneric<Scalar> camera;
     Sophus::SE3Group<Scalar> T_wc;
 };
@@ -64,7 +64,7 @@ public:
     // Default Constructor
     CameraRigT() {
     }
-    
+
     // Templated Copy Constructor
     template<typename T>
     CameraRigT(const CameraRigT<T>& other) {
@@ -72,7 +72,7 @@ public:
             cameras.push_back( CameraModelAndTransformT<Scalar>(cmat) );
         }
     }
-    
+
     void Add(const CameraModelAndTransformT<Scalar>& cop) {
         cameras.push_back(cop);
     }
@@ -82,7 +82,7 @@ public:
         cop.T_wc = T_wc;
         cameras.push_back(cop);
     }
-    
+
     std::vector<CameraModelAndTransformT<Scalar> > cameras;
 };
 typedef CameraRigT<double> CameraRig;
@@ -97,12 +97,13 @@ static const Sophus::SO3d RdfRobotics =
         Sophus::SO3d( (Eigen::Matrix3d() << 0,0,1, 1,0,0, 0,1,0).finished() );
 
 // T_2b_1b = T_ba * T_2a_1a * T_ab
-inline Sophus::SE3d ToCoordinateConvention(
-        const Sophus::SE3d& T_2a_1a,
-        const Sophus::SO3d& R_ba
+template<typename Scalar=double>
+inline Sophus::SE3Group<Scalar> ToCoordinateConvention(
+        const Sophus::SE3Group<Scalar>& T_2a_1a,
+        const Sophus::SO3Group<Scalar>& R_ba
         )
 {
-    Sophus::SE3d T_2b_1b;
+    Sophus::SE3Group<Scalar> T_2b_1b;
     T_2b_1b.so3() = R_ba * T_2a_1a.so3() * R_ba.inverse();
     T_2b_1b.translation() = R_ba * T_2a_1a.translation();
     return T_2b_1b;
