@@ -150,9 +150,17 @@ int main( int argc, char** argv)
                 CameraModelT<Fov> starting_cam(w, h);
                 starting_cam.Params()  << 300, 300, w/2.0, h/2.0, 0.2;
                 input_cameras.push_back( CameraAndPose(CameraModel(starting_cam), Sophus::SE3d() ) );
-            }else if(filename == "poly"){
-                CameraModelT<Poly> starting_cam(w, h);
-                starting_cam.Params()  << 300, 300, w/2.0, h/2.0, 0.1, 0.1, 0.1;
+            }else if(filename == "poly2") {
+                CameraModelT<Poly2> starting_cam(w, h);
+                starting_cam.Params()  << 300, 300, w/2.0, h/2.0, 0.0, 0.0;
+                input_cameras.push_back( CameraAndPose(CameraModel(starting_cam), Sophus::SE3d() ) );
+            }else if(filename == "poly3" || filename =="poly") {
+                CameraModelT<Poly3> starting_cam(w, h);
+                starting_cam.Params()  << 300, 300, w/2.0, h/2.0, 0.0, 0.0, 0.0;
+                input_cameras.push_back( CameraAndPose(CameraModel(starting_cam), Sophus::SE3d() ) );
+            }else if(filename == "kb4") {
+                CameraModelT<ProjectionKannalaBrandt> starting_cam(w, h);
+                starting_cam.Params()  << 300, 300, w/2.0, h/2.0, 0.0, 0.0, 0.0, 0.0;
                 input_cameras.push_back( CameraAndPose(CameraModel(starting_cam), Sophus::SE3d() ) );
             }else{
                 const CameraRig rig = ReadXmlRig(filename);

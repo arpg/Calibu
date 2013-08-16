@@ -311,6 +311,7 @@ struct ProjectionLinearSquare
 
 typedef ProjectionLinear<DistortionPinhole>  Pinhole;
 typedef ProjectionLinear<DistortionFov>      Fov;
-typedef ProjectionLinear<DistortionPoly>     Poly;
+typedef ProjectionLinear<DistortionPoly2>    Poly2;
+typedef ProjectionLinear<DistortionPoly3>    Poly3;
 
 }

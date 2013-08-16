@@ -57,7 +57,56 @@ struct DistortionPinhole
 };
 
 //////////////////////////////////////////////////////////////////////////////
-struct DistortionPoly
+struct DistortionPoly2
+{
+    static const unsigned NUM_PARAMS = 2;
+    
+    inline static std::string Type() { return "_k1_k2"; }    
+    
+    template<typename T> inline
+    static T RFactor(T ru, const T* params)
+    {
+        const T r2 = ru*ru;
+        const T r4 = r2*r2;
+        return (T)1.0 + params[0]*r2 + params[1]*r4;
+    }
+        
+    template<typename T> inline
+    static T RinvFactor(T rd, const T* params)
+    {
+        const T k1 = params[0];
+        const T k2 = params[1];
+        
+        // Use Newton's method to solve (fixed number of iterations)
+        T ru = rd;
+        for (int i=0; i<5; i++)
+        {
+            // Common sub-expressions of d, d2
+            const T ru2 = ru*ru;
+            const T ru4 = ru2*ru2;
+            const T pol = k1*ru2 + k2*ru4 + 1;
+            const T pol2 = 2*ru2*(k1 + 2*k2*ru2);
+            const T pol3 = pol + pol2;
+            // 1st derivative
+            const T d = (ru*(pol) - rd) * 2*pol3;
+            // 2nd derivative
+            const T d2 = 4*ru*(ru*pol - rd)*(3*k1 + 10*k2*ru2) + 2*pol3*pol3;
+            // Delta update
+            const T delta = d / d2;
+            ru -= delta;
+        }
+        return ru / rd;
+    }    
+
+    template<typename T> inline
+    static T dRFactor_dr(T r, const T* params)
+    {
+        return 2.0*params[0]*r + 4.0*params[1]*r*r*r;
+    }
+};
+
+//////////////////////////////////////////////////////////////////////////////
+struct DistortionPoly3
 {
     static const unsigned NUM_PARAMS = 3;
     
@@ -72,12 +121,6 @@ struct DistortionPoly
     }
     
     template<typename T> inline
-    static T sq(const T& val)
-    {
-        return val*val;
-    }
-    
-    template<typename T> inline
     static T RinvFactor(T rd, const T* params)
     {
         const T k1 = params[0];
@@ -89,15 +132,16 @@ struct DistortionPoly
         for (int i=0; i<5; i++)
         {
             // Common sub-expressions of d, d2
-            const T ru2 = sq(ru);
-            const T ru4 = sq(ru2);
+            const T ru2 = ru*ru;
+            const T ru4 = ru2*ru2;
             const T ru6 = ru4*ru2;
             const T pol = k1*ru2 + k2*ru4 + k3*ru6 + 1;
             const T pol2 = 2*ru2*(k1 + 2*k2*ru2 + 3*k3*ru4);
+            const T pol3 = pol + pol2;            
             // 1st derivative
-            const T d = (ru*(pol) - rd) * 2*(pol + pol2 );
+            const T d = (ru*(pol) - rd) * 2*pol3;
             // 2nd derivative
-            const T d2 = 4*ru*(ru*pol - rd)*(3*k1 + 10*k2*ru2 + 21*k3*ru4) + 2*sq(pol + pol2 );
+            const T d2 = 4*ru*(ru*pol - rd)*(3*k1 + 10*k2*ru2 + 21*k3*ru4) + 2*pol3*pol3;
             // Delta update
             const T delta = d / d2;
             ru -= delta;
