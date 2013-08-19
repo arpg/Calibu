@@ -19,6 +19,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
  */
 
+#pragma once
+
 #include "CameraModelInterface.h"
 #include "ProjectionModel.h"
 #include "ProjectionKannalaBrandt.h"
@@ -207,11 +209,17 @@ namespace calibu
             {
                 m_nVersion = nVersion;
             }
+            
+            /// Report camera model 
+            static std::string StaticType() 
+            {
+                return "calibu_" + ProjectionModel::Type();
+            }            
 
             /// Report camera model 
             std::string Type() const 
             {
-                return "calibu_" + ProjectionModel::Type();
+                return StaticType();
             }
 
             long int SerialNumber() const
