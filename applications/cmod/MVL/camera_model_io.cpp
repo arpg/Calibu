@@ -484,7 +484,6 @@ namespace MVLUtils
         bool bSuccess = false;
 
         char* lutptr = NULL;
-        int  nLutSize = 0;
 
         for( TiXmlElement*  pNode = pCamNode->FirstChildElement();
                 pNode != NULL;
@@ -553,7 +552,6 @@ namespace MVLUtils
 
             else if( sElement.compare("lut") == 0 ){
                 lutptr = valstr;
-                nLutSize = sElement.size();
 
                 //rjs: have to read the LUT here
                 //as valstr ptr no longer valid outside

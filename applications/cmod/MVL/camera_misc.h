@@ -8,7 +8,7 @@
 #ifndef __CAMERA_MISC_H__
 #define __CAMERA_MISC_H__
 
-#include <mvl/camera/camera.h>
+#include "camera.h"
 
 /* Misc printing functions */
 
