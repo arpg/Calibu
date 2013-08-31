@@ -1,6 +1,6 @@
 /* 
    This file is part of the Calibu Project.
-   https://robotics.gwu.edu/git/calibu
+   https://github.com/gwu-robotics/Calibu
    
    Copyright (C) 2013 George Washington University,
                       Steven Lovegrove,

@@ -67,7 +67,7 @@ const char* sUriInfo =
 " e.g. \"split:[roi1=0+0+640x480,roi2=640+0+640x480]//files:///home/user/sequence/foo%03d.jpeg\"\n"
 " e.g. \" split:[roi1=0+0+640x480,roi2=640+0+640x480]//uvc://\"\n"
 "\n"
-"log - run google protobuf data log from HAL (see http://robotics.gwu.edu/git):\n"
+"log - run google protobuf data log from HAL (see https://github.com/gwu-robotics):\n"
 " e.g. \"log://~/Data/calib.log\"\n\n";
 
 
