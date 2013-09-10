@@ -21,6 +21,7 @@ if( Pangolin_FOUND AND Ceres_FOUND AND HAL_FOUND )
     target_link_libraries( calibgrid-hal ${Pangolin_LIBRARIES} )
     target_link_libraries( calibgrid-hal ${Calibu_LIBRARIES} )
     target_link_libraries( calibgrid-hal ${HAL_LIBRARIES} )
+    target_link_libraries( calibgrid-hal ${CVARS_LIBRARY} )
 
     install(TARGETS calibgrid-hal
         EXPORT CalibuTargets
