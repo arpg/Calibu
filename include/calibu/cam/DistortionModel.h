@@ -214,9 +214,6 @@ struct DistortionFov
             // limit w->0
             return (T)0;
         }else{
-            const T mul2tanwby2 = (T)2.0 * tan(params[0]/2.0);
-            const T mul2tanwby2byw = mul2tanwby2 / params[0];
-
             const T tanp_2 = tan(params[0]/2);
             const T tanp_2_sqr_over_2 = (tanp_2*tanp_2)/2;
             if(r*r < DIST_CAM_EPS) {
