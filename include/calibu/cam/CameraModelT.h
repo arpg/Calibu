@@ -425,6 +425,12 @@ namespace calibu
                 return ProjectionModel::dProject_dP(P,data());
             }
 
+            inline Eigen::Matrix<Scalar,2,Eigen::Dynamic> dMap_dParams(const Eigen::Matrix<Scalar,3,1>& p,
+                                                                        const Eigen::Matrix<Scalar,Eigen::Dynamic,1>& params) const
+            {
+                return ProjectionModel::dProject_dParams(p,params);
+            }
+
             inline Eigen::Matrix<Scalar,2,4> dTransfer3D_dP(
                     const SE3t& T_ba,                       //< Input:
                     const Eigen::Matrix<Scalar,3,1>& rhoPa, //< Input:

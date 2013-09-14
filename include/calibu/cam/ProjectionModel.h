@@ -71,6 +71,14 @@ struct ProjectionLinearId
 
         return _dp_dP;        
     }
+
+    template<typename T> inline
+    static Eigen::Matrix<T,2,Eigen::Dynamic> dProject_dParams(const Eigen::Matrix<T,3,1>& P, const Eigen::Matrix<T,Eigen::Dynamic,1>& params)
+    {
+        //TODO: implement this
+        assert(false);
+        return Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic>();
+    }
     
     template<typename T> inline
     static void Scale(T /*scale*/, T* /*params*/)
@@ -100,9 +108,23 @@ struct ProjectionLinear
         return Eigen::Matrix<T,2,1>(
                     fac* params[0] * proj(0) + params[2],
                 fac* params[1] * proj(1) + params[3]
-                );        
+                );
     }
-    
+
+    template<typename T> inline
+    static Eigen::Matrix<T,2,Eigen::Dynamic> dProject_dParams(const Eigen::Matrix<T,3,1>& P, const Eigen::Matrix<T,Eigen::Dynamic,1>& params)
+    {
+        const Eigen::Matrix<T,2,1> proj = calibu::Project(P);
+        const T fac = DistortionModel::template RFactor<T>(proj.norm(), &params[4]);
+        const T dfac = DistortionModel::template dRFactor_dParam<T>(proj.norm(), &params[4]);
+        const Eigen::Matrix<T,2,Eigen::Dynamic> dMap_dParams = (Eigen::Matrix<T,2,Eigen::Dynamic>(2,NUM_PARAMS) <<
+                                                   fac*proj(0),           0, 1.0,   0, params[0]*proj(0)*dfac,
+                                                             0, fac*proj(1),   0, 1.0, params[1]*proj(1)*dfac
+                                                   ).finished();
+
+        return dMap_dParams;
+    }
+
     template<typename T> inline
     static Eigen::Matrix<T,2,1> Unmap(const Eigen::Matrix<T,2,1>& img, T const* params)
     {    
@@ -238,6 +260,14 @@ struct ProjectionLinearSquare
     {
         return calibu::Unproject( Unmap( p, params) );
     }    
+
+    template<typename T> inline
+    static Eigen::Matrix<T,2,Eigen::Dynamic> dProject_dParams(const Eigen::Matrix<T,3,1>& P, const Eigen::Matrix<T,Eigen::Dynamic,1>& params)
+    {
+        //TODO: implement this
+        assert(false);
+        return Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic>();
+    }
     
     template<typename T> inline
     static Eigen::Matrix<T,3,3> MakeK(T const* params)

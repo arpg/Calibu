@@ -167,6 +167,14 @@ struct ProjectionKannalaBrandt
         
         return _dProj_dP;
     }
+
+    template<typename T> inline
+    static Eigen::Matrix<T,2,Eigen::Dynamic> dProject_dParams(const Eigen::Matrix<T,3,1>& P, const Eigen::Matrix<T,Eigen::Dynamic,1>& params)
+    {
+        //TODO: implement this
+        assert(false);
+        return Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic>();
+    }
     
     // Scale parameters to cope with scaled image.
     // Scale = width_to / width_from

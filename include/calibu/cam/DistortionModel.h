@@ -54,6 +54,13 @@ struct DistortionPinhole
     {
         return (T)0.0;
     }
+
+    template<typename T> inline
+    static T dRFactor_dParam(T r, const T* params)
+    {
+        //TODO: implement this
+        return (T)0;
+    }
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -102,6 +109,14 @@ struct DistortionPoly2
     static T dRFactor_dr(T r, const T* params)
     {
         return 2.0*params[0]*r + 4.0*params[1]*r*r*r;
+    }
+
+    template<typename T> inline
+    static T dRFactor_dParam(T r, const T* params)
+    {
+        //TODO: implement this
+        assert(false);
+        return (T)0;
     }
 };
 
@@ -156,6 +171,14 @@ struct DistortionPoly3
         const T r3 = r2*r;
         return 2.0*params[0]*r + 4.0*params[1]*r3 + 6.0*params[2]*r3*r2;
     }
+
+    template<typename T> inline
+    static T dRFactor_dParam(T r, const T* params)
+    {
+        //TODO: implement this
+        assert(false);
+        return (T)0;
+    }
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -180,6 +203,29 @@ struct DistortionFov
                 return mul2tanwby2byw;
             }else{
                 return atan(r*mul2tanwby2) / (r*params[0]);
+            }
+        }
+    }
+
+    template<typename T> inline
+    static T dRFactor_dParam(T r, const T* params)
+    {
+        if(params[0]*params[0] < DIST_CAM_EPS) {
+            // limit w->0
+            return (T)0;
+        }else{
+            const T mul2tanwby2 = (T)2.0 * tan(params[0]/2.0);
+            const T mul2tanwby2byw = mul2tanwby2 / params[0];
+
+            const T tanp_2 = tan(params[0]/2);
+            const T tanp_2_sqr_over_2 = (tanp_2*tanp_2)/2;
+            if(r*r < DIST_CAM_EPS) {
+                // limit r->0
+                return (2*(tanp_2_sqr_over_2 + 0.5))/params[0] -
+                        (2*tan(params[0]/2))/(params[0]*params[0]);
+            }else{
+                return (2*(tanp_2_sqr_over_2 + 0.5))/(params[0]*(4*r*r*tanp_2*tanp_2 + 1)) -
+                        atan(2*r*tan(params[0]/2))/(params[0]*params[0]*r);
             }
         }
     }

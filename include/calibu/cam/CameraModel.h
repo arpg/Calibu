@@ -370,6 +370,13 @@ public:
         _AssertInit();
         return m_pCam->dTransfer3D_dP(T_ba,rhoPa,rho);
     }
+
+    virtual Eigen::Matrix<Scalar,2,Eigen::Dynamic> dMap_dParams(const Eigen::Matrix<Scalar,3,1>& p,
+                                                                const Eigen::Matrix<Scalar,Eigen::Dynamic,1>& params) const
+    {
+        _AssertInit();
+        return m_pCam->dMap_dParams(p, params);
+    }
     
     void Scale( Scalar scale) {
         _AssertInit();

@@ -212,6 +212,10 @@ public:
     virtual Eigen::Matrix<Scalar,2,3> dProject_dP(const Vector3t& P) const = 0;
 
     ////////////////////////////////////////////////////////////////////////////
+    virtual Eigen::Matrix<Scalar,2,Eigen::Dynamic> dMap_dParams(const Eigen::Matrix<Scalar,3,1>& p,
+                                                                const Eigen::Matrix<Scalar,Eigen::Dynamic,1>& params) const = 0;
+
+    ////////////////////////////////////////////////////////////////////////////
     // Return Jacobian of Transfer3D \in RR^2 wrt homogeneous P \in RR^4.
     virtual Eigen::Matrix<Scalar,2,4> dTransfer3D_dP(
             const SE3t& T_ba,   //< Input:
