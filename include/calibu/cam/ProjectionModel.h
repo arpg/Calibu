@@ -117,7 +117,7 @@ struct ProjectionLinear
         const Eigen::Matrix<T,2,1> proj = calibu::Project(P);
         const T fac = DistortionModel::template RFactor<T>(proj.norm(), &params[4]);
         const T dfac = DistortionModel::template dRFactor_dParam<T>(proj.norm(), &params[4]);
-        const Eigen::Matrix<T,2,Eigen::Dynamic> dMap_dParams = (Eigen::Matrix<T,2,Eigen::Dynamic>(2,NUM_PARAMS) <<
+        const Eigen::Matrix<T,2,Eigen::Dynamic> dMap_dParams = (Eigen::Matrix<T,2,Eigen::Dynamic>(2,5) <<
                                                    fac*proj(0),           0, 1.0,   0, params[0]*proj(0)*dfac,
                                                              0, fac*proj(1),   0, 1.0, params[1]*proj(1)*dfac
                                                    ).finished();
