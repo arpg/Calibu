@@ -39,12 +39,12 @@ Tracker::Tracker(TargetInterface& target, int w, int h)
 }
 
 bool Tracker::ProcessFrame(
-        CameraModelInterface& cam, unsigned char* I, size_t pitch
+        CameraModelInterface& cam, unsigned char* I, size_t w, size_t h, size_t pitch
         )
 {
     double rms = 0;
     
-    imgs.Process(I, pitch );
+    imgs.Process(I, w, h, pitch );
     conic_finder.Find(imgs);
 
     const std::vector<Conic>& conics = conic_finder.Conics();

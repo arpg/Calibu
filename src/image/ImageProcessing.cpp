@@ -27,9 +27,10 @@
 namespace calibu
 {
 
-ImageProcessing::ImageProcessing(int width, int height)
+ImageProcessing::ImageProcessing(int maxWidth, int maxHeight)
+    : width(maxWidth), height(maxHeight), I(nullptr)
 {
-    AllocateImageData(width, height);
+    AllocateImageData(maxWidth*maxHeight);
 }
 
 ImageProcessing::~ImageProcessing()
@@ -37,18 +38,13 @@ ImageProcessing::~ImageProcessing()
     DeallocateImageData();
 }
 
-void ImageProcessing::AllocateImageData(int w, int h)
-{
-    width = w;
-    height = h;
-    
-    const int pixels = width*height;
-    
-    I = new unsigned char[pixels];
-    intI = new float[pixels];
-    dI = new Eigen::Vector2f[pixels];
-    lI = new short[pixels];
-    tI = new unsigned char[pixels];
+void ImageProcessing::AllocateImageData(int maxPixels)
+{    
+    I = new unsigned char[maxPixels];
+    intI = new float[maxPixels];
+    dI = new Eigen::Vector2f[maxPixels];
+    lI = new short[maxPixels];
+    tI = new unsigned char[maxPixels];
 }
 
 void ImageProcessing::DeallocateImageData()
@@ -60,9 +56,14 @@ void ImageProcessing::DeallocateImageData()
     delete[] tI;
 }
 
-void ImageProcessing::Process(unsigned char* greyscale_image, size_t pitch)
+void ImageProcessing::Process(unsigned char* greyscale_image, size_t w, size_t h, size_t pitch)
 {
+    width = w;
+    height = h;
+
+    // Copy input image
     if(pitch > width*sizeof(unsigned char) ) {
+        // Copy line by line
         for(int y=0; y < height; ++y) {
             memcpy(I+y*width, greyscale_image+y*pitch, width * sizeof(unsigned char) );
         }

@@ -111,18 +111,19 @@ int main( int argc, char** argv)
     unsigned char image_buffer[video.SizeBytes()];
     std::vector<pangolin::Image<unsigned char> > images;
     
-    // For the moment, assume all N cameras have same resolution
     const size_t N = video.Streams().size();
-    const size_t w = video.Streams()[0].Width();
-    const size_t h = video.Streams()[0].Height();
-    
-    // Check all channels are greyscale
+    size_t maxw = 0;
+    size_t maxh = 0;
+
+    // Check all channels are greyscale and find max width / height
     for(size_t i=0; i<N; ++i) {
         if( video.Streams()[i].PixFormat().channels != 1) {
             throw pangolin::VideoException("Video channels must be GRAY8 format. Use Convert:[fmt=GRAY8]// video scheme.");
         }
+        maxw = std::max(maxw, video.Streams()[i].Width() );
+        maxh = std::max(maxh, video.Streams()[i].Height() );
     } 
-    
+
     ////////////////////////////////////////////////////////////////////
     // Parse command line    
         
@@ -178,7 +179,7 @@ int main( int argc, char** argv)
     ////////////////////////////////////////////////////////////////////
     // Setup image processing pipeline
 
-    ImageProcessing image_processing(w,h);
+    ImageProcessing image_processing(maxw, maxh);
     image_processing.Params().black_on_white = true;
     image_processing.Params().at_threshold = 0.9;
     image_processing.Params().at_window_ratio = 30.0;
@@ -237,7 +238,7 @@ int main( int argc, char** argv)
     // Setup GUI
     
     const int PANEL_WIDTH = 150;
-    pangolin::CreateWindowAndBind("Main",(N+1)*w/2.0+PANEL_WIDTH,h/2.0);
+    pangolin::CreateWindowAndBind("Main",(N+1)*video.Streams()[0].Width()/2.0+PANEL_WIDTH,video.Streams()[0].Height()/2.0);
  
     // Make things look prettier...        
     glEnable(GL_LINE_SMOOTH);
@@ -249,10 +250,6 @@ int main( int argc, char** argv)
     glEnable( GL_DEPTH_TEST );    
     glLineWidth(1.7);
 
-    // Pangolin 3D Render state
-    pangolin::OpenGlRenderState stacks;
-    stacks.SetProjectionMatrix(pangolin::ProjectionMatrixRDF_TopLeft(640,480,420,420,320,240,0.01,1E6));
-    stacks.SetModelViewMatrix(pangolin::ModelViewLookAtRDF(0,0,-0.5, 0,0,0, 0, -1, 0) );
  
     // Create viewport for video with fixed aspect
     pangolin::CreatePanel("ui").SetBounds(1.0,0.0,0,pangolin::Attach::Pix(PANEL_WIDTH));
@@ -262,17 +259,26 @@ int main( int argc, char** argv)
             .SetLayout(pangolin::LayoutEqual);
  
     // Add view for each camera stream
+    const float aspect = (float)video.Streams()[0].Width() / (float)video.Streams()[0].Height();
     for(size_t c=0; c < N; ++c) {
-        container.AddDisplay( pangolin::CreateDisplay().SetAspect(w/(float)h) );
+        container.AddDisplay( pangolin::CreateDisplay().SetAspect(aspect) );
     }
  
+    // Pangolin 3D Render state
+    pangolin::OpenGlRenderState stacks;
+    stacks.SetProjectionMatrix(pangolin::ProjectionMatrixRDF_TopLeft(640,480,420,420,320,240,0.01,1E6));
+    stacks.SetModelViewMatrix(pangolin::ModelViewLookAtRDF(0,0,-0.5, 0,0,0, 0, -1, 0) );
+
     // Add 3d view, attach input handler
     pangolin::Handler3D handler(stacks);
-    pangolin::View& v3D = pangolin::CreateDisplay().SetAspect((float)w/h).SetHandler(&handler);
+    pangolin::View& v3D = pangolin::CreateDisplay().SetAspect(640.0/480.0).SetHandler(&handler);
     container.AddDisplay(v3D);
  
     // OpenGl Texture for video frame
-    pangolin::GlTexture tex(w,h,GL_LUMINANCE8);
+    pangolin::GlTexture tex[N];
+    for(unsigned int i=0; i<N; ++i) {
+        tex[i].Reinitialise(video.Streams()[i].Width(),video.Streams()[i].Height(),GL_LUMINANCE8);
+    }
     
     ////////////////////////////////////////////////////////////////////    
     // Display Variables 
@@ -330,7 +336,7 @@ int main( int argc, char** argv)
                 
         for(size_t iI = 0; iI < N; ++iI)
         {
-            image_processing.Process( images[iI].ptr, images[iI].pitch );
+            image_processing.Process( images[iI].ptr, images[iI].w, images[iI].h, images[iI].pitch );
             conic_finder.Find( image_processing );
             
             const std::vector<Conic>& conics = conic_finder.Conics();
@@ -381,17 +387,17 @@ int main( int argc, char** argv)
                 
                 // Display camera image
                 if(!disp_thresh) {
-                    tex.Upload(image_processing.Img(),GL_LUMINANCE,GL_UNSIGNED_BYTE);
-                    tex.RenderToViewportFlipY();
+                    tex[iI].Upload(image_processing.Img(),GL_LUMINANCE,GL_UNSIGNED_BYTE);
+                    tex[iI].RenderToViewportFlipY();
                 }else{
-                    tex.Upload(image_processing.ImgThresh(),GL_LUMINANCE,GL_UNSIGNED_BYTE);
-                    tex.RenderToViewportFlipY();
+                    tex[iI].Upload(image_processing.ImgThresh(),GL_LUMINANCE,GL_UNSIGNED_BYTE);
+                    tex[iI].RenderToViewportFlipY();
                 }
-    
+
                 // Setup orthographic pixel drawing
                 glMatrixMode(GL_PROJECTION);
                 glLoadIdentity();
-                glOrtho(-0.5,w-0.5,h-0.5,-0.5,0,1.0);
+                glOrtho(-0.5,images[iI].w-0.5,images[iI].h-0.5,-0.5,0,1.0);
                 glMatrixMode(GL_MODELVIEW);
                                 
                 if(disp_lines) { 
@@ -470,6 +476,9 @@ int main( int argc, char** argv)
             }
 
             for(size_t c=0; c< calibrator.NumCameras(); ++c) {
+                const int w_i = video.Streams()[c].Width();
+                const int h_i = video.Streams()[c].Height();
+
                 const Eigen::Matrix3d Kinv = calibrator.GetCamera(c).camera.Kinv();
                 
                 const CameraAndPose cap = calibrator.GetCamera(c);
@@ -484,7 +493,7 @@ int main( int argc, char** argv)
                 // Draw current camera
                 if(tracking_good[c]) {
                     pangolin::glColorBin(c, 2, 0.5);
-                    pangolin::glDrawFrustrum(Kinv,w,h,T_hw[c].inverse().matrix(),0.05);
+                    pangolin::glDrawFrustrum(Kinv,w_i,h_i,T_hw[c].inverse().matrix(),0.05);
                 }
             }
         }

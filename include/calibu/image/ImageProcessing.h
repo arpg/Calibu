@@ -44,10 +44,10 @@ struct ParamsImageProcessing
 class ImageProcessing
 {
 public:
-    ImageProcessing(int w, int h);
+    ImageProcessing(int maxWidth, int maxHeight);
     ~ImageProcessing();
     
-    void Process(unsigned char* greyscale_image, size_t pitch);
+    void Process(unsigned char* greyscale_image, size_t w, size_t h, size_t pitch);
     
     inline int Width()  const { return width; }
     inline int Height() const { return height; }
@@ -60,7 +60,7 @@ public:
     ParamsImageProcessing& Params() { return params; }
     
 protected:
-    void AllocateImageData(int w, int h);
+    void AllocateImageData(int maxPixels);
     void DeallocateImageData();
     
     int width, height;

@@ -327,7 +327,7 @@ int main( int argc, char** argv)
        
         for(size_t iI = 0; iI < N; ++iI)
         {
-            image_processing.Process( vImages[iI].data, vImages[iI].cols );
+            image_processing.Process( vImages[iI].data, vImages[iI].cols, vImages[iI].rows, vImages[iI].cols );
             conic_finder.Find( image_processing );
 
             const std::vector<Conic>& conics = conic_finder.Conics();
