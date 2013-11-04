@@ -30,7 +30,8 @@ string( TOLOWER ${PROJECT_NAME} LIBRARY_NAME )
 add_subdirectory( src )
 
 if( BUILD_APPLICATIONS )
-    add_subdirectory( applications )
-    add_subdirectory( examples )
+  set(Calibu_DIR ${Calibu_BINARY_DIR}/src)
+  add_subdirectory( applications )
+  add_subdirectory( examples )
 endif()
 
