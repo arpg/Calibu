@@ -111,6 +111,9 @@ file( RELATIVE_PATH REL_INCLUDE_DIR
     "${CMAKE_INSTALL_PREFIX}/${CMAKECONFIG_INSTALL_DIR}"
     "${CMAKE_INSTALL_PREFIX}/include" )
 
+option( EXPORT_Calibu
+  "Should the Calibu package be exported for use by other software" ON )
+
 # Export library for easy inclusion from other cmake projects.
 export( TARGETS ${LIBRARY_NAME}
         FILE "${CMAKE_CURRENT_BINARY_DIR}/CalibuTargets.cmake" )
@@ -130,7 +133,9 @@ configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/CalibuConfig.cmake.in
     ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CalibuConfig.cmake @ONLY )
 
 # Add package to CMake package registery for use from the build tree
-export( PACKAGE Calibu )
+if( EXPORT_Calibu )
+  export( PACKAGE Calibu )
+endif()
 
 #######################################################
 ## Install headers / targets
