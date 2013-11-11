@@ -84,6 +84,8 @@ public:
         m_solver_options.update_state_every_iteration = true;
         m_solver_options.max_num_iterations = 10;
         
+        m_termination_type = ceres::DID_NOT_RUN;
+
         Clear();
     }
     
@@ -249,7 +251,16 @@ public:
     {
         return m_mse;
     }
-    
+
+    /// Return true if one of the tolerance criteria is reached.
+    bool ReachedTolerance()
+    {
+    	return ((m_termination_type == ceres::FUNCTION_TOLERANCE) ||
+		(m_termination_type == ceres::PARAMETER_TOLERANCE) ||
+		(m_termination_type == ceres::GRADIENT_TOLERANCE));
+    }
+
+
 #ifdef CALIBU_CERES_COVAR    
     /// Print summary of calibration
     void PrintResults()
@@ -369,7 +380,8 @@ protected:
                 try {
                     ceres::Solver::Summary summary;
                     ceres::Solve(m_solver_options, &problem, &summary);
-                    std::cout << summary.BriefReport() << std::endl;     
+                    std::cout << summary.BriefReport() << std::endl;
+                    m_termination_type = summary.termination_type;
                     m_mse = summary.final_cost / summary.num_residuals;
                     std::cout << "Frames: " << m_T_kw.size() << "; Observations: " << summary.num_residuals << "; mse: " << m_mse << std::endl;
                 }catch(std::exception e) {
@@ -384,9 +396,9 @@ protected:
     std::thread m_thread;
     bool m_should_run;
     bool m_running;
-    
     bool m_fix_intrinsics;
- 
+    ceres::SolverTerminationType m_termination_type;
+    
     std::vector< std::unique_ptr<Sophus::SE3d> > m_T_kw;
     std::vector< std::unique_ptr<CameraAndPose> > m_camera;
     std::vector< std::unique_ptr<CostFunctionAndParams > > m_costs;
