@@ -73,6 +73,8 @@ SET(
 # git://github.com/stevenlovegrove/Sophus.git
 find_package( Eigen3 REQUIRED )
 find_package( Sophus REQUIRED )
+
+set(NO_OPENCV_GPU TRUE)
 find_package( OpenCV REQUIRED )
 find_package( ZLIB REQUIRED )
 

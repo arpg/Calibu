@@ -15,6 +15,9 @@
 # Jbohren [2011-06-10]:
 # - Added OpenCV_ROOT_DIR for UNIX platforms & additional opencv include dir
 #
+# jmorrison [2013-11-14]:
+# - Added flag to disable GPU requirement (NO_OPENCV_GPU)
+# 
 # This file should be removed when CMake will provide an equivalent
 
 #MESSAGE(STATUS "Looking for OpenCV2...")
@@ -175,7 +178,7 @@ SET(OpenCV2_INCLUDE_DIRS
     ${OpenCV2_VIDEO_INCLUDE_DIR}
     )
 
-IF(NOT ANDROID)
+IF(NOT ANDROID AND NOT NO_OPENCV_GPU)
     LIST(APPEND OpenCV2_INCLUDE_DIRS ${OpenCV2_GPU_INCLUDE_DIR})
 ENDIF()
 
@@ -193,7 +196,7 @@ SET(OpenCV2_LIBRARIES
     ${OpenCV2_VIDEO_LIBRARY}
     )
 
-IF(NOT ANDROID)
+IF(NOT ANDROID AND NOT NO_OPENCV_GPU)
     LIST(APPEND OpenCV2_LIBRARIES ${OpenCV2_GPU_LIBRARY})
 else()
     LIST(APPEND OpenCV2_LIBRARIES ${OpenCV2_JAVA_LIBRARY})
