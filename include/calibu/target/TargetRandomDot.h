@@ -47,7 +47,8 @@ struct ParamsRandomDot
 class TargetRandomDot
         : public TargetInterface
 {
-public:
+ public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
     TargetRandomDot();
 
     ////////////////////////////////////////////////////////////////////////////

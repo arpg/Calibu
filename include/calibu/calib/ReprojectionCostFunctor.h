@@ -1,4 +1,4 @@
-/* 
+/*
    This file is part of the Calibu Project.
    https://github.com/gwu-robotics/Calibu
 
@@ -34,11 +34,13 @@ namespace calibu
 template<typename ProjModel>
 struct ReprojectionCostFunctor
 {
-    ReprojectionCostFunctor(Eigen::Vector3d Pw, Eigen::Vector2d pc)
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+    ReprojectionCostFunctor(const Eigen::Vector3d& Pw,
+                            const Eigen::Vector2d& pc)
         : m_Pw(Pw), m_pc(pc)
-    {        
+    {
     }
-    
+
     template<typename T>
     bool operator()(
             const T* const pT_kw, const T* const pT_ck, const T* const camparam,
@@ -48,13 +50,13 @@ struct ReprojectionCostFunctor
         Eigen::Map<Eigen::Matrix<T,2,1> > r(residuals);
         const Eigen::Map<const Sophus::SE3Group<T> > T_kw(pT_kw);
         const Eigen::Map<const Sophus::SE3Group<T> > T_ck(pT_ck);
-        
+
         const Eigen::Matrix<T,3,1> Pc = T_ck * (T_kw * m_Pw.cast<T>());
         const Eigen::Matrix<T,2,1> pc = ProjModel::template Project<T>(Pc, camparam);
         r = pc - m_pc.cast<T>();
         return true;
-    }    
-    
+    }
+
     Eigen::Vector3d m_Pw;
     Eigen::Vector2d m_pc;
 };

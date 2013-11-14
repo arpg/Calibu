@@ -1,4 +1,4 @@
-/* 
+/*
    This file is part of the Calibu Project.
    https://github.com/gwu-robotics/Calibu
 
@@ -37,16 +37,17 @@ struct Triple;
 
 struct Vertex
 {
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
     inline Vertex(size_t id, const Conic& c)
         : id(id), conic(c), pc(c.center), pg(GRID_INVALID,GRID_INVALID), area(0.0), value(-1)
     {
     }
-    
+
     inline bool HasGridPosition()
     {
         return pg(0) != GRID_INVALID;
     }
-    
+
     size_t id;
     Conic conic;
     Eigen::Vector2d pc;
@@ -63,40 +64,40 @@ struct Triple
     {
         vs = {{&o1, &c, &o2}};
     }
-    
+
     inline Vertex& Center() { return *vs[1]; }
     inline const Vertex& Center() const { return *vs[1]; }
-    
-    inline Vertex& Neighbour(size_t i) { return i ? *vs[2] : *vs[0]; }    
+
+    inline Vertex& Neighbour(size_t i) { return i ? *vs[2] : *vs[0]; }
     inline const Vertex& Neighbour(size_t i) const { return i ? *vs[2] : *vs[0]; }
-    
-    inline Vertex& OtherNeighbour(size_t i) { return i ? *vs[0] : *vs[2]; }    
+
+    inline Vertex& OtherNeighbour(size_t i) { return i ? *vs[0] : *vs[2]; }
     inline const Vertex& OtherNeighbour(size_t i) const { return i ? *vs[0] : *vs[2]; }
-    
+
     inline Vertex& Vert(size_t i) { return *vs[i]; }
     inline const Vertex& Vert(size_t i) const { return *vs[i]; }
-    
+
     inline Eigen::Vector2d Dir() const
     {
         return vs[2]->pc - vs[0]->pc;
     }
-    
+
     inline bool Contains(const Vertex& v) const
     {
         const bool found = std::find(vs.begin(), vs.end(), &v) != vs.end();
         return found;
     }
-    
+
     inline bool In(const std::set<Vertex*> bag) const
     {
         return bag.find(vs[0]) != bag.end() && bag.find(vs[2]) != bag.end();
     }
-    
+
     inline void Reverse()
     {
         std::swap(vs[0], vs[2]);
     }
-    
+
     // Colinear sequence of vertices, v[0], v[1], v[2]. v[1] is center
     std::array<Vertex*,3> vs;
 };
@@ -134,7 +135,7 @@ struct LineGroup
         : ops{o.vs[0]->id, o.vs[1]->id, o.vs[2]->id}
     {
     }
-    
+
     bool Merge(LineGroup& o)
     {
         if(last() == o.second() && pen() == o.first() ) {
@@ -143,7 +144,7 @@ struct LineGroup
             return true;
         }else if(o.last() == second() && o.pen() == first() ) {
             ops.insert(ops.begin(), o.ops.begin(), std::prev(o.ops.end(),2) );
-            o.ops.clear();            
+            o.ops.clear();
             return true;
         }else if( last() == o.pen() && pen() == o.last() ) {
             ops.insert(ops.end(), std::next(o.ops.rbegin(),2), o.ops.rend() );
@@ -156,19 +157,19 @@ struct LineGroup
         }
         return false;
     }
-    
+
     void Reverse()
     {
         std::list<size_t> rev_ops;
         rev_ops.insert(rev_ops.begin(), ops.rbegin(), ops.rend());
         ops = rev_ops;
     }
-    
+
     size_t first() { return *ops.begin(); }
     size_t last() { return *ops.rbegin(); }
     size_t second() { return *std::next(ops.begin()); }
     size_t pen() { return *std::next(ops.rbegin()); }
-    
+
     std::list<size_t> ops;
     double theta;
     int k;

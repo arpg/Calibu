@@ -61,6 +61,8 @@ class TargetGridDot
         : public TargetInterface
 {
 public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+
     TargetGridDot(double grid_spacing, Eigen::Vector2i grid_size, uint32_t seed = 71);
 
     ////////////////////////////////////////////////////////////////////////////
@@ -137,7 +139,10 @@ public:
 protected:
     void Clear();
     void SetGrid(Vertex& v, const Eigen::Vector2i& g);
-    bool Match(std::map<Eigen::Vector2i, Vertex*>& obs, const std::array<Eigen::MatrixXi,4>& PG);
+  bool Match(std::map<Eigen::Vector2i, Vertex*,
+             std::less<Eigen::Vector2i>,
+             Eigen::aligned_allocator<std::pair<Eigen::Vector2i, Vertex*> > >& obs,
+             const std::array<Eigen::MatrixXi,4>& PG);
 
     std::vector<Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> > tpts2d;
     std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > tpts3d;
@@ -150,7 +155,10 @@ protected:
     ParamsGridDot params;
 
     std::vector<Vertex> vs;
-    std::map<Eigen::Vector2i, Vertex*> map_grid_ellipse;
+    std::map<Eigen::Vector2i, Vertex*,
+             std::less<Eigen::Vector2i>,
+             Eigen::aligned_allocator<
+               std::pair<Eigen::Vector2i, Vertex*> > > map_grid_ellipse;
 
     std::list<LineGroup> line_groups;
 };

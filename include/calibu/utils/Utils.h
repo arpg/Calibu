@@ -1,4 +1,4 @@
-/* 
+/*
    This file is part of the Calibu Project.
    https://github.com/gwu-robotics/Calibu
 
@@ -39,8 +39,8 @@ bool is_finite(const Eigen::MatrixBase<Derived>& x)
 }
 
 Eigen::Matrix3d EstimateH_ba(
-        const std::vector<Eigen::Vector2d >& a,
-        const std::vector<Eigen::Vector2d >& b
+        const std::vector<Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> >& a,
+        const std::vector<Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> >& b
         );
 
 inline Eigen::Matrix3d SkewSym( const Eigen::Vector3d& A)
@@ -59,7 +59,7 @@ inline Eigen::Matrix4d SymmetryTransform( const Eigen::Vector4d& N )
     // "The top-left 3 × 3 sub-matrix of any element in ss(3) is always a House-holder matrix"
     // therefore S in ss(3) is involutionary: S^{-1} = S
     // T = S1.S2 where S1,S2 in ss(3) and T in SE(3)
-    
+
     Eigen::Matrix4d S = Eigen::Matrix4d::Identity();
     const Eigen::Vector3d n = N.head<3>();
     const double d = -N[3];

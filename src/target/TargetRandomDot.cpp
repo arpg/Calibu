@@ -373,7 +373,8 @@ double RansacMatchCostFunction( const Sophus::SE2d& T, int i, RansacMatchData* d
     return (data->tpts[data->mpts_label[i]] - p).norm();
 }
 
-Sophus::SE2d PoseFromCorrespondences(const vector<const Eigen::Vector2d *>& a, const vector<const Eigen::Vector2d *>& b)
+Sophus::SE2d PoseFromCorrespondences(const vector<const Eigen::Vector2d *>& a,
+                                     const vector<const Eigen::Vector2d *>& b)
 {
     int n = a.size();
     double x1 = 0.0, x2 = 0.0, y1 = 0.0, y2 = 0.0, xx = 0.0, yy = 0.0, xy = 0.0, yx = 0.0;
@@ -572,8 +573,8 @@ double RansacHomogCostFunction( const Matrix3d& H_tm, int i, RansacMatchData* da
 
 Matrix3d RansacHomogModelFunction( const std::vector<int>& indices, RansacMatchData* data )
 {
-    std::vector<Vector2d > mpts;
-    std::vector<Vector2d > tpts;
+  std::vector<Vector2d, Eigen::aligned_allocator<Eigen::Vector2d>> mpts;
+  std::vector<Vector2d, Eigen::aligned_allocator<Eigen::Vector2d>> tpts;
 
     for( unsigned int i=0; i< indices.size(); ++i )
     {

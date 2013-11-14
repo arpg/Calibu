@@ -1,10 +1,10 @@
-/* 
+/*
    This file is part of the Calibu Project.
    https://github.com/gwu-robotics/Calibu
 
    Copyright (C) 2013 George Washington University,
                       Steven Lovegrove,
-                      Gabe Sibley 
+                      Gabe Sibley
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -35,12 +35,14 @@ namespace calibu
         class CameraModelT : public CameraModelInterfaceT<Scalar>
     {
         public:
+            EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+
             typedef typename CameraModelInterfaceT<Scalar>::Vector2t Vector2t;
             typedef typename CameraModelInterfaceT<Scalar>::Vector3t Vector3t;
             typedef typename CameraModelInterfaceT<Scalar>::VectorXt VectorXt;
             typedef typename CameraModelInterfaceT<Scalar>::Matrix3t Matrix3t;
             typedef typename CameraModelInterfaceT<Scalar>::SE3t SE3t;
-            
+
             typedef typename ProjectionModel::DistortionFreeModel DistortionFreeModel;
 
             static const unsigned NUM_PARAMS = ProjectionModel::NUM_PARAMS;
@@ -85,7 +87,7 @@ namespace calibu
                     // Inverse depth point in a transformed to b (homogeneous 2D)
                     const Eigen::Matrix<T,3,1> Pb =
                         T_ba.rotationMatrix() * rhoPa + rho * T_ba.translation();
-                    
+
                     in_front = Pb(2) > 0;
 
                     // apply projection, distortion and linear cam
@@ -131,7 +133,7 @@ namespace calibu
 
         private:
             void ConstructorImpl(
-                    size_t w,  size_t h, 
+                    size_t w,  size_t h,
                     const Eigen::Matrix<Scalar,NUM_PARAMS,1>& params
                     )
             {
@@ -148,8 +150,8 @@ namespace calibu
         public:
 
             // Most general delegate constructor
-            CameraModelT( 
-                    size_t w,  size_t h, 
+            CameraModelT(
+                    size_t w,  size_t h,
                     const Eigen::Matrix<Scalar,NUM_PARAMS,1>& params
                     )
             {
@@ -159,17 +161,17 @@ namespace calibu
             CameraModelT()
             {
                 ConstructorImpl(0,0, Eigen::Matrix<Scalar,NUM_PARAMS,1>::Zero());
-            }    
+            }
 
             CameraModelT(size_t w, size_t h)
             {
                 ConstructorImpl(w, h, Eigen::Matrix<Scalar,NUM_PARAMS,1>::Zero());
-            }    
+            }
 
             CameraModelT( const Eigen::Matrix<Scalar,NUM_PARAMS,1>& params)
             {
                 ConstructorImpl(0, 0, params);
-            }    
+            }
 
             CameraModelT(Scalar* cam_params)
             {
@@ -182,17 +184,17 @@ namespace calibu
             }
 
             // copy constructor
-            CameraModelT( const CameraModelT& rRHS ) 
+            CameraModelT( const CameraModelT& rRHS )
             {
                 m_nWidth    = rRHS.m_nWidth;
                 m_nHeight   = rRHS.m_nHeight;
                 m_params    = rRHS.m_params;
-                m_RDF       = rRHS.m_RDF; 
+                m_RDF       = rRHS.m_RDF;
                 m_nIndex    = rRHS.m_nIndex;
                 m_nSerialNo = rRHS.m_nSerialNo;
                 m_nVersion  = rRHS.m_nVersion;
                 m_sName     = rRHS.m_sName;
-            }    
+            }
 
             ///////////////////////////////////////////////////////////////////////////
             // Member functions
@@ -209,15 +211,15 @@ namespace calibu
             {
                 m_nVersion = nVersion;
             }
-            
-            /// Report camera model 
-            static std::string StaticType() 
+
+            /// Report camera model
+            static std::string StaticType()
             {
                 return "calibu_" + ProjectionModel::Type();
-            }            
+            }
 
-            /// Report camera model 
-            std::string Type() const 
+            /// Report camera model
+            std::string Type() const
             {
                 return StaticType();
             }
@@ -294,18 +296,18 @@ namespace calibu
             std::string Name() const
             {
                 return m_sName;
-            } 
+            }
 
             /// Set the camera model name. e.g., "Left"
             void SetName( const std::string& sName )
             {
                 m_sName = sName;
             }
-            
+
             CameraModelT<DistortionFreeModel,Scalar> DistortionFreeCamera() const
             {
                 CameraModelT<DistortionFreeModel,Scalar> ret(
-                        m_nWidth, m_nHeight, 
+                        m_nWidth, m_nHeight,
                         m_params.template head<DistortionFreeModel::NUM_PARAMS>()
                         );
                 return ret;
@@ -330,12 +332,12 @@ namespace calibu
             {
                 return m_params;
             }
-            
+
             size_t NumParams() const
             {
                 return NUM_PARAMS;
             }
-                
+
             const Scalar* data() const
             {
                 return m_params.data();
@@ -345,7 +347,7 @@ namespace calibu
             {
                 return m_params.data();
             }
-            
+
             inline Matrix3t K() const
             {
                 return ProjectionModel::MakeK(m_params.data());
@@ -355,7 +357,7 @@ namespace calibu
             {
                 return ProjectionModel::MakeKinv(m_params.data());
             }
-            
+
             inline Vector2t Project(const Vector3t& P) const
             {
                 return ProjectionModel::Project(P, m_params.data());
@@ -364,7 +366,7 @@ namespace calibu
             inline Vector3t Unproject(const Vector2t& p) const
             {
                 return ProjectionModel::Unproject(p, m_params.data());
-            }            
+            }
 
             inline Vector2t Transfer(const SE3t& T_ba, const Vector2t& pa, Scalar rho) const
             {
@@ -375,7 +377,7 @@ namespace calibu
             {
                 return Transfer<Scalar>(data(), T_ba, pa, rho, in_front);
             }
-            
+
             inline Vector2t Transfer3D(
                     const Sophus::SE3Group<Scalar>& T_ba,
                     const Vector3t& rhoPa, const Scalar rho
@@ -383,7 +385,7 @@ namespace calibu
             {
                 return Transfer3D<Scalar>(m_params.data(), T_ba, rhoPa, rho);
             }
-            
+
             inline Vector2t Transfer3D(
                     const Sophus::SE3Group<Scalar>& T_ba,
                     const Vector3t& rhoPa, const Scalar rho,
@@ -392,23 +394,23 @@ namespace calibu
             {
                 return Transfer3D<Scalar>(m_params.data(), T_ba, rhoPa, rho, in_front);
             }
-            
+
             inline Vector2t Transfer(
                     const CameraModelInterfaceT<Scalar>& cam_a,
-                    const SE3t& T_ba,   
-                    const Vector2t& pa, 
-                    const Scalar rho    
+                    const SE3t& T_ba,
+                    const Vector2t& pa,
+                    const Scalar rho
                     ) const
             {
                 // rho*Pa (undo distortion, unproject, avoid division by inv depth)
                 const Vector3t rhoPa = cam_a.Unproject(pa);
                 return Transfer3D(T_ba, rhoPa, rho);
             }
-            
+
             inline Vector2t Transfer(
-                    const CameraModelInterfaceT<Scalar>& cam_a,            
+                    const CameraModelInterfaceT<Scalar>& cam_a,
                     const SE3t& T_ba,
-                    const Vector2t& pa, 
+                    const Vector2t& pa,
                     const Scalar rho,
                     bool& in_front
                     ) const
@@ -417,7 +419,7 @@ namespace calibu
                 const Vector3t rhoPa = cam_a.Unproject(pa);
                 return Transfer3D(T_ba, rhoPa, rho, in_front);
             }
-            
+
             inline Eigen::Matrix<Scalar,2,3> dProject_dP(
                     const Vector3t& P //< Input:
                     ) const
@@ -451,12 +453,12 @@ namespace calibu
 
                 return J;
             }
-            
+
             inline void Scale( Scalar scale) {
                 m_nWidth  *= scale;
                 m_nHeight *= scale;
                 ProjectionModel::Scale(scale, m_params.data() );
-            }            
+            }
 
         protected:
 

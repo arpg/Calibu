@@ -1,8 +1,8 @@
-/* 
+/*
    This file is part of the Calibu Project.
    https://github.com/gwu-robotics/Calibu
 
-   Copyright (C) 2013 George Washington University, 
+   Copyright (C) 2013 George Washington University,
                       Steven Lovegrove
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -81,9 +81,9 @@ std::array<pair<Vector3d,Matrix3d >, 2 > PlaneFromConic(const Conic& c, double p
     const Matrix3d R1 = svd.matrixU();
     const Vector3d l = svd.singularValues();
     const double t = atan( sqrt( (l[1]-l[0]) / (l[2]-l[1]) ) );
-    
+
     std::array<pair<Vector3d,Matrix3d >, 2> r;
-    
+
     for( int i=0; i < 2; ++i )
     {
         const double theta = (i*2-1)*t;
@@ -92,11 +92,11 @@ std::array<pair<Vector3d,Matrix3d >, 2 > PlaneFromConic(const Conic& c, double p
         //    const Matrix3d C__ = R.T() * Cn * R;
         const Vector3d n = R * Vector3d(0,0,-1);
         const double d = sqrt( (l[1]*l[1])/(l[0]*l[2]) ) * plane_circle_radius;
-        
+
         r[i].first = n.normalized() / d;
         r[i].second = R;
     }
-    
+
     return r;
 }
 
@@ -104,7 +104,7 @@ pair<Vector3d,Matrix3d > PlaneFromConics( const vector<Conic>& conics, double pl
 {
     double best_score = numeric_limits<double>::max();
     pair<Vector3d,Matrix3d > best;
-    
+
     // Find transformation with lowest score over all conics
     for( unsigned int i=0; i < conics.size(); ++i )
     {
@@ -119,27 +119,27 @@ pair<Vector3d,Matrix3d > PlaneFromConics( const vector<Conic>& conics, double pl
             }
         }
     }
-    
+
     return best;
 }
 
 Conic UnmapConic( const Conic& c, const CameraModelInterface& cam )
 {
-    std::vector<Eigen::Vector2d > d;
-    std::vector<Eigen::Vector2d > u;
-    
+    std::vector<Eigen::Vector2d , Eigen::aligned_allocator<Eigen::Vector2d> > d;
+    std::vector<Eigen::Vector2d , Eigen::aligned_allocator<Eigen::Vector2d> > u;
+
     d.push_back(c.center);
     d.push_back(Eigen::Vector2d(c.bbox.x1,c.bbox.y1));
     d.push_back(Eigen::Vector2d(c.bbox.x1,c.bbox.y2));
     d.push_back(Eigen::Vector2d(c.bbox.x2,c.bbox.y1));
     d.push_back(Eigen::Vector2d(c.bbox.x2,c.bbox.y2));
-    
+
     for( int i=0; i<5; ++i )
         u.push_back( Project(cam.Unproject(d[i])) );
-    
+
     // Distortion locally estimated by homography
     const Matrix3d H_du = EstimateH_ba(u,d);
-    
+
     Conic ret;
     //  ret.bbox = c.bbox;
     ret.C = H_du.transpose() * c.C * H_du;

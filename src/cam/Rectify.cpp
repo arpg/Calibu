@@ -1,4 +1,4 @@
-/* 
+/*
    This file is part of the Calibu Project.
 https://github.com/gwu-robotics/Calibu
 
@@ -27,7 +27,7 @@ namespace calibu
 
     void CreateLookupTable(
             const calibu::CameraModelInterface& cam_from,
-            const Eigen::Matrix3d R_onKinv,
+            const Eigen::Matrix3d& R_onKinv,
             Eigen::Matrix<Eigen::Vector2f, Eigen::Dynamic, Eigen::Dynamic>& lookup_warp
             )
     {
@@ -40,7 +40,7 @@ namespace calibu
                 // Clamp to valid image coords
                 p_warped[0] = std::min(std::max(0.0, p_warped[0]), cam_from.Width() - 1.0 );
                 p_warped[1] = std::min(std::max(0.0, p_warped[1]), cam_from.Height() - 1.0 );
-                
+
                 lookup_warp(r,c) = p_warped.cast<float>();
             }
         }
@@ -49,13 +49,13 @@ namespace calibu
     ///////////////////////////////////////////////////////////////////////////////
     void CreateLookupTable(
             const calibu::CameraModelInterface& cam_from,
-            const Eigen::Matrix3d R_onKinv,
-            LookupTable& lut  
+            const Eigen::Matrix3d& R_onKinv,
+            LookupTable& lut
             )
     {
         const int w = cam_from.Width();
         const int h = cam_from.Height();
-        
+
         for( int r = 0; r < h; ++r) {
             for( int c = 0; c < w; ++c) {
                 // Remap
@@ -83,7 +83,7 @@ namespace calibu
                     v -= 1;
                     sv = 1.0;
                 }
-                
+
                 // Pre-compute the bilinear interpolation weights
                 BilinearLutPoint p;
                 p.idx0 = u + v*w;
@@ -107,13 +107,13 @@ namespace calibu
     {
         // Make the most of the continuous block of memory!
         const BilinearLutPoint* ptr   = &lut.m_vLutPixels[0];
-        
+
         const int nHeight = lut.Height();
         const int nWidth  = lut.Width();
-        
+
         // Make sure we have been given a correct lookup table.
         assert(w== nWidth && h == nHeight);
-        
+
         for( int nRow = 0; nRow < nHeight; nRow++ ) {
             for( int nCol = 0; nCol < nWidth; nCol++ ) {
                 *pOutputRectImageData++ =
@@ -127,4 +127,3 @@ namespace calibu
     }
 
 } // end namespace
-

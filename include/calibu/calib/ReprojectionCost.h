@@ -1,4 +1,4 @@
-/* 
+/*
    This file is part of the Calibu Project.
    https://github.com/gwu-robotics/Calibu
 
@@ -36,11 +36,12 @@ struct ReprojectionCost
         2,  Sophus::SE3d::num_parameters, Sophus::SE3d::num_parameters,
         ProjModel::NUM_PARAMS>
 {
-    ReprojectionCost(Eigen::Vector3d Pw, Eigen::Vector2d pc)
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+    ReprojectionCost(const Eigen::Vector3d& Pw, const Eigen::Vector2d& pc)
         : m_Pw(Pw), m_pc(pc)
-    {        
+    {
     }
-    
+
     template<typename T=double>
     bool Evaluate(T const* const* parameters, T* residuals) const
     {
@@ -48,13 +49,13 @@ struct ReprojectionCost
         const Eigen::Map<const Sophus::SE3Group<T> > T_kw(parameters[0]);
         const Eigen::Map<const Sophus::SE3Group<T> > T_ck(parameters[1]);
         T const* camparam = parameters[2];
-        
+
         const Eigen::Matrix<T,3,1> Pc = T_ck * (T_kw * m_Pw.cast<T>());
         const Eigen::Matrix<T,2,1> pc = ProjModel::template Map<T>(Project<T>(Pc), camparam);
         r = pc - m_pc.cast<T>();
         return true;
-    }    
-    
+    }
+
     Eigen::Vector3d m_Pw;
     Eigen::Vector2d m_pc;
 };
