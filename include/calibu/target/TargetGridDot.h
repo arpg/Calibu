@@ -1,4 +1,4 @@
-/* 
+/*
    This file is part of the Calibu Project.
    https://github.com/gwu-robotics/Calibu
 
@@ -48,7 +48,7 @@ struct ParamsGridDot
         cross_radius_ratio(0.058),
         cross_line_ratio(0.036)
     {}
-    
+
     double max_line_dist_ratio;
     double max_norm_triple_area;
     double min_cross_area;
@@ -62,9 +62,9 @@ class TargetGridDot
 {
 public:
     TargetGridDot(double grid_spacing, Eigen::Vector2i grid_size, uint32_t seed = 71);
-    
+
     ////////////////////////////////////////////////////////////////////////////
-    
+
     bool FindTarget(
             const Sophus::SE3d& T_cw,
             const CameraModelInterface& cam,
@@ -72,47 +72,50 @@ public:
             const std::vector<Conic>& conics,
             std::vector<int>& ellipse_target_map
             );
-    
+
     bool FindTarget(
             const CameraModelInterface& cam,
             const ImageProcessing& images,
             const std::vector<Conic>& conics,
             std::vector<int>& ellipse_target_map
             );
-    
+
     bool FindTarget(
             const ImageProcessing& images,
             const std::vector<Conic>& conics,
             std::vector<int>& ellipse_target_map
             );
-    
+
     ////////////////////////////////////////////////////////////////////////////
 
-    inline double CircleRadius() const 
+    inline double CircleRadius() const
     {
         // TODO: Load this from eps or something.
         return grid_spacing / 10.0;
     }
-    
-    inline const std::vector<Eigen::Vector2d >& Circles2D() const 
+
+    inline const std::vector<Eigen::Vector2d,
+                             Eigen::aligned_allocator<Eigen::Vector2d> >& Circles2D() const
     {
         return tpts2d;
     }
-    
-    inline const std::vector<Eigen::Vector3d >& Circles3D() const {
+
+    inline const std::vector<Eigen::Vector3d,
+                      Eigen::aligned_allocator<Eigen::Vector3d> >& Circles3D() const {
         return tpts3d;
     }
 
-    inline const std::vector<Eigen::Vector3d >& Code3D() const {
+    inline const std::vector<Eigen::Vector3d,
+                             Eigen::aligned_allocator<Eigen::Vector3d> >& Code3D() const {
         return codepts3d;
     }
 
     ////////////////////////////////////////////////////////////////////////////
-    
+
     const std::vector<Vertex>& Map() const {
         return vs;
     }
-    
+
     const std::list<LineGroup>& LineGroups() const {
         return line_groups;
     }
@@ -122,10 +125,10 @@ public:
         return PG[idx];
     }
 
-    void SaveEPS( 
-            std::string filename, 
+    void SaveEPS(
+            std::string filename,
             const Eigen::Vector2d& offset,
-            double rad0, 
+            double rad0,
             double rad1,
             double pts_per_unit,
             unsigned char id = 0
@@ -135,21 +138,20 @@ protected:
     void Clear();
     void SetGrid(Vertex& v, const Eigen::Vector2i& g);
     bool Match(std::map<Eigen::Vector2i, Vertex*>& obs, const std::array<Eigen::MatrixXi,4>& PG);
-    
-    std::vector<Eigen::Vector2d > tpts2d;
-    std::vector<Eigen::Vector3d > tpts3d;
- 
-    std::vector<Eigen::Vector3d > codepts3d;
- 
+
+    std::vector<Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> > tpts2d;
+    std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > tpts3d;
+  std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > codepts3d;
+
     double grid_spacing;
     Eigen::Vector2i grid_size;
     std::array<Eigen::MatrixXi,4> PG;
-    
+
     ParamsGridDot params;
-    
+
     std::vector<Vertex> vs;
     std::map<Eigen::Vector2i, Vertex*> map_grid_ellipse;
-    
+
     std::list<LineGroup> line_groups;
 };
 

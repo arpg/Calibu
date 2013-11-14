@@ -1,4 +1,4 @@
-/* 
+/*
    This file is part of the Calibu Project.
    https://github.com/gwu-robotics/Calibu
 
@@ -35,7 +35,7 @@ Tracker::Tracker(TargetInterface& target, int w, int h)
     : target(target), imgs(w,h),
       last_good(0), good_frames(0)
 {
-    
+
 }
 
 bool Tracker::ProcessFrame(
@@ -43,7 +43,7 @@ bool Tracker::ProcessFrame(
         )
 {
     double rms = 0;
-    
+
     imgs.Process(I, w, h, pitch );
     conic_finder.Find(imgs);
 
@@ -52,7 +52,7 @@ bool Tracker::ProcessFrame(
     // Generate map and point structures
     conics_target_map.clear();
     conics_target_map.resize(conics.size(),-1);
-    vector<Vector2d > ellipses;
+    vector<Vector2d, aligned_allocator<Vector2d> > ellipses;
     for( size_t i=0; i < conics.size(); ++i ) {
         ellipses.push_back(Vector2d(conics[i].center.x(),conics[i].center.y()));
     }
@@ -62,42 +62,42 @@ bool Tracker::ProcessFrame(
     for( unsigned int i=0; i<conics.size(); ++i ) {
         conics_camframe.push_back(UnmapConic(conics[i],cam));
     }
- 
+
     // Find target given (approximately) undistorted conics
     const static CameraModelT<ProjectionLinearId> idcam;
- 
+
     target.FindTarget( idcam, imgs, conics_camframe, conics_target_map );
     conics_candidate_map_first_pass = conics_target_map;
     int inliers = CountInliers(conics_candidate_map_first_pass);
     if (inliers<params.inlier_num_required) {
         return false;
     }
- 
+
     conics_target_map = PosePnPRansac( cam, ellipses, target.Circles3D(),
             conics_candidate_map_first_pass, params.robust_3pt_its,
             params.robust_3pt_inlier_tol, &T_hw );
- 
+
     rms = ReprojectionErrorRMS(cam, T_hw, target.Circles3D(), ellipses,
                                conics_target_map);
     target.FindTarget( T_hw, cam, imgs, conics, conics_target_map);
-    
+
     conics_candidate_map_second_pass = conics_target_map;
-    
+
     inliers = CountInliers(conics_candidate_map_second_pass);
-    
+
     if (inliers<params.inlier_num_required){
         return false;
     }
- 
+
     conics_target_map = PosePnPRansac( cam, ellipses, target.Circles3D(),
             conics_candidate_map_second_pass, params.robust_3pt_its,
             params.robust_3pt_inlier_tol, &T_hw );
- 
+
     rms = ReprojectionErrorRMS(cam, T_hw, target.Circles3D(), ellipses,
                                conics_target_map);
-    
+
     inliers = CountInliers(conics_target_map);
-    
+
     if( isfinite((double)rms) && rms < params.max_rms
             &&  inliers>=params.inlier_num_required) {
         T_gw = T_hw;

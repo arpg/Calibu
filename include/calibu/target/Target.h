@@ -1,4 +1,4 @@
-/* 
+/*
    This file is part of the Calibu Project.
    https://github.com/gwu-robotics/Calibu
 
@@ -34,19 +34,19 @@ namespace calibu
 class TargetInterface
 {
 public:
-    
+
     // Find target given conic observations
     // Returns true on success, false on failure
-    
+
     // Assume approximately known camera and pose
     virtual bool FindTarget(
-            const Sophus::SE3d& T_cw,            
+            const Sophus::SE3d& T_cw,
             const CameraModelInterface& cam,
             const ImageProcessing& images,
             const std::vector<Conic>& conics,
             std::vector<int>& conics_target_map
             ) = 0;
-    
+
     // Assume approximately known camera
     virtual bool FindTarget(
             const CameraModelInterface& cam,
@@ -54,21 +54,24 @@ public:
             const std::vector<Conic>& conics,
             std::vector<int>& conics_target_map
             ) = 0;
- 
+
     // Only observations known
     virtual bool FindTarget(
             const ImageProcessing& images,
             const std::vector<Conic>& conics,
             std::vector<int>& conics_target_map
             ) = 0;
-    
+
     // Return circle radius
     virtual double CircleRadius() const = 0;
-    
+
     // Return canonical set of known 2D/3D points.
-    virtual const std::vector<Eigen::Vector2d>& Circles2D() const = 0;
-    virtual const std::vector<Eigen::Vector3d>& Circles3D() const = 0;
-    virtual const std::vector<Eigen::Vector3d>& Code3D() const = 0;
+    virtual const std::vector<Eigen::Vector2d,
+                              Eigen::aligned_allocator<Eigen::Vector2d> >& Circles2D() const = 0;
+    virtual const std::vector<Eigen::Vector3d,
+                              Eigen::aligned_allocator<Eigen::Vector3d> >& Circles3D() const = 0;
+    virtual const std::vector<Eigen::Vector3d,
+                              Eigen::aligned_allocator<Eigen::Vector3d> >& Code3D() const = 0;
 };
 
 }

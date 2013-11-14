@@ -1,4 +1,4 @@
-/* 
+/*
    This file is part of the Calibu Project.
    https://github.com/gwu-robotics/Calibu
 
@@ -38,7 +38,7 @@ namespace calibu {
 
 // Forwards
 Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>
-DistanceMatrix(const std::vector<Eigen::Vector2d >& pts );
+DistanceMatrix(const std::vector<Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> >& pts );
 
 template<int R,int C,typename P>
 void SortRows(Eigen::Matrix<P,R,C,Eigen::RowMajor>& M)
@@ -59,7 +59,8 @@ void TargetRandomDot::SetSeed(int s )
     srand(seed);
 }
 
-Matrix<double,Dynamic,Dynamic,RowMajor> DistanceMatrix(const vector<Vector2d >& pts )
+Matrix<double,Dynamic,Dynamic,RowMajor> DistanceMatrix(
+    const vector<Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> >& pts )
 {
     Matrix<double,Dynamic,Dynamic,RowMajor> D(pts.size(),pts.size());
     for( unsigned int j=0; j < pts.size(); ++j )
@@ -79,17 +80,17 @@ void TargetRandomDot::Clear()
 
 void TargetRandomDot::InitializeFrom2DPts()
 {
-    for(vector<Vector2d >::const_iterator i = tpts.begin(); i != tpts.end(); ++i )
+  for(auto i = tpts.begin(); i != tpts.end(); ++i )
     {
         const Vector2d& p = *i;
         tpts3d.push_back(Vector3d(p[0],p[1],0));
         tpts_reflected.push_back(Vector2d(-p[0],p[1]));
     }
-    
+
     // Construct Distance matrix
-    dt = new Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>(DistanceMatrix(tpts));
+  dt = new Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>(DistanceMatrix(tpts));
     SortRows(*dt);
-    
+
     //  cout << "Target generated with " << tpts.size() << " circles." << endl;
 }
 
@@ -97,12 +98,12 @@ void TargetRandomDot::InitializeFrom2DPts()
 void TargetRandomDot::LoadPattern( std::string filename, double radius, double scale )
 {
     Clear();
-    
+
     this->radius = radius * scale;
-    
+
     size[0] = numeric_limits<double>::min();
     size[1] = numeric_limits<double>::min();
-    
+
     ifstream f;
     f.open(filename.c_str());
     while( !f.eof() )
@@ -117,39 +118,39 @@ void TargetRandomDot::LoadPattern( std::string filename, double radius, double s
         size[1] = max(size[1],p[1]);
         tpts.push_back(p);
     }
-    
+
     InitializeFrom2DPts();
 }
 
 void TargetRandomDot::GenerateCircular(unsigned int max_circles, double radius, double min_distance, double border, const Vector2d& size)
 {
     assert(size[0] == size[1]);
-    
+
     Clear();
-    
+
     const int MAX_FAILS = 1000;
-    
+
     this->size = size;
     this->radius = radius;
-    
+
     const double md2 = min_distance * min_distance;
-    
+
     int fails = 0;
-    
+
     // Generate circles
-    
+
     const double big_circle_radius = size[0]/2 - border - radius;
-    
+
     while( tpts.size() < max_circles && fails < MAX_FAILS )
     {
         const double x = ((double)rand() * 2 * big_circle_radius / (double)RAND_MAX) - big_circle_radius;
         const double y = ( ((int)rand() - (int)RAND_MAX/2) < 0 ? 1:-1) * sqrt(big_circle_radius*big_circle_radius - x*x);
-        
+
         Vector2d p = Vector2d(
                     radius + border + big_circle_radius + x,
                     radius + border + big_circle_radius + y
                     );
-        
+
         bool good = true;
         for( unsigned int i=0; i<tpts.size(); ++i )
         {
@@ -167,36 +168,36 @@ void TargetRandomDot::GenerateCircular(unsigned int max_circles, double radius, 
             ++fails;
         }
     }
-    
+
     InitializeFrom2DPts();
 }
 
 void TargetRandomDot::GenerateEmptyCircle(unsigned int max_circles, double radius, double min_distance, double border, double clear_radius, const Vector2d& size)
 {
     Clear();
-    
+
     const int MAX_FAILS = 1000;
-    
+
     this->size = size;
     this->radius = radius;
-    
+
     const Vector2d center = size / 2;
-    
+
     const double md2 = min_distance * min_distance;
-    
+
     int fails = 0;
-    
+
     // Generate circles
-    
+
     while( tpts.size() < max_circles && fails < MAX_FAILS )
     {
         Vector2d p = Vector2d(
                 (radius+border) + (double)rand() * ((double)size[0] - 2*(radius+border)) / (double)RAND_MAX,
                 (radius+border) + (double)rand() * ((double)size[1] - 2*(radius+border)) / (double)RAND_MAX
                 );
-        
+
         bool good = ( p - center).norm() > clear_radius;
-        
+
         for( unsigned int i=0; i<tpts.size(); ++i )
         {
             if( (p - tpts[i]).squaredNorm() < md2 )
@@ -213,25 +214,25 @@ void TargetRandomDot::GenerateEmptyCircle(unsigned int max_circles, double radiu
             ++fails;
         }
     }
-    
+
     InitializeFrom2DPts();
 }
 
 void TargetRandomDot::GenerateRandom(unsigned int max_circles, double radius, double min_distance, double border, const Vector2d& size)
 {
     Clear();
-    
+
     const int MAX_FAILS = 1000;
-    
+
     this->size = size;
     this->radius = radius;
-    
+
     const double md2 = min_distance * min_distance;
-    
+
     int fails = 0;
-    
+
     // Generate circles
-    
+
     while( tpts.size() < max_circles && fails < MAX_FAILS )
     {
         Vector2d p = Vector2d(
@@ -255,7 +256,7 @@ void TargetRandomDot::GenerateRandom(unsigned int max_circles, double radius, do
             ++fails;
         }
     }
-    
+
     InitializeFrom2DPts();
 }
 
@@ -272,7 +273,7 @@ void TargetRandomDot::SaveEPS(string filename, float points_per_unit)
     f << "% seed: " << seed << endl;
     f << "% radius: " << radius*ppu << endl;
     f << endl;
-    
+
     for( unsigned int i=0; i<tpts.size(); ++i )
     {
         Vector2d& p = tpts[i];
@@ -280,7 +281,7 @@ void TargetRandomDot::SaveEPS(string filename, float points_per_unit)
                                                        << "0.0 setgray fill" << endl
                                                        << endl;
     }
-    
+
     f.close();
 }
 
@@ -293,11 +294,11 @@ void TargetRandomDot::SaveRotatedEPS(string filename, float points_per_unit)
     f << "%%Creator: CalibuCalibrationTarget" << endl;
     f << "%%Title: Calibration Target" << endl;
     f << "%%Origin: 0 0" << endl;
-    f << "%%BoundingBox: 0 0 " << size[1]*ppu << " " << size[0]*ppu << endl;  
+    f << "%%BoundingBox: 0 0 " << size[1]*ppu << " " << size[0]*ppu << endl;
     f << "% seed: " << seed << endl;
     f << "% radius: " << radius << endl;
     f << endl;
-    
+
     for( unsigned int i=0; i<tpts.size(); ++i )
     {
         Vector2d& p = tpts[i];
@@ -305,20 +306,20 @@ void TargetRandomDot::SaveRotatedEPS(string filename, float points_per_unit)
                       << "0.0 setgray fill" << endl
                       << endl;
     }
-    
+
     f.close();
 }
 
 bool TargetRandomDot::LoadEPS( std::string filename, float points_per_unit )
 {
     Clear();
-    
+
     size[0] = numeric_limits<double>::min();
     size[1] = numeric_limits<double>::min();
-    
+
     std::ifstream f;
     f.open(filename.c_str());
-    
+
     if (f.is_open()) {
         while ( f.good() ) {
             std::string line;
@@ -331,22 +332,22 @@ bool TargetRandomDot::LoadEPS( std::string filename, float points_per_unit )
                 ss >> px;
                 ss >> py;
                 ss >> pr;
-                
+
                 // Extract circle
                 this->radius = pr / points_per_unit;
                 const Vector2d p = Vector2d(px/points_per_unit, py/points_per_unit);
                 size[0] = max(size[0],p[0]);
                 size[1] = max(size[1],p[1]);
                 tpts.push_back(p);
-                
+
                 // Consume colour line
                 std::getline(f,line);
             }
         }
         f.close();
-        
+
         InitializeFrom2DPts();
-        cout << "Loaded " << tpts.size() << " circles (radius: " << CircleRadius() << ")" << endl;    
+        cout << "Loaded " << tpts.size() << " circles (radius: " << CircleRadius() << ")" << endl;
         return true;
     }else{
         return false;
@@ -355,12 +356,14 @@ bool TargetRandomDot::LoadEPS( std::string filename, float points_per_unit )
 
 struct RansacMatchData
 {
-    RansacMatchData(const vector<Vector2d >& m, const vector<Vector2d >& t, vector<int>& ml)
+    RansacMatchData(const vector<Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> >& m,
+                    const vector<Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> >& t,
+                    vector<int>& ml)
         :mpts(m),tpts(t),mpts_label(ml)
     {}
-    
-    const vector<Vector2d >& mpts;
-    const vector<Vector2d >& tpts;
+
+    const vector<Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> >& mpts;
+    const vector<Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> >& tpts;
     vector<int>& mpts_label;
 };
 
@@ -374,12 +377,12 @@ Sophus::SE2d PoseFromCorrespondences(const vector<const Eigen::Vector2d *>& a, c
 {
     int n = a.size();
     double x1 = 0.0, x2 = 0.0, y1 = 0.0, y2 = 0.0, xx = 0.0, yy = 0.0, xy = 0.0, yx = 0.0;
-    
+
     for (int i=0; i<n; ++i)
     {
         const Eigen::Vector2d & p1 = *a[i];
         const Eigen::Vector2d & p2 = *b[i];
-        
+
         x1 += p1[0];
         x2 += p2[0];
         y1 += p1[1];
@@ -389,21 +392,21 @@ Sophus::SE2d PoseFromCorrespondences(const vector<const Eigen::Vector2d *>& a, c
         xy += p1[0]*p2[1];
         yx += p1[1]*p2[0];
     }
-    
+
     double N = (double)n;
-    
+
     double Sxx = xx - x1*x2/N; // calculate S
     double Syy = yy - y1*y2/N;
     double Sxy = xy - x1*y2/N;
     double Syx = yx - y1*x2/N;
-    
+
     double xm1 = x1/N; // calculate means
     double xm2 = x2/N;
     double ym1 = y1/N;
     double ym2 = y2/N;
-    
+
     double yaw = atan2(Sxy-Syx, Sxx+Syy);
-    
+
     // calculate pose
     return Sophus::SE2d(
                 Sophus::SO2d(yaw),
@@ -428,8 +431,8 @@ Sophus::SE2d RansacMatchModelFunction( const std::vector<int>& indices, RansacMa
 }
 
 Sophus::SE2d RansacMatchCorrespondences(
-        const vector<Vector2d >& measurement,
-        const vector<Vector2d >& target,
+        const vector<Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> >& measurement,
+        const vector<Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> >& target,
         vector<int>& measurement_label,
         int iterations,
         double max_point_fit_error,
@@ -438,13 +441,13 @@ Sophus::SE2d RansacMatchCorrespondences(
 {
     RansacMatchData rmd(measurement,target,measurement_label);
     Ransac<Sophus::SE2d,2,RansacMatchData*> ransac( &RansacMatchModelFunction, &RansacMatchCostFunction, &rmd);
-    
+
     vector<int> inliers;
     Sophus::SE2d T = ransac.Compute(
                 measurement.size(),inliers,iterations,
                 max_point_fit_error,min_consensus_size
                 );
-    
+
     // Remove outliers from map.
     for( unsigned int i=0; i<measurement.size(); ++i )
     {
@@ -460,11 +463,12 @@ double DescriptorDist( const VectorXd& m, const VectorXd& t, int neighbours )
     return ( m.head(dsize) - t.head(dsize) ).norm();
 }
 
-int ClosestPoint( const vector<Vector2d >& t, const Vector2d& p )
+int ClosestPoint( const vector<Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> >& t,
+                  const Vector2d& p )
 {
     double best_d = numeric_limits<double>::max();
     int best_i = -1;
-    
+
     for( unsigned int i=0; i < t.size(); ++i )
     {
         const double d = (t[i] - p).norm();
@@ -474,11 +478,13 @@ int ClosestPoint( const vector<Vector2d >& t, const Vector2d& p )
             best_d = d;
         }
     }
-    
+
     return best_i;
 }
 
-void ClosestPoints( const vector<Vector2d >& a, const vector<Vector2d >& b, vector<int>& a_map)
+void ClosestPoints( const vector<Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> >& a,
+                    const vector<Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> >& b,
+                    vector<int>& a_map)
 {
     for( unsigned i=0; i<a.size(); ++i )
     {
@@ -486,11 +492,13 @@ void ClosestPoints( const vector<Vector2d >& a, const vector<Vector2d >& b, vect
     }
 }
 
-void MutualClosest( const vector<Vector2d >& a, const vector<Vector2d >& b, vector<int>& a_map)
+void MutualClosest( const vector<Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> >& a,
+                    const vector<Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> >& b,
+                    vector<int>& a_map)
 {
     vector<int> b_map(b.size(),-1);
     ClosestPoints(b,a,b_map);
-    
+
     for( unsigned i=0; i<a.size(); ++i )
     {
         const int ai_close = ClosestPoint(b,a[i]);
@@ -500,7 +508,7 @@ void MutualClosest( const vector<Vector2d >& a, const vector<Vector2d >& b, vect
 }
 
 void TargetRandomDot::Match(
-        const vector<Vector2d >& measurement,
+    const vector<Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> >& measurement,
         vector<int>& measurement_label, int match_neighbours
         ) const
 {
@@ -516,30 +524,30 @@ void TargetRandomDot::Match(
 {
     const Matrix<double,Dynamic,Dynamic,RowMajor>& dm = sorted_measurement_distance_matrix;
     const size_t msize = dm.rows();
-    
+
     // Create cost matrix and padd with zeroes
     const size_t size = max(msize, tpts.size());
     Eigen::Matrix<double,Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> cost(size,size);
     cost.setZero();
-    
+
     // Assign measurement to target association cost
     for( unsigned int j = 0; j < msize; ++j )
         for( unsigned int i = 0; i < tpts.size(); ++i )
             cost(j,i) = DescriptorDist( dm.row(j), (*dt).row(i), match_neighbours );
-    
+
     double* c_cost[cost.rows()];
     for( int i=0; i<cost.rows(); ++i )
         c_cost[i] = &cost(i,0);
-    
+
     hungarian_problem_t hp;
     hungarian_init(&hp,c_cost,cost.rows(),cost.cols() );
     hungarian_solve(&hp);
-    
+
     for( unsigned int j=0; j<msize; ++j ) {
         const int label = hp.row_to_col_map[j];
         measurement_label[j] = label < (int)tpts.size() ? label : -1;
     }
-    
+
     hungarian_free(&hp);
 }
 
@@ -566,7 +574,7 @@ Matrix3d RansacHomogModelFunction( const std::vector<int>& indices, RansacMatchD
 {
     std::vector<Vector2d > mpts;
     std::vector<Vector2d > tpts;
-    
+
     for( unsigned int i=0; i< indices.size(); ++i )
     {
         const int mi = indices[i];
@@ -575,7 +583,7 @@ Matrix3d RansacHomogModelFunction( const std::vector<int>& indices, RansacMatchD
         mpts.push_back(m);
         tpts.push_back(t);
     }
-    
+
     return EstimateH_ba(mpts,tpts);
 }
 
@@ -588,10 +596,10 @@ bool TargetRandomDot::FindTarget(
         )
 {
     // We have conic centers, and projected centers. Try to match
-    
+
     const IRectangle img_rect( 0,0,cam.Width(),cam.Height());
-    
-    vector<Vector2d > vis_t;
+
+    vector<Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> > vis_t;
     vector<int> vis_t_map;
     for( unsigned int i=0; i < tpts3d.size(); ++i )
     {
@@ -602,17 +610,17 @@ bool TargetRandomDot::FindTarget(
             vis_t_map.push_back(i);
         }
     }
-    
-    vector<Vector2d > m;
+
+    vector<Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> > m;
     for( unsigned i=0; i<conics.size(); ++i )
         m.push_back(conics[i].center);
-    
+
     vector<int> m_map(m.size(),-1);
     MutualClosest(m,vis_t,m_map);
-    
+
     for(unsigned i=0; i<m.size(); ++i )
         conics_target_map[i] = m_map[i] >= 0 ? vis_t_map[m_map[i]] : -1;
-    
+
     return true;
 }
 
@@ -624,7 +632,7 @@ Vector3d nd_b(const Sophus::SE3d& T_ba, const Vector3d& n_a)
 }
 
 Eigen::Vector3d IntersectCamFeaturePlane(
-        const Eigen::Vector2d& p, 
+        const Eigen::Vector2d& p,
         const CameraModelInterface & cam,
         const Sophus::SE3d& T_wk,
         const Eigen::Vector4d& N_w
@@ -651,15 +659,15 @@ bool TargetRandomDot::FindTarget(
         )
 {
     // Compute metric positions in 2D
-    const vector<Eigen::Vector2d >& tpts = this->tpts;
-    vector<Vector2d >  mpts;
-    
+  const vector<Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> >& tpts = this->tpts;
+  vector<Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> >  mpts;
+
     pair<Vector3d,Matrix3d > plane = PlaneFromConics(conics,radius,cam.K(), params.plane_inlier_thresh);
     const Vector4d N_w = Unproject(plane.first) / (plane.first).norm();
-    
+
     if( !is_finite(N_w) )
         return false;
-    
+
     for( unsigned int i=0; i< conics.size(); ++i )
     {
         const Vector2d ud = conics[i].center;
@@ -667,17 +675,17 @@ bool TargetRandomDot::FindTarget(
         const Vector2d pnorm = (plane.second.transpose() * p3d).head<2>();
         mpts.push_back(pnorm);
     }
-    
+
     if( mpts.size() >= 2 )
     {
         Matrix<double,Dynamic,Dynamic,RowMajor> ellipse_dm = DistanceMatrix(mpts);
         SortRows(ellipse_dm);
-        
+
         // Match using Hungarian method
         Match(ellipse_dm,conics_target_map,params.match_neighbours);
-        
+
         Sophus::SE2d T_tm;
-        
+
         // Perform RANSAC to remove outliers
         if( params.ransac_its )
         {
@@ -686,7 +694,7 @@ bool TargetRandomDot::FindTarget(
                         params.ransac_max_inlier_err_mm, params.ransac_min_pts
                         );
         }
-        
+
         // Given inliers and 2D transform, find more correspondences
         for( unsigned int i=0; i< mpts.size(); ++i )
         {
@@ -698,9 +706,9 @@ bool TargetRandomDot::FindTarget(
                 const int t = ClosestPoint(tpts, m_t );
                 if( t >= 0 ) {
                     assert( t >= 0 && t < (int)tpts.size() );
-                    
+
                     const double d = (m_t - tpts[t]).norm();
-                    
+
                     // check error is small
                     if( d < params.ransac_max_inlier_err_mm )
                     {
@@ -713,9 +721,9 @@ bool TargetRandomDot::FindTarget(
                 }
             }
         }
-        
+
     }
-    
+
     return true;
 }
 

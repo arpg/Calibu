@@ -1,4 +1,4 @@
-/* 
+/*
    This file is part of the Calibu Project.
    https://github.com/gwu-robotics/Calibu
 
@@ -31,14 +31,13 @@ using namespace Eigen;
 namespace calibu {
 
 vector<int> PosePnPRansac(
-        const CameraModelInterface& cam,
-        const std::vector<Vector2d> &img_pts,
-        const vector<Vector3d> & ideal_pts,
-        const vector<int> & candidate_map,
-        int robust_3pt_its,
-        float robust_3pt_tol,
-        Sophus::SE3d * T
-        ) {
+    const CameraModelInterface& cam,
+    const std::vector<Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> >& img_pts,
+    const std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& ideal_pts,
+    const vector<int> & candidate_map,
+    int robust_3pt_its,
+    float robust_3pt_tol,
+    Sophus::SE3d * T) {
     vector<int> inlier_map(candidate_map.size(), -1);
     std::vector<cv::Point3f> cv_obj;
     std::vector<cv::Point2f> cv_img;
@@ -47,10 +46,10 @@ vector<int> PosePnPRansac(
     cv::Mat cv_rot(3,1,CV_64F);
     cv::Mat cv_trans(3,1,CV_64F);
     cv::Mat cv_K(3,3,CV_64F);
-    
+
     //  cv::eigen2cv(cam.K(), cv_K);
     cv::setIdentity(cv_K);
-    
+
     for (size_t i = 0; i<img_pts.size(); ++i)
     {
         int ideal_point_id = candidate_map[i];
@@ -66,32 +65,32 @@ vector<int> PosePnPRansac(
             idx_vec.push_back(i);
         }
     }
-    
+
     std::vector<int> cv_inliers;
-    
+
     if(cv_img.size() < 4)
         return cv_inliers;
-    
+
     if(robust_3pt_its > 0) {
         cv::solvePnPRansac(cv_obj, cv_img, cv_K, cv_coeff, cv_rot, cv_trans,
                            false, robust_3pt_its, robust_3pt_tol / cam.K()(0,0), 60, cv_inliers);
     }else{
         cv::solvePnP(cv_obj, cv_img, cv_K, cv_coeff, cv_rot, cv_trans, false);
     }
-    
+
     Vector3d rot, trans;
     cv::cv2eigen(cv_rot, rot);
     cv::cv2eigen(cv_trans, trans);
-    
+
     if(std::isnan(rot[0]) || std::isnan(rot[1]) || std::isnan(rot[2]))
         return inlier_map;
-    
+
     for (size_t i = 0; i<cv_inliers.size(); ++i)
     {
         int idx = cv_inliers[i];
         inlier_map.at(idx_vec.at(idx)) = candidate_map.at(idx_vec.at(idx));
     }
-    
+
     *T =  Sophus::SE3d(Sophus::SO3d::exp(rot), trans);
     return inlier_map;
 }
@@ -111,8 +110,10 @@ int CountInliers(const vector<int> & conics_target_map)
 
 double ReprojectionErrorRMS(const CameraModelInterface& cam,
                             const Sophus::SE3d& T_cw,
-                            const vector<Vector3d>& pts3d,
-                            const vector<Vector2d>& pts2d,
+                            const std::vector<Eigen::Vector3d,
+                            Eigen::aligned_allocator<Eigen::Vector3d> >& pts3d,
+                            const std::vector<Eigen::Vector2d,
+                            Eigen::aligned_allocator<Eigen::Vector2d> >& pts2d,
                             const vector<int>& map2d_3d)
 {
     int n=0;

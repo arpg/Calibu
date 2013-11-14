@@ -1,4 +1,4 @@
-/* 
+/*
    This file is part of the Calibu Project.
    https://github.com/gwu-robotics/Calibu
 
@@ -36,12 +36,12 @@ struct ParamsRandomDot
           plane_inlier_thresh(1.5)
     {
     }
-    
+
     int match_neighbours;
     int ransac_its;
     int ransac_min_pts;
     float ransac_max_inlier_err_mm;
-    float plane_inlier_thresh;    
+    float plane_inlier_thresh;
 };
 
 class TargetRandomDot
@@ -49,7 +49,7 @@ class TargetRandomDot
 {
 public:
     TargetRandomDot();
-    
+
     ////////////////////////////////////////////////////////////////////////////
     void SetSeed(int s );
     void GenerateCircular(unsigned int max_circles, double radius, double min_distance, double border, const Eigen::Vector2d& size );
@@ -59,9 +59,9 @@ public:
     bool LoadEPS( std::string filename, float points_per_unit =1 );
     void SaveEPS( std::string filename, float points_per_unit =1 );
     void SaveRotatedEPS( std::string filename, float points_per_unit=1);
-    
+
     ////////////////////////////////////////////////////////////////////////////
-    
+
     bool FindTarget(
             const Sophus::SE3d& T_cw,
             const CameraModelInterface& cam,
@@ -69,44 +69,45 @@ public:
             const std::vector<Conic>& conics,
             std::vector<int>& ellipse_target_map
             );
-    
+
     bool FindTarget(
             const CameraModelInterface& cam,
             const ImageProcessing& images,
             const std::vector<Conic>& conics,
             std::vector<int>& ellipse_target_map
             );
-    
+
     bool FindTarget(
             const ImageProcessing& images,
             const std::vector<Conic>& conics,
             std::vector<int>& ellipse_target_map
             );
-        
+
     ////////////////////////////////////////////////////////////////////////////
 
     double CircleRadius() const {
         return radius;
     }
-    
-    const std::vector<Eigen::Vector2d >& Circles2D() const {
+
+  const std::vector<Eigen::Vector2d,
+                    Eigen::aligned_allocator<Eigen::Vector2d> >& Circles2D() const {
         return tpts;
     }
-    
-    const std::vector<Eigen::Vector3d >& Circles3D() const {
+
+  const std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& Circles3D() const {
         return tpts3d;
     }
- 
-    const std::vector<Eigen::Vector3d >& Code3D() const {
+
+  const std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& Code3D() const {
         return codepts3d;
     }
-   
+
     ////////////////////////////////////////////////////////////////////////////
-    
+
     inline Eigen::Vector2d Size() const {
         return size;
     }
-        
+
 protected:
     void Clear();
     void InitializeFrom2DPts();
@@ -114,17 +115,19 @@ protected:
             const Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>& sorted_measurement_distance_matrix,
             std::vector<int>& measurement_label, int match_neighbours
             ) const;
-    void Match( const std::vector<Eigen::Vector2d >& measurement, std::vector<int>& measurement_label, int match_neighbours  ) const;
-    
+  void Match(const std::vector<Eigen::Vector2d,
+             Eigen::aligned_allocator<Eigen::Vector2d> >& measurement,
+             std::vector<int>& measurement_label, int match_neighbours  ) const;
+
     unsigned int seed;
     Eigen::Vector2d size;
     double radius;
-    std::vector<Eigen::Vector2d > tpts;
-    std::vector<Eigen::Vector2d > tpts_reflected;
-    std::vector<Eigen::Vector3d > tpts3d;
-    std::vector<Eigen::Vector3d > codepts3d;
+    std::vector<Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> > tpts;
+    std::vector<Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> > tpts_reflected;
+    std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > tpts3d;
+    std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > codepts3d;
     Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>* dt;
-    
+
     ParamsRandomDot params;
 };
 

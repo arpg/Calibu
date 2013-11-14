@@ -1,4 +1,4 @@
-/* 
+/*
    This file is part of the Calibu Project.
    https://github.com/gwu-robotics/Calibu
 
@@ -29,8 +29,8 @@ namespace calibu {
 
 std::vector<int> PosePnPRansac(
         const CameraModelInterface& cam,
-        const std::vector<Eigen::Vector2d> & img_pts,
-        const std::vector<Eigen::Vector3d> & ideal_pts,
+        const std::vector<Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> > & img_pts,
+        const std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > & ideal_pts,
         const std::vector<int> & candidate_map,
         int robust_3pt_its,
         float robust_3pt_tol,
@@ -40,8 +40,8 @@ std::vector<int> PosePnPRansac(
 double ReprojectionErrorRMS(
         const CameraModelInterface& cam,
         const Sophus::SE3d& T_cw,
-        const std::vector<Eigen::Vector3d>& pts3d,
-        const std::vector<Eigen::Vector2d>& pts2d,
+        const std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& pts3d,
+        const std::vector<Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> >& pts2d,
         const std::vector<int>& map2d_3d
         );
 
