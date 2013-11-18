@@ -45,7 +45,7 @@ void ImageProcessing::AllocateImageData(int maxPixels) {
 
 void ImageProcessing::DeallocateImageData() {}
 
-void ImageProcessing::Process(unsigned char* greyscale_image,
+void ImageProcessing::Process(const unsigned char* greyscale_image,
                               size_t w, size_t h, size_t pitch) {
   width = w;
   height = h;
