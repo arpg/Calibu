@@ -62,8 +62,10 @@ struct Triple
 {
     inline Triple(Vertex& o1, Vertex& c, Vertex& o2)
     {
-        vs = {{&o1, &c, &o2}};
+      vs = {&o1, &c, &o2};
     }
+
+    Triple(const Triple& triple) = default;
 
     inline Vertex& Center() { return *vs[1]; }
     inline const Vertex& Center() const { return *vs[1]; }
@@ -99,7 +101,7 @@ struct Triple
     }
 
     // Colinear sequence of vertices, v[0], v[1], v[2]. v[1] is center
-    std::array<Vertex*,3> vs;
+  std::vector<Vertex*> vs;
 };
 
 inline bool operator==(const Vertex& lhs, const Vertex& rhs)

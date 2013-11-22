@@ -364,7 +364,8 @@ bool TargetGridDot::FindTarget(
 
     // Generate vertex and point structures
     for( size_t i=0; i < conics.size(); ++i ) {
-        vs.push_back( Vertex(i, conics[i]) );
+      Vertex v(i, conics[i]);
+      vs.push_back(v);
     }
 
     // Compute closest points for each ellipse

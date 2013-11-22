@@ -50,21 +50,23 @@ void ImageProcessing::Process(const unsigned char* greyscale_image,
   width = w;
   height = h;
 
+  size_t img_size = width * height * sizeof(unsigned char);
+  if (img_size > I.size()) {
+    AllocateImageData(img_size);
+  }
+
   // Copy input image
   if(pitch > width*sizeof(unsigned char) ) {
     // Copy line by line
     for(int y=0; y < height; ++y) {
-      memcpy(&I[y*width], greyscale_image+y*pitch,
-             width * sizeof(unsigned char) );
+      memcpy(&I[y*width], greyscale_image+y*pitch, width * sizeof(unsigned char));
     }
   }else{
-    I.resize(width * height * sizeof(unsigned char));
-    memcpy(&I[0], greyscale_image, width * height * sizeof(unsigned char));
+    memcpy(&I[0], greyscale_image, img_size);
   }
 
   // Process image
-  Eigen::Vector2f* di_ptr = &dI[0];
-  gradient<>(width, height, &I[0],  di_ptr);
+  gradient<>(width, height, &I[0],  &dI[0]);
   integral_image(width, height, &I[0], &intI[0] );
 
   // Threshold image
