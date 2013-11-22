@@ -67,20 +67,20 @@ class TargetRandomDot
             const Sophus::SE3d& T_cw,
             const CameraModelInterface& cam,
             const ImageProcessing& images,
-            const std::vector<Conic>& conics,
+            const std::vector<Conic, Eigen::aligned_allocator<Conic> >& conics,
             std::vector<int>& ellipse_target_map
             );
 
     bool FindTarget(
             const CameraModelInterface& cam,
             const ImageProcessing& images,
-            const std::vector<Conic>& conics,
+            const std::vector<Conic, Eigen::aligned_allocator<Conic> >& conics,
             std::vector<int>& ellipse_target_map
             );
 
     bool FindTarget(
             const ImageProcessing& images,
-            const std::vector<Conic>& conics,
+            const std::vector<Conic, Eigen::aligned_allocator<Conic> >& conics,
             std::vector<int>& ellipse_target_map
             );
 

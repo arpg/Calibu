@@ -43,7 +43,7 @@ public:
             const Sophus::SE3d& T_cw,
             const CameraModelInterface& cam,
             const ImageProcessing& images,
-            const std::vector<Conic>& conics,
+            const std::vector<Conic, Eigen::aligned_allocator<Conic> >& conics,
             std::vector<int>& conics_target_map
             ) = 0;
 
@@ -51,14 +51,14 @@ public:
     virtual bool FindTarget(
             const CameraModelInterface& cam,
             const ImageProcessing& images,
-            const std::vector<Conic>& conics,
+            const std::vector<Conic, Eigen::aligned_allocator<Conic> >& conics,
             std::vector<int>& conics_target_map
             ) = 0;
 
     // Only observations known
     virtual bool FindTarget(
             const ImageProcessing& images,
-            const std::vector<Conic>& conics,
+            const std::vector<Conic, Eigen::aligned_allocator<Conic> >& conics,
             std::vector<int>& conics_target_map
             ) = 0;
 

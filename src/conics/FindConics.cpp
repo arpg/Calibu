@@ -1,4 +1,4 @@
-/* 
+/*
    This file is part of the Calibu Project.
    https://github.com/gwu-robotics/Calibu
 
@@ -34,7 +34,7 @@ Eigen::Matrix3d FindEllipse(
         ) {
     //Precise ellipse estimation without contour point extraction
     //Jean-Nicolas Ouellet, Patrick Hebert
-    
+
     // This normalisation is in the wrong space.
     // We'd be better off normalising image values to [0,1] range.
 
@@ -42,29 +42,29 @@ Eigen::Matrix3d FindEllipse(
 //                r.x1 + (r.x2-r.x1) / 2.0,
 //                r.y1 + (r.y2-r.y1) / 2.0
 //                );
-    
+
 //    const Eigen::Vector2d f = Eigen::Vector2d(
 //                2.0 / r.Width(), 2.0 / r.Height()
 //                );
-    
+
 //    // Transform to approximately unit circle at origin
 //    Eigen::Matrix3d H;
 //    H <<
 //         f(0), 0, c(0),
 //            0, f(1), c(1),
 //            0, 0, 1;
-    
+
 //    Eigen::Matrix3d Hinv;
 //    Hinv <<
 //            1/f(0), 0, -c(0)/f(0),
 //            0, 1/f(1), -c(1)/f(1),
 //            0, 0, 1;
 
-    
+
     // Form system Ax = b to solve
     Eigen::Matrix<double,5,5> A = Eigen::Matrix<double,5,5>::Zero();
     Eigen::Matrix<double,5,1> b = Eigen::Matrix<double,5,1>::Zero();
-    
+
 //    float elementCount = 0;
     for( int v=r.y1; v<=r.y2; ++v )
     {
@@ -84,23 +84,23 @@ Eigen::Matrix3d FindEllipse(
 //            elementCount++;
         }
     }
-    
+
     const Eigen::Matrix<double,5,1> x = A.jacobiSvd(Eigen::ComputeFullU | Eigen::ComputeFullV).solve(b);
-    
+
     //  //compute the risidual on the system to see if the algebraic error is too large.
     //  //note: maybe there is a better error metric.
     //  const Eigen::Vector<5> error =  A*x - b;
     //  residual = error*error;
     //  //residual/=elementCount;
-    
+
     Eigen::Matrix3d C_star_norm;
     C_star_norm << x[0],x[1]/2.0,x[3]/2.0,  x[1]/2.0,x[2],x[4]/2.0,  x[3]/2.0,x[4]/2.0,1.0;
-    
+
 //    const Eigen::Matrix3d C = Hinv.transpose() * C_star_norm.inverse() * Hinv;
     const Eigen::Matrix3d C = C_star_norm.inverse();
     //  const Matrix3d C_star = LU<3>(C).get_inverse();
     //  return C_star/C_star[2][2];
-    
+
     return C; //C/C(2,2);
 }
 
@@ -111,21 +111,21 @@ void FindConics(
         const int w, const int h,
         const std::vector<PixelClass>& candidates,
         const TdI* dI,
-        std::vector<Conic>& conics
+        std::vector<Conic, Eigen::aligned_allocator<Conic> >& conics
         ) {
     for( unsigned int i=0; i<candidates.size(); ++i )
     {
         const IRectangle region = candidates[i].bbox;
-        
+
         Conic conic;
         double residual = 0;
         conic.C = FindEllipse(w,h,dI,region, residual);
-        
+
         conic.bbox = region;
         conic.Dual = conic.C.inverse();
         conic.Dual /= conic.Dual(2,2);
         conic.center = Eigen::Vector2d(conic.Dual(0,2),conic.Dual(1,2));
-        
+
         const double max_dist = (region.Width() + region.Height()) / 8.0;
         if( (conic.center - region.Center()).norm() < max_dist)
             conics.push_back( conic );
@@ -142,7 +142,7 @@ void FindCandidateConicsFromLabels(
         float min_density, float min_aspect
         ) {
     const int border = 3;
-    
+
     for( unsigned int i=0; i<labels.size(); ++i )
     {
         if( labels[i].equiv == -1 )
@@ -165,7 +165,7 @@ void FindCandidateConicsFromLabels(
                             candidates.push_back(candidate);
                         }
                     }
-                    
+
                 }
             }
         }
@@ -176,6 +176,6 @@ void FindCandidateConicsFromLabels(
 #include <Eigen/Eigen>
 
 template Eigen::Matrix3d FindEllipse( const int, const int, const Eigen::Vector2f*, const IRectangle&, double& );
-template void FindConics( const int, const int, const std::vector<PixelClass>& candidates, const Eigen::Vector2f* dI, std::vector<Conic>& conics );
+template void FindConics( const int, const int, const std::vector<PixelClass>& candidates, const Eigen::Vector2f* dI, std::vector<Conic, Eigen::aligned_allocator<Conic>>& conics );
 
 }

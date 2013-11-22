@@ -1,4 +1,4 @@
-/* 
+/*
    This file is part of the Calibu Project.
    https://github.com/gwu-robotics/Calibu
 
@@ -36,13 +36,13 @@ struct ParamsConicFinder
         conic_min_density(0.4),
         conic_min_aspect(0.1)
     {
-        
+
     }
-    
+
     float conic_min_area;
     float conic_max_area;
     float conic_min_density;
-    float conic_min_aspect;    
+    float conic_min_aspect;
 };
 
 class ConicFinder
@@ -50,21 +50,22 @@ class ConicFinder
 public:
     ConicFinder();
     void Find(const ImageProcessing& imgs);
-    
-    inline const std::vector<Conic>& Conics() const {
+
+  inline const std::vector<Conic, Eigen::aligned_allocator<Conic> >&
+  Conics() const {
         return conics;
     }
-    
+
     ParamsConicFinder& Params() {
         return params;
     }
-    
-protected:    
+
+protected:
     // Output of this class
-    std::vector<PixelClass> candidates;
-    std::vector<Conic> conics; 
-    
-    ParamsConicFinder params;
+  std::vector<PixelClass> candidates;
+  std::vector<Conic, Eigen::aligned_allocator<Conic> > conics;
+
+  ParamsConicFinder params;
 };
 
 }

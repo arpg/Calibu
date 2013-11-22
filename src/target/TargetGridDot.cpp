@@ -58,7 +58,8 @@ TargetGridDot::TargetGridDot(double grid_spacing, Eigen::Vector2i grid_size, uin
     }
 }
 
-std::vector<std::vector<Dist> > ClosestPoints( std::vector<Vertex>& pts)
+std::vector<std::vector<Dist> > ClosestPoints(
+    std::vector<Vertex, Eigen::aligned_allocator<Vertex> >& pts)
 {
     std::vector<std::vector<Dist> > ret;
 
@@ -255,7 +256,7 @@ bool TargetGridDot::FindTarget(
         const Sophus::SE3d& T_cw,
         const CameraModelInterface& cam,
         const ImageProcessing& images,
-        const std::vector<Conic>& conics,
+        const std::vector<Conic, Eigen::aligned_allocator<Conic> >& conics,
         std::vector<int>& ellipse_target_map
         )
 {
@@ -266,7 +267,7 @@ bool TargetGridDot::FindTarget(
 bool TargetGridDot::FindTarget(
         const CameraModelInterface& cam,
         const ImageProcessing& images,
-        const std::vector<Conic>& conics,
+        const std::vector<Conic, Eigen::aligned_allocator<Conic> >& conics,
         std::vector<int>& ellipse_target_map
         )
 {
@@ -352,7 +353,7 @@ bool TargetGridDot::Match(std::map<Eigen::Vector2i, Vertex*,
 
 bool TargetGridDot::FindTarget(
         const ImageProcessing& images,
-        const std::vector<Conic>& conics,
+        const std::vector<Conic, Eigen::aligned_allocator<Conic> >& conics,
         std::vector<int>& ellipse_target_map
         )
 {

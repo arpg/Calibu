@@ -53,9 +53,10 @@ std::array<std::pair<Eigen::Vector3d,Eigen::Matrix3d >, 2 > PlaneFromConic(
         );
 
 std::pair<Eigen::Vector3d,Eigen::Matrix3d > PlaneFromConics(
-        const std::vector<Conic>& conics, double plane_circle_radius,
-        const Eigen::Matrix3d& K, double inlier_threshold
-        );
+    const std::vector<Conic, Eigen::aligned_allocator<Conic> >& conics,
+    double plane_circle_radius,
+    const Eigen::Matrix3d& K, double inlier_threshold
+                                                            );
 
 Conic UnmapConic( const Conic& c, const CameraModelInterface& cam );
 

@@ -1,4 +1,4 @@
-/* 
+/*
    This file is part of the Calibu Project.
    https://github.com/gwu-robotics/Calibu
 
@@ -50,7 +50,7 @@ void FindConics(
         const int w, const int h,
         const std::vector<PixelClass>& candidates,
         const TdI* dI,
-        std::vector<Conic>& conics
+        std::vector<Conic, Eigen::aligned_allocator<Conic> >& conics
         );
 
 }

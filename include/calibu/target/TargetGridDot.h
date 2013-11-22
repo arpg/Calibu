@@ -71,20 +71,20 @@ public:
             const Sophus::SE3d& T_cw,
             const CameraModelInterface& cam,
             const ImageProcessing& images,
-            const std::vector<Conic>& conics,
+            const std::vector<Conic, Eigen::aligned_allocator<Conic> >& conics,
             std::vector<int>& ellipse_target_map
             );
 
     bool FindTarget(
             const CameraModelInterface& cam,
             const ImageProcessing& images,
-            const std::vector<Conic>& conics,
+            const std::vector<Conic, Eigen::aligned_allocator<Conic> >& conics,
             std::vector<int>& ellipse_target_map
             );
 
     bool FindTarget(
             const ImageProcessing& images,
-            const std::vector<Conic>& conics,
+            const std::vector<Conic, Eigen::aligned_allocator<Conic> >& conics,
             std::vector<int>& ellipse_target_map
             );
 
@@ -114,7 +114,8 @@ public:
 
     ////////////////////////////////////////////////////////////////////////////
 
-    const std::vector<Vertex>& Map() const {
+  const std::vector<Vertex,
+                    Eigen::aligned_allocator<Vertex> >& Map() const {
         return vs;
     }
 
@@ -154,7 +155,7 @@ protected:
 
     ParamsGridDot params;
 
-    std::vector<Vertex> vs;
+  std::vector<Vertex, Eigen::aligned_allocator<Vertex> > vs;
     std::map<Eigen::Vector2i, Vertex*,
              std::less<Eigen::Vector2i>,
              Eigen::aligned_allocator<

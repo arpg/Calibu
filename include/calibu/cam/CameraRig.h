@@ -32,7 +32,8 @@ namespace calibu
 template<typename Scalar=double>
 class CameraModelAndTransformT
 {
-public:
+ public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
     // Default constructor
     CameraModelAndTransformT()
     {
@@ -84,7 +85,8 @@ public:
         cameras.push_back(cop);
     }
 
-    std::vector<CameraModelAndTransformT<Scalar> > cameras;
+  std::vector<CameraModelAndTransformT<Scalar>,
+              Eigen::aligned_allocator<CameraModelAndTransformT<Scalar> > > cameras;
 };
 typedef CameraRigT<double> CameraRig;
 

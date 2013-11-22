@@ -552,7 +552,7 @@ void TargetRandomDot::Match(
     hungarian_free(&hp);
 }
 
-Vector2d Mean( vector<Vector2d >& pts )
+Vector2d Mean( vector<Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> >& pts )
 {
     Vector2d sum = Vector2d::Zero();
     for( unsigned int i=0; i<pts.size(); ++i )
@@ -592,7 +592,7 @@ bool TargetRandomDot::FindTarget(
         const Sophus::SE3d& T_cw,
         const CameraModelInterface& cam,
         const ImageProcessing& images,
-        const vector<Conic>& conics,
+        const vector<Conic, Eigen::aligned_allocator<Conic> >& conics,
         vector<int>& conics_target_map
         )
 {
@@ -655,7 +655,7 @@ Eigen::Vector3d IntersectCamFeaturePlane(
 bool TargetRandomDot::FindTarget(
         const CameraModelInterface& cam,
         const ImageProcessing& images,
-        const vector<Conic>& conics,
+        const vector<Conic, Eigen::aligned_allocator<Conic> >& conics,
         vector<int>& conics_target_map
         )
 {
@@ -730,7 +730,7 @@ bool TargetRandomDot::FindTarget(
 
 bool TargetRandomDot::FindTarget(
         const ImageProcessing& images,
-        const std::vector<Conic>& conics,
+        const std::vector<Conic, Eigen::aligned_allocator<Conic> >& conics,
         std::vector<int>& ellipse_target_map
         )
 {

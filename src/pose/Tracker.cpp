@@ -47,7 +47,8 @@ bool Tracker::ProcessFrame(
     imgs.Process(I, w, h, pitch );
     conic_finder.Find(imgs);
 
-    const std::vector<Conic>& conics = conic_finder.Conics();
+    const std::vector<Conic, Eigen::aligned_allocator<Conic> >& conics =
+        conic_finder.Conics();
 
     // Generate map and point structures
     conics_target_map.clear();
@@ -58,7 +59,7 @@ bool Tracker::ProcessFrame(
     }
 
     // Undistort Conics
-    vector<Conic> conics_camframe;
+    vector<Conic, Eigen::aligned_allocator<Conic> > conics_camframe;
     for( unsigned int i=0; i<conics.size(); ++i ) {
         conics_camframe.push_back(UnmapConic(conics[i],cam));
     }

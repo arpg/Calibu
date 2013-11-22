@@ -330,7 +330,8 @@ int main( int argc, char** argv)
             image_processing.Process( vImages[iI].data, vImages[iI].cols, vImages[iI].rows, vImages[iI].cols );
             conic_finder.Find( image_processing );
 
-            const std::vector<Conic>& conics = conic_finder.Conics();
+            const std::vector<Conic, Eigen::aligned_allocator<Conic> >& conics =
+                conic_finder.Conics();
             std::vector<int> ellipse_target_map;
 
             tracking_good[iI] = target.FindTarget(

@@ -58,7 +58,9 @@ double Cost( const pair<Vector3d,Matrix3d >& plane, const Conic& conic, const Ma
     return amc / max(abs(a),abs(c));;// + b*b;
 }
 
-double Cost( const pair<Vector3d,Matrix3d >& plane, const vector<Conic>& conics, const Matrix3d& K, double threshold )
+double Cost( const pair<Vector3d,Matrix3d >& plane, const
+             vector<Conic, Eigen::aligned_allocator<Conic> >& conics,
+             const Matrix3d& K, double threshold )
 {
     int n = 0;
     double sum = 0;
@@ -100,7 +102,11 @@ std::array<pair<Vector3d,Matrix3d >, 2 > PlaneFromConic(const Conic& c, double p
     return r;
 }
 
-pair<Vector3d,Matrix3d > PlaneFromConics( const vector<Conic>& conics, double plane_circle_radius, const Matrix3d& K, double inlier_threshold)
+pair<Vector3d,Matrix3d > PlaneFromConics( const vector<Conic,
+                                          Eigen::aligned_allocator<Conic> >& conics,
+                                          double plane_circle_radius,
+                                          const Matrix3d& K,
+                                          double inlier_threshold)
 {
     double best_score = numeric_limits<double>::max();
     pair<Vector3d,Matrix3d > best;
