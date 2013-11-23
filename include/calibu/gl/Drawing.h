@@ -1,4 +1,4 @@
-/* 
+/*
    This file is part of the Calibu Project.
    https://github.com/gwu-robotics/Calibu
 
@@ -20,7 +20,7 @@
 
 #pragma once
 
-//#include <pangolin/gldraw.h>
+#include <pangolin/gldraw.h>
 
 #include <Eigen/Dense>
 
@@ -54,7 +54,7 @@ inline void glDrawPlane(const Eigen::Vector4d& N_w, float scale, int grid)
 inline void glDrawTarget( const TargetInterface& t, const Eigen::Vector2d& offset, double scale, double sat, double val )
 {
     const double r = t.CircleRadius() * scale;
-    
+
     for( unsigned int i=0; i<t.Circles2D().size(); ++i )
     {
         const Eigen::Vector2d p = t.Circles2D()[i] * scale + offset;
@@ -66,7 +66,7 @@ inline void glDrawTarget( const TargetInterface& t, const Eigen::Vector2d& offse
 inline void glDrawTarget( const std::vector<int>& map, const TargetInterface& target, const Eigen::Vector2d& offset, double scale, double sat, double val )
 {
     const double r = target.CircleRadius() * scale;
-    
+
     for( unsigned int i=0; i<map.size(); ++i )
     {
         const int t = map[i];
