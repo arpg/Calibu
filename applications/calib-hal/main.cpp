@@ -303,6 +303,7 @@ int main( int argc, char** argv)
     pangolin::RegisterKeyPressCallback(' ', [&](){run = !run;} );
 
     pangolin::RegisterKeyPressCallback('r', [&](){calibrator.PrintResults();} );
+    pangolin::RegisterKeyPressCallback('q', &pangolin::Quit);
 
     ////////////////////////////////////////////////////////////////////
     // Main event loop
@@ -327,6 +328,8 @@ int main( int argc, char** argv)
 
         for(size_t iI = 0; iI < N; ++iI)
         {
+            if (vImages.size() != N) break;
+
             image_processing.Process( vImages[iI].data, vImages[iI].cols, vImages[iI].rows, vImages[iI].cols );
             conic_finder.Find( image_processing );
 
