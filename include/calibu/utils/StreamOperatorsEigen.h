@@ -12,9 +12,9 @@ inline std::ostream& operator<<( std::ostream& Stream, const Eigen::Matrix<T,R,C
 {
     unsigned int nRows = Mat.rows();
     unsigned int nCols = Mat.cols();
-    
+
     Stream << "[ ";
-    
+
     for( unsigned int ii = 0; ii < nRows-1; ii++ ) {
         for( unsigned int jj = 0; jj < nCols-1; jj++ ) {
             Stream << Mat(ii, jj);
@@ -29,7 +29,7 @@ inline std::ostream& operator<<( std::ostream& Stream, const Eigen::Matrix<T,R,C
     }
     Stream << Mat(nRows-1, nCols-1);
     Stream << " ]";
-    
+
     return Stream;
 }
 
@@ -37,11 +37,11 @@ inline std::ostream& operator<<( std::ostream& Stream, const Eigen::Matrix<T,R,C
 template<typename T, int R, int C>
 inline std::istream& operator>>( std::istream& Stream, Eigen::Matrix<T,R,C>& Mat )
 {
-    
+
     unsigned int nRows = Mat.rows();
     unsigned int nCols = Mat.cols();
     char str[256];
-    
+
     Stream.getline(str, 255, '[');
     if( Stream.gcount() > 1 ) {
         return Stream;
@@ -63,4 +63,9 @@ inline std::istream& operator>>( std::istream& Stream, Eigen::Matrix<T,R,C>& Mat
     return Stream;
 }
 
+}
+
+namespace std {
+using calibu::operator<<;
+using calibu::operator>>;
 }
