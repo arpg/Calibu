@@ -1,4 +1,4 @@
-/* 
+/*
    This file is part of the Calibu Project.
    https://github.com/gwu-robotics/Calibu
 
@@ -37,18 +37,18 @@ void SaveEPS(
                 pts_per_unit * ((M.cols()-1) * grid_spacing + 2*border),
                 pts_per_unit * ((M.rows()-1) * grid_spacing + 2*border)
                 );
-  
+
     std::ofstream f;
     f.open(filename.c_str());
     f << "%!PS-Adobe EPSF-3.0" << std::endl;
     f << "%%Creator: CalibuCalibrationTarget" << std::endl;
     f << "%%Title: Calibration Target" << std::endl;
     f << "%%Origin: 0 0" << std::endl;
-    // usletter BoundingBox is 0, 0, 612, 792 
-    f << "%%BoundingBox: 0 0 " << max_pts[0] << " " << max_pts[1] << std::endl; 
+    // usletter BoundingBox is 0, 0, 612, 792
+    f << "%%BoundingBox: 0 0 " << max_pts[0] << " " << max_pts[1] << std::endl;
     f << std::endl;
     f << "270 rotate 0 " << -max_pts[0] << " 0 translate" << std::endl;
- 
+
     for( int r=0; r<M.rows(); ++r ) {
         for( int c=0; c<M.cols(); ++c) {
             const double rad_pts = pts_per_unit * ((M(r,c) == 1) ? rad1 : rad0);
@@ -56,7 +56,7 @@ void SaveEPS(
             f << p_pts[0] << " " << max_pts[1] - p_pts[1] << " "
                    << rad_pts << " 0 360 arc closepath" << std::endl
                    << "0.0 setgray fill" << std::endl
-                   << std::endl;            
+                   << std::endl;
         }
     }
 
@@ -66,7 +66,7 @@ void SaveEPS(
     Eigen::Vector2d base( dx/2.0, 0 );
     for( int c = 0; c < 8; c++ ){
         if( id & 1<<c ){
-            const Eigen::Vector2d p = 
+            const Eigen::Vector2d p =
                 pts_per_unit*( offset + base + border2d + Eigen::Vector2d(dx*c,r));
             f   << "newpath\n"
                 <<  p[0]-hw <<" " <<  p[1]-hw << " moveto\n"
@@ -84,10 +84,10 @@ void SaveEPS(
 Eigen::MatrixXi MakePattern(int r, int c, uint32_t seed )
 {
     Eigen::MatrixXi M(r,c);
-    
+
     std::mt19937 rng(seed);
     std::uniform_int_distribution<uint32_t> uint_dist1(0,1);
-    
+
     for(int r=0; r < M.rows(); ++r) {
         for(int c=0; c < M.cols(); ++c) {
             M(r,c) = uint_dist1(rng);
@@ -105,7 +105,7 @@ std::array<Eigen::MatrixXi,4> MakePatternGroup(int r, int c, uint32_t seed)
     patterns[1] = Eigen::MatrixXi(M.cols(),M.rows());
     patterns[2] = Eigen::MatrixXi(M.rows(),M.cols());
     patterns[3] = Eigen::MatrixXi(M.cols(),M.rows());
-    
+
     for(int r=0; r < M.rows(); ++r) {
         for(int c=0; c < M.cols(); ++c) {
             patterns[0](r,c) = M(r,c);
@@ -143,7 +143,7 @@ int NumExactMatches(const Eigen::MatrixXi& M, const Eigen::MatrixXi& m, int& bes
     const int border = std::min((int)std::min(m.rows(),m.cols())-2, 2);
     best_score = std::numeric_limits<int>::max();
     const Eigen::Vector2i rcmax( 2*border + M.rows() - m.rows(), 2*border + M.cols() - m.cols());
-    int num_zeros = 0;    
+    int num_zeros = 0;
     for(int r=-border; r < rcmax(0); ++r ) {
         for(int c=-border; c < rcmax(1); ++c) {
             const int hd = HammingDistance(M, m, r,c );
@@ -157,7 +157,7 @@ int NumExactMatches(const Eigen::MatrixXi& M, const Eigen::MatrixXi& m, int& bes
             }
         }
     }
-    
+
     return num_zeros;
 }
 
@@ -165,7 +165,7 @@ int NumExactMatches(const std::array<Eigen::MatrixXi,4>& PG, const Eigen::Matrix
 {
     best_score = std::numeric_limits<int>::max();
     int num_exact = 0;
-    
+
     for(int g=0; g<4; ++g) {
         int pgr, pgc, pgs;
         num_exact += NumExactMatches(PG[g], m, pgs,pgr,pgc);
@@ -176,7 +176,7 @@ int NumExactMatches(const std::array<Eigen::MatrixXi,4>& PG, const Eigen::Matrix
             best_c = pgc;
         }
     }
-    
+
     return num_exact;
 }
 
@@ -185,9 +185,9 @@ int AutoCorrelation(const std::array<Eigen::MatrixXi,4>& PG, int minr, int minc 
     const Eigen::MatrixXi& M = PG[0];
     const int R = PG[0].rows();
     const int C = PG[0].cols();
-    
+
     int num_bad_matches = 0;
-    
+
     // For all sizes
     for(int nr = minr; nr < R; ++nr ) {
         for(int nc = minc; nc < C; ++nc ) {
@@ -214,7 +214,7 @@ int AutoCorrelationMinArea(const std::array<Eigen::MatrixXi,4>& PG )
     const int C = PG[0].cols();
 
     int min_area = 0;
-    
+
     // For all sizes
     for(int nr = 2; nr < R; ++nr ) {
         for(int nc = 2; nc < C; ++nc ) {
@@ -225,7 +225,7 @@ int AutoCorrelationMinArea(const std::array<Eigen::MatrixXi,4>& PG )
                 for(int c=0; c < MC; ++c ) {
                     const Eigen::MatrixXi m = M.block(r,c,nr,nc);
                     // Don't count the known good match (-1)
-                    int bs,bg,br,bc;                    
+                    int bs,bg,br,bc;
                     if(NumExactMatches(PG, m, bs,bg,br,bc) > 1) {
                         min_area = std::max(min_area, nr*nc+1 );
                     }
@@ -243,10 +243,10 @@ int SeedScore(uint32_t seed, int r, int c)
 }
 
 uint32_t FindBestSeed(int r, int c, bool& should_run) {
-    
+
     uint32_t best_seed = 0;
     int best_score = std::numeric_limits<int>::max();
-    
+
     for(uint32_t seed=0; should_run; ++seed) {
         const int score = SeedScore(seed,r,c);
         if(score < best_score) {
