@@ -20,6 +20,7 @@
  */
 
 #include <calibu/target/RandomGrid.h>
+#include <calibu/utils/StreamOperatorsEigen.h>
 
 namespace calibu
 {
@@ -96,25 +97,21 @@ Eigen::MatrixXi MakePattern(int r, int c, uint32_t seed )
     return M;
 }
 
-std::array<Eigen::MatrixXi,4> MakePatternGroup(int r, int c, uint32_t seed)
+std::array<Eigen::MatrixXi, 4> MakePatternGroup(int r, int c, uint32_t seed)
 {
-    std::array<Eigen::MatrixXi,4> patterns;
-    const Eigen::MatrixXi& M = patterns[0];
+  return FillGroup(MakePattern(r, c, seed));
+}
 
-    patterns[0] = MakePattern(r,c,seed);
-    patterns[1] = Eigen::MatrixXi(M.cols(),M.rows());
-    patterns[2] = Eigen::MatrixXi(M.rows(),M.cols());
-    patterns[3] = Eigen::MatrixXi(M.cols(),M.rows());
+std::array<Eigen::MatrixXi, 4> FillGroup(const Eigen::MatrixXi& m)
+{
+  std::array<Eigen::MatrixXi, 4> patterns;
+  patterns[0] = m;
 
-    for(int r=0; r < M.rows(); ++r) {
-        for(int c=0; c < M.cols(); ++c) {
-            patterns[0](r,c) = M(r,c);
-            patterns[1](M.cols()-c-1,r) = M(r,c);
-            patterns[2](M.rows()-r-1, M.cols()-c-1) = M(r,c);
-            patterns[3](c,M.rows()-r-1) = M(r,c);
-        }
-    }
-    return patterns;
+  // Found in this awesome answer http://stackoverflow.com/a/3488737/505049
+  patterns[1] = m.transpose().colwise().reverse().eval();  // Rotate 90 CW
+  patterns[2] = m.transpose().reverse().eval();  // Rotate 180. Not in the S.O. post
+  patterns[3] = m.transpose().rowwise().reverse().eval();  // Rotate 270 CW
+  return patterns;
 }
 
 int HammingDistance(const Eigen::MatrixXi& M, const Eigen::MatrixXi& m, int r, int c)

@@ -1,4 +1,4 @@
-/* 
+/*
    This file is part of the Calibu Project.
    https://github.com/gwu-robotics/Calibu
 
@@ -40,7 +40,9 @@ void SaveEPS(
 
 Eigen::MatrixXi MakePattern(int r, int c, uint32_t seed = 0);
 
-std::array<Eigen::MatrixXi,4> MakePatternGroup(int r, int c, uint32_t seed);
+std::array<Eigen::MatrixXi, 4> MakePatternGroup(int r, int c, uint32_t seed);
+
+std::array<Eigen::MatrixXi, 4> FillGroup(const Eigen::MatrixXi& m);
 
 int HammingDistance(const Eigen::MatrixXi& M, const Eigen::MatrixXi& m, int r, int c);
 
