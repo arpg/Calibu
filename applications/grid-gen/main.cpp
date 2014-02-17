@@ -1,5 +1,5 @@
 #include <Eigen/Eigen>
-#include <Sophus/se2.hpp>
+#include <sophus/se2.hpp>
 #include <random>
 #include <iostream>
 #include <array>
