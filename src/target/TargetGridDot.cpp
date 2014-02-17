@@ -35,27 +35,38 @@ TargetGridDot::TargetGridDot(double grid_spacing, Eigen::Vector2i grid_size, uin
 {
     // Create binary pattern (and rotated pattern) from seed
     PG = MakePatternGroup(grid_size(1), grid_size(0), seed);
+    Init();
+}
 
-    // Create cached grid coordinates
-    tpts2d.resize(grid_size(0) * grid_size(1));
-    tpts3d.resize(grid_size(0) * grid_size(1));
+TargetGridDot::TargetGridDot(double grid_spacing, const Eigen::MatrixXi& grid)
+    : grid_spacing(grid_spacing), grid_size(grid.rows(), grid.cols())
+{
+  // Create binary pattern (and rotated pattern) from seed
+  PG = FillGroup(grid);
+  Init();
+}
 
-    for(int r=0; r< grid_size(1); ++r) {
-        for(int c=0; c< grid_size(0); ++c) {
-            Eigen::Vector2i p = Eigen::Vector2i(c,r);
-            tpts2d[r*grid_size(0)+c] = grid_spacing * Eigen::Vector2d(p(0), p(1));
-            tpts3d[r*grid_size(0)+c] = grid_spacing * Eigen::Vector3d(p(0), p(1), 0);
-        }
+void TargetGridDot::Init() {
+  // Create cached grid coordinates
+  tpts2d.resize(grid_size(0) * grid_size(1));
+  tpts3d.resize(grid_size(0) * grid_size(1));
+
+  for(int r=0; r< grid_size(1); ++r) {
+    for(int c=0; c< grid_size(0); ++c) {
+      Eigen::Vector2i p = Eigen::Vector2i(c,r);
+      tpts2d[r*grid_size(0)+c] = grid_spacing * Eigen::Vector2d(p(0), p(1));
+      tpts3d[r*grid_size(0)+c] = grid_spacing * Eigen::Vector3d(p(0), p(1), 0);
     }
+  }
 
-    // create binary pattern coords
-    codepts3d.resize( 8 );
-    double r = grid_spacing*(grid_size(1)+2.5);
-    double dx =  (grid_spacing*(grid_size(0)-1))/8;
-    Eigen::Vector3d base( dx/2.0, 0, 0 );
-    for( int c = 0; c < 8; c++ ){
-        codepts3d[c] = base + Eigen::Vector3d( dx*c, r, 0 );
-    }
+  // create binary pattern coords
+  codepts3d.resize( 8 );
+  double r = grid_spacing*(grid_size(1)+2.5);
+  double dx =  (grid_spacing*(grid_size(0)-1))/8;
+  Eigen::Vector3d base( dx/2.0, 0, 0 );
+  for( int c = 0; c < 8; c++ ){
+    codepts3d[c] = base + Eigen::Vector3d( dx*c, r, 0 );
+  }
 }
 
 std::vector<std::vector<Dist> > ClosestPoints(

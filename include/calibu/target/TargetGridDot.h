@@ -64,6 +64,7 @@ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 
     TargetGridDot(double grid_spacing, Eigen::Vector2i grid_size, uint32_t seed = 71);
+    TargetGridDot(double grid_spacing, const Eigen::MatrixXi& grid);
 
     ////////////////////////////////////////////////////////////////////////////
 
@@ -137,7 +138,8 @@ public:
             unsigned char id = 0
             ) const;
 
-protected:
+ protected:
+    void Init();
     void Clear();
     void SetGrid(Vertex& v, const Eigen::Vector2i& g);
   bool Match(std::map<Eigen::Vector2i, Vertex*,
