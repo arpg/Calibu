@@ -15,7 +15,10 @@ list(APPEND SEARCH_HEADERS ${EIGEN3_INCLUDE_DIR}) # Help Ceres find Eigen
 find_package( Ceres 1.6.0 QUIET )
 include_directories( ${CERES_INCLUDES} )
 
-if( Pangolin_FOUND AND Ceres_FOUND AND HAL_FOUND )
+# This depends on HAL, which in turns depends on Calibu, so we disable this by default
+set(BUILD_CALIBGRID_HAL OFF CACHE BOOL "To build or not build calibgrid-hal")
+
+if(BUILD_CALIBGRID_HAL AND Pangolin_FOUND AND Ceres_FOUND AND HAL_FOUND )
     add_executable( calibgrid-hal main.cpp )
     target_link_libraries( calibgrid-hal ${CERES_LIBRARIES} )
     target_link_libraries( calibgrid-hal ${Pangolin_LIBRARIES} )
