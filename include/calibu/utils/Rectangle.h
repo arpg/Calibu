@@ -21,6 +21,8 @@
 
 #pragma once
 
+#include <calibu/Platform.h>
+
 #include <Eigen/Dense>
 
 namespace calibu {

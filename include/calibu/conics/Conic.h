@@ -25,6 +25,7 @@
 
 #include <Eigen/Dense>
 
+#include <calibu/Platform.h>
 #include <calibu/utils/Rectangle.h>
 #include <calibu/cam/CameraModel.h>
 
@@ -46,18 +47,21 @@ struct Conic {
   Eigen::Vector2d center;
 };
 
+CALIBU_EXPORT
 double Distance( const Conic& c1, const Conic& c2, double circle_radius );
 
+CALIBU_EXPORT
 std::array<std::pair<Eigen::Vector3d,Eigen::Matrix3d >, 2 > PlaneFromConic(
         const Conic& c, double plane_circle_radius, const Eigen::Matrix3d& K
         );
 
+CALIBU_EXPORT
 std::pair<Eigen::Vector3d,Eigen::Matrix3d > PlaneFromConics(
     const std::vector<Conic, Eigen::aligned_allocator<Conic> >& conics,
     double plane_circle_radius,
     const Eigen::Matrix3d& K, double inlier_threshold
                                                             );
-
+CALIBU_EXPORT
 Conic UnmapConic( const Conic& c, const CameraModelInterface& cam );
 
 }

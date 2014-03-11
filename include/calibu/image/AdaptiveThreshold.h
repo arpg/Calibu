@@ -20,6 +20,8 @@
 
 #pragma once
 
+#include <calibu/Platform.h>
+
 #include <algorithm>
 
 namespace calibu {

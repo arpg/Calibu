@@ -24,6 +24,7 @@
 #include <Eigen/Dense>
 #include <sophus/se3.hpp>
 
+#include <calibu/Platform.h>
 #include <calibu/cam/CameraModel.h>
 #include <calibu/image/ImageProcessing.h>
 #include <calibu/conics/Conic.h>
@@ -31,6 +32,7 @@
 namespace calibu
 {
 
+CALIBU_EXPORT
 class TargetInterface
 {
 public:

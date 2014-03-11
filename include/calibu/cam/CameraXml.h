@@ -21,6 +21,7 @@
 
 #pragma once
 
+#include <calibu/Platform.h>
 #include <calibu/cam/CameraRig.h>
 #include <sstream>
 
@@ -60,18 +61,25 @@ std::string ValToStr( const T& t )
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+CALIBU_EXPORT
 std::string CameraModelType( const std::string& sType );
 
+CALIBU_EXPORT
 std::string IndentStr(int indent);
 
+CALIBU_EXPORT
 std::string AttribOpen(const std::string& attrib);
 
+CALIBU_EXPORT
 std::string AttribClose(const std::string& attrib);
 
+CALIBU_EXPORT
 void WriteXmlSE3(std::ostream& out, const Sophus::SE3d& T_wc, int indent);
 
+CALIBU_EXPORT
 void WriteXmlCameraModel(std::ostream& out, const CameraModelInterface& cam, int indent = 0);
 
+CALIBU_EXPORT
 void WriteXmlCameraModel(const std::string& filename, const CameraModelInterface& cam);
 
 
@@ -94,28 +102,39 @@ inline void WriteXmlCameraModelAndTransformWithLut(
 
 
 ///////////////////////////////////////////////////////////////////////////////
-//CameraModel ReadXmlCameraModel(TiXmlElement* pEl);
+CALIBU_EXPORT
 CameraModel ReadXmlCameraModel(const std::string& filename);
 
 ////////////////////////////////////////////////////////////////////////
 
+CALIBU_EXPORT
 void WriteXmlSE3(std::ostream& out, const Sophus::SE3d& T_wc, int indent = 0);
+
+CALIBU_EXPORT
 void WriteXmlSE3(const std::string& filename, const Sophus::SE3d& T_wc);
-//Sophus::SE3d ReadXmlSE3(TiXmlNode* xmlcampose);
+
+CALIBU_EXPORT
 Sophus::SE3d ReadXmlSE3(const std::string& filename);
 
 ////////////////////////////////////////////////////////////////////////
 
+CALIBU_EXPORT
 void WriteXmlCameraModelAndTransform(std::ostream& out, const CameraModelAndTransform& cop, int indent = 0);
+
+CALIBU_EXPORT
 void WriteXmlCameraModelAndTransform(const std::string& filename, const CameraModelAndTransform& cop);
-//CameraModelAndTransform ReadXmlCameraModelAndTransform(TiXmlNode* xmlcampose);
+
+CALIBU_EXPORT
 CameraModelAndTransform ReadXmlCameraModelAndTransform(const std::string& filename);
 
 ////////////////////////////////////////////////////////////////////////
-
+CALIBU_EXPORT
 void WriteXmlRig(std::ostream& out, const CameraRig& rig, int indent = 0);
+
+CALIBU_EXPORT
 void WriteXmlRig(const std::string& filename, const CameraRig& rig);
-//CameraRig ReadXmlRig(TiXmlNode* xmlrig);
+
+CALIBU_EXPORT
 CameraRig ReadXmlRig(const std::string& filename);
 
 

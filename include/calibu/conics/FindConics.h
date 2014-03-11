@@ -22,6 +22,7 @@
 
 #include <Eigen/Dense>
 
+#include <calibu/Platform.h>
 #include <calibu/image/Label.h>
 #include <calibu/conics/Conic.h>
 
@@ -35,6 +36,7 @@ Eigen::Matrix3d FindEllipse(
         double& /*residual*/
         );
 
+CALIBU_EXPORT
 void FindCandidateConicsFromLabels(
         unsigned w, unsigned h,
         const std::vector<PixelClass>& labels,

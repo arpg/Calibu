@@ -21,7 +21,9 @@
 
 #pragma once
 
+#include <calibu/Platform.h>
 #include <calibu/cam/CameraModel.h>
+
 #include <sophus/se3.hpp>
 #include <vector>
 

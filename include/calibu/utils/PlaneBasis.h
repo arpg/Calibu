@@ -20,6 +20,7 @@
 
 #pragma once
 
+#include <calibu/Platform.h>
 #include <sophus/se3.hpp>
 
 namespace calibu

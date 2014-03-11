@@ -22,6 +22,8 @@
 
 #include <array>
 #include <map>
+
+#include <calibu/Platform.h>
 #include <calibu/target/Target.h>
 #include <calibu/target/LineGroup.h>
 
@@ -57,6 +59,7 @@ struct ParamsGridDot
     double cross_line_ratio;
 };
 
+CALIBU_EXPORT
 class TargetGridDot
         : public TargetInterface
 {

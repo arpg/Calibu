@@ -20,6 +20,8 @@
 
 #pragma once
 
+#include <calibu/Platform.h>
+
 #include <Eigen/Eigen>
 #include <sophus/se2.hpp>
 #include <random>
@@ -32,6 +34,7 @@
 namespace calibu
 {
 
+CALIBU_EXPORT
 void SaveEPS(
     std::string filename, const Eigen::MatrixXi& M,
     const Eigen::Vector2d& offset, double grid_spacing,
@@ -39,26 +42,37 @@ void SaveEPS(
     unsigned char id
 );
 
+CALIBU_EXPORT
 Eigen::MatrixXi MakePattern(int r, int c, uint32_t seed = 0);
 
+CALIBU_EXPORT
 std::array<Eigen::MatrixXi, 4> MakePatternGroup(int r, int c, uint32_t seed);
 
+CALIBU_EXPORT
 std::array<Eigen::MatrixXi, 4> FillGroup(const Eigen::MatrixXi& m);
 
+CALIBU_EXPORT
 int HammingDistance(const Eigen::MatrixXi& M, const Eigen::MatrixXi& m, int r, int c);
 
+CALIBU_EXPORT
 int NumExactMatches(const Eigen::MatrixXi& M, const Eigen::MatrixXi& m, int& best_score, int& best_r, int& best_c);
 
-int NumExactMatches(const std::array<Eigen::MatrixXi,4>& PG, const Eigen::MatrixXi& m, int& best_score, int& best_g, int& best_r, int& best_c);
+CALIBU_EXPORT
+int NumExactMatches(const std::array<Eigen::MatrixXi, 4>& PG, const Eigen::MatrixXi& m, int& best_score, int& best_g, int& best_r, int& best_c);
 
-int AutoCorrelation(const std::array<Eigen::MatrixXi,4>& PG, int minr=2, int minc=2 );
+CALIBU_EXPORT
+int AutoCorrelation(const std::array<Eigen::MatrixXi, 4>& PG, int minr = 2, int minc = 2);
 
-int AutoCorrelationMinArea(const std::array<Eigen::MatrixXi,4>& PG );
+CALIBU_EXPORT
+int AutoCorrelationMinArea(const std::array<Eigen::MatrixXi, 4>& PG);
 
+CALIBU_EXPORT
 int SeedScore(uint32_t seed, int r, int c);
 
+CALIBU_EXPORT
 uint32_t FindBestSeed(int r, int c, bool& should_run);
 
+CALIBU_EXPORT
 void PrintPattern(const Eigen::MatrixXi& M);
 
 }

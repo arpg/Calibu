@@ -23,6 +23,7 @@
 #include <vector>
 #include <Eigen/Eigen>
 
+#include <calibu/Platform.h>
 #include <calibu/image/ImageProcessing.h>
 #include <calibu/conics/Conic.h>
 
@@ -45,6 +46,7 @@ struct ParamsConicFinder
     float conic_min_aspect;
 };
 
+CALIBU_EXPORT
 class ConicFinder
 {
 public:

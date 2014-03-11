@@ -22,6 +22,8 @@
 #pragma once
 
 #include <sophus/se3.hpp>
+
+#include <calibu/Platform.h>
 #include <calibu/cam/CameraModel.h>
 #include <calibu/cam/Rectify.h>
 
@@ -32,7 +34,7 @@ namespace calibu
 /// and output their new intrinsics and extrinsics.
 /// Returns: New camera intrinsics shared by both cameras
 /// T_nr_nl: New scanline rectified extrinsics considering rotation applied in lookup tables.
-calibu::CameraModelT<Pinhole> CreateScanlineRectifiedLookupAndCameras(
+    CALIBU_EXPORT calibu::CameraModelT<Pinhole> CreateScanlineRectifiedLookupAndCameras(
         const Sophus::SE3d& T_rl,
         const calibu::CameraModelInterface& cam_left,
         const calibu::CameraModelInterface& cam_right,

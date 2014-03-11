@@ -21,9 +21,10 @@
 
 #pragma once
 
-#include "CameraModelInterface.h"
-#include "ProjectionModel.h"
-#include "ProjectionKannalaBrandt.h"
+#include <calibu/Platform.h>
+#include <calibu/cam/CameraModelInterface.h>
+#include <calibu/cam/ProjectionModel.h>
+#include <calibu/cam/ProjectionKannalaBrandt.h>
 
 namespace calibu
 {

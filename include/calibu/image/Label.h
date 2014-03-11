@@ -20,7 +20,9 @@
 
 #pragma once
 
+#include <calibu/Platform.h>
 #include <calibu/utils/Rectangle.h>
+
 #include <vector>
 
 namespace calibu {
@@ -32,6 +34,7 @@ struct PixelClass
     int size;
 };
 
+CALIBU_EXPORT
 void Label(
         int w, int h,
         const unsigned char* I,

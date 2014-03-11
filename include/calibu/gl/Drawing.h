@@ -24,6 +24,7 @@
 
 #include <Eigen/Dense>
 
+#include <calibu/Platform.h>
 #include <calibu/target/Target.h>
 #include <calibu/utils/Rectangle.h>
 #include <calibu/utils/Utils.h>

@@ -20,6 +20,8 @@
 
 #pragma once
 
+#include <calibu/Platform.h>
+
 #include <vector>
 #include <Eigen/Dense>
 #include <sophus/se3.hpp>
@@ -38,6 +40,7 @@ bool is_finite(const Eigen::MatrixBase<Derived>& x)
     return !is_nan( (x.array() - x.array()).matrix() );
 }
 
+CALIBU_EXPORT
 Eigen::Matrix3d EstimateH_ba(
         const std::vector<Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> >& a,
         const std::vector<Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> >& b

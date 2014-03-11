@@ -20,6 +20,7 @@
 
 #pragma once
 
+#include <calibu/Platform.h>
 #include <ceres/ceres.h>
 
 namespace calibu

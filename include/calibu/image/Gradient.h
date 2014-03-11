@@ -20,6 +20,8 @@
 
 #pragma once
 
+#include <calibu/Platform.h>
+
 namespace calibu {
 
 // Influenced by libCVD gradient method

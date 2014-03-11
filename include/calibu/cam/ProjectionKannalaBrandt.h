@@ -23,7 +23,8 @@
 #include <Eigen/Eigen>
 #include <stdexcept>
 
-#include "ProjectionModel.h"
+#include <calibu/Platform.h>
+#include <calibu/cam/ProjectionModel.h>
 
 namespace calibu {
 

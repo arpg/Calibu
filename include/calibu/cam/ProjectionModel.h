@@ -21,7 +21,9 @@
 #pragma once
 
 #include <Eigen/Eigen>
-#include "DistortionModel.h"
+
+#include <calibu/Platform.h>
+#include <calibu/cam/DistortionModel.h>
 
 namespace calibu {
 

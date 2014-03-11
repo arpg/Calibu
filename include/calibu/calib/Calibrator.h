@@ -31,6 +31,7 @@
 
 #include <sophus/se3.hpp>
 
+#include <calibu/Platform.h>
 #include <calibu/cam/CameraModel.h>
 #include <calibu/cam/CameraXml.h>
 #include <calibu/calib/CostFunctionAndParams.h>
@@ -66,6 +67,7 @@ struct CameraAndPose
     Sophus::SE3d T_ck;
 };
 
+CALIBU_EXPORT
 class Calibrator
 {
 public:

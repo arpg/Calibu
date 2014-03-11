@@ -20,8 +20,10 @@
 
 #pragma once
 
+#include <calibu/Platform.h>
+#include <calibu/image/Label.h>
+
 #include <Eigen/Eigen>
-#include "Label.h"
 
 namespace calibu {
 
@@ -34,6 +36,7 @@ struct ParamsImageProcessing {
   bool black_on_white;
 };
 
+CALIBU_EXPORT
 class ImageProcessing {
  public:
   ImageProcessing(int maxWidth, int maxHeight);

@@ -27,6 +27,8 @@
 #include <array>
 #include <set>
 #include <algorithm>
+
+#include <calibu/Platform.h>
 #include <calibu/conics/Conic.h>
 
 namespace calibu {

@@ -21,8 +21,9 @@
 
 #pragma once
 
-#include "CameraModelInterface.h"
-#include "CameraModelT.h"
+#include <calibu/Platform.h>
+#include <calibu/cam/CameraModelInterface.h>
+#include <calibu/cam/CameraModelT.h>
 
 #include <iostream>
 #include <memory>

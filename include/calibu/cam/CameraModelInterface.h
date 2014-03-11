@@ -21,9 +21,10 @@
 
 #pragma once
 
-#include <sophus/se3.hpp>
+#include <calibu/Platform.h>
+#include <calibu/cam/CameraUtils.h>
 
-#include "CameraUtils.h"
+#include <sophus/se3.hpp>
 
 namespace calibu
 {

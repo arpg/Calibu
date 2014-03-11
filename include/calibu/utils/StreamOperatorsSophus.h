@@ -1,5 +1,6 @@
 #pragma once
 
+#include <calibu/Platform.h>
 #include <calibu/utils/StreamOperatorsEigen.h>
 #include <sophus/se3.hpp>
 

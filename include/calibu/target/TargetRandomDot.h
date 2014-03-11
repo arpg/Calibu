@@ -22,7 +22,9 @@
 
 #include <Eigen/Dense>
 #include <sophus/se3.hpp>
-#include "Target.h"
+
+#include <calibu/Platform.h>
+#include <calibu/target/Target.h>
 
 namespace calibu {
 
@@ -44,6 +46,7 @@ struct ParamsRandomDot
     float plane_inlier_thresh;
 };
 
+CALIBU_EXPORT
 class TargetRandomDot
         : public TargetInterface
 {
