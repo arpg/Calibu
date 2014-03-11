@@ -40,12 +40,23 @@ namespace calibu {
 Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>
 DistanceMatrix(const std::vector<Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> >& pts );
 
-template<int R,int C,typename P>
-void SortRows(Eigen::Matrix<P,R,C,Eigen::RowMajor>& M)
+#ifdef _MSC_VER
+// MSVC 'An internal error has occured in the compiler' when using
+// the more general definition!?
+void SortRows(Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>& M)
 {
     for( int r=0; r < M.rows(); ++r )
         std::sort(&(M(r,0)), &(M(r,M.cols()-1))+1);
 }
+#else
+template<int R, int C, typename P>
+void SortRows(Eigen::Matrix<P, R, C, Eigen::RowMajor>& M)
+{
+    for (int r = 0; r < M.rows(); ++r)
+        std::sort(&(M(r, 0)), &(M(r, M.cols() - 1)) + 1);
+}
+#endif
+
 
 TargetRandomDot::TargetRandomDot()
     : seed(0), dt(NULL)
@@ -88,7 +99,7 @@ void TargetRandomDot::InitializeFrom2DPts()
     }
 
     // Construct Distance matrix
-  dt = new Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>(DistanceMatrix(tpts));
+    dt = new Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>(DistanceMatrix(tpts));
     SortRows(*dt);
 
     //  cout << "Target generated with " << tpts.size() << " circles." << endl;
@@ -536,7 +547,12 @@ void TargetRandomDot::Match(
         for( unsigned int i = 0; i < tpts.size(); ++i )
             cost(j,i) = DescriptorDist( dm.row(j), (*dt).row(i), match_neighbours );
 
+#ifdef _MSC_VER
+    // MSVC doesn't support VLA's 
+    double** c_cost = new double*[cost.rows()];
+#else
     double* c_cost[cost.rows()];
+#endif
     for( int i=0; i<cost.rows(); ++i )
         c_cost[i] = &cost(i,0);
 
@@ -550,6 +566,9 @@ void TargetRandomDot::Match(
     }
 
     hungarian_free(&hp);
+#ifdef _MSC_VER
+    delete[] c_cost;
+#endif
 }
 
 Vector2d Mean( vector<Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> >& pts )

@@ -42,7 +42,7 @@ void StrToVal( T& t, const std::string& sValue )
 
 ///////////////////////////////////////////////////////////////////////////////
 template <class T> inline
-T StrToVal( const std::string& sValue, const T default_val = T() )
+T StrToVal( const std::string& sValue, const T& default_val = T() )
 {
     T t = default_val;
     std::istringstream iss( sValue );

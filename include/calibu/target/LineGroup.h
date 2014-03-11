@@ -134,7 +134,7 @@ inline std::ostream& operator<<(std::ostream& os, const Triple& t)
 struct LineGroup
 {
     LineGroup(const Triple& o)
-        : ops{o.vs[0]->id, o.vs[1]->id, o.vs[2]->id}
+        : ops({o.vs[0]->id, o.vs[1]->id, o.vs[2]->id})
     {
     }
 

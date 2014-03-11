@@ -27,6 +27,7 @@
 #include <array>
 #include <signal.h>
 #include <fstream>
+#include <stdint.h>
 
 namespace calibu
 {

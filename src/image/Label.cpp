@@ -67,8 +67,9 @@ inline void AssignLabel( const int w, const int h, const unsigned char* I, short
             ++labels[lleft].size;
             labels[lleft].bbox.Insert(c,r);
         }else{
-            // new label
-            labels.push_back( (PixelClass){-1,IRectangle(c,r,c,r),1 } );
+            // new 
+            PixelClass pc = { -1, IRectangle(c, r, c, r), 1 };
+            labels.push_back( pc );
             labelr[c] = labels.size()-1;
         }
     }

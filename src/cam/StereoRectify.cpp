@@ -27,7 +27,7 @@ namespace calibu
 {
 
 calibu::CameraModelT<Pinhole> CreateScanlineRectifiedLookupAndCameras(
-        const Sophus::SE3d T_rl,
+        const Sophus::SE3d& T_rl,
         const calibu::CameraModelInterface& cam_left,
         const calibu::CameraModelInterface& cam_right,
         Sophus::SE3d& T_nr_nl,        
