@@ -29,9 +29,7 @@ set(
     ${INCDIR}/image/ImageProcessing.h
     ${INCDIR}/image/IntegralImage.h
     ${INCDIR}/image/Label.h
-    ${INCDIR}/pose/Pnp.h
     ${INCDIR}/pose/Ransac.h
-    ${INCDIR}/pose/Tracker.h
     ${INCDIR}/target/Hungarian.h
     ${INCDIR}/target/LineGroup.h
     ${INCDIR}/target/RandomGrid.h
@@ -57,8 +55,6 @@ SET(
     conics/FindConics.cpp
     image/ImageProcessing.cpp
     image/Label.cpp
-    pose/Pnp.cpp
-    pose/Tracker.cpp
     target/Hungarian.cpp
     target/RandomGrid.cpp
     target/TargetGridDot.cpp
@@ -74,17 +70,23 @@ SET(
 find_package( Eigen3 REQUIRED )
 find_package( Sophus REQUIRED )
 
-set(NO_OPENCV_GPU TRUE)
-find_package( OpenCV REQUIRED )
-find_package( ZLIB REQUIRED )
-
 ## Apply project include directories
 list( APPEND CALIBU_INC "${CMAKE_CURRENT_SOURCE_DIR}/../include;${CMAKE_CURRENT_BINARY_DIR}/include" )
 list( APPEND USER_INC   ${EIGEN3_INCLUDE_DIR} )
 list( APPEND USER_INC   ${Sophus_INCLUDE_DIR} )
 
-list( APPEND LINK_LIBS  ${OpenCV2_LIBRARIES} ${ZLIB_LIBRARIES} )
-list( APPEND INTERNAL_INC ${OpenCV2_INCLUDE_DIRS} ${ZLIB_INCLUDE_DIR} )
+#######################################################
+## Find optional dependencies
+
+set(NO_OPENCV_GPU TRUE)
+find_package( OpenCV )
+
+if( OpenCV2_FOUND )
+    list( APPEND LINK_LIBS  ${OpenCV2_LIBRARIES} )
+    list( APPEND INTERNAL_INC ${OpenCV2_INCLUDE_DIRS} )
+    list( APPEND HEADERS ${INCDIR}/pose/Pnp.h  )
+    list( APPEND SOURCES pose/Pnp.cpp pose/Tracker.cpp ${INCDIR}/pose/Tracker.h )
+endif()
 
 # Include source/build directories first to preempt any installed Calibu
 include_directories( ${CALIBU_INC} )

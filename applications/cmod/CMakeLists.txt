@@ -1,18 +1,13 @@
 find_package( Calibu 0.1 REQUIRED )
-include_directories( ${Calibu_INCLUDE_DIRS} )
-link_libraries( ${LIBRARY_NAME} )
 
-# git://github.com/stevenlovegrove/Pangolin.git
-find_package( Pangolin 0.1 QUIET )
-include_directories( ${Pangolin_INCLUDE_DIRS} )
-link_libraries( ${Pangolin_LIBRARIES} )
+find_package( ZLIB QUIET )
 
-# git clone https://ceres-solver.googlesource.com/ceres-solver
-find_package( Ceres 1.6.0 QUIET )
-include_directories( ${CERES_INCLUDES} )
-link_libraries( ${CERES_LIBRARIES} )
+if( ZLIB_FOUND )
+    include_directories( ${Calibu_INCLUDE_DIRS} )
+    link_libraries( ${LIBRARY_NAME} )
 
-if( Pangolin_FOUND AND Ceres_FOUND )
+    link_libraries( ${ZLIB_LIBRARIES} )
+    include_directories( ${ZLIB_INCLUDE_DIR} )
 
     # MVL source for old camera models
     file( GLOB mvlsrcs "MVL/*.c*")

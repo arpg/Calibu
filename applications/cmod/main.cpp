@@ -1,8 +1,5 @@
 #include <memory>
 
-#include <pangolin/pangolin.h>
-#include <pangolin/gldraw.h>
-
 #include <sophus/se3.hpp>
 
 #include <calibu/calib/Calibrator.h>
@@ -13,10 +10,6 @@
 #include <calibu/conics/ConicFinder.h>
 #include <calibu/cam/Rectify.h>
 #include <calibu/utils/Xml.h>
-
-#include <opencv2/opencv.hpp>
-
-#include <CVars/CVar.h>
 
 #include "MVL/CameraModel.h"
 #include "GetPot"
