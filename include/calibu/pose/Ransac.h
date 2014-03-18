@@ -101,8 +101,8 @@ protected:
         }
     }
 
-    CostFunction cf;
     ModelFunction mf;
+    CostFunction cf;
     Data data;
 };
 
