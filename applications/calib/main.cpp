@@ -301,7 +301,8 @@ int main( int argc, char** argv)
     container.AddDisplay(v3D);
 
     // OpenGl Texture for video frame
-    pangolin::GlTexture tex[N];
+    std::vector<pangolin::GlTexture> tex;
+    tex.resize(N);
     for(unsigned int i=0; i<N; ++i) {
       tex[i].Reinitialise(video.Streams()[i].Width(),video.Streams()[i].Height(),GL_LUMINANCE8);
     }

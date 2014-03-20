@@ -1,13 +1,17 @@
 find_package( Calibu 0.1 REQUIRED )
 
+find_package( Boost QUIET )
 find_package( ZLIB QUIET )
 
-if( ZLIB_FOUND )
+if( Boost_FOUND AND ZLIB_FOUND )
     include_directories( ${Calibu_INCLUDE_DIRS} )
     link_libraries( ${LIBRARY_NAME} )
 
-    link_libraries( ${ZLIB_LIBRARIES} )
+    include_directories( ${Boost_INCLUDE_DIRS} )
+    link_libraries( ${Boost_LIBRARIES} )
+
     include_directories( ${ZLIB_INCLUDE_DIR} )
+    link_libraries( ${ZLIB_LIBRARIES} )
 
     # MVL source for old camera models
     file( GLOB mvlsrcs "MVL/*.c*")

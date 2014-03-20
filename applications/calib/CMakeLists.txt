@@ -11,7 +11,11 @@ list(APPEND SEARCH_HEADERS ${EIGEN3_INCLUDE_DIR}) # Help Ceres find Eigen
 find_package( Ceres 1.6.0 QUIET )
 include_directories( ${CERES_INCLUDES} )
 
-if( Pangolin_FOUND AND Ceres_FOUND )
+# Check that OPENCV is available
+set(NO_OPENCV_GPU TRUE)
+find_package( OpenCV QUIET )
+
+if( Pangolin_FOUND AND Ceres_FOUND AND OpenCV2_FOUND )
     add_executable( calibgrid main.cpp )
     target_link_libraries( calibgrid ${CERES_LIBRARIES} )
     target_link_libraries( calibgrid ${Pangolin_LIBRARIES} )

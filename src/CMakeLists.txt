@@ -80,15 +80,20 @@ list( APPEND USER_INC   ${Sophus_INCLUDE_DIR} )
 #######################################################
 ## Find optional dependencies
 
+# OpenCV is required for PNP methods and calibration application
 set(NO_OPENCV_GPU TRUE)
 find_package( OpenCV )
 
 if( OpenCV2_FOUND )
+    set( HAVE_OPENCV 1 )
     list( APPEND LINK_LIBS  ${OpenCV2_LIBRARIES} )
     list( APPEND INTERNAL_INC ${OpenCV2_INCLUDE_DIRS} )
-    list( APPEND HEADERS ${INCDIR}/pose/Pnp.h  )
-    list( APPEND SOURCES pose/Pnp.cpp pose/Tracker.cpp ${INCDIR}/pose/Tracker.h )
+    list( APPEND HEADERS ${INCDIR}/pose/Pnp.h ${INCDIR}/pose/Tracker.h )
+    list( APPEND SOURCES pose/Pnp.cpp pose/Tracker.cpp )
 endif()
+
+#######################################################
+## Setup and configure library
 
 # Include source/build directories first to preempt any installed Calibu
 include_directories( ${CALIBU_INC} )

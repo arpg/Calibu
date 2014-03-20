@@ -17,4 +17,8 @@
 #cmakedefine _GCC_
 #cmakedefine _MSVC_
 
+/// Optional Libraries
+#cmakedefine HAVE_OPENCV
+
+
 #endif //_CALIBU_CONFIG_H_

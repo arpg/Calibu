@@ -5,7 +5,6 @@
 #include <calibu/calib/Calibrator.h>
 #include <calibu/image/ImageProcessing.h>
 #include <calibu/target/TargetGridDot.h>
-#include <calibu/gl/Drawing.h>
 #include <calibu/pose/Pnp.h>
 #include <calibu/conics/ConicFinder.h>
 #include <calibu/cam/Rectify.h>
