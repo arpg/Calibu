@@ -301,13 +301,13 @@ int main( int argc, char** argv)
     container.AddDisplay(v3D);
 
     // OpenGl Texture for video frame
-#ifdef _MSVC_
+#ifdef _GCC_
+    // MSVC / Clang doesn't support non-compile-time-staticly sized non-pod arrays
+    pangolin::GlTexture tex[N];
+#else
     // GCC Doesn't seem to make use of move constructor in resize method
     std::vector<pangolin::GlTexture> tex;
     tex.resize(N);
-#else
-    // MSVC doesn't support non-compile-time-staticly sized arrays
-    pangolin::GlTexture tex[N];
 #endif
     for(unsigned int i=0; i<N; ++i) {
       tex[i].Reinitialise(video.Streams()[i].Width(),video.Streams()[i].Height(),GL_LUMINANCE8);
