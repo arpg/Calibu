@@ -1,13 +1,6 @@
 #include <memory>
 
-#include <sophus/se3.hpp>
-
-#include <calibu/calib/Calibrator.h>
-#include <calibu/image/ImageProcessing.h>
-#include <calibu/target/TargetGridDot.h>
-#include <calibu/pose/Pnp.h>
-#include <calibu/conics/ConicFinder.h>
-#include <calibu/cam/Rectify.h>
+#include <calibu/Calibu.h>
 #include <calibu/utils/Xml.h>
 
 #include "MVL/CameraModel.h"
