@@ -11,6 +11,9 @@ set(
     ${INCDIR}/calib/Calibrator.h
     ${INCDIR}/calib/CostFunctionAndParams.h
     ${INCDIR}/calib/LocalParamSe3.h
+    ${INCDIR}/cam/camera_crtp.h
+    ${INCDIR}/cam/camera_models_crtp.h
+    ${INCDIR}/cam/camera_crtp_interop.h
     ${INCDIR}/cam/CameraModel.h
     ${INCDIR}/cam/CameraModelInterface.h
     ${INCDIR}/cam/CameraModelT.h
