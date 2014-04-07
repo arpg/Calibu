@@ -72,7 +72,8 @@ namespace calibu
     }
   };
 
-  class LinearCamera : public Camera<LinearCamera>
+  template<typename Scalar = double>
+  class LinearCamera : public Camera<LinearCamera<Scalar>, Scalar>
   {
   public:
     LinearCamera(const Scalar* params_in)
@@ -115,7 +116,8 @@ namespace calibu
     Scalar params[4];
   };
 
-  class FovCamera : public Camera<FovCamera>
+  template<typename Scalar = double>
+  class FovCamera : public Camera<FovCamera<Scalar>, Scalar>
   {
   public:
     constexpr static const double kCamDistEps = 1e-5;

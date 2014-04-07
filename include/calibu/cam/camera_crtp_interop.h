@@ -43,10 +43,10 @@ namespace calibu
   {
     if (old_cam.Type() == "calibu_fu_fv_u0_v0_w") {
       return typename CameraInterface<Scalar>::Ptr(
-            new calibu::FovCamera(old_cam.GenericParams().data()));
+            new calibu::FovCamera<Scalar>(old_cam.GenericParams().data()));
     } else if (old_cam.Type() == "calibu_fu_fv_u0_v0") {
       return typename CameraInterface<Scalar>::Ptr(
-            new calibu::LinearCamera(old_cam.GenericParams().data()));
+            new calibu::LinearCamera<Scalar>(old_cam.GenericParams().data()));
     } else {
       std::cerr << "Unknown old camera type " << old_cam.Type() << " please "
                    " implement this camera before initializing it using the "
