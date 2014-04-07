@@ -24,6 +24,7 @@
 #include <calibu/cam/camera_models_crtp.h>
 #include <calibu/cam/CameraModel.h>
 #include <calibu/cam/CameraRig.h>
+#include <calibu/cam/CameraXml.h>
 
 namespace calibu
 {
@@ -35,6 +36,29 @@ namespace calibu
       rig.AddCamera(cam_and_transform.camera, cam_and_transform.T_wc);
     }
     return rig;
+  }
+
+  template<typename Scalar>
+  inline Rig<Scalar> LoadRig(const std::string& filename)
+  {
+    CameraRigT<Scalar> old_rig = calibu::ReadXmlRig(filename);
+    Rig<Scalar> rig;
+    for (auto& cam_and_transform: old_rig.cameras) {
+      rig.AddCamera(cam_and_transform.camera, cam_and_transform.T_wc);
+    }
+    return rig;
+  }
+
+  template<typename Scalar>
+  inline typename CameraInterface<Scalar>::Ptr LoadCamera(
+      const std::string& filename)
+  {
+    CameraRigT<Scalar> old_rig = calibu::ReadXmlRig(filename);
+    Rig<Scalar> rig;
+    for (auto& cam_and_transform: old_rig.cameras) {
+      rig.AddCamera(cam_and_transform.camera, cam_and_transform.T_wc);
+    }
+    return rig.cameras_[0];
   }
 
   template<typename Scalar>
