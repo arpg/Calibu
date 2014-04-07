@@ -21,7 +21,7 @@
  */
 #pragma once
 #include <Eigen/Eigen>
-#include <Sophus/se3.hpp>
+#include <sophus/se3.hpp>
 namespace calibu
 {
   template<typename Scalar> using Vec2t = Eigen::Matrix<Scalar, 2, 1>;
