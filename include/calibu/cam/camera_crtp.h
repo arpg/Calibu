@@ -35,7 +35,7 @@ namespace calibu
   class CameraInterface
   {
   public:
-    virtual ~CameraInterface() = 0;
+    virtual ~CameraInterface() {}
     virtual Vec3t<Scalar> Unproject(const Vec2t<Scalar>& pix) const = 0;
     virtual Vec2t<Scalar> Project(const Vec3t<Scalar>& ray) const = 0;
     virtual Eigen::Matrix<Scalar, 2, 3> dProject_dray(
