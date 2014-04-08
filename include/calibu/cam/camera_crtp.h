@@ -35,7 +35,6 @@ namespace calibu
   class CameraInterface
   {
   public:
-    typedef std::shared_ptr<CameraInterface> Ptr;
     virtual Vec3t<Scalar> Unproject(const Vec2t<Scalar>& pix) const = 0;
     virtual Vec2t<Scalar> Project(const Vec3t<Scalar>& ray) const = 0;
     virtual Eigen::Matrix<Scalar, 2, 3> dProject_dray(
@@ -116,7 +115,7 @@ namespace calibu
   class Rig
   {
   public:
-    void AddCamera(typename CameraInterface<Scalar>::Ptr cam,
+    void AddCamera(CameraInterface<Scalar>* cam,
                    const SE3t<Scalar>& t_wc)
     {
       cameras_.push_back(cam);
@@ -126,11 +125,18 @@ namespace calibu
     void AddCamera(CameraInterface<Scalar>* cam,
                    const SE3t<Scalar>& t_wc)
     {
-      cameras_.push_back(typename CameraInterface<Scalar>::Ptr(cam));
+      cameras_.push_back(CameraInterface<Scalar>* cam);
       t_wc_.push_back(t_wc);
     }
 
-    std::vector<typename CameraInterface<Scalar>::Ptr> cameras_;
+    ~Rig()
+    {
+      for (CameraInterface<Scalar>* ptr : cameras_) {
+        delete ptr;
+      }
+    }
+
+    std::vector<CameraInterface<Scalar>*> cameras_;
     std::vector<SE3t<Scalar>> t_wc_;
   };
 

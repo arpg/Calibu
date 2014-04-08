@@ -29,11 +29,28 @@
 namespace calibu
 {
   template<typename Scalar>
+  inline typename CameraInterface<Scalar>* CreateFromOldCamera(
+      const CameraModelGeneric<Scalar>& old_cam)
+  {
+    if (old_cam.Type() == "calibu_fu_fv_u0_v0_w") {
+      return new calibu::FovCamera<Scalar>(old_cam.GenericParams().data());
+    } else if (old_cam.Type() == "calibu_fu_fv_u0_v0") {
+      return new calibu::LinearCamera<Scalar>(old_cam.GenericParams().data());
+    } else {
+      std::cerr << "Unknown old camera type " << old_cam.Type() << " please "
+                   " implement this camera before initializing it using the "
+                   " crtp camera system." << std::endl;
+      throw 0;
+    }
+  }
+
+  template<typename Scalar>
   inline Rig<Scalar> CreateFromOldRig(CameraRigT<Scalar>& old_rig)
   {
     Rig<Scalar> rig;
     for (auto& cam_and_transform: old_rig.cameras) {
-      rig.AddCamera(cam_and_transform.camera, cam_and_transform.T_wc);
+      rig.AddCamera(CreateFromOldCamera(cam_and_transform.camera),
+                    cam_and_transform.T_wc);
     }
     return rig;
   }
@@ -44,38 +61,23 @@ namespace calibu
     CameraRigT<Scalar> old_rig = calibu::ReadXmlRig(filename);
     Rig<Scalar> rig;
     for (auto& cam_and_transform: old_rig.cameras) {
-      rig.AddCamera(cam_and_transform.camera, cam_and_transform.T_wc);
+      rig.AddCamera(CreateFromOldCamera(cam_and_transform.camera),
+                    cam_and_transform.T_wc);
     }
     return rig;
   }
 
   template<typename Scalar>
-  inline typename CameraInterface<Scalar>::Ptr LoadCamera(
+  inline typename CameraInterface<Scalar>* LoadCamera(
       const std::string& filename)
   {
     CameraRigT<Scalar> old_rig = calibu::ReadXmlRig(filename);
-    Rig<Scalar> rig;
-    for (auto& cam_and_transform: old_rig.cameras) {
-      rig.AddCamera(cam_and_transform.camera, cam_and_transform.T_wc);
-    }
-    return rig.cameras_[0];
-  }
-
-  template<typename Scalar>
-  inline typename CameraInterface<Scalar>::Ptr CreateFromOldCamera(
-      const CameraModelGeneric<Scalar>& old_cam)
-  {
-    if (old_cam.Type() == "calibu_fu_fv_u0_v0_w") {
-      return typename CameraInterface<Scalar>::Ptr(
-            new calibu::FovCamera<Scalar>(old_cam.GenericParams().data()));
-    } else if (old_cam.Type() == "calibu_fu_fv_u0_v0") {
-      return typename CameraInterface<Scalar>::Ptr(
-            new calibu::LinearCamera<Scalar>(old_cam.GenericParams().data()));
-    } else {
-      std::cerr << "Unknown old camera type " << old_cam.Type() << " please "
-                   " implement this camera before initializing it using the "
-                   " crtp camera system." << std::endl;
+    if (old_rig.cameras.size() == 0) {
+      std::cerr << "No cameras found in rig." << std::endl;
       throw 0;
     }
+    auto& cam_and_transform = old_rig.cameras[0];
+    return CreateFromOldCamera(cam_and_transform.camera,
+                               cam_and_transform.T_wc);
   }
 }
