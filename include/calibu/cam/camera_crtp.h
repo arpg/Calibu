@@ -47,6 +47,8 @@ namespace calibu
         const SE3t<Scalar>& t_ba,
         const Vec3t<Scalar>& ray,
         const Scalar rho) const = 0;
+
+    virtual Scalar* GetParams() = 0;
   };
 
   // The Curiously Recurring Template Pattern (CRTP)

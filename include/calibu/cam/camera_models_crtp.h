@@ -72,14 +72,36 @@ namespace calibu
     }
   };
 
-  template<typename Scalar = double>
+  /////////////////////////////////////////////////////////////////////////////
+  template<typename Scalar = double, bool OwnsMem = true>
   class LinearCamera : public Camera<LinearCamera<Scalar>, Scalar>
   {
   public:
-    LinearCamera(const Scalar* params_in)
+    LinearCamera( Scalar* params_in)
     {
-      memcpy(params, params_in, sizeof(params));
+      if( OwnsMem ){
+        params = new Scalar[4];
+        memcpy(params, params_in, sizeof(Scalar)*4);
+      }
+      else{
+        params = params_in;
+      }
     }
+
+    ~LinearCamera()
+    {
+      if( OwnsMem ){
+        delete[] params;
+      }
+    }
+
+    template<typename T>
+    static void Project( const T* ray, const T* _params, T* pix )
+    {
+      CameraUtils::Dehomogenize(ray, pix);
+      CameraUtils::MultK<T>(_params, pix, pix);
+    }
+
 
     template<typename T>
     inline void UnprojectImpl(const T* pix, T* ray) const {
@@ -113,20 +135,72 @@ namespace calibu
       j[4] *= params[0];
       j[5] *= params[1];
     }
-    Scalar params[4];
+
+    Scalar* GetParams()
+    {
+      return params;
+    }
+
+    Scalar* params;
   };
 
-  template<typename Scalar = double>
+  /////////////////////////////////////////////////////////////////////////////
+  template<typename Scalar = double, bool OwnsMem = true>
   class FovCamera : public Camera<FovCamera<Scalar>, Scalar>
   {
   public:
-    constexpr static const double kCamDistEps = 1e-5;
+#define kCamDistEps 1e-5
+#define kMaxRad 2.0
     static const uint32_t kMaxRadIncrements = 2000;
-    constexpr static const double kMaxRad = 2.0;
-    FovCamera(const Scalar* params_in)
+
+    FovCamera( Scalar* params_in)
     {
-      memcpy(params, params_in, sizeof(params));
+      if( OwnsMem ){
+        params = new Scalar[5];
+        memcpy(params, params_in, sizeof(Scalar)*5);
+      }
+      else{
+        params = params_in;
+      }
     }
+
+    ~FovCamera()
+    {
+      if( OwnsMem ){
+        delete[] params;
+      }
+    }
+
+    //  Static member functions to use without instantiating a class object
+    template<typename T>
+    inline static T Factor( const T rad, const T* _params )
+    {
+      const T param = _params[4];
+      if(param * param > kCamDistEps) {
+        const T mul2_tanw_by2 = (T)2.0 * tan(param / 2.0);
+        const T mul2_tanw_by2_byw = mul2_tanw_by2 / param;
+        if(rad * rad < kCamDistEps) {
+          // limit r->0
+          return mul2_tanw_by2_byw;
+        }
+        return atan(rad * mul2_tanw_by2) / (rad * param);
+      }
+      // limit w->0
+      return (T)1;
+    }
+
+    template<typename T>
+    static void Project( const T* ray, const T* _params, T* pix )
+    {
+      // De-homogenize and multiply by K.
+      CameraUtils::Dehomogenize(ray, pix);
+      // Calculate distortion parameter.
+      const T fac = FovCamera::Factor(CameraUtils::PixNorm(pix),_params);
+      pix[0] *= fac;
+      pix[1] *= fac;
+      CameraUtils::MultK<T>(_params, pix, pix);
+    }
+
 
     template<typename T>
     inline T Factor(T rad) const
@@ -253,6 +327,12 @@ namespace calibu
       j[4] = j_dehomog[4] * k00 + j_dehomog[5] * k01;
       j[5] = j_dehomog[4] * k10 + j_dehomog[5] * k11;
     }
-    Scalar params[5];
+
+    Scalar* GetParams() 
+    {
+      return params;
+    }
+
+    Scalar* params;
   };
 }
