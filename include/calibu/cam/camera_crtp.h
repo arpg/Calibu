@@ -51,23 +51,47 @@ namespace calibu
   };
 
   // The Curiously Recurring Template Pattern (CRTP)
-  template<class Derived, typename Scalar = double>
+  template<class Derived, typename Scalar = double, bool kOwnsMem = true>
   class Camera : public CameraInterface<Scalar>
   {
   public:
-    virtual ~Camera() {}
+    Camera(Scalar* params_in)
+    {
+      if (kOwnsMem) {
+        params_ = new Scalar[Derived::kParamSize];
+        memcpy(params_, params_in, sizeof(Scalar) * Derived::kParamSize);
+      }
+      else{
+        params_ = params_in;
+      }
+    }
+
+    ~Camera()
+    {
+      if( kOwnsMem ){
+        delete[] params_;
+      }
+    }
+
+    Scalar* GetParams()
+    {
+      return params_;
+    }
 
     Vec3t<Scalar> Unproject(const Vec2t<Scalar>& pix) const
     {
       Vec3t<Scalar> ray;
-      static_cast<const Derived*>(this)->UnprojectImpl(pix.data(), ray.data());
+      static_cast<const Derived*>(this)->Unproject(pix.data(),
+                                                   params_,
+                                                   ray.data());
       return ray;
     }
 
     Vec2t<Scalar> Project(const Vec3t<Scalar>& ray) const
     {
       Vec2t<Scalar> pix;
-      static_cast<const Derived*>(this)->ProjectImpl(ray.data(), pix.data());
+      static_cast<const Derived*>(this)->Project(ray.data(), params_,
+                                                 pix.data());
       return pix;
     }
 
@@ -75,8 +99,8 @@ namespace calibu
         const Vec3t<Scalar>& ray) const
     {
       Eigen::Matrix<Scalar, 2, 3> j;
-      static_cast<const Derived*>(this)->dProject_drayImpl(
-            ray.data(), j.data());
+      static_cast<const Derived*>(this)->dProject_dray(ray.data(), params_,
+                                                       j.data());
       return j;
     }
 
@@ -106,9 +130,8 @@ namespace calibu
     }
 
   protected:
-    Camera()
-    {
-    }
+
+    Scalar* params_;
   };
 
   template<typename Scalar=double>
@@ -119,13 +142,6 @@ namespace calibu
                    const SE3t<Scalar>& t_wc)
     {
       cameras_.push_back(cam);
-      t_wc_.push_back(t_wc);
-    }
-
-    void AddCamera(CameraInterface<Scalar>* cam,
-                   const SE3t<Scalar>& t_wc)
-    {
-      cameras_.push_back(CameraInterface<Scalar>* cam);
       t_wc_.push_back(t_wc);
     }
 

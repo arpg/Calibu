@@ -73,38 +73,16 @@ namespace calibu
   };
 
   /////////////////////////////////////////////////////////////////////////////
-  template<typename Scalar = double, bool OwnsMem = true>
-  class LinearCamera : public Camera<LinearCamera<Scalar>, Scalar>
+  template<typename Scalar = double, bool kOwnsMem = true>
+  class LinearCamera : public Camera<LinearCamera<Scalar>, Scalar, kOwnsMem>
   {
   public:
-    LinearCamera( Scalar* params_in)
-    {
-      if( OwnsMem ){
-        params = new Scalar[4];
-        memcpy(params, params_in, sizeof(Scalar)*4);
-      }
-      else{
-        params = params_in;
-      }
-    }
-
-    ~LinearCamera()
-    {
-      if( OwnsMem ){
-        delete[] params;
-      }
-    }
+    // C++ 11 constructor delegation -- use base class constructor.
+    using Camera<LinearCamera<Scalar>, Scalar, kOwnsMem>::Camera;
+    static const int kParamSize = 4;
 
     template<typename T>
-    static void Project( const T* ray, const T* _params, T* pix )
-    {
-      CameraUtils::Dehomogenize(ray, pix);
-      CameraUtils::MultK<T>(_params, pix, pix);
-    }
-
-
-    template<typename T>
-    inline void UnprojectImpl(const T* pix, T* ray) const {
+    static void Unproject(const T* pix, const T* params, T* ray) {
       // First multiply by inverse K and calculate distortion parameter.
       T pix_kinv[2];
       CameraUtils::MultInvK(params, pix, pix_kinv);
@@ -113,14 +91,14 @@ namespace calibu
     }
 
     template<typename T>
-    inline void ProjectImpl(const T* ray, T* pix) const {
+    static void Project(const T* ray, const T* params, T* pix) {
       // De-homogenize and multiply by K.
       CameraUtils::Dehomogenize(ray, pix);
       CameraUtils::MultK<T>(params, pix, pix);
     }
 
     template<typename T>
-    inline void dProject_drayImpl(const T* ray, T* j) const {
+    static void dProject_dray(const T* ray, const T* params, T* j) {
       // De-homogenize and multiply by K.
       T pix[2];
       CameraUtils::Dehomogenize(ray, pix);
@@ -135,51 +113,31 @@ namespace calibu
       j[4] *= params[0];
       j[5] *= params[1];
     }
-
-    Scalar* GetParams()
-    {
-      return params;
-    }
-
-    Scalar* params;
   };
 
+
   /////////////////////////////////////////////////////////////////////////////
-  template<typename Scalar = double, bool OwnsMem = true>
-  class FovCamera : public Camera<FovCamera<Scalar>, Scalar>
+  template<typename Scalar = double, bool kOwnsMem = true>
+  class FovCamera: public Camera<FovCamera<Scalar>, Scalar, kOwnsMem>
   {
   public:
+    // C++ 11 constructor delegation -- use base class constructor.
+    using Camera<FovCamera<Scalar>, Scalar, kOwnsMem>::Camera;
+
 #define kCamDistEps 1e-5
 #define kMaxRad 2.0
     static const uint32_t kMaxRadIncrements = 2000;
-
-    FovCamera( Scalar* params_in)
-    {
-      if( OwnsMem ){
-        params = new Scalar[5];
-        memcpy(params, params_in, sizeof(Scalar)*5);
-      }
-      else{
-        params = params_in;
-      }
-    }
-
-    ~FovCamera()
-    {
-      if( OwnsMem ){
-        delete[] params;
-      }
-    }
+    static const int kParamSize = 5;
 
     //  Static member functions to use without instantiating a class object
     template<typename T>
-    inline static T Factor( const T rad, const T* _params )
+    inline static T Factor(const T rad, const T* params)
     {
-      const T param = _params[4];
-      if(param * param > kCamDistEps) {
+      const T param = params[4];
+      if (param * param > kCamDistEps) {
         const T mul2_tanw_by2 = (T)2.0 * tan(param / 2.0);
         const T mul2_tanw_by2_byw = mul2_tanw_by2 / param;
-        if(rad * rad < kCamDistEps) {
+        if (rad * rad < kCamDistEps) {
           // limit r->0
           return mul2_tanw_by2_byw;
         }
@@ -190,40 +148,7 @@ namespace calibu
     }
 
     template<typename T>
-    static void Project( const T* ray, const T* _params, T* pix )
-    {
-      // De-homogenize and multiply by K.
-      CameraUtils::Dehomogenize(ray, pix);
-      // Calculate distortion parameter.
-      const T fac = FovCamera::Factor(CameraUtils::PixNorm(pix),_params);
-      pix[0] *= fac;
-      pix[1] *= fac;
-      CameraUtils::MultK<T>(_params, pix, pix);
-    }
-
-
-    template<typename T>
-    inline T Factor(T rad) const
-    {
-      const T param = params[4];
-      if(param * param < kCamDistEps) {
-        // limit w->0
-        return (T)1;
-      }else{
-        const T mul2_tanw_by2 = (T)2.0 * tan(param / 2.0);
-        const T mul2_tanw_by2_byw = mul2_tanw_by2 / param;
-
-        if(rad * rad < kCamDistEps) {
-          // limit r->0
-          return mul2_tanw_by2_byw;
-        }else{
-          return atan(rad * mul2_tanw_by2) / (rad * param);
-        }
-      }
-    }
-
-    template<typename T>
-    inline T dFactor_drad(T rad, T* fac) const
+    inline static T dFactor_drad(const T rad, const T* params, T* fac)
     {
       const T param = params[4];
       if(param * param < kCamDistEps) {
@@ -250,7 +175,7 @@ namespace calibu
 
 
     template<typename T>
-    inline T Factor_inv(T rad) const
+    inline static T Factor_inv(const T rad, const T* params)
     {
       const T param = params[4];
       if(param * param < kCamDistEps) {
@@ -270,33 +195,33 @@ namespace calibu
     }
 
     template<typename T>
-    inline void UnprojectImpl(const T* pix, T* ray) const {
+    static void Unproject(const T* pix, const T* params, T* ray) {
       // First multiply by inverse K and calculate distortion parameter.
       T pix_kinv[2];
       CameraUtils::MultInvK(params, pix, pix_kinv);
       // Homogenize the point.
       CameraUtils::Homogenize<T>(pix_kinv, ray);
       const T fac_inv =
-          Factor_inv(CameraUtils::PixNorm(pix_kinv));
+          Factor_inv(CameraUtils::PixNorm(pix_kinv), params);
       pix_kinv[0] *= fac_inv;
       pix_kinv[1] *= fac_inv;
       CameraUtils::Homogenize<T>(pix_kinv, ray);
     }
 
     template<typename T>
-    inline void ProjectImpl(const T* ray, T* pix) const {
+    static void Project(const T* ray, const T* params, T* pix) {
       // De-homogenize and multiply by K.
       CameraUtils::Dehomogenize(ray, pix);
       // Calculate distortion parameter.
       const T fac =
-          Factor(CameraUtils::PixNorm(pix));
+          Factor(CameraUtils::PixNorm(pix), params);
       pix[0] *= fac;
       pix[1] *= fac;
       CameraUtils::MultK<T>(params, pix, pix);
     }
 
     template<typename T>
-    inline void dProject_drayImpl(const T* ray, T* j) const {
+    static void dProject_dray(const T* ray, const T* params, T* j) {
       // De-homogenize and multiply by K.
       T pix[2];
       CameraUtils::Dehomogenize(ray, pix);
@@ -307,7 +232,7 @@ namespace calibu
       const T rad = CameraUtils::PixNorm(pix);
       T fac;
       const T dfac_drad_byrad =
-          dFactor_drad(rad, &fac) / rad;
+          dFactor_drad(rad, params, &fac) / rad;
       const T dfac_dp[2] = { pix[0] * dfac_drad_byrad,
                              pix[1] * dfac_drad_byrad };
 
@@ -327,12 +252,5 @@ namespace calibu
       j[4] = j_dehomog[4] * k00 + j_dehomog[5] * k01;
       j[5] = j_dehomog[4] * k10 + j_dehomog[5] * k11;
     }
-
-    Scalar* GetParams() 
-    {
-      return params;
-    }
-
-    Scalar* params;
   };
 }

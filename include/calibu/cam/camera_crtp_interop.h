@@ -29,7 +29,7 @@
 namespace calibu
 {
   template<typename Scalar>
-  inline typename CameraInterface<Scalar>* CreateFromOldCamera(
+  inline CameraInterface<Scalar>* CreateFromOldCamera(
       const CameraModelGeneric<Scalar>& old_cam)
   {
     if (old_cam.Type() == "calibu_fu_fv_u0_v0_w") {
@@ -45,30 +45,27 @@ namespace calibu
   }
 
   template<typename Scalar>
-  inline Rig<Scalar> CreateFromOldRig(CameraRigT<Scalar>& old_rig)
+  inline void CreateFromOldRig(const CameraRigT<Scalar>* old_rig,
+                                      Rig<Scalar>* rig)
   {
-    Rig<Scalar> rig;
-    for (auto& cam_and_transform: old_rig.cameras) {
-      rig.AddCamera(CreateFromOldCamera(cam_and_transform.camera),
+    for (const auto& cam_and_transform: old_rig->cameras) {
+      rig->AddCamera(CreateFromOldCamera(cam_and_transform.camera),
                     cam_and_transform.T_wc);
     }
-    return rig;
   }
 
   template<typename Scalar>
-  inline Rig<Scalar> LoadRig(const std::string& filename)
+  inline void LoadRig(const std::string& filename, Rig<Scalar>* rig)
   {
     CameraRigT<Scalar> old_rig = calibu::ReadXmlRig(filename);
-    Rig<Scalar> rig;
     for (auto& cam_and_transform: old_rig.cameras) {
-      rig.AddCamera(CreateFromOldCamera(cam_and_transform.camera),
+      rig->AddCamera(CreateFromOldCamera(cam_and_transform.camera),
                     cam_and_transform.T_wc);
     }
-    return rig;
   }
 
   template<typename Scalar>
-  inline typename CameraInterface<Scalar>* LoadCamera(
+  inline CameraInterface<Scalar>* LoadCamera(
       const std::string& filename)
   {
     CameraRigT<Scalar> old_rig = calibu::ReadXmlRig(filename);
