@@ -5,19 +5,14 @@ set(CALIBU_VERSION_MINOR 1)
 set(CALIBU_VERSION ${CALIBU_VERSION_MAJOR}.${CALIBU_VERSION_MINOR})
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/CMakeModules/")
+include(AndroidUtils)
 
-option( BUILD_APPLICATIONS "Build Applications" ON )
+option(BUILD_APPLICATIONS "Build Applications" ON)
+option(BUILD_SHARED_LIBS "Build Shared Library" ON)
 
-if(NOT ANDROID)
-    option(BUILD_SHARED_LIBS "Build Shared Library" ON)
-else()
-    set(BUILD_SHARED_LIBS OFF)
-    set( CMAKE_CXX_FLAGS "-llog ${CMAKE_CXX_FLAGS}" )
-endif()
-
-set( CMAKE_CXX_FLAGS "-std=c++0x -Wall ${CMAKE_CXX_FLAGS}" )
+set(CMAKE_CXX_FLAGS "-std=c++0x -Wall ${CMAKE_CXX_FLAGS}")
 if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
 endif()
 
 # Overide with cmake -DCMAKE_BUILD_TYPE=Debug {dir}

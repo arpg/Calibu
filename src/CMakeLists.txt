@@ -71,8 +71,9 @@ SET(
 #######################################################
 ## Find required dependencies
 
-# git://github.com/stevenlovegrove/Sophus.git
 find_package( Eigen3 REQUIRED )
+
+# https://github.com/gwu-robotics/Sophus.git
 find_package( Sophus REQUIRED )
 
 ## Apply project include directories
@@ -84,9 +85,7 @@ list( APPEND USER_INC   ${Sophus_INCLUDE_DIR} )
 ## Find optional dependencies
 
 # OpenCV is required for PNP methods and calibration application
-set(NO_OPENCV_GPU TRUE)
-find_package( OpenCV )
-
+find_package(OpenCV2)
 if( OpenCV2_FOUND )
     set( HAVE_OPENCV 1 )
     list( APPEND LINK_LIBS  ${OpenCV2_LIBRARIES} )
