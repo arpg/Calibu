@@ -146,11 +146,18 @@ namespace calibu
       t_wc_.push_back(t_wc);
     }
 
-    ~Rig()
+    void Clear()
     {
       for (CameraInterface<Scalar>* ptr : cameras_) {
         delete ptr;
       }
+      cameras_.clear();
+      t_wc_.clear();
+    }
+
+    ~Rig()
+    {
+      Clear();
     }
 
     std::vector<CameraInterface<Scalar>*> cameras_;
