@@ -58,13 +58,7 @@ namespace calibu
   public:
     Camera(Scalar* params_in)
     {
-      if (kOwnsMem) {
-        params_ = new Scalar[Derived::kParamSize];
-        memcpy(params_, params_in, sizeof(Scalar) * Derived::kParamSize);
-      }
-      else{
-        params_ = params_in;
-      }
+      SetParams(params_in);
     }
 
     ~Camera()
@@ -77,6 +71,22 @@ namespace calibu
     Scalar* GetParams()
     {
       return params_;
+    }
+
+    uint32_t NumParams() const
+    {
+      return Derived::kParamSize;
+    }
+
+    void SetParams(Scalar* params_in)
+    {
+      if (kOwnsMem) {
+        params_ = new Scalar[Derived::kParamSize];
+        memcpy(params_, params_in, sizeof(Scalar) * Derived::kParamSize);
+      }
+      else{
+        params_ = params_in;
+      }
     }
 
     Vec3t<Scalar> Unproject(const Vec2t<Scalar>& pix) const
