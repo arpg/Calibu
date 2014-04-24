@@ -51,8 +51,11 @@ function(def_library lib)
   endif()
 
   if(${cache_var})
-    add_library(${lib} ${lib_SOURCES})
-
+    if(ANDROID)
+      add_library(${lib} SHARED ${lib_SOURCES})
+    else()
+      add_library(${lib} ${lib_SOURCES})
+    endif()
     string(TOUPPER "${${build_type_cache_var}}" LIB_BUILD_TYPE)
 
     # Only alter the compile flags if the build type is set
@@ -68,6 +71,15 @@ function(def_library lib)
 
     if(lib_LINK_LIBS)
       target_link_libraries(${lib} ${lib_LINK_LIBS})
+    endif()
+
+    if(ANDROID)
+      find_library(GNUSTL_SHARED_LIBRARY gnustl_shared)
+
+      if(NOT GNUSTL_SHARED_LIBRARY)
+	message(FATAL_ERROR "Could not find required GNU STL shared library.")
+      endif()
+      target_link_libraries(${lib} log android z -pthread ${GNUSTL_SHARED_LIBRARY})
     endif()
   endif()
 endfunction()
