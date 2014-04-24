@@ -88,7 +88,7 @@ list( APPEND USER_INC   ${Sophus_INCLUDE_DIR} )
 find_package(OpenCV2)
 if( OpenCV2_FOUND )
     set( HAVE_OPENCV 1 )
-    list( APPEND LINK_LIBS  ${OpenCV2_LIBRARIES} )
+    list( APPEND LINK_LIBS  ${OpenCV2_LIBRARIES})
     list( APPEND INTERNAL_INC ${OpenCV2_INCLUDE_DIRS} )
     list( APPEND HEADERS ${INCDIR}/pose/Pnp.h ${INCDIR}/pose/Tracker.h )
     list( APPEND SOURCES pose/Pnp.cpp pose/Tracker.cpp )
@@ -102,8 +102,11 @@ include_directories( ${CALIBU_INC} )
 include_directories( ${USER_INC} )
 include_directories( ${INTERNAL_INC} )
 
-add_library( ${LIBRARY_NAME} ${HEADERS} ${SOURCES} )
-target_link_libraries( ${LIBRARY_NAME} ${LINK_LIBS} )
+include(def_library)
+def_library(
+  ${LIBRARY_NAME}
+  SOURCES ${HEADERS} ${SOURCES}
+  LINK_LIBS ${LINK_LIBS})
 
 ## Generate symbol export helper header on MSVC
 IF(MSVC)
