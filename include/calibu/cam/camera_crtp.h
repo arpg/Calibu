@@ -48,7 +48,13 @@ namespace calibu
         const Vec3t<Scalar>& ray,
         const Scalar rho) const = 0;
 
+    virtual Eigen::Matrix<Scalar, 2, Eigen::Dynamic> dTransfer_dparams(
+        const SE3t<Scalar>& t_ba,
+        const Vec2t<Scalar>& pix,
+        const Scalar rho) const = 0;
+
     virtual Scalar* GetParams() = 0;
+    virtual uint32_t NumParams() const = 0;
   };
 
   // The Curiously Recurring Template Pattern (CRTP)
@@ -115,6 +121,24 @@ namespace calibu
       return j;
     }
 
+    Eigen::Matrix<Scalar, 2, Eigen::Dynamic> dProject_dparams(
+        const Vec3t<Scalar>& ray) const
+    {
+      Eigen::Matrix<Scalar, 2, Derived::kParamSize> j;
+      static_cast<const Derived*>(this)->dProject_dparams(ray.data(), params_,
+                                                       j.data());
+      return j;
+    }
+
+    Eigen::Matrix<Scalar, 3, Eigen::Dynamic> dUnproject_dparams(
+        const Vec2t<Scalar>& pix) const
+    {
+      Eigen::Matrix<Scalar, 3, Derived::kParamSize> j;
+      static_cast<const Derived*>(this)->dUnproject_dparams(pix.data(), params_,
+                                                       j.data());
+      return j;
+    }
+
     Vec2t<Scalar> Transfer3d(const SE3t<Scalar>& t_ba,
                              const Vec3t<Scalar>& ray,
                              const Scalar rho) const
@@ -138,6 +162,28 @@ namespace calibu
           dproject_dray * rot_matrix;
       dtransfer3d_dray.col(3) = dproject_dray * t_ba.translation();
       return dtransfer3d_dray;
+    }
+
+    Eigen::Matrix<Scalar, 2, Eigen::Dynamic> dTransfer_dparams(
+        const SE3t<Scalar>& t_ba,
+        const Vec2t<Scalar>& pix,
+        const Scalar rho) const
+    {
+      const Vec3t<Scalar> ray = Unproject(pix);
+      const Eigen::Matrix<Scalar, 3, 3> rot_matrix = t_ba.rotationMatrix();
+      const Vec3t<Scalar> ray_dehomogenized =
+          rot_matrix * ray + rho * t_ba.translation();
+      const Eigen::Matrix<Scalar, 2, 3> dproject_dray =
+          dProject_dray(ray_dehomogenized);
+      const Eigen::Matrix<Scalar, 2, 3> dtransfer3d_dray =
+          dproject_dray * rot_matrix;
+      const Eigen::Matrix<Scalar, 3, Eigen::Dynamic> dray_dparams =
+          dUnproject_dparams(pix);
+
+      const Eigen::Matrix<Scalar, 2, Eigen::Dynamic> d_project_dparams =
+          dProject_dparams(ray_dehomogenized);
+
+      return d_project_dparams + dtransfer3d_dray * dray_dparams;
     }
 
   protected:
