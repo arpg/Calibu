@@ -22,6 +22,7 @@
 
 #include <vector>
 #include <Eigen/Dense>
+#include <Eigen/StdVector>
 #include <sophus/se3.hpp>
 
 #include <calibu/Platform.h>

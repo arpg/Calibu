@@ -22,6 +22,7 @@
 
 #include <vector>
 #include <Eigen/Eigen>
+#include <Eigen/StdVector>
 
 #include <calibu/Platform.h>
 #include <calibu/image/ImageProcessing.h>
@@ -61,6 +62,8 @@ public:
     ParamsConicFinder& Params() {
         return params;
     }
+
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 protected:
     // Output of this class

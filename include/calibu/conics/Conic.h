@@ -20,10 +20,11 @@
 
 #pragma once
 
-#include <vector>
 #include <array>
+#include <vector>
 
 #include <Eigen/Dense>
+#include <Eigen/StdVector>
 
 #include <calibu/Platform.h>
 #include <calibu/utils/Rectangle.h>
