@@ -1,10 +1,13 @@
-cmake_minimum_required( VERSION 2.8 )
-project("Calibu")
+project(Calibu)
+cmake_minimum_required(VERSION 2.8)
+
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/)
+include(export_package)
+
 set(CALIBU_VERSION_MAJOR 0)
 set(CALIBU_VERSION_MINOR 1)
 set(CALIBU_VERSION ${CALIBU_VERSION_MAJOR}.${CALIBU_VERSION_MINOR})
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/CMakeModules/")
 option(BUILD_APPLICATIONS "Build Applications" ON)
 option(BUILD_SHARED_LIBS "Build Shared Library" ON)
 
@@ -28,3 +31,10 @@ if( BUILD_APPLICATIONS )
   add_subdirectory( examples )
 endif()
 
+export_package(Calibu
+  TARGETS ${LIBRARY_NAME}
+  VERSION ${CALIBU_VERSION}
+  LIBRARY ${LIBRARY_NAME}
+  LIBRARIES ${LIBRARY_NAME}
+  INCLUDE_DIRS ${EXPORT_CALIBU_INC}
+  )

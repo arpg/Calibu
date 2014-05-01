@@ -106,7 +106,9 @@ include(def_library)
 def_library(
   ${LIBRARY_NAME}
   SOURCES ${HEADERS} ${SOURCES}
-  LINK_LIBS ${LINK_LIBS})
+  LINK_LIBS ${LINK_LIBS}
+  PACKAGE Calibu
+  )
 
 ## Generate symbol export helper header on MSVC
 IF(MSVC)
@@ -132,41 +134,7 @@ configure_file(
 )
 
 #######################################################
-
-# This relative path allows installed files to be relocatable.
-set( CMAKECONFIG_INSTALL_DIR lib/cmake/Calibu )
-file( RELATIVE_PATH REL_INCLUDE_DIR
-    "${CMAKE_INSTALL_PREFIX}/${CMAKECONFIG_INSTALL_DIR}"
-    "${CMAKE_INSTALL_PREFIX}/include" )
-
-option( EXPORT_Calibu
-  "Should the Calibu package be exported for use by other software" ON )
-
-# Export library for easy inclusion from other cmake projects.
-export( TARGETS ${LIBRARY_NAME}
-        FILE "${CMAKE_CURRENT_BINARY_DIR}/CalibuTargets.cmake" )
-
-# Version information
-configure_file(CalibuConfigVersion.cmake.in
-  "${CMAKE_CURRENT_BINARY_DIR}/CalibuConfigVersion.cmake" @ONLY)
-
-# Build tree config
-set( EXPORT_CALIBU_INC "${CALIBU_INC}" )
-CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/CalibuConfig.cmake.in
-    ${CMAKE_CURRENT_BINARY_DIR}/CalibuConfig.cmake @ONLY IMMEDIATE )
-
-# Install tree config
-set( EXPORT_CALIBU_INC "\${CALIBU_CMAKE_DIR}/${REL_INCLUDE_DIR}" )
-configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/CalibuConfig.cmake.in
-    ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CalibuConfig.cmake @ONLY )
-
-# Add package to CMake package registery for use from the build tree
-if( EXPORT_Calibu )
-  export( PACKAGE Calibu )
-endif()
-
-#######################################################
-## Install headers / targets
+## Install headers
 
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/include/${LIBRARY_NAME}/config.h"
   DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${LIBRARY_NAME}
@@ -174,19 +142,3 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/include/${LIBRARY_NAME}/config.h"
 install(DIRECTORY ${INCDIR}
   DESTINATION ${CMAKE_INSTALL_PREFIX}/include
 )
-install(TARGETS ${LIBRARY_NAME}
-  EXPORT CalibuTargets
-  RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
-  LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-  ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-)
-
-#######################################################
-## Install CMake config
-
-INSTALL(
-    FILES "${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CalibuConfig.cmake"
-          "${CMAKE_CURRENT_BINARY_DIR}/CalibuConfigVersion.cmake"
-    DESTINATION ${CMAKECONFIG_INSTALL_DIR} )
-
-install( EXPORT CalibuTargets DESTINATION ${CMAKECONFIG_INSTALL_DIR} )
