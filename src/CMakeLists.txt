@@ -133,6 +133,9 @@ configure_file(
   "${CMAKE_CURRENT_BINARY_DIR}/include/${LIBRARY_NAME}/config.h"
 )
 
+# Configure the include directories for export_package
+set(EXPORT_CALIBU_INC "${CALIBU_INC}" PARENT_SCOPE)
+
 #######################################################
 ## Install headers
 
