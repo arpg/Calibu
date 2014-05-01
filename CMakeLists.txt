@@ -23,13 +23,7 @@ endif()
 
 string( TOLOWER ${PROJECT_NAME} LIBRARY_NAME )
 
-add_subdirectory( src )
-
-if( BUILD_APPLICATIONS )
-  set(Calibu_DIR ${Calibu_BINARY_DIR}/src)
-  add_subdirectory( applications )
-  add_subdirectory( examples )
-endif()
+add_subdirectory(src)
 
 export_package(Calibu
   TARGETS ${LIBRARY_NAME}
@@ -38,3 +32,10 @@ export_package(Calibu
   LIBRARIES ${LIBRARY_NAME}
   INCLUDE_DIRS ${EXPORT_CALIBU_INC}
   )
+
+if( BUILD_APPLICATIONS )
+  set(Calibu_DIR ${Calibu_BINARY_DIR}/src)
+  add_subdirectory( applications )
+  add_subdirectory( examples )
+endif()
+
