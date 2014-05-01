@@ -134,7 +134,7 @@ configure_file(
 )
 
 # Configure the include directories for export_package
-set(EXPORT_CALIBU_INC "${CALIBU_INC}" PARENT_SCOPE)
+set(EXPORT_CALIBU_INC ${CALIBU_INC} ${USER_INC} PARENT_SCOPE)
 
 #######################################################
 ## Install headers
