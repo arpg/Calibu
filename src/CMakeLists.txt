@@ -1,72 +1,71 @@
 #######################################################
 ## Sources
 
-set( INCDIR "../include/calibu" )
+set( INC_DIR ${Calibu_SOURCE_DIR}/include/calibu )
 
-set(
-    HEADERS
-    ${INCDIR}/Calibu.h
-    ${INCDIR}/Platform.h
-    ${INCDIR}/calib/AutoDiffArrayCostFunction.h
-    ${INCDIR}/calib/Calibrator.h
-    ${INCDIR}/calib/CostFunctionAndParams.h
-    ${INCDIR}/calib/LocalParamSe3.h
-    ${INCDIR}/cam/camera_crtp.h
-    ${INCDIR}/cam/camera_models_crtp.h
-    ${INCDIR}/cam/camera_crtp_interop.h
-    ${INCDIR}/cam/CameraModel.h
-    ${INCDIR}/cam/CameraModelInterface.h
-    ${INCDIR}/cam/CameraModelT.h
-    ${INCDIR}/cam/CameraRig.h
-    ${INCDIR}/cam/CameraUtils.h
-    ${INCDIR}/cam/CameraXml.h
-    ${INCDIR}/cam/DistortionModel.h
-    ${INCDIR}/cam/ProjectionModel.h
-    ${INCDIR}/cam/ProjectionKannalaBrandt.h
-    ${INCDIR}/cam/Rectify.h
-    ${INCDIR}/cam/StereoRectify.h
-    ${INCDIR}/conics/Conic.h
-    ${INCDIR}/conics/ConicFinder.h
-    ${INCDIR}/conics/FindConics.h
-    ${INCDIR}/gl/Drawing.h
-    ${INCDIR}/image/AdaptiveThreshold.h
-    ${INCDIR}/image/Gradient.h
-    ${INCDIR}/image/ImageProcessing.h
-    ${INCDIR}/image/IntegralImage.h
-    ${INCDIR}/image/Label.h
-    ${INCDIR}/pose/Ransac.h
-    ${INCDIR}/target/Hungarian.h
-    ${INCDIR}/target/LineGroup.h
-    ${INCDIR}/target/RandomGrid.h
-    ${INCDIR}/target/Target.h
-    ${INCDIR}/target/TargetGridDot.h
-    ${INCDIR}/target/TargetRandomDot.h
-    ${INCDIR}/utils/Rectangle.h
-    ${INCDIR}/utils/Range.h
-    ${INCDIR}/utils/Utils.h
-    ${INCDIR}/utils/PlaneBasis.h
-    ${INCDIR}/utils/StreamOperatorsEigen.h
-    ${INCDIR}/utils/StreamOperatorsSophus.h
-    ${INCDIR}/utils/Xml.h
-)
+set(HEADERS
+  ${INC_DIR}/Calibu.h
+  ${INC_DIR}/Platform.h
+  ${INC_DIR}/calib/AutoDiffArrayCostFunction.h
+  ${INC_DIR}/calib/Calibrator.h
+  ${INC_DIR}/calib/CostFunctionAndParams.h
+  ${INC_DIR}/calib/LocalParamSe3.h
+  ${INC_DIR}/cam/camera_crtp.h
+  ${INC_DIR}/cam/camera_models_crtp.h
+  ${INC_DIR}/cam/camera_crtp_interop.h
+  ${INC_DIR}/cam/CameraModel.h
+  ${INC_DIR}/cam/CameraModelInterface.h
+  ${INC_DIR}/cam/CameraModelT.h
+  ${INC_DIR}/cam/CameraRig.h
+  ${INC_DIR}/cam/CameraUtils.h
+  ${INC_DIR}/cam/CameraXml.h
+  ${INC_DIR}/cam/DistortionModel.h
+  ${INC_DIR}/cam/ProjectionModel.h
+  ${INC_DIR}/cam/ProjectionKannalaBrandt.h
+  ${INC_DIR}/cam/Rectify.h
+  ${INC_DIR}/cam/StereoRectify.h
+  ${INC_DIR}/conics/Conic.h
+  ${INC_DIR}/conics/ConicFinder.h
+  ${INC_DIR}/conics/FindConics.h
+  ${INC_DIR}/gl/Drawing.h
+  ${INC_DIR}/image/AdaptiveThreshold.h
+  ${INC_DIR}/image/Gradient.h
+  ${INC_DIR}/image/ImageProcessing.h
+  ${INC_DIR}/image/IntegralImage.h
+  ${INC_DIR}/image/Label.h
+  ${INC_DIR}/pose/Ransac.h
+  ${INC_DIR}/target/Hungarian.h
+  ${INC_DIR}/target/LineGroup.h
+  ${INC_DIR}/target/RandomGrid.h
+  ${INC_DIR}/target/Target.h
+  ${INC_DIR}/target/TargetGridDot.h
+  ${INC_DIR}/target/TargetRandomDot.h
+  ${INC_DIR}/utils/Rectangle.h
+  ${INC_DIR}/utils/Range.h
+  ${INC_DIR}/utils/Utils.h
+  ${INC_DIR}/utils/PlaneBasis.h
+  ${INC_DIR}/utils/StreamOperatorsEigen.h
+  ${INC_DIR}/utils/StreamOperatorsSophus.h
+  ${INC_DIR}/utils/Xml.h
+  )
 
-SET(
-    SOURCES
-    cam/CameraXml.cpp
-    cam/Rectify.cpp
-    cam/StereoRectify.cpp
-    conics/Conic.cpp
-    conics/ConicFinder.cpp
-    conics/FindConics.cpp
-    image/ImageProcessing.cpp
-    image/Label.cpp
-    target/Hungarian.cpp
-    target/RandomGrid.cpp
-    target/TargetGridDot.cpp
-    target/TargetRandomDot.cpp
-    utils/Utils.cpp
-    utils/Xml.cpp
-)
+set(SRC_DIR ${Calibu_SOURCE_DIR}/src)
+SET(SOURCES
+  ${SRC_DIR}/cam/CameraXml.cpp
+  ${SRC_DIR}/cam/Rectify.cpp
+  ${SRC_DIR}/cam/StereoRectify.cpp
+  ${SRC_DIR}/conics/Conic.cpp
+  ${SRC_DIR}/conics/ConicFinder.cpp
+  ${SRC_DIR}/conics/FindConics.cpp
+  ${SRC_DIR}/image/ImageProcessing.cpp
+  ${SRC_DIR}/image/Label.cpp
+  ${SRC_DIR}/target/Hungarian.cpp
+  ${SRC_DIR}/target/RandomGrid.cpp
+  ${SRC_DIR}/target/TargetGridDot.cpp
+  ${SRC_DIR}/target/TargetRandomDot.cpp
+  ${SRC_DIR}/utils/Utils.cpp
+  ${SRC_DIR}/utils/Xml.cpp
+  )
 
 #######################################################
 ## Find required dependencies
@@ -90,8 +89,8 @@ if( OpenCV2_FOUND )
     set( HAVE_OPENCV 1 )
     list( APPEND LINK_LIBS  ${OpenCV2_LIBRARIES})
     list( APPEND INTERNAL_INC ${OpenCV2_INCLUDE_DIRS} )
-    list( APPEND HEADERS ${INCDIR}/pose/Pnp.h ${INCDIR}/pose/Tracker.h )
-    list( APPEND SOURCES pose/Pnp.cpp pose/Tracker.cpp )
+    list( APPEND HEADERS ${INC_DIR}/pose/Pnp.h ${INC_DIR}/pose/Tracker.h )
+    list( APPEND SOURCES ${SRC_DIR}/pose/Pnp.cpp ${SRC_DIR}/pose/Tracker.cpp )
 endif()
 
 #######################################################
@@ -101,14 +100,6 @@ endif()
 include_directories( ${CALIBU_INC} )
 include_directories( ${USER_INC} )
 include_directories( ${INTERNAL_INC} )
-
-include(def_library)
-def_library(
-  ${LIBRARY_NAME}
-  SOURCES ${HEADERS} ${SOURCES}
-  LINK_LIBS ${LINK_LIBS}
-  PACKAGE Calibu
-  )
 
 ## Generate symbol export helper header on MSVC
 IF(MSVC)
@@ -135,6 +126,9 @@ configure_file(
 
 # Configure the include directories for export_package
 set(EXPORT_CALIBU_INC ${CALIBU_INC} ${USER_INC} PARENT_SCOPE)
+set(CALIBU_HEADERS ${HEADERS} PARENT_SCOPE)
+set(CALIBU_SOURCES ${SOURCES} PARENT_SCOPE)
+set(CALIBU_LINK_LIBS ${LINK_LIBS} PARENT_SCOPE)
 
 #######################################################
 ## Install headers
@@ -142,6 +136,6 @@ set(EXPORT_CALIBU_INC ${CALIBU_INC} ${USER_INC} PARENT_SCOPE)
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/include/${LIBRARY_NAME}/config.h"
   DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${LIBRARY_NAME}
 )
-install(DIRECTORY ${INCDIR}
+install(DIRECTORY ${INC_DIR}
   DESTINATION ${CMAKE_INSTALL_PREFIX}/include
 )
