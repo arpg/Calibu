@@ -22,6 +22,7 @@ if( NOT CMAKE_BUILD_TYPE )
    set( CMAKE_BUILD_TYPE Release )
 endif()
 
+string(TOLOWER ${PROJECT_NAME} LIBRARY_NAME)
 add_subdirectory(src)
 
 include_directories(${EXPORT_CALIBU_INC})
@@ -33,10 +34,10 @@ def_library(calibu
   )
 
 export_package(Calibu
-  TARGETS calibu
+  TARGETS ${LIBRARY_NAME}
   VERSION ${CALIBU_VERSION}
-  LIBRARY calibu
-  LIBRARIES calibu
+  LIBRARY ${LIBRARY_NAME}
+  LIBRARIES ${LIBRARY_NAME}
   INCLUDE_DIRS ${EXPORT_CALIBU_INC}
   )
 

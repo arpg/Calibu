@@ -124,6 +124,8 @@ configure_file(
   "${CMAKE_CURRENT_BINARY_DIR}/include/${LIBRARY_NAME}/config.h"
 )
 
+list(APPEND CALIBU_INC ${CMAKE_CURRENT_BINARY_DIR}/include/)
+
 # Configure the include directories for export_package
 set(EXPORT_CALIBU_INC ${CALIBU_INC} ${USER_INC} PARENT_SCOPE)
 set(CALIBU_HEADERS ${HEADERS} PARENT_SCOPE)
