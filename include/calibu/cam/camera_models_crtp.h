@@ -235,10 +235,10 @@ class FovCamera : public CameraInterface<Scalar> {
     // First multiply by inverse K and calculate distortion parameter.
     T pix_kinv[2];
     CameraUtils::MultInvK(params, pix, pix_kinv);
+
     // Homogenize the point.
     CameraUtils::Homogenize<T>(pix_kinv, ray);
-    const T fac_inv =
-        Factor_inv(CameraUtils::PixNorm(pix_kinv), params);
+    const T fac_inv = Factor_inv(CameraUtils::PixNorm(pix_kinv), params);
     pix_kinv[0] *= fac_inv;
     pix_kinv[1] *= fac_inv;
     CameraUtils::Homogenize<T>(pix_kinv, ray);
@@ -261,7 +261,7 @@ class FovCamera : public CameraInterface<Scalar> {
     // De-homogenize and multiply by K.
     T pix[2];
     CameraUtils::Dehomogenize(ray, pix);
-    // Calculte the dehomogenization derivative.
+    // Calculate the dehomogenization derivative.
     T j_dehomog[6];
     CameraUtils::dDehomogenize_dray(ray, j_dehomog);
 
