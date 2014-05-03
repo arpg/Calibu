@@ -34,7 +34,16 @@ template<typename Scalar> using SE3t = Sophus::SE3Group<Scalar>;
 template<typename Scalar = double>
 class CameraInterface {
  public:
-  virtual ~CameraInterface() {}
+  CameraInterface(const CameraInterface<Scalar>& other) :
+      n_params_(other.n_params_), owns_memory_(other.owns_memory_) {
+    CopyParams(other.params_);
+  }
+
+  virtual ~CameraInterface() {
+    if (owns_memory_) {
+      delete[] params_;
+    }
+  }
 
   /** Unproject an image location into world coordinates */
   virtual Vec3t<Scalar> Unproject(const Vec2t<Scalar>& pix) const = 0;
@@ -45,63 +54,6 @@ class CameraInterface {
   /** Derivative of the Project along a ray */
   virtual Eigen::Matrix<Scalar, 2, 3> dProject_dray(
       const Vec3t<Scalar>& ray) const = 0;
-
-  virtual Vec2t<Scalar> Transfer3d(const SE3t<Scalar>& t_ba,
-                                   const Vec3t<Scalar>& ray,
-                                   const Scalar rho) const = 0;
-  virtual Eigen::Matrix<Scalar, 2, 4> dTransfer3d_dray(
-      const SE3t<Scalar>& t_ba,
-      const Vec3t<Scalar>& ray,
-      const Scalar rho) const = 0;
-
-  virtual Scalar* GetParams() = 0;
-};
-
-// The Curiously Recurring Template Pattern (CRTP)
-template<class Derived, typename Scalar = double, bool kOwnsMem = true>
-class Camera : public CameraInterface<Scalar> {
- public:
-  Camera(Scalar* params_in) {
-    if (kOwnsMem) {
-      params_ = new Scalar[Derived::kParamSize];
-      memcpy(params_, params_in, sizeof(Scalar) * Derived::kParamSize);
-    }
-    else{
-      params_ = params_in;
-    }
-  }
-
-  ~Camera() {
-    if( kOwnsMem ){
-      delete[] params_;
-    }
-  }
-
-  Scalar* GetParams() {
-    return params_;
-  }
-
-  Vec3t<Scalar> Unproject(const Vec2t<Scalar>& pix) const {
-    Vec3t<Scalar> ray;
-    static_cast<const Derived*>(this)->Unproject(pix.data(),
-                                                 params_,
-                                                 ray.data());
-    return ray;
-  }
-
-  Vec2t<Scalar> Project(const Vec3t<Scalar>& ray) const {
-    Vec2t<Scalar> pix;
-    static_cast<const Derived*>(this)->Project(ray.data(), params_,
-                                               pix.data());
-    return pix;
-  }
-
-  Eigen::Matrix<Scalar, 2, 3> dProject_dray(const Vec3t<Scalar>& ray) const {
-    Eigen::Matrix<Scalar, 2, 3> j;
-    static_cast<const Derived*>(this)->dProject_dray(ray.data(), params_,
-                                                     j.data());
-    return j;
-  }
 
   /**
    * Project a point into a camera located at t_ba.
@@ -122,7 +74,6 @@ class Camera : public CameraInterface<Scalar> {
   /**
    * The derivative of the projection from Transfer3d wrt the point
    * being transfered.
-   *
    */
   Eigen::Matrix<Scalar, 2, 4> dTransfer3d_dray(const SE3t<Scalar>& t_ba,
                                                const Vec3t<Scalar>& ray,
@@ -139,8 +90,28 @@ class Camera : public CameraInterface<Scalar> {
     return dtransfer3d_dray;
   }
 
+  Scalar* GetParams() {
+    return params_;
+  }
+
  protected:
+  CameraInterface(Scalar* params_in, int n_params, bool owns_memory)
+      : n_params_(n_params), owns_memory_(owns_memory) {
+    CopyParams(params_in);
+  }
+
+  void CopyParams(Scalar* params) {
+    if (owns_memory_) {
+      params_ = new Scalar[n_params_];
+      memcpy(params_, params, sizeof(Scalar) * n_params_);
+    } else {
+      params_ = params;
+    }
+  }
+
   Scalar* params_;
+  int n_params_;
+  bool owns_memory_;
 };
 
 template<typename Scalar = double>

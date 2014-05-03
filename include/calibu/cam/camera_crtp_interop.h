@@ -31,9 +31,10 @@ template<typename Scalar>
 inline CameraInterface<Scalar>* CreateFromOldCamera(
     const CameraModelGeneric<Scalar>& old_cam) {
   if (old_cam.Type() == "calibu_fu_fv_u0_v0_w") {
-    return new calibu::FovCamera<Scalar>(old_cam.GenericParams().data());
+    return new calibu::FovCamera<Scalar>(old_cam.GenericParams().data(), true);
   } else if (old_cam.Type() == "calibu_fu_fv_u0_v0") {
-    return new calibu::LinearCamera<Scalar>(old_cam.GenericParams().data());
+    return new calibu::LinearCamera<Scalar>(old_cam.GenericParams().data(),
+                                            true);
   } else {
     std::cerr << "Unknown old camera type " << old_cam.Type() << " please "
         " implement this camera before initializing it using the "

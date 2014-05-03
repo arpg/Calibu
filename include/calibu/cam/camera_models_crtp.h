@@ -92,12 +92,40 @@ struct CameraUtils {
   }
 };
 
-template<typename Scalar = double, bool kOwnsMem = true>
-class LinearCamera : public Camera<LinearCamera<Scalar>, Scalar, kOwnsMem> {
+/**
+ * Avoids copying inherited function implementations for all camera models.
+ *
+ * Requires the following functions in the derived class:
+ * - static void Unproject(const T* pix, const T* params, T* ray) {
+ * - static void Project(const T* ray, const T* params, T* pix) {
+ * - static void dProject_dray(const T* ray, const T* params, T* j) {
+ */
+#define CAMERA_MODEL_IMPL(CameraT, n_params)                            \
+  static constexpr int kParamSize = n_params;                           \
+  CameraT(Scalar* params, bool owns_memory) :                           \
+      CameraInterface<Scalar>(params, kParamSize, owns_memory) {        \
+  }                                                                     \
+  Vec3t<Scalar> Unproject(const Vec2t<Scalar>& pix) const override {    \
+    Vec3t<Scalar> ray;                                                  \
+    Unproject(pix.data(), this->params_, ray.data());                   \
+    return ray;                                                         \
+  }                                                                     \
+  Vec2t<Scalar> Project(const Vec3t<Scalar>& ray) const override {      \
+    Vec2t<Scalar> pix;                                                  \
+    Project(ray.data(), this->params_, pix.data());                     \
+    return pix;                                                         \
+  }                                                                     \
+  Eigen::Matrix<Scalar, 2, 3>                                           \
+  dProject_dray(const Vec3t<Scalar>& ray) const override {              \
+    Eigen::Matrix<Scalar, 2, 3> j;                                      \
+    dProject_dray(ray.data(), this->params_, j.data());                 \
+    return j;                                                           \
+  }
+
+template<typename Scalar = double>
+class LinearCamera : public CameraInterface<Scalar> {
  public:
-  // C++ 11 constructor delegation -- use base class constructor.
-  using Camera<LinearCamera<Scalar>, Scalar, kOwnsMem>::Camera;
-  static const int kParamSize = 4;
+  CAMERA_MODEL_IMPL(LinearCamera, 4);
 
   template<typename T>
   static void Unproject(const T* pix, const T* params, T* ray) {
@@ -133,16 +161,13 @@ class LinearCamera : public Camera<LinearCamera<Scalar>, Scalar, kOwnsMem> {
   }
 };
 
-template<typename Scalar = double, bool kOwnsMem = true>
-class FovCamera : public Camera<FovCamera<Scalar>, Scalar, kOwnsMem> {
+template<typename Scalar = double>
+class FovCamera : public CameraInterface<Scalar> {
  public:
-  // C++ 11 constructor delegation -- use base class constructor.
-  using Camera<FovCamera<Scalar>, Scalar, kOwnsMem>::Camera;
-
   static constexpr double kCamDistEps = 1e-5;
   static constexpr double kMaxRad = 2.0;
   static constexpr uint32_t kMaxRadIncrements = 2000;
-  static constexpr int kParamSize = 5;
+  CAMERA_MODEL_IMPL(FovCamera, 5);
 
   //  Static member functions to use without instantiating a class object
   template<typename T>
