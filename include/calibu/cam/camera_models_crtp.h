@@ -289,4 +289,122 @@ class FovCamera : public CameraInterface<Scalar> {
     j[5] = j_dehomog[4] * k10 + j_dehomog[5] * k11;
   }
 };
+
+/** A third degree polynomial distortion model */
+template<typename Scalar = double>
+class Poly3Camera : public CameraInterface<Scalar> {
+ public:
+  CAMERA_MODEL_IMPL(Poly3Camera, 7);
+
+  template<typename T>
+  inline static T Factor(const T rad, const T* params) {
+    T r2 = rad * rad;
+    T r4 = r2 * r2;
+    return (static_cast<T>(1.0) +
+            params[4] * r2 +
+            params[5] * r4 +
+            params[6] * r4 * r2);
+  }
+
+  template<typename T>
+  inline static T dFactor_drad(const T r, const T* params, T* fac) {
+    *fac = Factor(r, params);
+    T r2 = r * r;
+    T r3 = r2 * r;
+    return (2.0 * params[4] * r +
+            4.0 * params[5] * r3 +
+            6.0 * params[6] * r3 * r2);
+  }
+
+  template<typename T>
+  inline static T Factor_inv(const T r, const T* params) {
+    T k1 = params[4];
+    T k2 = params[5];
+    T k3 = params[6];
+
+    // Use Newton's method to solve (fixed number of iterations)
+    T ru = r;
+    for (int i=0; i < 5; i++) {
+      // Common sub-expressions of d, d2
+      T ru2 = ru * ru;
+      T ru4 = ru2 * ru2;
+      T ru6 = ru4 * ru2;
+      T pol = k1 * ru2 + k2 * ru4 + k3 * ru6 + 1;
+      T pol2 = 2 * ru2 * (k1 + 2 * k2 * ru2 + 3 * k3 * ru4);
+      T pol3 = pol + pol2;
+
+      // 1st derivative
+      T d = (ru * (pol) - r)  *  2 * pol3;
+      // 2nd derivative
+      T d2 = (4 * ru * (ru * pol - r) *
+              (3 * k1 + 10 * k2 * ru2 + 21 * k3 * ru4) +
+              2 * pol3 * pol3);
+      // Delta update
+      T delta = d / d2;
+      ru -= delta;
+    }
+
+    // Return the undistortion factor
+    return ru / r;
+  }
+
+  template<typename T>
+  static void Unproject(const T* pix, const T* params, T* ray) {
+    // First multiply by inverse K and calculate distortion parameter.
+    T pix_kinv[2];
+    CameraUtils::MultInvK(params, pix, pix_kinv);
+
+    // Homogenize the point.
+    CameraUtils::Homogenize<T>(pix_kinv, ray);
+    const T fac_inv = Factor_inv(CameraUtils::PixNorm(pix_kinv), params);
+    pix_kinv[0] *= fac_inv;
+    pix_kinv[1] *= fac_inv;
+    CameraUtils::Homogenize<T>(pix_kinv, ray);
+  }
+
+  template<typename T>
+  static void Project(const T* ray, const T* params, T* pix) {
+    // De-homogenize and multiply by K.
+    CameraUtils::Dehomogenize(ray, pix);
+
+    // Calculate distortion parameter.
+    const T fac = Factor(CameraUtils::PixNorm(pix), params);
+    pix[0] *= fac;
+    pix[1] *= fac;
+    CameraUtils::MultK<T>(params, pix, pix);
+  }
+
+  template<typename T>
+  static void dProject_dray(const T* ray, const T* params, T* j) {
+    // De-homogenize and multiply by K.
+    T pix[2];
+    CameraUtils::Dehomogenize(ray, pix);
+
+    // Calculate the dehomogenization derivative.
+    T j_dehomog[6];
+    CameraUtils::dDehomogenize_dray(ray, j_dehomog);
+
+    T rad = CameraUtils::PixNorm(pix);
+    T fac;
+    T dfac_drad_byrad = dFactor_drad(rad, params, &fac) / rad;
+    T dfac_dp[2] = { pix[0] * dfac_drad_byrad,
+                     pix[1] * dfac_drad_byrad };
+
+    // Calculate the k matrix and distortion derivative.
+    T params0_pix0 = params[0] * pix[0];
+    T params1_pix1 = params[1] * pix[1];
+    T k00 = dfac_dp[0] * params0_pix0 + fac * params[0];
+    T k01 = dfac_dp[1] * params0_pix0;
+    T k10 = dfac_dp[0] * params1_pix1;
+    T k11 = dfac_dp[1] * params1_pix1 + fac * params[1];
+
+    // Do the multiplication dkmult * ddehomogenized_dray
+    j[0] = j_dehomog[0] * k00;
+    j[1] = j_dehomog[0] * k10;
+    j[2] = j_dehomog[3] * k01;
+    j[3] = j_dehomog[3] * k11;
+    j[4] = j_dehomog[4] * k00 + j_dehomog[5] * k01;
+    j[5] = j_dehomog[4] * k10 + j_dehomog[5] * k11;
+  }
+};
 }

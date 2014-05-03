@@ -35,6 +35,9 @@ inline CameraInterface<Scalar>* CreateFromOldCamera(
   } else if (old_cam.Type() == "calibu_fu_fv_u0_v0") {
     return new calibu::LinearCamera<Scalar>(old_cam.GenericParams().data(),
                                             true);
+  } else if (old_cam.Type() == "calibu_fu_fv_u0_v0_k1_k2_k3") {
+    return new calibu::Poly3Camera<Scalar>(old_cam.GenericParams().data(),
+                                           true);
   } else {
     std::cerr << "Unknown old camera type " << old_cam.Type() << " please "
         " implement this camera before initializing it using the "
