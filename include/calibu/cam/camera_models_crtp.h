@@ -24,17 +24,30 @@
 
 namespace calibu {
 struct CameraUtils {
+
+  /** Euclidean distance from (0, 0) to given pixel */
   template<typename T>
   static inline T PixNorm(const T* pix) {
     return sqrt(pix[0] * pix[0] + pix[1] * pix[1]);
   }
 
+  /** (x, y, z) -> (x, y)
+   *
+   * @param ray A 3-vector of (x, y, z)
+   * @param pix A 2-vector (x, y)
+   * */
   template<typename T>
   static inline void Dehomogenize(const T* ray, T* px_dehomogenized) {
     px_dehomogenized[0] = ray[0] / ray[2];
     px_dehomogenized[1] = ray[1] / ray[2];
   }
 
+  /**
+   * (x, y) -> (x, y, z), with z = 1
+   *
+   * @param pix A 2-vector (x, y)
+   * @param ray_homogenized A 3-vector to be filled in
+   */
   template<typename T>
   static inline void Homogenize(const T* pix, T* ray_homogenized) {
     ray_homogenized[0] = pix[0];
@@ -42,6 +55,13 @@ struct CameraUtils {
     ray_homogenized[2] = 1.0;
   }
 
+  /**
+   * Derivative of "Dehomogenize" with respect to the homogenous ray
+   * that is being dehomogenized.
+   *
+   * @param ray A 3-vector of (x, y, z)
+   * @param j A 2x3 matrix stored in column-major order
+   */
   template<typename T>
   static inline void dDehomogenize_dray(const T* ray, T* j) {
     const T z_sq = ray[2] * ray[2];
@@ -51,12 +71,20 @@ struct CameraUtils {
     j[1] = 0;       j[3] = z_inv;   j[5] = -ray[1] / z_sq;
   }
 
+  /**
+   * Transform a dehomogenized real-world point with calibration focal
+   * length and principal point to place it in its imaged location.
+   */
   template<typename T>
   static inline void MultK(const T* params, const T* pix, T* pix_k) {
     pix_k[0] = params[0] * pix[0] + params[2];
     pix_k[1] = params[1] * pix[1] + params[3];
   }
 
+  /**
+   * Take an image plane pixel and camera params and place it in
+   * dehomogenized world coords.
+   */
   template<typename T>
   static inline void MultInvK(const T* params, const T* pix, T* pix_kinv) {
     pix_kinv[0] = (pix[0] - params[2]) / params[0];
@@ -92,7 +120,7 @@ class LinearCamera : public Camera<LinearCamera<Scalar>, Scalar, kOwnsMem> {
     // De-homogenize and multiply by K.
     T pix[2];
     CameraUtils::Dehomogenize(ray, pix);
-    // Calculte the dehomogenization derivative.
+    // Calculate the dehomogenization derivative.
     CameraUtils::dDehomogenize_dray(ray, j);
 
     // Do the multiplication dkmult * ddehomogenized_dray

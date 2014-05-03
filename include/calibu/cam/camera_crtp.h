@@ -36,9 +36,13 @@ class CameraInterface {
  public:
   virtual ~CameraInterface() {}
 
+  /** Unproject an image location into world coordinates */
   virtual Vec3t<Scalar> Unproject(const Vec2t<Scalar>& pix) const = 0;
+
+  /** Project a world point into an image location */
   virtual Vec2t<Scalar> Project(const Vec3t<Scalar>& ray) const = 0;
 
+  /** Derivative of the Project along a ray */
   virtual Eigen::Matrix<Scalar, 2, 3> dProject_dray(
       const Vec3t<Scalar>& ray) const = 0;
 
@@ -99,6 +103,14 @@ class Camera : public CameraInterface<Scalar> {
     return j;
   }
 
+  /**
+   * Project a point into a camera located at t_ba.
+   *
+   * @param t_ba Location of camera to project into.
+   * @param ray Homogeneous ray
+   * @param rho Inverse depth of point
+   * @returns A non-homegeneous pixel location in the second camera.
+   */
   Vec2t<Scalar> Transfer3d(const SE3t<Scalar>& t_ba,
                            const Vec3t<Scalar>& ray,
                            const Scalar rho) const {
@@ -107,6 +119,11 @@ class Camera : public CameraInterface<Scalar> {
     return Project(ray_dehomogenized);
   }
 
+  /**
+   * The derivative of the projection from Transfer3d wrt the point
+   * being transfered.
+   *
+   */
   Eigen::Matrix<Scalar, 2, 4> dTransfer3d_dray(const SE3t<Scalar>& t_ba,
                                                const Vec3t<Scalar>& ray,
                                                const Scalar rho) const {
