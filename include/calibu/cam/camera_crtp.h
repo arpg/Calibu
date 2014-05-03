@@ -109,8 +109,13 @@ class CameraInterface {
     }
   }
 
+  // All the camera parameters (fu, fv, u0, v0, ...distortion)
   Scalar* params_;
+
+  // Length of parameter array (including distortion parameters)
   int n_params_;
+
+  // Is the parameter list memory managed by us or externally?
   bool owns_memory_;
 };
 
