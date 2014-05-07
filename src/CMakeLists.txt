@@ -88,7 +88,7 @@ find_package(OpenCV2)
 if( OpenCV2_FOUND )
     set( HAVE_OPENCV 1 )
     list( APPEND LINK_LIBS  ${OpenCV2_LIBRARIES})
-    list( APPEND INTERNAL_INC ${OpenCV2_INCLUDE_DIRS} )
+    list( APPEND CALIBU_INC ${OpenCV2_INCLUDE_DIRS} )
     list( APPEND HEADERS ${INC_DIR}/pose/Pnp.h ${INC_DIR}/pose/Tracker.h )
     list( APPEND SOURCES ${SRC_DIR}/pose/Pnp.cpp ${SRC_DIR}/pose/Tracker.cpp )
 endif()
@@ -99,7 +99,6 @@ endif()
 # Include source/build directories first to preempt any installed Calibu
 include_directories( ${CALIBU_INC} )
 include_directories( ${USER_INC} )
-include_directories( ${INTERNAL_INC} )
 
 ## Generate symbol export helper header on MSVC
 IF(MSVC)
