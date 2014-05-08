@@ -54,7 +54,9 @@ namespace calibu
         const Scalar rho) const = 0;
 
     virtual Scalar* GetParams() = 0;
+    virtual void SetParams(Scalar* params_in) = 0;
     virtual uint32_t NumParams() const = 0;
+    virtual const Eigen::Vector2i& ImageSize() const = 0;
   };
 
   // The Curiously Recurring Template Pattern (CRTP)
@@ -62,8 +64,9 @@ namespace calibu
   class Camera : public CameraInterface<Scalar>
   {
   public:
-    Camera(Scalar* params_in)
+    Camera(Scalar* params_in, const Eigen::Vector2i& image_size)
     {
+      image_size_ = image_size;
       SetParams(params_in);
     }
 
@@ -71,27 +74,6 @@ namespace calibu
     {
       if( kOwnsMem ){
         delete[] params_;
-      }
-    }
-
-    Scalar* GetParams()
-    {
-      return params_;
-    }
-
-    uint32_t NumParams() const
-    {
-      return Derived::kParamSize;
-    }
-
-    void SetParams(Scalar* params_in)
-    {
-      if (kOwnsMem) {
-        params_ = new Scalar[Derived::kParamSize];
-        memcpy(params_, params_in, sizeof(Scalar) * Derived::kParamSize);
-      }
-      else{
-        params_ = params_in;
       }
     }
 
@@ -186,9 +168,27 @@ namespace calibu
       return d_project_dparams + dtransfer3d_dray * dray_dparams;
     }
 
-  protected:
 
+    Scalar* GetParams() { return params_; }
+
+    void SetParams(Scalar* params_in)
+    {
+      if (kOwnsMem) {
+        params_ = new Scalar[Derived::kParamSize];
+        memcpy(params_, params_in, sizeof(Scalar) * Derived::kParamSize);
+      }
+      else{
+        params_ = params_in;
+      }
+    }
+
+    uint32_t NumParams() const { return Derived::kParamSize; }
+
+    const Eigen::Vector2i& ImageSize() const { return image_size_; }
+
+  protected:
     Scalar* params_;
+    Eigen::Vector2i image_size_;
   };
 
   template<typename Scalar=double>
