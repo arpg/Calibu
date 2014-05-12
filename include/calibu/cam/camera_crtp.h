@@ -1,224 +1,189 @@
 /*
-   This file is part of the Calibu Project.
-   https://github.com/gwu-robotics/Calibu
+  This file is part of the Calibu Project.
+  https://github.com/gwu-robotics/Calibu
 
-   Copyright (C) 2013 George Washington University,
-                      Steven Lovegrove,
-                      Nima Keivan
-                      Gabe Sibley
+  Copyright (C) 2013 George Washington University,
+  Steven Lovegrove,
+  Nima Keivan
+  Gabe Sibley
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
 
-   http://www.apache.org/licenses/LICENSE-2.0
+  http://www.apache.org/licenses/LICENSE-2.0
 
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
- */
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+*/
 #pragma once
 #include <Eigen/Eigen>
 #include <sophus/se3.hpp>
-namespace calibu
-{
-  template<typename Scalar> using Vec2t = Eigen::Matrix<Scalar, 2, 1>;
-  template<typename Scalar> using Vec3t = Eigen::Matrix<Scalar, 3, 1>;
-  template<typename Scalar> using VecXt =
+
+namespace calibu {
+template<typename Scalar> using Vec2t = Eigen::Matrix<Scalar, 2, 1>;
+template<typename Scalar> using Vec3t = Eigen::Matrix<Scalar, 3, 1>;
+template<typename Scalar> using VecXt =
     Eigen::Matrix<Scalar, Eigen::Dynamic, 1>;
-  template<typename Scalar> using SE3t =
-    Sophus::SE3Group<Scalar>;
+template<typename Scalar> using SE3t = Sophus::SE3Group<Scalar>;
 
-  template<typename Scalar=double>
-  class CameraInterface
+template<typename Scalar = double>
+class CameraInterface {
+ public:
+  CameraInterface(const CameraInterface<Scalar>& other) :
+      n_params_(other.n_params_), owns_memory_(other.owns_memory_) {
+    CopyParams(other.params_);
+  }
+
+  virtual ~CameraInterface() {
+    if (owns_memory_) {
+      delete[] params_;
+    }
+  }
+
+  /** Unproject an image location into world coordinates */
+  virtual Vec3t<Scalar> Unproject(const Vec2t<Scalar>& pix) const = 0;
+
+  /** Project a world point into an image location */
+  virtual Vec2t<Scalar> Project(const Vec3t<Scalar>& ray) const = 0;
+
+  /** Derivative of the Project along a ray */
+  virtual Eigen::Matrix<Scalar, 2, 3> dProject_dray(
+      const Vec3t<Scalar>& ray) const = 0;
+
+  virtual Eigen::Matrix<Scalar, 2, Eigen::Dynamic> dProject_dparams(
+      const Vec3t<Scalar>& ray) const = 0;
+
+  virtual Eigen::Matrix<Scalar, 3, Eigen::Dynamic> dUnproject_dparams(
+      const Vec2t<Scalar>& pix) const = 0;
+
+  /**
+   * Project a point into a camera located at t_ba.
+   *
+   * @param t_ba Location of camera to project into.
+   * @param ray Homogeneous ray
+   * @param rho Inverse depth of point
+   * @returns A non-homegeneous pixel location in the second camera.
+   */
+  Vec2t<Scalar> Transfer3d(const SE3t<Scalar>& t_ba,
+                           const Vec3t<Scalar>& ray,
+                           const Scalar rho) const {
+    const Vec3t<Scalar> ray_dehomogenized =
+        t_ba.rotationMatrix() * ray + rho * t_ba.translation();
+    return Project(ray_dehomogenized);
+  }
+
+  /**
+   * The derivative of the projection from Transfer3d wrt the point
+   * being transfered.
+   */
+  Eigen::Matrix<Scalar, 2, 4> dTransfer3d_dray(const SE3t<Scalar>& t_ba,
+                                               const Vec3t<Scalar>& ray,
+                                               const Scalar rho) const {
+    const Eigen::Matrix<Scalar, 3, 3> rot_matrix = t_ba.rotationMatrix();
+    const Vec3t<Scalar> ray_dehomogenized =
+        rot_matrix * ray + rho * t_ba.translation();
+    const Eigen::Matrix<Scalar, 2, 3> dproject_dray =
+        dProject_dray(ray_dehomogenized);
+    Eigen::Matrix<Scalar, 2, 4> dtransfer3d_dray;
+    dtransfer3d_dray.template topLeftCorner<2, 3>() =
+        dproject_dray * rot_matrix;
+    dtransfer3d_dray.col(3) = dproject_dray * t_ba.translation();
+    return dtransfer3d_dray;
+  }
+
+  Eigen::Matrix<Scalar, 2, Eigen::Dynamic> dTransfer_dparams(
+      const SE3t<Scalar>& t_ba,
+      const Vec2t<Scalar>& pix,
+      const Scalar rho) const
   {
-  public:
-    virtual ~CameraInterface() {}
-    virtual Vec3t<Scalar> Unproject(const Vec2t<Scalar>& pix) const = 0;
-    virtual Vec2t<Scalar> Project(const Vec3t<Scalar>& ray) const = 0;
-    virtual Eigen::Matrix<Scalar, 2, 3> dProject_dray(
-        const Vec3t<Scalar>& ray) const = 0;
-    virtual Vec2t<Scalar> Transfer3d(const SE3t<Scalar>& t_ba,
-                                     const Vec3t<Scalar>& ray,
-                                     const Scalar rho) const = 0;
-    virtual Eigen::Matrix<Scalar, 2, 4> dTransfer3d_dray(
-        const SE3t<Scalar>& t_ba,
-        const Vec3t<Scalar>& ray,
-        const Scalar rho) const = 0;
+    const Vec3t<Scalar> ray = Unproject(pix);
+    const Eigen::Matrix<Scalar, 3, 3> rot_matrix = t_ba.rotationMatrix();
+    const Vec3t<Scalar> ray_dehomogenized =
+        rot_matrix * ray + rho * t_ba.translation();
+    const Eigen::Matrix<Scalar, 2, 3> dproject_dray =
+        dProject_dray(ray_dehomogenized);
+    const Eigen::Matrix<Scalar, 2, 3> dtransfer3d_dray =
+        dproject_dray * rot_matrix;
+    const Eigen::Matrix<Scalar, 3, Eigen::Dynamic> dray_dparams =
+        dUnproject_dparams(pix);
 
-    virtual Eigen::Matrix<Scalar, 2, Eigen::Dynamic> dTransfer_dparams(
-        const SE3t<Scalar>& t_ba,
-        const Vec2t<Scalar>& pix,
-        const Scalar rho) const = 0;
+    const Eigen::Matrix<Scalar, 2, Eigen::Dynamic> d_project_dparams =
+        dProject_dparams(ray_dehomogenized);
 
-    virtual Scalar* GetParams() = 0;
-    virtual void SetParams(Scalar* params_in) = 0;
-    virtual uint32_t NumParams() const = 0;
-    virtual const Eigen::Vector2i& ImageSize() const = 0;
-  };
+    return d_project_dparams + dtransfer3d_dray * dray_dparams;
+  }
 
-  // The Curiously Recurring Template Pattern (CRTP)
-  template<class Derived, typename Scalar = double, bool kOwnsMem = true>
-  class Camera : public CameraInterface<Scalar>
+  Scalar* GetParams() {
+    return params_;
+  }
+
+  uint32_t NumParams() const
   {
-  public:
-    Camera(Scalar* params_in, const Eigen::Vector2i& image_size)
-    {
-      image_size_ = image_size;
-      SetParams(params_in);
-    }
+    return n_params_;
+  }
 
-    ~Camera()
-    {
-      if( kOwnsMem ){
-        delete[] params_;
-      }
-    }
-
-    Vec3t<Scalar> Unproject(const Vec2t<Scalar>& pix) const
-    {
-      Vec3t<Scalar> ray;
-      static_cast<const Derived*>(this)->Unproject(pix.data(),
-                                                   params_,
-                                                   ray.data());
-      return ray;
-    }
-
-    Vec2t<Scalar> Project(const Vec3t<Scalar>& ray) const
-    {
-      Vec2t<Scalar> pix;
-      static_cast<const Derived*>(this)->Project(ray.data(), params_,
-                                                 pix.data());
-      return pix;
-    }
-
-    Eigen::Matrix<Scalar, 2, 3> dProject_dray(
-        const Vec3t<Scalar>& ray) const
-    {
-      Eigen::Matrix<Scalar, 2, 3> j;
-      static_cast<const Derived*>(this)->dProject_dray(ray.data(), params_,
-                                                       j.data());
-      return j;
-    }
-
-    Eigen::Matrix<Scalar, 2, Eigen::Dynamic> dProject_dparams(
-        const Vec3t<Scalar>& ray) const
-    {
-      Eigen::Matrix<Scalar, 2, Derived::kParamSize> j;
-      static_cast<const Derived*>(this)->dProject_dparams(ray.data(), params_,
-                                                       j.data());
-      return j;
-    }
-
-    Eigen::Matrix<Scalar, 3, Eigen::Dynamic> dUnproject_dparams(
-        const Vec2t<Scalar>& pix) const
-    {
-      Eigen::Matrix<Scalar, 3, Derived::kParamSize> j;
-      static_cast<const Derived*>(this)->dUnproject_dparams(pix.data(), params_,
-                                                       j.data());
-      return j;
-    }
-
-    Vec2t<Scalar> Transfer3d(const SE3t<Scalar>& t_ba,
-                             const Vec3t<Scalar>& ray,
-                             const Scalar rho) const
-    {
-      const Vec3t<Scalar> ray_dehomogenized =
-          t_ba.rotationMatrix() * ray + rho * t_ba.translation();
-      return Project(ray_dehomogenized);
-    }
-
-    Eigen::Matrix<Scalar, 2, 4> dTransfer3d_dray(const SE3t<Scalar>& t_ba,
-                                                 const Vec3t<Scalar>& ray,
-                                                 const Scalar rho) const
-    {
-      const Eigen::Matrix<Scalar, 3, 3> rot_matrix = t_ba.rotationMatrix();
-      const Vec3t<Scalar> ray_dehomogenized =
-          rot_matrix * ray + rho * t_ba.translation();
-      const Eigen::Matrix<Scalar, 2, 3> dproject_dray =
-          dProject_dray(ray_dehomogenized);
-      Eigen::Matrix<Scalar, 2, 4> dtransfer3d_dray;
-      dtransfer3d_dray.template topLeftCorner<2, 3>() =
-          dproject_dray * rot_matrix;
-      dtransfer3d_dray.col(3) = dproject_dray * t_ba.translation();
-      return dtransfer3d_dray;
-    }
-
-    Eigen::Matrix<Scalar, 2, Eigen::Dynamic> dTransfer_dparams(
-        const SE3t<Scalar>& t_ba,
-        const Vec2t<Scalar>& pix,
-        const Scalar rho) const
-    {
-      const Vec3t<Scalar> ray = Unproject(pix);
-      const Eigen::Matrix<Scalar, 3, 3> rot_matrix = t_ba.rotationMatrix();
-      const Vec3t<Scalar> ray_dehomogenized =
-          rot_matrix * ray + rho * t_ba.translation();
-      const Eigen::Matrix<Scalar, 2, 3> dproject_dray =
-          dProject_dray(ray_dehomogenized);
-      const Eigen::Matrix<Scalar, 2, 3> dtransfer3d_dray =
-          dproject_dray * rot_matrix;
-      const Eigen::Matrix<Scalar, 3, Eigen::Dynamic> dray_dparams =
-          dUnproject_dparams(pix);
-
-      const Eigen::Matrix<Scalar, 2, Eigen::Dynamic> d_project_dparams =
-          dProject_dparams(ray_dehomogenized);
-
-      return d_project_dparams + dtransfer3d_dray * dray_dparams;
-    }
-
-
-    Scalar* GetParams() { return params_; }
-
-    void SetParams(Scalar* params_in)
-    {
-      if (kOwnsMem) {
-        params_ = new Scalar[Derived::kParamSize];
-        memcpy(params_, params_in, sizeof(Scalar) * Derived::kParamSize);
-      }
-      else{
-        params_ = params_in;
-      }
-    }
-
-    uint32_t NumParams() const { return Derived::kParamSize; }
-
-    const Eigen::Vector2i& ImageSize() const { return image_size_; }
-
-  protected:
-    Scalar* params_;
-    Eigen::Vector2i image_size_;
-  };
-
-  template<typename Scalar=double>
-  class Rig
+  const Eigen::Vector2i& ImageSize() const
   {
-  public:
-    void AddCamera(CameraInterface<Scalar>* cam,
-                   const SE3t<Scalar>& t_wc)
-    {
-      cameras_.push_back(cam);
-      t_wc_.push_back(t_wc);
+    return image_size_;
+  }
+
+ protected:
+  CameraInterface(Scalar* params_in, int n_params,
+                  const Eigen::Vector2i& image_size,
+                  bool owns_memory)
+      : n_params_(n_params), owns_memory_(owns_memory) {
+    image_size_ = image_size;
+    CopyParams(params_in);
+  }
+
+  void CopyParams(Scalar* params) {
+    if (owns_memory_) {
+      params_ = new Scalar[n_params_];
+      memcpy(params_, params, sizeof(Scalar) * n_params_);
+    } else {
+      params_ = params;
     }
+  }
 
-    void Clear()
-    {
-      for (CameraInterface<Scalar>* ptr : cameras_) {
-        delete ptr;
-      }
-      cameras_.clear();
-      t_wc_.clear();
+  // All the camera parameters (fu, fv, u0, v0, ...distortion)
+  Scalar* params_;
+
+  // Length of parameter array (including distortion parameters)
+  uint32_t n_params_;
+
+  // Is the parameter list memory managed by us or externally?
+  bool owns_memory_;
+
+  Eigen::Vector2i image_size_;
+};
+
+template<typename Scalar = double>
+class Rig {
+ public:
+  void AddCamera(CameraInterface<Scalar>* cam, const SE3t<Scalar>& t_wc) {
+    cameras_.push_back(cam);
+    t_wc_.push_back(t_wc);
+  }
+
+  void Clear()
+  {
+    for (CameraInterface<Scalar>* ptr : cameras_) {
+      delete ptr;
     }
+    cameras_.clear();
+    t_wc_.clear();
+  }
 
-    ~Rig()
-    {
-      Clear();
-    }
+  ~Rig()
+  {
+    Clear();
+  }
 
-    std::vector<CameraInterface<Scalar>*> cameras_;
-    std::vector<SE3t<Scalar>> t_wc_;
-  };
-
-
-}
+  std::vector<CameraInterface<Scalar>*> cameras_;
+  std::vector<SE3t<Scalar>> t_wc_;
+};
+}  // namespace calibu

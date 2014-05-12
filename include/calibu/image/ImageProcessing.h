@@ -24,6 +24,7 @@
 #include <calibu/image/Label.h>
 
 #include <Eigen/Eigen>
+#include <Eigen/StdVector>
 
 namespace calibu {
 
@@ -53,6 +54,8 @@ class ImageProcessing {
   inline const std::vector<PixelClass>& Labels() const { return labels; }
 
   ParamsImageProcessing& Params() { return params; }
+
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 
  protected:
   void AllocateImageData(int maxPixels);

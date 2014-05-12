@@ -1,3 +1,4 @@
+include(CMakeParseArguments)
 # Declare an APK w/
 #   - LINK_LIBS: Library dependencies for NDK lib
 #   - DEPENDS: Targets to link against and depend on
@@ -158,5 +159,7 @@ function(def_apk apk)
 
     apk_type(debug)
     apk_type(release)
+
+    add_custom_target(${apk} ALL DEPENDS ${apk}-debug)
   endif()
 endfunction()

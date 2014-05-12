@@ -58,7 +58,7 @@ struct DistortionPinhole
     }
 
     template<typename T> inline
-    static T dRFactor_dParam(T r, const T* params)
+    static T dRFactor_dParam(T /*r*/, const T* /*params*/)
     {
         //TODO: implement this
         return (T)0;
@@ -114,7 +114,7 @@ struct DistortionPoly2
     }
 
     template<typename T> inline
-    static T dRFactor_dParam(T r, const T* params)
+    static T dRFactor_dParam(T /*r*/, const T* /*params*/)
     {
         //TODO: implement this
         assert(false);
@@ -175,7 +175,7 @@ struct DistortionPoly3
     }
 
     template<typename T> inline
-    static T dRFactor_dParam(T r, const T* params)
+    static T dRFactor_dParam(T /*r*/, const T* /*params*/)
     {
         //TODO: implement this
         assert(false);

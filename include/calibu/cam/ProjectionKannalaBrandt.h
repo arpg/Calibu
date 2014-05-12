@@ -170,7 +170,7 @@ struct ProjectionKannalaBrandt
     }
 
     template<typename T> inline
-    static Eigen::Matrix<T,2,Eigen::Dynamic> dProject_dParams(const Eigen::Matrix<T,3,1>& P, const Eigen::Matrix<T,Eigen::Dynamic,1>& params)
+    static Eigen::Matrix<T,2,Eigen::Dynamic> dProject_dParams(const Eigen::Matrix<T,3,1>& /*P*/, const Eigen::Matrix<T,Eigen::Dynamic,1>& /*params*/)
     {
         //TODO: implement this
         assert(false);

@@ -26,6 +26,8 @@
 #include <calibu/Platform.h>
 #include <calibu/target/Target.h>
 #include <calibu/target/LineGroup.h>
+#include <Eigen/Eigen>
+#include <Eigen/StdVector>
 
 namespace std {
 template<> struct less<Eigen::Vector2i> {
