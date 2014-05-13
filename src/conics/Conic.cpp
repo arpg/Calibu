@@ -28,6 +28,19 @@ using namespace Eigen;
 
 namespace calibu {
 
+Eigen::Vector2d GetAxesLengths(const Conic& c) {
+  // Extract and scale the eigenvalues to get the major, minor axes lengths
+  Eigen::Vector2d eigenval = c.C.topLeftCorner<2, 2>().eigenvalues().real();
+
+  // See
+  // http://en.wikipedia.org/wiki/Matrix_representation_of_conic_sections
+  // for explanation of matrix C and its relation to the axes
+  double det_ratio = -c.C.determinant() /
+      c.C.topLeftCorner<2, 2>().determinant();
+  return Eigen::Vector2d(sqrt(det_ratio / eigenval[0]),
+                         sqrt(det_ratio / eigenval[1]));
+}
+
 double Distance( const Conic& c1, const Conic& c2, double circle_radius )
 {
     const Matrix3d Q = c1.Dual * c2.C;
