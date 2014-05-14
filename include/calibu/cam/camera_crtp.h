@@ -24,7 +24,6 @@
 #include <sophus/se3.hpp>
 
 namespace calibu {
-
 template<typename Scalar> using Vec2t = Eigen::Matrix<Scalar, 2, 1>;
 template<typename Scalar> using Vec3t = Eigen::Matrix<Scalar, 3, 1>;
 template<typename Scalar> using VecXt =
@@ -54,6 +53,12 @@ class CameraInterface {
   /** Derivative of the Project along a ray */
   virtual Eigen::Matrix<Scalar, 2, 3> dProject_dray(
       const Vec3t<Scalar>& ray) const = 0;
+
+  virtual Eigen::Matrix<Scalar, 2, Eigen::Dynamic> dProject_dparams(
+      const Vec3t<Scalar>& ray) const = 0;
+
+  virtual Eigen::Matrix<Scalar, 3, Eigen::Dynamic> dUnproject_dparams(
+      const Vec2t<Scalar>& pix) const = 0;
 
   /**
    * Project a point into a camera located at t_ba.
@@ -90,13 +95,48 @@ class CameraInterface {
     return dtransfer3d_dray;
   }
 
+  Eigen::Matrix<Scalar, 2, Eigen::Dynamic> dTransfer_dparams(
+      const SE3t<Scalar>& t_ba,
+      const Vec2t<Scalar>& pix,
+      const Scalar rho) const
+  {
+    const Vec3t<Scalar> ray = Unproject(pix);
+    const Eigen::Matrix<Scalar, 3, 3> rot_matrix = t_ba.rotationMatrix();
+    const Vec3t<Scalar> ray_dehomogenized =
+        rot_matrix * ray + rho * t_ba.translation();
+    const Eigen::Matrix<Scalar, 2, 3> dproject_dray =
+        dProject_dray(ray_dehomogenized);
+    const Eigen::Matrix<Scalar, 2, 3> dtransfer3d_dray =
+        dproject_dray * rot_matrix;
+    const Eigen::Matrix<Scalar, 3, Eigen::Dynamic> dray_dparams =
+        dUnproject_dparams(pix);
+
+    const Eigen::Matrix<Scalar, 2, Eigen::Dynamic> d_project_dparams =
+        dProject_dparams(ray_dehomogenized);
+
+    return d_project_dparams + dtransfer3d_dray * dray_dparams;
+  }
+
   Scalar* GetParams() {
     return params_;
   }
 
+  uint32_t NumParams() const
+  {
+    return n_params_;
+  }
+
+  const Eigen::Vector2i& ImageSize() const
+  {
+    return image_size_;
+  }
+
  protected:
-  CameraInterface(Scalar* params_in, int n_params, bool owns_memory)
+  CameraInterface(Scalar* params_in, int n_params,
+                  const Eigen::Vector2i& image_size,
+                  bool owns_memory)
       : n_params_(n_params), owns_memory_(owns_memory) {
+    image_size_ = image_size;
     CopyParams(params_in);
   }
 
@@ -113,10 +153,12 @@ class CameraInterface {
   Scalar* params_;
 
   // Length of parameter array (including distortion parameters)
-  int n_params_;
+  uint32_t n_params_;
 
   // Is the parameter list memory managed by us or externally?
   bool owns_memory_;
+
+  Eigen::Vector2i image_size_;
 };
 
 template<typename Scalar = double>
@@ -127,10 +169,18 @@ class Rig {
     t_wc_.push_back(t_wc);
   }
 
-  ~Rig() {
+  void Clear()
+  {
     for (CameraInterface<Scalar>* ptr : cameras_) {
       delete ptr;
     }
+    cameras_.clear();
+    t_wc_.clear();
+  }
+
+  ~Rig()
+  {
+    Clear();
   }
 
   std::vector<CameraInterface<Scalar>*> cameras_;

@@ -21,6 +21,7 @@
 */
 #pragma once
 #include <calibu/cam/camera_crtp.h>
+#include <iostream>
 
 namespace calibu {
 struct CameraUtils {
@@ -71,6 +72,31 @@ struct CameraUtils {
     j[1] = 0;       j[3] = z_inv;   j[5] = -ray[1] / z_sq;
   }
 
+  template<typename T>
+  static inline void dMultK_dparams(const T* params, const T* pix, T* j) {
+    j[0] = pix[0];    j[2] = 0;       j[4] = 1;   j[6] = 0;
+    j[1] = 0;         j[3] = pix[1];  j[5] = 0;   j[7] = 1;
+  }
+
+  template<typename T>
+  static inline void dMultInvK_dparams(const T* params, const T* pix, T* j) {
+    j[0] = -(pix[0] - params[2]) / (params[0] * params[0]);
+    j[1] = 0;
+    j[2] = 0;
+
+    j[3] = 0;
+    j[4] = -(pix[1] - params[3]) / (params[1] * params[1]);
+    j[5] = 0;
+
+    j[6] = -1 / params[0];
+    j[7] = 0;
+    j[8] = 0;
+
+    j[9] = 0;
+    j[10] = -1 / params[1];
+    j[11] = 0;
+  }
+
   /**
    * Transform a dehomogenized real-world point with calibration focal
    * length and principal point to place it in its imaged location.
@@ -92,6 +118,7 @@ struct CameraUtils {
   }
 };
 
+
 /**
  * Avoids copying inherited function implementations for all camera models.
  *
@@ -102,8 +129,11 @@ struct CameraUtils {
  */
 #define CAMERA_MODEL_IMPL(CameraT, n_params)                            \
   static constexpr int kParamSize = n_params;                           \
-  CameraT(Scalar* params, bool owns_memory) :                           \
-      CameraInterface<Scalar>(params, kParamSize, owns_memory) {        \
+  CameraT(Scalar* params,                                               \
+          const Eigen::Vector2i& image_size,                            \
+          bool owns_memory) :                                           \
+      CameraInterface<Scalar>(params, kParamSize, image_size,           \
+                              owns_memory) {                            \
   }                                                                     \
   Vec3t<Scalar> Unproject(const Vec2t<Scalar>& pix) const override {    \
     Vec3t<Scalar> ray;                                                  \
@@ -114,6 +144,20 @@ struct CameraUtils {
     Vec2t<Scalar> pix;                                                  \
     Project(ray.data(), this->params_, pix.data());                     \
     return pix;                                                         \
+  }                                                                     \
+  Eigen::Matrix<Scalar, 2, Eigen::Dynamic> dProject_dparams(            \
+      const Vec3t<Scalar>& ray) const override                          \
+  {                                                                     \
+    Eigen::Matrix<Scalar, 2, kParamSize> j;                         \
+    dProject_dparams(ray.data(), this->params_, j.data());              \
+    return j;                                                           \
+  }                                                                     \
+  Eigen::Matrix<Scalar, 3, Eigen::Dynamic> dUnproject_dparams(          \
+      const Vec2t<Scalar>& pix) const override                          \
+  {                                                                     \
+    Eigen::Matrix<Scalar, 3, kParamSize> j;                         \
+    dUnproject_dparams(pix.data(), this->params_, j.data());            \
+    return j;                                                           \
   }                                                                     \
   Eigen::Matrix<Scalar, 2, 3>                                           \
   dProject_dray(const Vec3t<Scalar>& ray) const override {              \
@@ -144,11 +188,23 @@ class LinearCamera : public CameraInterface<Scalar> {
   }
 
   template<typename T>
+  static void dProject_dparams(const T* ray, const T* params, T* j) {
+    T pix[2];
+    CameraUtils::Dehomogenize(ray, pix);
+    CameraUtils::dMultK_dparams(params, pix, j);
+  }
+
+  template<typename T>
+  static void dUnproject_dparams(const T* pix, const T* params, T* j) {
+    CameraUtils::dMultInvK_dparams(params, pix, j);
+  }
+
+  template<typename T>
   static void dProject_dray(const T* ray, const T* params, T* j) {
     // De-homogenize and multiply by K.
     T pix[2];
     CameraUtils::Dehomogenize(ray, pix);
-    // Calculate the dehomogenization derivative.
+    // Calculte the dehomogenization derivative.
     CameraUtils::dDehomogenize_dray(ray, j);
 
     // Do the multiplication dkmult * ddehomogenized_dray
@@ -169,16 +225,15 @@ class FovCamera : public CameraInterface<Scalar> {
   static constexpr uint32_t kMaxRadIncrements = 2000;
   CAMERA_MODEL_IMPL(FovCamera, 5);
 
-  //  Static member functions to use without instantiating a class object
+  // For these derivatives, refer to the camera_derivatives.m matlab file.
   template<typename T>
   inline static T Factor(const T rad, const T* params) {
     const T param = params[4];
     if (param * param > kCamDistEps) {
-      const T mul2_tanw_by2 = (T)2.0 * tan(param / 2.0);
-      const T mul2_tanw_by2_byw = mul2_tanw_by2 / param;
+      const T mul2_tanw_by2 = (T)2.0 * tan(param / (T)2.0);
       if (rad * rad < kCamDistEps) {
         // limit r->0
-        return mul2_tanw_by2_byw;
+        return mul2_tanw_by2 / param;
       }
       return atan(rad * mul2_tanw_by2) / (rad * param);
     }
@@ -187,47 +242,114 @@ class FovCamera : public CameraInterface<Scalar> {
   }
 
   template<typename T>
+  inline static T dFactor_dparam(const T rad, const T* params, T* fac) {
+    const T param = params[4];
+    if (param * param > kCamDistEps) {
+      const T tanw_by2 = tan(param / (T)2.0);
+      const T mul2_tanw_by2 = (T)2.0 * tanw_by2;
+      if (rad * rad < kCamDistEps) {
+        // limit r->0
+        *fac = mul2_tanw_by2 / param;
+        return ((T)2 * ((tanw_by2 * tanw_by2) / (T)2 + (T)0.5)) / param -
+            mul2_tanw_by2 / (param * param);
+      }
+      const T tanw_by2_sq = tanw_by2 * tanw_by2;
+      const T atan_mul2_tanw_by2 = atan(rad * mul2_tanw_by2);
+      const T rad_mul_param = (rad * param);
+      *fac = atan_mul2_tanw_by2 / rad_mul_param;
+      return ((T)2 * (tanw_by2_sq / (T)2 + (T)0.5)) /
+          (param * ((T)4 * tanw_by2_sq * rad * rad + (T)1)) -
+          atan_mul2_tanw_by2 / (rad_mul_param * param);
+    }
+    // limit w->0
+    *fac = (T)1;
+    return (T)0;
+  }
+
+  template<typename T>
   inline static T dFactor_drad(const T rad, const T* params, T* fac) {
     const T param = params[4];
     if(param * param < kCamDistEps) {
       *fac = (T)1;
-      return 0;
+      return (T)0;
     }else{
-      const T tan_wby2 = tan(param / 2.0);
+      const T tan_wby2 = tan(param / (T)2.0);
       const T mul2_tanw_by2 = (T)2.0 * tan_wby2;
 
       if(rad * rad < kCamDistEps) {
         *fac = mul2_tanw_by2 / param;
-        return 0;
+        return (T)0;
       }else{
         const T atan_mul2_tanw_by2 = atan(rad * mul2_tanw_by2);
-        const T rad_by_param = (rad * param);
+        const T rad_mul_param = (rad * param);
 
-        *fac = atan_mul2_tanw_by2 / rad_by_param;
-        return (2 * tan_wby2) /
-            (rad * param * (4 * rad * rad * tan_wby2 * tan_wby2 + 1)) -
-            atan_mul2_tanw_by2 / (rad * rad_by_param);
+        *fac = atan_mul2_tanw_by2 / rad_mul_param;
+        return ((T)2 * tan_wby2) /
+            (rad * param * ((T)4 * rad * rad * tan_wby2 * tan_wby2 + (T)1)) -
+            atan_mul2_tanw_by2 / (rad * rad_mul_param);
       }
     }
   }
 
+
   template<typename T>
   inline static T Factor_inv(const T rad, const T* params) {
     const T param = params[4];
-    if(param * param < kCamDistEps) {
-      // limit w->0
-      return (T)1.0;
-    }else{
-      const T w_by2 = param / 2.0;
-      const T mul_2tanw_by2 = tan(w_by2) * 2.0;
+    if(param * param > kCamDistEps) {
+      const T w_by2 = param / (T)2.0;
+      const T mul_2tanw_by2 = tan(w_by2) * (T)2.0;
 
       if(rad * rad < kCamDistEps) {
         // limit r->0
         return param / mul_2tanw_by2;
-      }else{
-        return tan(rad * param) / (rad * mul_2tanw_by2);
       }
+      return tan(rad * param) / (rad * mul_2tanw_by2);
     }
+    // limit w->0
+    return (T)1.0;
+  }
+
+  template<typename T>
+  inline static T dFactor_inv_dparam(const T rad, const T* params) {
+    const T param = params[4];
+    if(param * param > kCamDistEps) {
+      const T tan_wby2 = tan(param / (T)2.0);
+      if(rad * rad < kCamDistEps) {
+        return (T)1.0 / ((T)2 * tan_wby2) -
+            (param * (tan_wby2 * tan_wby2 / (T)2.0 + (T)0.5)) /
+            ((T)2.0 * tan_wby2 * tan_wby2);
+      }
+      const T tan_rad_mul_w = tan(rad * param);
+      const T tanw_by2_sq = tan_wby2 * tan_wby2;
+      return (tan_rad_mul_w * tan_rad_mul_w + (T)1.0) / ((T)2.0 * tan_wby2) -
+          (tan_rad_mul_w * (tanw_by2_sq / (T)2.0 + (T)0.5)) /
+          ((T)2.0 * rad * tanw_by2_sq);
+    }
+    // limit w->0
+    return (T)0.0;
+  }
+
+  template<typename T>
+  inline static T dFactor_inv_drad(const T rad, const T* params, T* fac) {
+    const T param = params[4];
+    if(param * param > kCamDistEps) {
+      const T w_by2 = param / (T)2.0;
+      const T tan_w_by2 = tan(w_by2);
+      const T mul_2tanw_by2 = tan_w_by2 * (T)2.0;
+      if(rad * rad < kCamDistEps) {
+        *fac = param / tan_w_by2;
+        return (T)0;
+      }
+      const T one_by_tan_w_by_2 = (T)1.0 / tan_w_by2;
+      const T tan_rad_mul_w = tan(rad * param);
+      *fac = tan_rad_mul_w / (rad * mul_2tanw_by2);
+      return (one_by_tan_w_by_2 * param *
+              (tan_rad_mul_w * tan_rad_mul_w + (T)1)) / ((T)2 * rad) -
+          (one_by_tan_w_by_2 * tan_rad_mul_w) / (2 * rad * rad);
+    }
+    // limit w->0
+    *fac = (T)1;
+    return (T)0.0;
   }
 
   template<typename T>
@@ -235,13 +357,66 @@ class FovCamera : public CameraInterface<Scalar> {
     // First multiply by inverse K and calculate distortion parameter.
     T pix_kinv[2];
     CameraUtils::MultInvK(params, pix, pix_kinv);
-
-    // Homogenize the point.
-    CameraUtils::Homogenize<T>(pix_kinv, ray);
-    const T fac_inv = Factor_inv(CameraUtils::PixNorm(pix_kinv), params);
+    const T fac_inv =
+        Factor_inv(CameraUtils::PixNorm(pix_kinv), params);
     pix_kinv[0] *= fac_inv;
     pix_kinv[1] *= fac_inv;
+    // Homogenize the point.
     CameraUtils::Homogenize<T>(pix_kinv, ray);
+  }
+
+  template<typename T>
+  static void dUnproject_dparams(const T* pix, const T* params, T* j) {
+    T pix_kinv[2];
+    CameraUtils::MultInvK(params, pix, pix_kinv);
+    CameraUtils::dMultInvK_dparams(params, pix, j);
+
+    // The complexity of this jacobian is due to the fact that the distortion
+    // factor is calculated _after_ the multiplication by K^-1, therefore
+    // the parameters of K affect both pix_kinv and fac_inv. Therefore we
+    // use the product rule to push the derivatives w.r.t. K through both
+    // functions.
+
+    T rad = CameraUtils::PixNorm(pix_kinv);
+    T fac_inv;
+    const T dfac_inv_drad_byrad =
+        dFactor_inv_drad(rad, params, &fac_inv) / rad;
+    const T dfac_inv_dp[2] = { pix_kinv[0] * dfac_inv_drad_byrad,
+                           pix_kinv[1] * dfac_inv_drad_byrad };
+    // Calculate the jacobian of the factor w.r.t. the K parameters.
+    T dfac_dparams[4];
+    dfac_dparams[0] = dfac_inv_dp[0] * j[0];
+    dfac_dparams[1] = dfac_inv_dp[1] * j[4];
+    dfac_dparams[2] = dfac_inv_dp[0] * j[6];
+    dfac_dparams[3] = dfac_inv_dp[1] * j[10];
+
+    // This is the derivatives w.r.t. K parameters for K^-1 * fac_inv
+    T dfac_inv =
+        dFactor_inv_dparam(rad, params);
+    j[0] *= fac_inv;
+    j[4] *= fac_inv;
+    j[6] *= fac_inv;
+    j[10] *= fac_inv;
+
+    // Total derivative w.r.t. the K parameters for fac_inv added to the
+    // previous values (product rule)
+    j[0] += dfac_dparams[0] * pix_kinv[0];
+    j[1] += dfac_dparams[0] * pix_kinv[1];
+
+    j[3] += dfac_dparams[1] * pix_kinv[0];
+    j[4] += dfac_dparams[1] * pix_kinv[1];
+
+    j[6] += dfac_dparams[2] * pix_kinv[0];
+    j[7] += dfac_dparams[2] * pix_kinv[1];
+
+    j[9] += dfac_dparams[3] * pix_kinv[0];
+    j[10] += dfac_dparams[3] * pix_kinv[1];
+
+    // Derivatives w.r.t. the w parameter do not need to go through the chain
+    // rule as they do not affect the multiplication by K^-1.
+    j[12] = pix_kinv[0] * dfac_inv;
+    j[13] = pix_kinv[1] * dfac_inv;
+    j[14] = 0;
   }
 
   template<typename T>
@@ -257,11 +432,28 @@ class FovCamera : public CameraInterface<Scalar> {
   }
 
   template<typename T>
+  static void dProject_dparams(const T* ray, const T* params, T* j) {
+    T pix[2];
+    CameraUtils::Dehomogenize(ray, pix);
+    // This derivative is simplified compared to the unproject derivative,
+    // as we first calculate the distortion parameter, then multiply by K.
+    // The derivatives are then a simple application of the chain rule.
+    T fac;
+    T d_fac = dFactor_dparam(CameraUtils::PixNorm(pix), params, &fac);
+    CameraUtils::dMultK_dparams(params, pix, j);
+    j[0] *= fac;
+    j[3] *= fac;
+    // Derivatives w.r.t. w:
+    j[8] = params[0] * pix[0] * d_fac;
+    j[9] = params[1] * pix[1] * d_fac;
+  }
+
+  template<typename T>
   static void dProject_dray(const T* ray, const T* params, T* j) {
     // De-homogenize and multiply by K.
     T pix[2];
     CameraUtils::Dehomogenize(ray, pix);
-    // Calculate the dehomogenization derivative.
+    // Calculte the dehomogenization derivative.
     T j_dehomog[6];
     CameraUtils::dDehomogenize_dray(ray, j_dehomog);
 
@@ -405,6 +597,20 @@ class Poly3Camera : public CameraInterface<Scalar> {
     j[3] = j_dehomog[3] * k11;
     j[4] = j_dehomog[4] * k00 + j_dehomog[5] * k01;
     j[5] = j_dehomog[4] * k10 + j_dehomog[5] * k11;
+  }
+
+  template<typename T>
+  static void dProject_dparams(const T* ray, const T* params, T* j) {
+    std::cerr << "dProjedt_dparams not defined for the poly3 model. "
+                 " Throwing exception." << std::endl;
+    throw 0;
+  }
+
+  template<typename T>
+  static void dUnproject_dparams(const T* pix, const T* params, T* j) {
+    std::cerr << "dUnproject_dparams not defined for the poly3 model. "
+                 " Throwing exception." << std::endl;
+    throw 0;
   }
 };
 }
