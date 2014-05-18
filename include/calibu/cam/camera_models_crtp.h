@@ -73,7 +73,7 @@ struct CameraUtils {
   }
 
   template<typename T>
-  static inline void dMultK_dparams(const T* params, const T* pix, T* j) {
+  static inline void dMultK_dparams(const T*, const T* pix, T* j) {
     j[0] = pix[0];    j[2] = 0;       j[4] = 1;   j[6] = 0;
     j[1] = 0;         j[3] = pix[1];  j[5] = 0;   j[7] = 1;
   }
@@ -600,14 +600,14 @@ class Poly3Camera : public CameraInterface<Scalar> {
   }
 
   template<typename T>
-  static void dProject_dparams(const T* ray, const T* params, T* j) {
+  static void dProject_dparams(const T*, const T*, T* ) {
     std::cerr << "dProjedt_dparams not defined for the poly3 model. "
                  " Throwing exception." << std::endl;
     throw 0;
   }
 
   template<typename T>
-  static void dUnproject_dparams(const T* pix, const T* params, T* j) {
+  static void dUnproject_dparams(const T*, const T*, T* ) {
     std::cerr << "dUnproject_dparams not defined for the poly3 model. "
                  " Throwing exception." << std::endl;
     throw 0;

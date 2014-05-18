@@ -125,6 +125,7 @@ namespace calibu
             range.ExcludeLessThan(ln[0]);
             range.ExcludeGreaterThan(rn[0]);
         }
+
         return range;
     }
 

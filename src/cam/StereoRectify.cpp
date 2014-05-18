@@ -82,8 +82,8 @@ calibu::CameraModelT<Pinhole> CreateScanlineRectifiedLookupAndCameras(
     
     // Setup new camera
     calibu::CameraModelT<Pinhole> new_cam(cam_left.Width(),cam_left.Height());
-    new_cam.Params() << fu, fv, u0, v0;    
-    
+    new_cam.Params() << fu, fv, u0, v0;
+ 
     // Homographies which should be applied to left and right images to scan-line rectify them
     const Eigen::Matrix3d Rl_nlKlinv = Rnl_l.transpose() * new_cam.Kinv();
     const Eigen::Matrix3d Rr_nrKlinv = R_lr.inverse().matrix() * Rnl_l.transpose() * new_cam.Kinv();
