@@ -23,6 +23,7 @@ set(HEADERS
   ${INC_DIR}/cam/ProjectionModel.h
   ${INC_DIR}/cam/ProjectionKannalaBrandt.h
   ${INC_DIR}/cam/Rectify.h
+  ${INC_DIR}/cam/rectify_crtp.h
   ${INC_DIR}/cam/StereoRectify.h
   ${INC_DIR}/conics/Conic.h
   ${INC_DIR}/conics/ConicFinder.h
@@ -53,6 +54,7 @@ set(SRC_DIR ${Calibu_SOURCE_DIR}/src)
 SET(SOURCES
   ${SRC_DIR}/cam/CameraXml.cpp
   ${SRC_DIR}/cam/Rectify.cpp
+  ${SRC_DIR}/cam/rectify_crtp.cpp
   ${SRC_DIR}/cam/StereoRectify.cpp
   ${SRC_DIR}/conics/Conic.cpp
   ${SRC_DIR}/conics/ConicFinder.cpp

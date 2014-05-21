@@ -117,7 +117,8 @@ class CameraInterface {
     return d_project_dparams + dtransfer3d_dray * dray_dparams;
   }
 
-  Scalar* GetParams() {
+  Scalar* GetParams() const
+  {
     return params_;
   }
 
@@ -126,9 +127,14 @@ class CameraInterface {
     return n_params_;
   }
 
-  const Eigen::Vector2i& ImageSize() const
+  unsigned int Width() const
   {
-    return image_size_;
+    return image_size_[0];
+  }
+
+  unsigned int Height() const
+  {
+    return image_size_[1];
   }
 
  protected:
@@ -158,7 +164,7 @@ class CameraInterface {
   // Is the parameter list memory managed by us or externally?
   bool owns_memory_;
 
-  Eigen::Vector2i image_size_;
+  Eigen::Vector2i image_size_; // GTS: why imagesize? is width first element or height?  why not just width and height?
 };
 
 template<typename Scalar = double>
