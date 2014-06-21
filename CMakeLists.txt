@@ -42,7 +42,7 @@ export_package(Calibu
   )
 
 if( BUILD_APPLICATIONS )
-  set(Calibu_DIR ${Calibu_BINARY_DIR}/src)
+  set(Calibu_DIR ${Calibu_BINARY_DIR})
   add_subdirectory( applications )
   add_subdirectory( examples )
 endif()
