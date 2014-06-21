@@ -65,4 +65,8 @@ std::pair<Eigen::Vector3d,Eigen::Matrix3d > PlaneFromConics(
 CALIBU_EXPORT
 Conic UnmapConic( const Conic& c, const CameraModelInterface& cam );
 
+/** Returns the major and minor axes lengths of the conic */
+CALIBU_EXPORT
+Eigen::Vector2d GetAxesLengths(const Conic& c);
+
 }
