@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include <memory>
 
 #include <pangolin/pangolin.h>
