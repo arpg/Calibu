@@ -2,6 +2,8 @@
 find_package( Calibu 0.1 REQUIRED )
 include_directories( ${Calibu_INCLUDE_DIRS} )
 
+find_package( PbMsgs )
+
 # git://github.com/stevenlovegrove/Pangolin.git
 find_package( Pangolin 0.1 QUIET )
 include_directories( ${Pangolin_INCLUDE_DIRS} )
@@ -25,6 +27,7 @@ if(BUILD_CALIBGRID_HAL AND Pangolin_FOUND AND Ceres_FOUND AND HAL_FOUND )
     target_link_libraries( calibgrid-hal ${Calibu_LIBRARIES} )
     target_link_libraries( calibgrid-hal ${HAL_LIBRARIES} )
     target_link_libraries( calibgrid-hal ${CVARS_LIBRARY} )
+    target_link_libraries( calibgrid-hal ${PbMsgs_LIBRARY} )
 
     install(TARGETS calibgrid-hal
         EXPORT CalibuTargets
