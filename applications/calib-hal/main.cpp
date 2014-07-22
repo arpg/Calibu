@@ -119,20 +119,27 @@ int main( int argc, char** argv)
 
     hal::Camera  cam = hal::Camera( cl.follow( video_uri.c_str(), "-video_url" ) );
 
-    // Vector of images (that will point into buffer)
-    std::vector<pangolin::Image<unsigned char> > images;
-
     // For the moment, assume all N cameras have same resolution
     const size_t N = cam.NumChannels();
     const size_t w = cam.Width();
     const size_t h = cam.Height();
 
+    std::shared_ptr<pb::ImageArray> imageArray = pb::ImageArray::Create();
+    cam.Capture(*imageArray);
+
     std::vector<cv::Mat> vImages;
-    cam.Capture( vImages );
-    for( const cv::Mat& im : vImages ){
+    std::vector<long int> vSerialNos;
+    vImages.reserve(imageArray->Size());
+    vSerialNos.reserve(imageArray->Size());
+    for( int i = 0; i < imageArray->Size(); ++i ){
+        pb::Image& image = *(*imageArray)[i];
+        cv::Mat im = image.Mat();
         if( im.type() != CV_8UC1 ){
            std::cerr << "Input channels must be GRAY8 format. Use "
-               "Convert:[fmt=GRAY8]// video scheme." << std::endl;
+               "Convert:[fmt=MONO8]// video scheme." << std::endl;
+        } else {
+            vImages.emplace_back(im);
+            vSerialNos.emplace_back(image.SerialNumber());
         }
     }
 
@@ -233,6 +240,7 @@ int main( int argc, char** argv)
         const int w_i = cam.Width();
         const int h_i = cam.Height();
         if(i < input_cameras.size() ) {
+            input_cameras[i].camera.SetSerialNumber(vSerialNos[i]);
             calib_cams[i] = calibrator.AddCamera(
                         input_cameras[i].camera, input_cameras[i].T_ck
                         );
@@ -240,6 +248,7 @@ int main( int argc, char** argv)
             // Generic starting set of parameters.
             CameraModelT<Fov> starting_cam(w_i, h_i);
             starting_cam.Params()  << 300, 300, w_i/2.0, h_i/2.0, 0.2;
+            starting_cam.SetSerialNumber(vSerialNos[i]);
 
             calib_cams[i] = calibrator.AddCamera(
                         CameraModel(starting_cam),
