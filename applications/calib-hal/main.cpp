@@ -31,9 +31,13 @@ const char* sUriInfo =
 "\t-grid-seed <value>     Random seed used when creating grid (=71)\n"
 "\t-fix-intrinsics,-f     Fix camera intrinsics during optimisation.\n"
 "\t-paused,-p             Start video paused.\n"
+"\t-grid-rows <value>     Number of rows in the grid pattern.\n"
+"\t-grid-cols <value>     Number of cols in the grid pattern.\n"
 
 "e.g.:\n"
-"\tcalibgrid -c leftcam.xml -c rightcaml.xml video_uri\n\n"
+"\tcalibgrid-hal -c leftcam.xml -c rightcaml.xml video_uri\n"
+"\tcalibgrid-hal -grid-spacing 0.03156 -grid-rows 36 -grid-cols 25 video_uri (large grid)\n"
+"\tcalibgrid-hal -grid-spacing 0.01411 -grid-rows 10 -grid-cols 19 video_uri (default)\n\n"
 "Video URI's take the following form:\n"
 " scheme:[param1=value1,param2=value2,...]//device\n"
 "\n"
@@ -70,7 +74,8 @@ const char* sUriInfo =
 "log - run google protobuf data log from HAL (see https://github.com/gwu-robotics):\n"
 " e.g. \"log://~/Data/calib.log\"\n\n";
 
-
+static inline Eigen::MatrixXi GWUSmallGrid();
+static inline Eigen::MatrixXi GoogleLargeGrid();
 
 int main( int argc, char** argv)
 {
@@ -89,7 +94,8 @@ int main( int argc, char** argv)
 
     // Default grid printed on US Letter
     double grid_spacing = 0.254 / (19-1);
-    const Eigen::Vector2i grid_size(19,10);
+    int grid_rows = 10;
+    int grid_cols = 19;
     uint32_t grid_seed = 71;
 
     // Use no input cameras by default
@@ -135,9 +141,12 @@ int main( int argc, char** argv)
 
     grid_spacing = cl.follow(grid_spacing,"-grid-spacing");
     grid_seed = cl.follow((int)grid_seed,"-grid-seed");
+    grid_cols = cl.follow((int)grid_cols,"-grid-cols");
+    grid_rows = cl.follow((int)grid_rows,"-grid-rows");
     fix_intrinsics = cl.search(2, "-fix-intrinsics", "-f");
     start_paused = cl.search(2, "-paused", "-p");
     output_filename = cl.follow(output_filename.c_str(), 2, "-output", "-o");
+    const Eigen::Vector2i grid_size(grid_cols, grid_rows);
 
     // Load camera hints from command line
     cl.disable_loop();
@@ -199,7 +208,15 @@ int main( int argc, char** argv)
     conic_finder.Params().conic_min_density = 0.6;
     conic_finder.Params().conic_min_aspect = 0.2;
 
-    TargetGridDot target(grid_spacing, grid_size, grid_seed);
+    std::unique_ptr<TargetGridDot> target;
+    if(grid_seed == 71 && grid_size(0) == 25 && grid_size(1) == 36)
+        // known large pattern
+        target.reset(new TargetGridDot(grid_spacing, GoogleLargeGrid()));
+    else if(grid_seed == 71 && grid_size(0) == 19 && grid_size(1) == 10)
+        // known small pattern
+        target.reset(new TargetGridDot(grid_spacing, GWUSmallGrid()));
+    else
+        target.reset(new TargetGridDot(grid_spacing, grid_size, grid_seed));
 
     ////////////////////////////////////////////////////////////////////
     // Initialize Calibration object and tracking params
@@ -337,7 +354,7 @@ int main( int argc, char** argv)
                 conic_finder.Conics();
             std::vector<int> ellipse_target_map;
 
-            tracking_good[iI] = target.FindTarget(
+            tracking_good[iI] = target->FindTarget(
                         image_processing, conic_finder.Conics(),
                         ellipse_target_map
                         );
@@ -352,7 +369,7 @@ int main( int argc, char** argv)
 
                 // find camera pose given intrinsics
                 PosePnPRansac(
-                    calibrator.GetCamera(iI).camera, ellipses, target.Circles3D(),
+                    calibrator.GetCamera(iI).camera, ellipses, target->Circles3D(),
                     ellipse_target_map,
                     0, 0, &T_hw[iI]
                 );
@@ -365,7 +382,7 @@ int main( int argc, char** argv)
 
                     for(size_t p=0; p < ellipses.size(); ++p) {
                         const Eigen::Vector2d pc = ellipses[p];
-                        const Eigen::Vector2i pg = target.Map()[p].pg;
+                        const Eigen::Vector2i pg = target->Map()[p].pg;
 
                         if( 0<= pg(0) && pg(0) < grid_size(0) &&  0<= pg(1) && pg(1) < grid_size(1) )
                         {
@@ -398,7 +415,7 @@ int main( int argc, char** argv)
                 glMatrixMode(GL_MODELVIEW);
 
                 if(disp_lines) {
-                    for(std::list<LineGroup>::const_iterator i = target.LineGroups().begin(); i != target.LineGroups().end(); ++i)
+                    for(std::list<LineGroup>::const_iterator i = target->LineGroups().begin(); i != target->LineGroups().end(); ++i)
                     {
                         glColor3f(0.5,0.5,0.5);
                         glBegin(GL_LINE_STRIP);
@@ -414,14 +431,14 @@ int main( int argc, char** argv)
                 if(disp_cross) {
                     for( size_t i=0; i < conics.size(); ++i ) {
                         const Eigen::Vector2d pc = conics[i].center;
-                        pangolin::glColorBin( target.Map()[i].value, 2);
+                        pangolin::glColorBin( target->Map()[i].value, 2);
                         pangolin::glDrawCross(pc, conics[i].bbox.Width()*0.75 );
                     }
                 }
 
                 if(disp_bbox) {
                     for( size_t i=0; i < conics.size(); ++i ) {
-                        const Eigen::Vector2i pg = tracking_good[iI] ? target.Map()[i].pg : Eigen::Vector2i(0,0);
+                        const Eigen::Vector2i pg = tracking_good[iI] ? target->Map()[i].pg : Eigen::Vector2i(0,0);
                         if( 0<= pg(0) && pg(0) < grid_size(0) &&  0<= pg(1) && pg(1) < grid_size(1) ) {
                             pangolin::glColorBin(pg(1)*grid_size(0)+pg(0), grid_size(0)*grid_size(1));
                             glDrawRectPerimeter(conics[i].bbox);
@@ -434,7 +451,7 @@ int main( int argc, char** argv)
         if(v3D.IsShown()) {
             v3D.ActivateScissorAndClear(stacks);
 
-            calibu::glDrawTarget(target, Eigen::Vector2d(0,0), 1.0, 0.8, 1.0);
+            calibu::glDrawTarget(*target, Eigen::Vector2d(0,0), 1.0, 0.8, 1.0);
 
             for(size_t c=0; c< calibrator.NumCameras(); ++c) {
                 const Eigen::Matrix3d Kinv = calibrator.GetCamera(c).camera.Kinv();
@@ -467,4 +484,63 @@ int main( int argc, char** argv)
     calibrator.PrintResults();
     calibrator.WriteCameraModels(output_filename);
 
+}
+
+inline Eigen::MatrixXi GWUSmallGrid() {
+  Eigen::MatrixXi m(10, 19);
+  m <<
+      0, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 0,
+      1, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1,
+      0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0,
+      1, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0,
+      0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 0, 0, 0, 1,
+      0, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 0,
+      1, 1, 0, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1,
+      0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1, 1, 0,
+      0, 1, 0, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0,
+      0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 0;
+  return m;
+}
+
+// Large google pattern
+inline Eigen::MatrixXi GoogleLargeGrid() {
+  Eigen::MatrixXi m(36, 25);
+  m <<
+      0, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 0,
+      0, 1, 1, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1,
+      1, 0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0,
+      0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0,
+      1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 1, 0, 0,
+      0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1,
+      1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1,
+      0, 1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0, 0,
+      1, 1, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0,
+      1, 1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 0, 1, 1, 0, 1,
+      0, 0, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1,
+      1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 1,
+      0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 1, 1, 0, 0,
+      1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 0,
+      0, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1,
+      1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0,
+      1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1, 1,
+      1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1,
+      0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1,
+      1, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1,
+      0, 0, 0, 0, 0, 1, 0, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0,
+      0, 1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1, 1,
+      0, 0, 1, 0, 0, 1, 0, 1, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1,
+      1, 1, 0, 1, 0, 1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1,
+      1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 1, 0, 1,
+      0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0,
+      1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0,
+      1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0,
+      0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 1, 1,
+      1, 1, 1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 1, 1, 1, 0,
+      1, 0, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1, 0, 0,
+      0, 1, 1, 1, 0, 1, 0, 0, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1,
+      1, 1, 1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 0, 1,
+      1, 1, 0, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0,
+      0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0,
+      0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0;
+  return m;
 }
