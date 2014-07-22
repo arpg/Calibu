@@ -35,7 +35,9 @@ const char* sUriInfo =
 "\t-grid-cols <value>     Number of cols in the grid pattern.\n"
 
 "e.g.:\n"
-"\tcalibgrid -c leftcam.xml -c rightcaml.xml video_uri\n\n"
+"\tcalibgrid-hal -c leftcam.xml -c rightcaml.xml video_uri\n"
+"\tcalibgrid-hal -grid-spacing 0.03156 -grid-rows 36 -grid-cols 25 video_uri (large grid)\n"
+"\tcalibgrid-hal -grid-spacing 0.01411 -grid-rows 10 -grid-cols 19 video_uri (default)\n\n"
 "Video URI's take the following form:\n"
 " scheme:[param1=value1,param2=value2,...]//device\n"
 "\n"
@@ -95,12 +97,6 @@ int main( int argc, char** argv)
     int grid_rows = 10;
     int grid_cols = 19;
     uint32_t grid_seed = 71;
-
-    // defaults for large A0 grid
-    //double grid_spacing = 0.03156;
-    //int grid_rows = 36;
-    //int grid_cols = 25;
-    //uint32_t grid_seed = 71;
 
     // Use no input cameras by default
     std::vector<calibu::CameraAndPose > input_cameras;
