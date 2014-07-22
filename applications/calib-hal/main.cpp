@@ -213,10 +213,10 @@ int main( int argc, char** argv)
     conic_finder.Params().conic_min_aspect = 0.2;
 
     std::unique_ptr<TargetGridDot> target;
-    if(grid_seed == 71 && grid_size[0] == 25 && grid_size[1] == 36)
+    if(grid_seed == 71 && grid_size(0) == 25 && grid_size(1) == 36)
         // known large pattern
         target.reset(new TargetGridDot(grid_spacing, GoogleLargeGrid()));
-    else if(grid_seed == 71 && grid_size[0] == 19 && grid_size[1] == 10)
+    else if(grid_seed == 71 && grid_size(0) == 19 && grid_size(1) == 10)
         // known small pattern
         target.reset(new TargetGridDot(grid_spacing, GWUSmallGrid()));
     else
