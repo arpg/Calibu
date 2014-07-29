@@ -129,40 +129,38 @@ struct CameraUtils {
  */
 #define CAMERA_MODEL_IMPL(CameraT, n_params)                            \
   static constexpr int kParamSize = n_params;                           \
-  CameraT(Scalar* params,                                               \
-          const Eigen::Vector2i& image_size,                            \
-          bool owns_memory) :                                           \
-      CameraInterface<Scalar>(params, kParamSize, image_size,           \
-                              owns_memory) {                            \
+  CameraT(const Eigen::VectorXd& params,                                \
+          const Eigen::Vector2i& image_size) :                          \
+      CameraInterface<Scalar>(params, image_size) {                     \
   }                                                                     \
   Vec3t<Scalar> Unproject(const Vec2t<Scalar>& pix) const override {    \
     Vec3t<Scalar> ray;                                                  \
-    Unproject(pix.data(), this->params_, ray.data());                   \
+    Unproject(pix.data(), this->params_.data(), ray.data());            \
     return ray;                                                         \
   }                                                                     \
   Vec2t<Scalar> Project(const Vec3t<Scalar>& ray) const override {      \
     Vec2t<Scalar> pix;                                                  \
-    Project(ray.data(), this->params_, pix.data());                     \
+    Project(ray.data(), this->params_.data(), pix.data());              \
     return pix;                                                         \
   }                                                                     \
   Eigen::Matrix<Scalar, 2, Eigen::Dynamic> dProject_dparams(            \
       const Vec3t<Scalar>& ray) const override                          \
   {                                                                     \
-    Eigen::Matrix<Scalar, 2, kParamSize> j;                         \
-    dProject_dparams(ray.data(), this->params_, j.data());              \
+    Eigen::Matrix<Scalar, 2, kParamSize> j;                             \
+    dProject_dparams(ray.data(), this->params_.data(), j.data());       \
     return j;                                                           \
   }                                                                     \
   Eigen::Matrix<Scalar, 3, Eigen::Dynamic> dUnproject_dparams(          \
       const Vec2t<Scalar>& pix) const override                          \
   {                                                                     \
-    Eigen::Matrix<Scalar, 3, kParamSize> j;                         \
-    dUnproject_dparams(pix.data(), this->params_, j.data());            \
+    Eigen::Matrix<Scalar, 3, kParamSize> j;                             \
+    dUnproject_dparams(pix.data(), this->params_.data(), j.data());     \
     return j;                                                           \
   }                                                                     \
   Eigen::Matrix<Scalar, 2, 3>                                           \
   dProject_dray(const Vec3t<Scalar>& ray) const override {              \
     Eigen::Matrix<Scalar, 2, 3> j;                                      \
-    dProject_dray(ray.data(), this->params_, j.data());                 \
+    dProject_dray(ray.data(), this->params_.data(), j.data());          \
     return j;                                                           \
   }
 

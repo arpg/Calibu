@@ -34,14 +34,10 @@ template<typename Scalar = double>
 class CameraInterface {
  public:
   CameraInterface(const CameraInterface<Scalar>& other) :
-      n_params_(other.n_params_), owns_memory_(other.owns_memory_) {
-    CopyParams(other.params_);
-  }
+    params_(other.params_)
+  {}
 
   virtual ~CameraInterface() {
-    if (owns_memory_) {
-      delete[] params_;
-    }
   }
 
   /** Unproject an image location into world coordinates */
@@ -117,14 +113,18 @@ class CameraInterface {
     return d_project_dparams + dtransfer3d_dray * dray_dparams;
   }
 
-  Scalar* GetParams() const
+  const Eigen::VectorXd& GetParams() const
   {
     return params_;
   }
 
+  void SetParams(const Eigen::VectorXd& new_params) {
+    params_ = new_params;
+  }
+
   uint32_t NumParams() const
   {
-    return n_params_;
+    return params_.rows();
   }
 
   unsigned int Width() const
@@ -138,31 +138,23 @@ class CameraInterface {
   }
 
  protected:
-  CameraInterface(Scalar* params_in, int n_params,
-                  const Eigen::Vector2i& image_size,
-                  bool owns_memory)
-      : n_params_(n_params), owns_memory_(owns_memory) {
-    image_size_ = image_size;
-    CopyParams(params_in);
+  CameraInterface(const Eigen::VectorXd& params_in,
+                  const Eigen::Vector2i& image_size)
+      : image_size_(image_size), params_(params_in) {
+    // CopyParams(params_in);
   }
 
-  void CopyParams(Scalar* params) {
-    if (owns_memory_) {
-      params_ = new Scalar[n_params_];
-      memcpy(params_, params, sizeof(Scalar) * n_params_);
-    } else {
-      params_ = params;
-    }
-  }
+//  void CopyParams(Scalar* params) {
+//    if (owns_memory_) {
+//      params_ = new Scalar[n_params_];
+//      memcpy(params_, params, sizeof(Scalar) * n_params_);
+//    } else {
+//      params_ = params;
+//    }
+//  }
 
   // All the camera parameters (fu, fv, u0, v0, ...distortion)
-  Scalar* params_;
-
-  // Length of parameter array (including distortion parameters)
-  uint32_t n_params_;
-
-  // Is the parameter list memory managed by us or externally?
-  bool owns_memory_;
+  Eigen::VectorXd params_;
 
   Eigen::Vector2i image_size_; // GTS: why imagesize? is width first element or height?  why not just width and height?
 };
