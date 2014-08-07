@@ -118,6 +118,11 @@ class CameraInterface {
     return params_;
   }
 
+  Eigen::VectorXd& GetParams()
+  {
+    return params_;
+  }
+
   void SetParams(const Eigen::VectorXd& new_params) {
     params_ = new_params;
   }
