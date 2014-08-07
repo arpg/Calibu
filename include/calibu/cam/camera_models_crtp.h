@@ -53,7 +53,7 @@ struct CameraUtils {
   static inline void Homogenize(const T* pix, T* ray_homogenized) {
     ray_homogenized[0] = pix[0];
     ray_homogenized[1] = pix[1];
-    ray_homogenized[2] = 1.0;
+    ray_homogenized[2] = (T)1.0;
   }
 
   /**
