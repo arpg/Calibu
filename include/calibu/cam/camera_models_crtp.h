@@ -53,7 +53,7 @@ struct CameraUtils {
   static inline void Homogenize(const T* pix, T* ray_homogenized) {
     ray_homogenized[0] = pix[0];
     ray_homogenized[1] = pix[1];
-    ray_homogenized[2] = 1.0;
+    ray_homogenized[2] = (T)1.0;
   }
 
   /**
@@ -129,40 +129,38 @@ struct CameraUtils {
  */
 #define CAMERA_MODEL_IMPL(CameraT, n_params)                            \
   static constexpr int kParamSize = n_params;                           \
-  CameraT(Scalar* params,                                               \
-          const Eigen::Vector2i& image_size,                            \
-          bool owns_memory) :                                           \
-      CameraInterface<Scalar>(params, kParamSize, image_size,           \
-                              owns_memory) {                            \
+  CameraT(const Eigen::VectorXd& params,                                \
+          const Eigen::Vector2i& image_size) :                          \
+      CameraInterface<Scalar>(params, image_size) {                     \
   }                                                                     \
   Vec3t<Scalar> Unproject(const Vec2t<Scalar>& pix) const override {    \
     Vec3t<Scalar> ray;                                                  \
-    Unproject(pix.data(), this->params_, ray.data());                   \
+    Unproject(pix.data(), this->params_.data(), ray.data());            \
     return ray;                                                         \
   }                                                                     \
   Vec2t<Scalar> Project(const Vec3t<Scalar>& ray) const override {      \
     Vec2t<Scalar> pix;                                                  \
-    Project(ray.data(), this->params_, pix.data());                     \
+    Project(ray.data(), this->params_.data(), pix.data());              \
     return pix;                                                         \
   }                                                                     \
   Eigen::Matrix<Scalar, 2, Eigen::Dynamic> dProject_dparams(            \
       const Vec3t<Scalar>& ray) const override                          \
   {                                                                     \
-    Eigen::Matrix<Scalar, 2, kParamSize> j;                         \
-    dProject_dparams(ray.data(), this->params_, j.data());              \
+    Eigen::Matrix<Scalar, 2, kParamSize> j;                             \
+    dProject_dparams(ray.data(), this->params_.data(), j.data());       \
     return j;                                                           \
   }                                                                     \
   Eigen::Matrix<Scalar, 3, Eigen::Dynamic> dUnproject_dparams(          \
       const Vec2t<Scalar>& pix) const override                          \
   {                                                                     \
-    Eigen::Matrix<Scalar, 3, kParamSize> j;                         \
-    dUnproject_dparams(pix.data(), this->params_, j.data());            \
+    Eigen::Matrix<Scalar, 3, kParamSize> j;                             \
+    dUnproject_dparams(pix.data(), this->params_.data(), j.data());     \
     return j;                                                           \
   }                                                                     \
   Eigen::Matrix<Scalar, 2, 3>                                           \
   dProject_dray(const Vec3t<Scalar>& ray) const override {              \
     Eigen::Matrix<Scalar, 2, 3> j;                                      \
-    dProject_dray(ray.data(), this->params_, j.data());                 \
+    dProject_dray(ray.data(), this->params_.data(), j.data());          \
     return j;                                                           \
   }
 
@@ -217,21 +215,19 @@ class LinearCamera : public CameraInterface<Scalar> {
   }
 };
 
+constexpr double kFovCamDistEps = 1e-5;
 template<typename Scalar = double>
 class FovCamera : public CameraInterface<Scalar> {
  public:
-  static constexpr double kCamDistEps = 1e-5;
-  static constexpr double kMaxRad = 2.0;
-  static constexpr uint32_t kMaxRadIncrements = 2000;
   CAMERA_MODEL_IMPL(FovCamera, 5);
 
   // For these derivatives, refer to the camera_derivatives.m matlab file.
   template<typename T>
   inline static T Factor(const T rad, const T* params) {
     const T param = params[4];
-    if (param * param > kCamDistEps) {
+    if (param * param > (T)kFovCamDistEps) {
       const T mul2_tanw_by2 = (T)2.0 * tan(param / (T)2.0);
-      if (rad * rad < kCamDistEps) {
+      if (rad * rad < (T)kFovCamDistEps) {
         // limit r->0
         return mul2_tanw_by2 / param;
       }
@@ -244,10 +240,10 @@ class FovCamera : public CameraInterface<Scalar> {
   template<typename T>
   inline static T dFactor_dparam(const T rad, const T* params, T* fac) {
     const T param = params[4];
-    if (param * param > kCamDistEps) {
+    if (param * param > kFovCamDistEps) {
       const T tanw_by2 = tan(param / (T)2.0);
       const T mul2_tanw_by2 = (T)2.0 * tanw_by2;
-      if (rad * rad < kCamDistEps) {
+      if (rad * rad < kFovCamDistEps) {
         // limit r->0
         *fac = mul2_tanw_by2 / param;
         return ((T)2 * ((tanw_by2 * tanw_by2) / (T)2 + (T)0.5)) / param -
@@ -269,14 +265,14 @@ class FovCamera : public CameraInterface<Scalar> {
   template<typename T>
   inline static T dFactor_drad(const T rad, const T* params, T* fac) {
     const T param = params[4];
-    if(param * param < kCamDistEps) {
+    if(param * param < kFovCamDistEps) {
       *fac = (T)1;
       return (T)0;
     }else{
       const T tan_wby2 = tan(param / (T)2.0);
       const T mul2_tanw_by2 = (T)2.0 * tan_wby2;
 
-      if(rad * rad < kCamDistEps) {
+      if(rad * rad < kFovCamDistEps) {
         *fac = mul2_tanw_by2 / param;
         return (T)0;
       }else{
@@ -295,11 +291,11 @@ class FovCamera : public CameraInterface<Scalar> {
   template<typename T>
   inline static T Factor_inv(const T rad, const T* params) {
     const T param = params[4];
-    if(param * param > kCamDistEps) {
+    if(param * param > kFovCamDistEps) {
       const T w_by2 = param / (T)2.0;
       const T mul_2tanw_by2 = tan(w_by2) * (T)2.0;
 
-      if(rad * rad < kCamDistEps) {
+      if(rad * rad < kFovCamDistEps) {
         // limit r->0
         return param / mul_2tanw_by2;
       }
@@ -312,9 +308,9 @@ class FovCamera : public CameraInterface<Scalar> {
   template<typename T>
   inline static T dFactor_inv_dparam(const T rad, const T* params) {
     const T param = params[4];
-    if(param * param > kCamDistEps) {
+    if(param * param > kFovCamDistEps) {
       const T tan_wby2 = tan(param / (T)2.0);
-      if(rad * rad < kCamDistEps) {
+      if(rad * rad < kFovCamDistEps) {
         return (T)1.0 / ((T)2 * tan_wby2) -
             (param * (tan_wby2 * tan_wby2 / (T)2.0 + (T)0.5)) /
             ((T)2.0 * tan_wby2 * tan_wby2);
@@ -332,11 +328,11 @@ class FovCamera : public CameraInterface<Scalar> {
   template<typename T>
   inline static T dFactor_inv_drad(const T rad, const T* params, T* fac) {
     const T param = params[4];
-    if(param * param > kCamDistEps) {
+    if(param * param > kFovCamDistEps) {
       const T w_by2 = param / (T)2.0;
       const T tan_w_by2 = tan(w_by2);
       const T mul_2tanw_by2 = tan_w_by2 * (T)2.0;
-      if(rad * rad < kCamDistEps) {
+      if(rad * rad < kFovCamDistEps) {
         *fac = param / tan_w_by2;
         return (T)0;
       }
@@ -481,6 +477,7 @@ class FovCamera : public CameraInterface<Scalar> {
     j[5] = j_dehomog[4] * k10 + j_dehomog[5] * k11;
   }
 };
+
 
 /** A third degree polynomial distortion model */
 template<typename Scalar = double>
