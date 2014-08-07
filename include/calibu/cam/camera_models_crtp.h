@@ -477,6 +477,8 @@ class FovCamera : public CameraInterface<Scalar> {
     j[5] = j_dehomog[4] * k10 + j_dehomog[5] * k11;
   }
 };
+// Unpoluate.
+#undef FOV_CAM_DIST_EPS
 
 /** A third degree polynomial distortion model */
 template<typename Scalar = double>
