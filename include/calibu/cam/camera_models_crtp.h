@@ -215,7 +215,7 @@ class LinearCamera : public CameraInterface<Scalar> {
   }
 };
 
-#define FOV_CAM_DIST_EPS 1e-5
+constexpr double kFovCamDistEps = 1e-5;
 template<typename Scalar = double>
 class FovCamera : public CameraInterface<Scalar> {
  public:
@@ -225,9 +225,9 @@ class FovCamera : public CameraInterface<Scalar> {
   template<typename T>
   inline static T Factor(const T rad, const T* params) {
     const T param = params[4];
-    if (param * param > (T)FOV_CAM_DIST_EPS) {
+    if (param * param > (T)kFovCamDistEps) {
       const T mul2_tanw_by2 = (T)2.0 * tan(param / (T)2.0);
-      if (rad * rad < (T)FOV_CAM_DIST_EPS) {
+      if (rad * rad < (T)kFovCamDistEps) {
         // limit r->0
         return mul2_tanw_by2 / param;
       }
@@ -240,10 +240,10 @@ class FovCamera : public CameraInterface<Scalar> {
   template<typename T>
   inline static T dFactor_dparam(const T rad, const T* params, T* fac) {
     const T param = params[4];
-    if (param * param > FOV_CAM_DIST_EPS) {
+    if (param * param > kFovCamDistEps) {
       const T tanw_by2 = tan(param / (T)2.0);
       const T mul2_tanw_by2 = (T)2.0 * tanw_by2;
-      if (rad * rad < FOV_CAM_DIST_EPS) {
+      if (rad * rad < kFovCamDistEps) {
         // limit r->0
         *fac = mul2_tanw_by2 / param;
         return ((T)2 * ((tanw_by2 * tanw_by2) / (T)2 + (T)0.5)) / param -
@@ -265,14 +265,14 @@ class FovCamera : public CameraInterface<Scalar> {
   template<typename T>
   inline static T dFactor_drad(const T rad, const T* params, T* fac) {
     const T param = params[4];
-    if(param * param < FOV_CAM_DIST_EPS) {
+    if(param * param < kFovCamDistEps) {
       *fac = (T)1;
       return (T)0;
     }else{
       const T tan_wby2 = tan(param / (T)2.0);
       const T mul2_tanw_by2 = (T)2.0 * tan_wby2;
 
-      if(rad * rad < FOV_CAM_DIST_EPS) {
+      if(rad * rad < kFovCamDistEps) {
         *fac = mul2_tanw_by2 / param;
         return (T)0;
       }else{
@@ -291,11 +291,11 @@ class FovCamera : public CameraInterface<Scalar> {
   template<typename T>
   inline static T Factor_inv(const T rad, const T* params) {
     const T param = params[4];
-    if(param * param > FOV_CAM_DIST_EPS) {
+    if(param * param > kFovCamDistEps) {
       const T w_by2 = param / (T)2.0;
       const T mul_2tanw_by2 = tan(w_by2) * (T)2.0;
 
-      if(rad * rad < FOV_CAM_DIST_EPS) {
+      if(rad * rad < kFovCamDistEps) {
         // limit r->0
         return param / mul_2tanw_by2;
       }
@@ -308,9 +308,9 @@ class FovCamera : public CameraInterface<Scalar> {
   template<typename T>
   inline static T dFactor_inv_dparam(const T rad, const T* params) {
     const T param = params[4];
-    if(param * param > FOV_CAM_DIST_EPS) {
+    if(param * param > kFovCamDistEps) {
       const T tan_wby2 = tan(param / (T)2.0);
-      if(rad * rad < FOV_CAM_DIST_EPS) {
+      if(rad * rad < kFovCamDistEps) {
         return (T)1.0 / ((T)2 * tan_wby2) -
             (param * (tan_wby2 * tan_wby2 / (T)2.0 + (T)0.5)) /
             ((T)2.0 * tan_wby2 * tan_wby2);
@@ -328,11 +328,11 @@ class FovCamera : public CameraInterface<Scalar> {
   template<typename T>
   inline static T dFactor_inv_drad(const T rad, const T* params, T* fac) {
     const T param = params[4];
-    if(param * param > FOV_CAM_DIST_EPS) {
+    if(param * param > kFovCamDistEps) {
       const T w_by2 = param / (T)2.0;
       const T tan_w_by2 = tan(w_by2);
       const T mul_2tanw_by2 = tan_w_by2 * (T)2.0;
-      if(rad * rad < FOV_CAM_DIST_EPS) {
+      if(rad * rad < kFovCamDistEps) {
         *fac = param / tan_w_by2;
         return (T)0;
       }
@@ -477,8 +477,7 @@ class FovCamera : public CameraInterface<Scalar> {
     j[5] = j_dehomog[4] * k10 + j_dehomog[5] * k11;
   }
 };
-// Unpoluate.
-#undef FOV_CAM_DIST_EPS
+
 
 /** A third degree polynomial distortion model */
 template<typename Scalar = double>
