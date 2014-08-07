@@ -113,13 +113,11 @@ class CameraInterface {
     return d_project_dparams + dtransfer3d_dray * dray_dparams;
   }
 
-  const Eigen::VectorXd& GetParams() const
-  {
+  const Eigen::VectorXd& GetParams() const {
     return params_;
   }
 
-  Eigen::VectorXd& GetParams()
-  {
+  Eigen::VectorXd& GetParams() {
     return params_;
   }
 
@@ -127,18 +125,15 @@ class CameraInterface {
     params_ = new_params;
   }
 
-  uint32_t NumParams() const
-  {
+  uint32_t NumParams() const {
     return params_.rows();
   }
 
-  unsigned int Width() const
-  {
+  unsigned int Width() const {
     return image_size_[0];
   }
 
-  unsigned int Height() const
-  {
+  unsigned int Height() const {
     return image_size_[1];
   }
 
@@ -146,22 +141,12 @@ class CameraInterface {
   CameraInterface(const Eigen::VectorXd& params_in,
                   const Eigen::Vector2i& image_size)
       : image_size_(image_size), params_(params_in) {
-    // CopyParams(params_in);
   }
-
-//  void CopyParams(Scalar* params) {
-//    if (owns_memory_) {
-//      params_ = new Scalar[n_params_];
-//      memcpy(params_, params, sizeof(Scalar) * n_params_);
-//    } else {
-//      params_ = params;
-//    }
-//  }
 
   // All the camera parameters (fu, fv, u0, v0, ...distortion)
   Eigen::VectorXd params_;
 
-  Eigen::Vector2i image_size_; // GTS: why imagesize? is width first element or height?  why not just width and height?
+  Eigen::Vector2i image_size_;
 };
 
 template<typename Scalar = double>
@@ -172,8 +157,7 @@ class Rig {
     t_wc_.push_back(t_wc);
   }
 
-  void Clear()
-  {
+  void Clear() {
     for (CameraInterface<Scalar>* ptr : cameras_) {
       delete ptr;
     }
@@ -181,8 +165,7 @@ class Rig {
     t_wc_.clear();
   }
 
-  ~Rig()
-  {
+  ~Rig() {
     Clear();
   }
 
