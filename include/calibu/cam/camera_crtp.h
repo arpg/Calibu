@@ -24,37 +24,34 @@
 #include <sophus/se3.hpp>
 
 namespace calibu {
-template<typename Scalar> using Vec2t = Eigen::Matrix<Scalar, 2, 1>;
-template<typename Scalar> using Vec3t = Eigen::Matrix<Scalar, 3, 1>;
-template<typename Scalar> using VecXt =
-    Eigen::Matrix<Scalar, Eigen::Dynamic, 1>;
-template<typename Scalar> using SE3t = Sophus::SE3Group<Scalar>;
-
 template<typename Scalar = double>
 class CameraInterface {
+ protected:
+  typedef Eigen::Matrix<Scalar, 2, 1> Vec2t;
+  typedef Eigen::Matrix<Scalar, 3, 1> Vec3t;
+  typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> VecXt;
+  typedef Sophus::SE3Group<Scalar> SE3t;
+
  public:
   CameraInterface(const CameraInterface<Scalar>& other) :
-    params_(other.params_)
-  {}
-
-  virtual ~CameraInterface() {
-  }
+      image_size_(Eigen::Vector2i::Zero()), params_(other.params_) {}
+  virtual ~CameraInterface() {}
 
   /** Unproject an image location into world coordinates */
-  virtual Vec3t<Scalar> Unproject(const Vec2t<Scalar>& pix) const = 0;
+  virtual Vec3t Unproject(const Vec2t& pix) const = 0;
 
   /** Project a world point into an image location */
-  virtual Vec2t<Scalar> Project(const Vec3t<Scalar>& ray) const = 0;
+  virtual Vec2t Project(const Vec3t& ray) const = 0;
 
   /** Derivative of the Project along a ray */
-  virtual Eigen::Matrix<Scalar, 2, 3> dProject_dray(
-      const Vec3t<Scalar>& ray) const = 0;
+  virtual Eigen::Matrix<Scalar, 2, 3>
+  dProject_dray(const Vec3t& ray) const = 0;
 
-  virtual Eigen::Matrix<Scalar, 2, Eigen::Dynamic> dProject_dparams(
-      const Vec3t<Scalar>& ray) const = 0;
+  virtual Eigen::Matrix<Scalar, 2, Eigen::Dynamic>
+  dProject_dparams(const Vec3t& ray) const = 0;
 
-  virtual Eigen::Matrix<Scalar, 3, Eigen::Dynamic> dUnproject_dparams(
-      const Vec2t<Scalar>& pix) const = 0;
+  virtual Eigen::Matrix<Scalar, 3, Eigen::Dynamic>
+  dUnproject_dparams(const Vec2t& pix) const = 0;
 
   /**
    * Project a point into a camera located at t_ba.
@@ -64,10 +61,10 @@ class CameraInterface {
    * @param rho Inverse depth of point
    * @returns A non-homegeneous pixel location in the second camera.
    */
-  Vec2t<Scalar> Transfer3d(const SE3t<Scalar>& t_ba,
-                           const Vec3t<Scalar>& ray,
-                           const Scalar rho) const {
-    const Vec3t<Scalar> ray_dehomogenized =
+  Vec2t Transfer3d(const SE3t& t_ba,
+                   const Vec3t& ray,
+                   const Scalar rho) const {
+    const Vec3t ray_dehomogenized =
         t_ba.rotationMatrix() * ray + rho * t_ba.translation();
     return Project(ray_dehomogenized);
   }
@@ -76,11 +73,11 @@ class CameraInterface {
    * The derivative of the projection from Transfer3d wrt the point
    * being transfered.
    */
-  Eigen::Matrix<Scalar, 2, 4> dTransfer3d_dray(const SE3t<Scalar>& t_ba,
-                                               const Vec3t<Scalar>& ray,
+  Eigen::Matrix<Scalar, 2, 4> dTransfer3d_dray(const SE3t& t_ba,
+                                               const Vec3t& ray,
                                                const Scalar rho) const {
     const Eigen::Matrix<Scalar, 3, 3> rot_matrix = t_ba.rotationMatrix();
-    const Vec3t<Scalar> ray_dehomogenized =
+    const Vec3t ray_dehomogenized =
         rot_matrix * ray + rho * t_ba.translation();
     const Eigen::Matrix<Scalar, 2, 3> dproject_dray =
         dProject_dray(ray_dehomogenized);
@@ -92,13 +89,13 @@ class CameraInterface {
   }
 
   Eigen::Matrix<Scalar, 2, Eigen::Dynamic> dTransfer_dparams(
-      const SE3t<Scalar>& t_ba,
-      const Vec2t<Scalar>& pix,
+      const SE3t& t_ba,
+      const Vec2t& pix,
       const Scalar rho) const
   {
-    const Vec3t<Scalar> ray = Unproject(pix);
+    const Vec3t ray = Unproject(pix);
     const Eigen::Matrix<Scalar, 3, 3> rot_matrix = t_ba.rotationMatrix();
-    const Vec3t<Scalar> ray_dehomogenized =
+    const Vec3t ray_dehomogenized =
         rot_matrix * ray + rho * t_ba.translation();
     const Eigen::Matrix<Scalar, 2, 3> dproject_dray =
         dProject_dray(ray_dehomogenized);
@@ -143,16 +140,17 @@ class CameraInterface {
       : image_size_(image_size), params_(params_in) {
   }
 
+  Eigen::Vector2i image_size_;
+
   // All the camera parameters (fu, fv, u0, v0, ...distortion)
   Eigen::VectorXd params_;
-
-  Eigen::Vector2i image_size_;
 };
 
 template<typename Scalar = double>
 class Rig {
  public:
-  void AddCamera(CameraInterface<Scalar>* cam, const SE3t<Scalar>& t_wc) {
+  typedef Sophus::SE3Group<Scalar> SE3t;
+  void AddCamera(CameraInterface<Scalar>* cam, const SE3t& t_wc) {
     cameras_.push_back(cam);
     t_wc_.push_back(t_wc);
   }
@@ -170,6 +168,6 @@ class Rig {
   }
 
   std::vector<CameraInterface<Scalar>*> cameras_;
-  std::vector<SE3t<Scalar>> t_wc_;
+  std::vector<SE3t> t_wc_;
 };
 }  // namespace calibu
