@@ -34,7 +34,7 @@ class CameraInterface {
 
  public:
   CameraInterface(const CameraInterface<Scalar>& other) :
-      image_size_(Eigen::Vector2i::Zero()), params_(other.params_) {}
+      image_size_(other.image_size_), params_(other.params_) {}
   virtual ~CameraInterface() {}
 
   /** Unproject an image location into world coordinates */
