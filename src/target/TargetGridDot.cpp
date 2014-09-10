@@ -587,9 +587,7 @@ void TargetGridDot::SaveEPS(
         unsigned char id
         ) const
 {
-    Eigen::MatrixXi M = GetBinaryPattern(2);
-    rad0 = 0.003;
-    rad1 = 0.005;
+    Eigen::MatrixXi M = GetBinaryPattern(1);
 
     const double border = 3*rad1;
     const Eigen::Vector2d border2d(border,border);
