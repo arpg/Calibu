@@ -24,20 +24,27 @@ const char* sUriInfo =
 "Usage:"
 "\tcalibgrid <options> video_uri\n"
 "Options:\n"
-"\t-output,-o <file>      Output XML file to write camera models to.\n"
-"\t                       By default calibgrid will output to cameras.xml\n"
-"\t-cameras,-c <file>     Input XML file to read starting intrinsics from.\n"
-"\t-grid-spacing <value>  Distance between circles in grid\n"
-"\t-grid-seed <value>     Random seed used when creating grid (=71)\n"
-"\t-fix-intrinsics,-f     Fix camera intrinsics during optimisation.\n"
-"\t-paused,-p             Start video paused.\n"
-"\t-grid-rows <value>     Number of rows in the grid pattern.\n"
-"\t-grid-cols <value>     Number of cols in the grid pattern.\n"
+"\t-output,-o <file>        Output XML file to write camera models to.\n"
+"\t                         By default calibgrid will output to cameras.xml\n"
+"\t-cameras,-c <file>       Input XML file to read starting intrinsics from.\n"
+"\t-fix-intrinsics,-f       Fix camera intrinsics during optimisation.\n"
+"\t-paused,-p               Start video paused.\n"
+"\t-grid-preset <value>     Grid preset: 0 (small grid), 1 (large grid).\n"
+"\t-grid-spacing <value>    Distance between circles in grid (m)\n"
+"\t-grid-seed <value>       Random seed used when creating grid (=71)\n"
+"\t-grid-rows <value>       Number of rows in the grid pattern.\n"
+"\t-grid-cols <value>       Number of cols in the grid pattern.\n"
+"\t-grid-large-rad <value>  Radius of large grid dot (m).\n"
+"\t-grid-small-rad <value>  Radius of small grid dot (m).\n"
+"\t-save-grid <file>        Save grid in an EPS file and exit.\n"
 
 "e.g.:\n"
 "\tcalibgrid-hal -c leftcam.xml -c rightcaml.xml video_uri\n"
+"\tcalibgrid-hal -grid-preset 1 video_uri (large grid)\n\n"
+"\tcalibgrid-hal -grid-preset 0 video_uri (default)\n\n"
 "\tcalibgrid-hal -grid-spacing 0.03156 -grid-rows 36 -grid-cols 25 video_uri (large grid)\n"
-"\tcalibgrid-hal -grid-spacing 0.01411 -grid-rows 10 -grid-cols 19 video_uri (default)\n\n"
+"\tcalibgrid-hal -grid-spacing 0.01411 -grid-rows 10 -grid-cols 19 video_uri (default)\n"
+"\tcalibgrid-hal -grid-preset 1 -save-grid target.eps\n\n"
 "Video URI's take the following form:\n"
 " scheme:[param1=value1,param2=value2,...]//device\n"
 "\n"
@@ -74,10 +81,17 @@ const char* sUriInfo =
 "log - run google protobuf data log from HAL (see https://github.com/gwu-robotics):\n"
 " e.g. \"log://~/Data/calib.log\"\n\n";
 
+void saveGrid(const TargetGridDot& grid, const std::string& filename,
+              double large, double small);
 static inline Eigen::MatrixXi GWUSmallGrid();
 static inline Eigen::MatrixXi GoogleLargeGrid();
 
-int main( int argc, char** argv)
+enum GridPreset {
+  GridPresetGWUSmall  = 0,  // 19x10 grid at GWU
+  GridPresetGoogleLarge = 1,  // 25x36 from Google folks
+};
+
+int main(int argc, char** argv)
 {
     ////////////////////////////////////////////////////////////////////
     // Create command line options. Check if we should print usage.
@@ -93,10 +107,14 @@ int main( int argc, char** argv)
     // Default configuration values
 
     // Default grid printed on US Letter
-    double grid_spacing = 0.254 / (19-1);
-    int grid_rows = 10;
-    int grid_cols = 19;
-    uint32_t grid_seed = 71;
+    int grid_preset = GridPresetGWUSmall;
+    double grid_spacing;
+    int grid_rows;
+    int grid_cols;
+    uint32_t grid_seed;
+    double grid_large_rad;
+    double grid_small_rad;
+    std::string save_grid;
 
     // Use no input cameras by default
     std::vector<calibu::CameraAndPose > input_cameras;
@@ -112,12 +130,80 @@ int main( int argc, char** argv)
     std::string output_filename = "cameras.xml";
 
     ////////////////////////////////////////////////////////////////////
+    // Parse command line
+
+    grid_preset = cl.follow(grid_preset, "-grid-preset");
+    switch(grid_preset)
+    {
+      case GridPresetGWUSmall:
+        grid_spacing = 0.254 / 18;  // meters
+        grid_large_rad = 0.00423; // m
+        grid_small_rad = 0.00283; // m
+        grid_rows = 10; // grid dots
+        grid_cols = 19; // grid dots
+        grid_seed = 71;
+        break;
+      case GridPresetGoogleLarge:
+        grid_spacing = 0.03156;  // meters
+        grid_large_rad = 0.00889; // m
+        grid_small_rad = 0.00635; // m
+        grid_rows = 36; // grid dots
+        grid_cols = 25; // grid dots
+        grid_seed = 71;
+        break;
+    }
+
+    grid_spacing = cl.follow(grid_spacing,"-grid-spacing");
+    grid_seed = cl.follow((int)grid_seed,"-grid-seed");
+    grid_cols = cl.follow((int)grid_cols,"-grid-cols");
+    grid_rows = cl.follow((int)grid_rows,"-grid-rows");
+    grid_large_rad = cl.follow(grid_large_rad,"-grid-large-rad");
+    grid_small_rad = cl.follow(grid_small_rad,"-grid-small-rad");
+    fix_intrinsics = cl.search(2, "-fix-intrinsics", "-f");
+    start_paused = cl.search(2, "-paused", "-p");
+    output_filename = cl.follow(output_filename.c_str(), 2, "-output", "-o");
+    save_grid = cl.follow("", "-save-grid");
+    const Eigen::Vector2i grid_size(grid_cols, grid_rows);
+
+    ////////////////////////////////////////////////////////////////////
+    // Setup Grid pattern
+
+    ConicFinder conic_finder;
+    conic_finder.Params().conic_min_area = 4.0;
+    conic_finder.Params().conic_min_density = 0.6;
+    conic_finder.Params().conic_min_aspect = 0.2;
+
+    std::unique_ptr<TargetGridDot> target;
+    if(grid_preset == GridPresetGoogleLarge)
+        target.reset(new TargetGridDot(grid_spacing, GoogleLargeGrid()));
+    else if(grid_preset == GridPresetGWUSmall)
+        target.reset(new TargetGridDot(grid_spacing, GWUSmallGrid()));
+    else
+        target.reset(new TargetGridDot(grid_spacing, grid_size, grid_seed));
+
+    // Save grid and exit if required
+    if(!save_grid.empty()) {
+        saveGrid(*target, save_grid, grid_large_rad, grid_small_rad);
+        return 0;
+    }
+
+    ////////////////////////////////////////////////////////////////////
     // Setup Video Source
 
-    // Last argument - Video URI
-    std::string video_uri = argv[argc-1];
+    // Last argument or parameter - Video URI
+    std::string cam_param = cl.follow("", 2, "-video_url", "-cam");
+    std::string uri = cam_param.empty() ? argv[argc-1] : cam_param;
 
-    hal::Camera  cam = hal::Camera( cl.follow( video_uri.c_str(), "-video_url" ) );
+    hal::Camera  cam;
+    try {
+      cam = hal::Camera( uri );
+    } catch (...) {
+        if(!cam_param.empty())
+          std::cerr << "Could not create camera from URI: " << uri
+                    << std::endl;
+        return -1;
+    }
+    if(cam.Empty()) return -1;
 
     // For the moment, assume all N cameras have same resolution
     const size_t N = cam.NumChannels();
@@ -142,18 +228,6 @@ int main( int argc, char** argv)
             vSerialNos.emplace_back(image.SerialNumber());
         }
     }
-
-    ////////////////////////////////////////////////////////////////////
-    // Parse command line
-
-    grid_spacing = cl.follow(grid_spacing,"-grid-spacing");
-    grid_seed = cl.follow((int)grid_seed,"-grid-seed");
-    grid_cols = cl.follow((int)grid_cols,"-grid-cols");
-    grid_rows = cl.follow((int)grid_rows,"-grid-rows");
-    fix_intrinsics = cl.search(2, "-fix-intrinsics", "-f");
-    start_paused = cl.search(2, "-paused", "-p");
-    output_filename = cl.follow(output_filename.c_str(), 2, "-output", "-o");
-    const Eigen::Vector2i grid_size(grid_cols, grid_rows);
 
     // Load camera hints from command line
     cl.disable_loop();
@@ -206,24 +280,6 @@ int main( int argc, char** argv)
     CVarUtils::AttachCVar("proc.adaptive.threshold", &image_processing.Params().at_threshold);
     CVarUtils::AttachCVar("proc.adaptive.window_ratio", &image_processing.Params().at_window_ratio);
     CVarUtils::AttachCVar("proc.black_on_white", &image_processing.Params().black_on_white);
-
-    ////////////////////////////////////////////////////////////////////
-    // Setup Grid pattern
-
-    ConicFinder conic_finder;
-    conic_finder.Params().conic_min_area = 4.0;
-    conic_finder.Params().conic_min_density = 0.6;
-    conic_finder.Params().conic_min_aspect = 0.2;
-
-    std::unique_ptr<TargetGridDot> target;
-    if(grid_seed == 71 && grid_size(0) == 25 && grid_size(1) == 36)
-        // known large pattern
-        target.reset(new TargetGridDot(grid_spacing, GoogleLargeGrid()));
-    else if(grid_seed == 71 && grid_size(0) == 19 && grid_size(1) == 10)
-        // known small pattern
-        target.reset(new TargetGridDot(grid_spacing, GWUSmallGrid()));
-    else
-        target.reset(new TargetGridDot(grid_spacing, grid_size, grid_seed));
 
     ////////////////////////////////////////////////////////////////////
     // Initialize Calibration object and tracking params
@@ -493,6 +549,14 @@ int main( int argc, char** argv)
     calibrator.PrintResults();
     calibrator.WriteCameraModels(output_filename);
 
+}
+
+void saveGrid(const TargetGridDot& grid, const std::string& filename,
+              double large, double small) {
+  const double pts_per_unit = 72. / 2.54 * 100.; // points per meter
+  const Eigen::Vector2d offset(0,0);
+  grid.SaveEPS(filename, offset, small, large, pts_per_unit);
+  std::cout << "File " << filename << " saved" << std::endl;
 }
 
 inline Eigen::MatrixXi GWUSmallGrid() {
