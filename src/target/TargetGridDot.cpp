@@ -39,7 +39,7 @@ TargetGridDot::TargetGridDot(double grid_spacing, Eigen::Vector2i grid_size, uin
 }
 
 TargetGridDot::TargetGridDot(double grid_spacing, const Eigen::MatrixXi& grid)
-    : grid_spacing(grid_spacing), grid_size(grid.rows(), grid.cols())
+    : grid_spacing(grid_spacing), grid_size(grid.cols(), grid.rows())
 {
   // Create binary pattern (and rotated pattern) from seed
   PG = FillGroup(grid);
