@@ -214,7 +214,7 @@ int main(int argc, char** argv)
     cam.Capture(*imageArray);
 
     std::vector<cv::Mat> vImages;
-    std::vector<long int> vSerialNos;
+    std::vector<uint64_t> vSerialNos;
     vImages.reserve(imageArray->Size());
     vSerialNos.reserve(imageArray->Size());
     for( int i = 0; i < imageArray->Size(); ++i ){

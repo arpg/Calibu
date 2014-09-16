@@ -163,14 +163,14 @@ public:
         return m_pCam->Type();
     }
         
-    long int SerialNumber() const
+    uint64_t SerialNumber() const
     {
         _AssertInit();
         return m_pCam->SerialNumber();
     }
     
     /// Set the camera serial number.
-    void SetSerialNumber( const long int nSerialNo )
+    void SetSerialNumber( const uint64_t nSerialNo )
     {
         _AssertInit();
         m_pCam->SetSerialNumber( nSerialNo );
