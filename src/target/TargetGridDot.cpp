@@ -639,4 +639,36 @@ void TargetGridDot::SaveEPS(
     f.close();
 }
 
+void TargetGridDot::SaveSVG(
+        std::string filename,
+        double rad0,
+        double rad1
+        ) const
+{
+    Eigen::MatrixXi M = GetBinaryPattern(0);
+    const double offset = rad1 * 1e3; // mm
+
+    std::ofstream f(filename.c_str());
+    f << "<?xml version=\"1.0\" standalone=\"no\"?>" << std::endl
+      << "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" "
+         "\"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">" << std::endl;
+
+    // units in mm
+    double canvas_width = ((M.cols()-1) * grid_spacing * 1e3) + offset * 2.;
+    double canvas_height = ((M.rows()-1) * grid_spacing * 1e3) + offset * 2.;
+    f << "<svg width=\"" << canvas_width << "mm\" height=\""
+      << canvas_height << "mm\">" << std::endl;
+
+    for( int r=0; r<M.rows(); ++r ) {
+        const double cy = offset + r * grid_spacing  * 1e3;
+        for( int c=0; c<M.cols(); ++c ) {
+            const double rad = ((M(r,c) == 1) ? rad1 : rad0) * 1e3;
+            const double cx = offset + c * grid_spacing * 1e3;
+            f << "<circle cx=\"" << cx << "mm\" cy=\"" << cy << "mm\" r=\""
+              << rad << "mm\" fill=\"black\" stoke-width=\"0\"/>" << std::endl;
+        }
+    }
+    f << "</svg>" << std::endl;
+}
+
 }
