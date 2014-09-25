@@ -20,7 +20,7 @@
 
 using namespace calibu;
 
-const char* sUriInfo =
+const char* usage_message =
     "Usage:"
     "\tcalibgrid <options> video_uri\n"
     "Options:\n"
@@ -81,7 +81,7 @@ int main( int argc, char** argv)
   GetPot cl(argc,argv);
 
   if(cl.search(3, "-help", "-h", "?") || argc < 2) {
-    std::cout << sUriInfo << std::endl;
+    std::cout << usage_message << std::endl;
     return -1;
   }
 
