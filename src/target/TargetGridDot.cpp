@@ -598,7 +598,7 @@ void TargetGridDot::SaveEPS(
 
     std::ofstream f;
     f.open(filename.c_str());
-    f << "%!PS-Adobe EPSF-3.0" << std::endl;
+    f << "%!PS-Adobe-3.1 EPSF-3.0" << std::endl;
     f << "%%Creator: CalibuCalibrationTarget" << std::endl;
     f << "%%Title: Calibration Target" << std::endl;
     f << "%%Origin: 0 0" << std::endl;
@@ -617,6 +617,9 @@ void TargetGridDot::SaveEPS(
                 << std::endl;
         }
     }
+
+    std::cerr << "Wrote bounding box: " <<
+                 max_pts[0] << " " << max_pts[1] << std::endl;
 
     // output the binary code -- blank if id == 0, which is the default
     double r = grid_spacing*( M.rows()+2.5 );
