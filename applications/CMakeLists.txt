@@ -1,6 +1,7 @@
 if(NOT ANDROID)
     add_subdirectory( calib )
     add_subdirectory( cmod )
+    add_subdirectory( groundtruth )
     find_package( HAL QUIET )
     find_package( Sophus QUIET )
     find_package( Calibu QUIET )

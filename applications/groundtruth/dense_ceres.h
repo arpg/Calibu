@@ -95,8 +95,10 @@ double diff( cv::Mat img_a,
 
   sum /= count;
 
-  fprintf(stderr, "Sum = %f\n", sum);
-  fflush(stderr);
+  if (debug) {
+    fprintf(stderr, "Sum = %f\n", sum);
+    fflush(stderr);
+  }
 
   return sum;
 }
@@ -126,9 +128,11 @@ struct PhotometricCostFunctor
       const Eigen::Map< const Eigen::Matrix<T,6,1> > temp(_t_wi);
       const Sophus::SE3Group<T> t_wi = Sophus::SE3Group<T>( _Cart2T<T>(temp) );
 
-      fprintf(stdout, "Pose : <%f, %f, %f, %f, %f, %f>\n", temp(0),
-              temp(1), temp(2), temp(3), temp(4), temp(5) );
-      fflush(stdout);
+      if (debug) {
+        fprintf(stdout, "Pose : <%f, %f, %f, %f, %f, %f>\n", temp(0),
+                temp(1), temp(2), temp(3), temp(4), temp(5) );
+        fflush(stdout);
+      }
 
 
       cv::Mat img(det->image.rows, det->image.cols, det->image.type());
@@ -158,7 +162,7 @@ ceres::CostFunction* PhotometricCost(
     bool debug = false
     )
 {
-  Scalar* _params = _cam->GetParams();
+  Scalar* _params = _cam->GetParams().data();
   if( dynamic_cast<calibu::LinearCamera<Scalar>*>( _cam ) ){
     typedef calibu::LinearCamera<Scalar> CamT;
     return (new ceres::NumericDiffCostFunction<PhotometricCostFunctor<CamT>, ceres::CENTRAL, 1,6>(

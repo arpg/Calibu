@@ -37,6 +37,8 @@
 #include "ceres_cost_functions.h"
 #include "dense_ceres.h"
 
+// -cam split:[roi1=0+0+640+480]//proto:[startframe=1500]///Users/faradazerage/Desktop/DataSets/APRIL/Hallway-9-12-13/Twizzler/proto.log -cmod /Users/faradazerage/Desktop/DataSets/APRIL/Hallway-9-12-13/Twizzler/cameras.xml -o outfile.out -map /Users/faradazerage/Desktop/DataSets/APRIL/Hallway-9-12-13/Twizzler/DS20.csv -v -debug -show-ceres
+
 using namespace std;
 
 class GLTag : public SceneGraph::GLObject {
@@ -425,7 +427,7 @@ int main( int argc, char** argv )
   }
   calibu::CameraInterface<double> *cmod = rig.cameras_[0];
   Eigen::Matrix3d K;
-  double* params = cmod->GetParams();
+  double* params = cmod->GetParams().data();
   K << params[0], 0, params[2], 0, params[1], params[3], 0, 0, 1;
   std::cout<< K << std::endl;
 
@@ -434,7 +436,6 @@ int main( int argc, char** argv )
   fprintf(stdout, "%d, %d ?= %d, %d\n", cmod->Width(), cmod->Height(), cam.Width(), cam.Height());
   assert( cmod->Width() == cam.Width() && cmod->Height() == cam.Height() );
   cv::Mat rect( cam.Height(), cam.Width(), CV_8UC1 ); // rectified image
-  cv::Mat rgb;
 
   TagDetector td;
 
@@ -447,10 +448,6 @@ int main( int argc, char** argv )
     count++;
     // 1) Capture and rectify
     calibu::Rectify( lut, vImages[0].data, rect.data, rect.cols, rect.rows );
-//    float mean = cv::sum(cv::mean(rect))[0];
-//    rect = (rect > mean);
-//    vImages[0].copyTo(rect);
-    //    cv::cvtColor( rect, rgb, CV_GRAY2RGB );
 
     // 2) Run tag detector and get tag corners
     std::vector<april_tag_detection_t> vDetections;
@@ -619,7 +616,7 @@ int main( int argc, char** argv )
       //          d->pose = detections[it->first - 1][0]->pose;
       //        }
               ceres::CostFunction* dense_cost_function =
-                  PhotometricCost( d, &sim_cam, K, cmod, true );
+                  PhotometricCost( d, &sim_cam, K, cmod, cl.search("-show-ceres") );
               problem.AddResidualBlock( dense_cost_function, NULL,
                                         (detections[it->first][0]->pose.data()));
 //      homography_minimization( d, &sim_cam, K );
@@ -653,6 +650,8 @@ int main( int argc, char** argv )
   if (!cl.search("-v")) {
     return 0;
   }
+  std::cout<<"about to visualize"<<std::endl;
+
   std::vector< SceneGraph::GLAxis > campose;
   campose.resize(detections.size());
   camPoses.resize(detections.size());

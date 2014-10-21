@@ -84,7 +84,7 @@ ceres::CostFunction* ProjectionCost(
     calibu::CameraInterface<Scalar>* _cam
     )
 {
-  Scalar* _params = _cam->GetParams();
+  Scalar* _params = _cam->GetParams().data();
   if( dynamic_cast<calibu::LinearCamera<Scalar>*>( _cam ) ){
     typedef calibu::LinearCamera<Scalar> CamT;
     return (new ceres::AutoDiffCostFunction<ProjectionCostFunctor<CamT>,2,6>(
