@@ -71,7 +71,6 @@ public:
     has_data = true;
     unsigned long long value = data;
     bool t_reverse[36];
-    bool t[36];
     int idx = 0;
     for (int count = 0; count < 9; count++) {
       unsigned long long temp = value - ((value >> 4) << 4);
@@ -441,8 +440,10 @@ int main( int argc, char** argv )
 
   std::vector<cv::Mat> vImages;
   std::map< int, std::vector< std::shared_ptr< detection > > > detections;
+  Eigen::Vector6d temp_pose;
 
   int count = 0;
+  bool capture = cl.search("-capture");
   while( cam.Capture( vImages ) && (count < 40)){
 
     count++;
@@ -572,7 +573,7 @@ int main( int argc, char** argv )
   glTagPoses.resize( tags.size() );
   count = 0;
   for (std::map<int, tag_t>::iterator it = tags.begin(); it != tags.end(); it++, count++) {
-//    tags[it->first].remove_border();
+    //    tags[it->first].remove_border();
     glTags[count].tr = tags[it->first].tr;
     glTags[count].br = tags[it->first].br;
     glTags[count].tl = tags[it->first].tl;
@@ -593,15 +594,15 @@ int main( int argc, char** argv )
                 cam.Width(), cam.Height(), SceneGraph::eSimCamLuminance );
 
   ceres::Solver::Options options2;
-//    options2.minimizer_type = ceres::LINE_SEARCH;
-    options2.linear_solver_type = ceres::DENSE_SCHUR;
-//  options2.linear_solver_type = ceres::CGNR;
+  //    options2.minimizer_type = ceres::LINE_SEARCH;
+  options2.linear_solver_type = ceres::DENSE_SCHUR;
+  //  options2.linear_solver_type = ceres::CGNR;
   options2.max_num_iterations = 100;
 
   for( std::map<int, std::vector< std::shared_ptr< detection > > >::iterator it = detections.begin();
        it != detections.end(); it++){
     //    if (it->second.size() > 0) {
-          ceres::Problem problem;
+    ceres::Problem problem;
     //      fprintf(stdout, "Pose before: <%f, %f, %f, %f, %f, %f>\n",
     //              detections[it->first][0]->pose(0),
     //              detections[it->first][0]->pose(1),
@@ -615,15 +616,15 @@ int main( int argc, char** argv )
       //        if (detections.find(it->first - 1) != detections.end()) {
       //          d->pose = detections[it->first - 1][0]->pose;
       //        }
-              ceres::CostFunction* dense_cost_function =
-                  PhotometricCost( d, &sim_cam, K, cmod, cl.search("-show-ceres") );
-              problem.AddResidualBlock( dense_cost_function, NULL,
-                                        (detections[it->first][0]->pose.data()));
-//      homography_minimization( d, &sim_cam, K );
+      ceres::CostFunction* dense_cost_function =
+          PhotometricCost( d, &sim_cam, K, cmod, cl.search("-show-ceres") );
+      problem.AddResidualBlock( dense_cost_function, NULL,
+                                (detections[it->first][0]->pose.data()));
+      //      homography_minimization( d, &sim_cam, K );
     }
 
-          ceres::Solver::Summary summary;
-          ceres::Solve(options2, &problem, &summary);
+    ceres::Solver::Summary summary;
+    ceres::Solve(options2, &problem, &summary);
 
     //      std::shared_ptr< detection > d = it->second[0];
     //      fprintf(stdout, "Pose after : <%f, %f, %f, %f, %f, %f>\n", d->pose(0),
@@ -650,7 +651,58 @@ int main( int argc, char** argv )
   if (!cl.search("-v")) {
     return 0;
   }
-  std::cout<<"about to visualize"<<std::endl;
+
+  if (cl.search("-capture")) {
+
+    std::shared_ptr< detection > d = detections.begin()->second[0];
+
+    FILE* dfile = fopen("data.out", "w");
+    fprintf(dfile, "%f\t%f\t%f\t%f\t%f\t%f\n", d->pose(0), d->pose(1), d->pose(2),
+            d->pose(3), d->pose(4), d->pose(5));
+
+    fprintf(dfile, "%f\t%f\t%f\n", d->tag_data.tl(0), d->tag_data.tl(1), d->tag_data.tl(2));
+    fprintf(dfile, "%f\t%f\t%f\n", d->tag_data.tl(0), d->tag_data.bl(1), d->tag_data.bl(2));
+    fprintf(dfile, "%f\t%f\t%f\n", d->tag_data.tl(0), d->tag_data.br(1), d->tag_data.br(2));
+    fprintf(dfile, "%f\t%f\t%f\n", d->tag_data.tl(0), d->tag_data.tr(1), d->tag_data.tr(2));
+    fprintf(dfile, "%d\t%d\n", d->tag_data.color_low, d->tag_data.color_high);
+
+    unsigned long long value = tags[d->tag_id].data;
+    bool t_reverse[36];
+    bool t[36];
+    int idx = 0;
+    for (int count = 0; count < 9; count++) {
+      unsigned long long temp = value - ((value >> 4) << 4);
+      t_reverse[idx + 0] = temp & 1;
+      t_reverse[idx + 1] = temp & 2;
+      t_reverse[idx + 2] = temp & 4;
+      t_reverse[idx + 3] = temp & 8;
+      idx += 4;
+      value >>= 4;
+    }
+    for (int count = 0; count < 36; count++){
+      t[count] = t_reverse[35 - count];
+    }
+
+    for (int jj = 0; jj < 6; jj++){
+      for (int ii = 0; ii < 6; ii++) {
+        if (t[ii + 6*jj])
+          fprintf(dfile, "1\t");
+        else
+          fprintf(dfile, "0\t");
+      }
+      fprintf(dfile, "\n");
+    }
+    fclose(dfile);
+
+    cv::imwrite("image.jpg", d->image);
+
+    cv::Mat img(rect.rows, rect.cols, rect.type());
+    sim_cam.SetPoseVision( _Cart2T(d->pose) );
+    sim_cam.RenderToTexture();
+    sim_cam.DrawCamera();
+    sim_cam.CaptureGrey( img.data );
+    cv::imwrite("synthetic.jpg", img);
+  }
 
   std::vector< SceneGraph::GLAxis > campose;
   campose.resize(detections.size());
