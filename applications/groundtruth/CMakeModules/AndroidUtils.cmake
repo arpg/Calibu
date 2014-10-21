@@ -1,0 +1,235 @@
+if(NOT ANDROID_PACKAGE_NAME)
+  set(ANDROID_PACKAGE_NAME "edu.gwu.robotics")
+endif()
+
+# Configure build environment to automatically generate APK's instead of executables.
+if(ANDROID AND NOT TARGET apk)
+  find_library(GNUSTL_SHARED_LIBRARY gnustl_shared)
+
+  if(NOT GNUSTL_SHARED_LIBRARY)
+    message(FATAL_ERROR "Could not find required GNU STL shared library.")
+  endif()
+
+    # virtual targets which we'll add apks and push actions to.
+    add_custom_target( apk )
+    add_custom_target( push )
+    add_custom_target( run )
+
+    # Reset output directories to be in binary folder (rather than source)
+    set(LIBRARY_OUTPUT_PATH_ROOT ${CMAKE_CURRENT_BINARY_DIR})
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${LIBRARY_OUTPUT_PATH_ROOT}/libs/${ANDROID_NDK_ABI_NAME})
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${LIBRARY_OUTPUT_PATH_ROOT}/libs/${ANDROID_NDK_ABI_NAME})
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${LIBRARY_OUTPUT_PATH_ROOT}/bin/${ANDROID_NDK_ABI_NAME})
+
+    macro( create_android_manifest_xml filename prog_name package_name activity_name)
+        file( WRITE ${filename}
+"<?xml version=\"1.0\" encoding=\"utf-8\"?>
+<!-- BEGIN_INCLUDE(manifest) -->
+<manifest xmlns:android=\"http://schemas.android.com/apk/res/android\"
+        package=\"${package_name}.${prog_name}\"
+        android:versionCode=\"1\"
+        android:versionName=\"1.0\">
+
+    <!-- This is the platform API where NativeActivity was introduced. -->
+    <uses-sdk android:minSdkVersion=\"14\" />
+    <uses-feature android:glEsVersion=\"0x00020000\"></uses-feature>
+    <uses-feature android:name=\"android.hardware.camera\" />
+    <uses-feature android:name=\"android.hardware.usb.host\" />
+    <uses-permission android:name=\"android.permission.CAMERA\"/>
+    <uses-permission android:name=\"android.permission.WRITE_EXTERNAL_STORAGE\"/>
+    <uses-permission android:name=\"android.permission.READ_EXTERNAL_STORAGE\"/>
+    <uses-permission android:name=\"android.permission.INTERNET\"/>
+
+    <!-- This .apk has no Java code itself, so set hasCode to false. -->
+    <application android:label=\"${activity_name}\" android:hasCode=\"false\">
+
+        <!-- Our activity is the built-in NativeActivity framework class.
+             This will take care of integrating with our NDK code. -->
+        <activity android:name=\"android.app.NativeActivity\"
+                android:label=\"${activity_name}\"
+                android:keepScreenOn=\"true\"
+                android:screenOrientation=\"landscape\"
+                android:configChanges=\"orientation|keyboard|keyboardHidden\"
+                android:theme=\"@android:style/Theme.NoTitleBar.Fullscreen\"
+                >
+            <!-- Tell NativeActivity the name of our .so -->
+            <meta-data android:name=\"android.app.lib_name\"
+                    android:value=\"${prog_name}_start\" />
+            <intent-filter>
+                <action android:name=\"android.intent.action.MAIN\" />
+                <action android:name=\"android.hardware.usb.action.USB_DEVICE_ATTACHED\" />
+                <action android:name=\"android.hardware.usb.action.USB_DEVICE_DETACHED\" />
+                <category android:name=\"android.intent.category.LAUNCHER\" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>
+<!-- END_INCLUDE(manifest) -->" )
+    endmacro()
+
+    macro( create_bootstrap_library prog_name package_name)
+        set(bootstrap_cpp "${CMAKE_CURRENT_BINARY_DIR}/${prog_name}_start.cpp" )
+        file( WRITE ${bootstrap_cpp}
+"#include <android/native_activity.h>
+#include <android/log.h>
+#include <dlfcn.h>
+#include <errno.h>
+#include <stdlib.h>
+#include <cstdio>
+
+#define LOGE(...) ((void)__android_log_print(ANDROID_LOG_ERROR, \"AndroidUtils.cmake\", __VA_ARGS__))
+#define LIB_PATH \"/data/data/${package_name}.${prog_name}/lib/\"
+
+void * load_lib(const char * l) {
+    void * handle = dlopen(l, RTLD_NOW | RTLD_GLOBAL);
+    if (!handle) {
+        LOGE( \"dlopen('%s'): %s\", l, dlerror() );
+    }
+    return handle;
+}
+
+void ANativeActivity_onCreate(ANativeActivity * app, void * ud, size_t udsize) {
+    #include \"${prog_name}_shared_load.h\"
+    void (*main)(ANativeActivity*, void*, size_t);
+    void* lib_handle = load_lib(LIB_PATH \"lib${prog_name}.so\");
+    if (!lib_handle) {
+        LOGE(\"Could not load library lib${prog_name}.so\");
+        exit(1);
+    }
+
+    *(void **) (&main) = dlsym(lib_handle, \"ANativeActivity_onCreate\");
+    if (!main) {
+        LOGE( \"undefined symbol ANativeActivity_onCreate\" );
+        exit(1);
+    }
+    (*main)(app, ud, udsize);
+}" )
+        add_library( "${prog_name}_start" SHARED ${bootstrap_cpp} )
+        target_link_libraries( "${prog_name}_start" android log )
+        add_dependencies( ${prog_name} "${prog_name}_start" )
+    endmacro()
+
+    macro( android_update android_project_name)
+        # Generate ant build scripts for making APK
+        execute_process(
+            COMMAND android update project --name ${android_project_name} --path . --target android-17 --subprojects
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        )
+    endmacro()
+
+    macro( package_with_target prog_name lib_path )
+        # Mark lib_path as dependent of prog_name
+        set_property(TARGET ${prog_name} APPEND PROPERTY IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE ${lib_path} )
+
+        # If prog_name is to be packaged, add file copy command to package .so's.
+        get_target_property( package_dependent_libs ${prog_name} MAKE_APK )
+        if( package_dependent_libs )
+            get_filename_component(target_filename ${lib_path} NAME)
+            file( APPEND ${depend_file} "load_lib(LIB_PATH \"${target_filename}\" );\n")
+            add_custom_command(TARGET ${prog_name} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                ${lib_path} "${CMAKE_CURRENT_BINARY_DIR}/libs/${ANDROID_NDK_ABI_NAME}/"
+            )
+        endif()
+    endmacro()
+
+    macro( add_to_depend_libs prog_name depend_file lib_name )
+        # Recursively Process dependents of lib_name
+        get_target_property(TARGET_LIBS ${lib_name} IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE)
+        if(NOT TARGET_LIBS)
+            get_target_property(TARGET_LIBS ${lib_name} IMPORTED_LINK_INTERFACE_LIBRARIES_NOCONFIG)
+        endif()
+        if(NOT TARGET_LIBS)
+            get_target_property(TARGET_LIBS ${lib_name} IMPORTED_LINK_INTERFACE_LIBRARIES_DEBUG)
+        endif()
+
+        foreach(SUBLIB ${TARGET_LIBS})
+            if(SUBLIB)
+                add_to_depend_libs( ${prog_name} ${depend_file} ${SUBLIB} )
+            endif()
+        endforeach()
+
+        # Check if lib itself is an external shared library
+        if("${lib_name}" MATCHES "\\.so$")
+            package_with_target( ${prog_name} ${lib_name} )
+        endif()
+
+        # Check if lib itself is an internal shared library
+        get_target_property(TARGET_LIB ${lib_name} LOCATION)
+        if("${TARGET_LIB}" MATCHES "\\.so$")
+            package_with_target( ${prog_name} ${TARGET_LIB} )
+        endif()
+    endmacro()
+
+    # Override add_executable to build android .so instead!
+    macro( add_executable prog_name)
+        set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/libs/${ANDROID_NDK_ABI_NAME})
+        add_library( ${prog_name} SHARED ${ARGN} )
+
+        # Add required link libs for android
+        target_link_libraries(${prog_name} log android -pthread ${GNUSTL_SHARED_LIBRARY}
+	  -Wl,--gc-sections -Wl,--whole-archive libsupc++.a -Wl,--no-whole-archive)
+
+        # Create manifest required for APK
+        create_android_manifest_xml(
+            "${CMAKE_CURRENT_BINARY_DIR}/AndroidManifest.xml" "${prog_name}"
+            "${ANDROID_PACKAGE_NAME}" "${prog_name}"
+        )
+
+        # Create library that will launch this program and load shared libs
+        create_bootstrap_library( ${prog_name} ${ANDROID_PACKAGE_NAME} )
+
+        # Generate ant build system for APK
+        android_update( ${prog_name} )
+
+        # Target to invoke ant build system for APK
+        set( APK_FILE "${CMAKE_CURRENT_BINARY_DIR}/bin/${prog_name}-debug.apk" )
+        add_custom_command(
+            OUTPUT ${APK_FILE}
+            COMMAND ant debug
+            DEPENDS ${prog_name}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        )
+
+        # Target to install on device
+        add_custom_target( ${prog_name}-apk
+            DEPENDS ${APK_FILE}
+        )
+        add_dependencies(apk ${prog_name}-apk)
+
+        # Target to install on device
+        add_custom_target( ${prog_name}-push
+            COMMAND adb install -r ${APK_FILE}
+            DEPENDS ${APK_FILE}
+        )
+        add_dependencies(push ${prog_name}-push)
+
+        # install and run on device
+        add_custom_target( ${prog_name}-run
+            COMMAND adb shell am start -n ${ANDROID_PACKAGE_NAME}.${prog_name}/android.app.NativeActivity
+            DEPENDS ${prog_name}-push
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        )
+        add_dependencies(run ${prog_name}-run)
+
+        # Flag to package dependent libs
+        set_property(TARGET ${prog_name} APPEND PROPERTY MAKE_APK 1 )
+
+        # Clear shared library loading header
+        set(depend_file "${CMAKE_CURRENT_BINARY_DIR}/${prog_name}_shared_load.h")
+        file(WRITE "${depend_file}")
+	add_to_depend_libs("${prog_name}" "${depend_file}" "${GNUSTL_SHARED_LIBRARY}")
+    endmacro()
+
+    macro( target_link_libraries prog_name)
+        # _target_link_libraries corresponds to original
+        _target_link_libraries( ${prog_name} ${ARGN} )
+
+        # Recursively process dependencies
+        set(depend_file "${CMAKE_CURRENT_BINARY_DIR}/${prog_name}_shared_load.h" )
+        foreach( LIB ${ARGN} )
+            add_to_depend_libs( ${prog_name} ${depend_file} ${LIB} )
+        endforeach()
+    endmacro()
+endif()
