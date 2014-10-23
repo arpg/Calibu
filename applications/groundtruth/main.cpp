@@ -36,6 +36,7 @@
 #include <opencv2/nonfree/nonfree.hpp>
 #include "ceres_cost_functions.h"
 #include "dense_ceres.h"
+#include "dtrack.h"
 
 // -cam split:[roi1=0+0+640+480]//proto:[startframe=1500]///Users/faradazerage/Desktop/DataSets/APRIL/Hallway-9-12-13/Twizzler/proto.log -cmod /Users/faradazerage/Desktop/DataSets/APRIL/Hallway-9-12-13/Twizzler/cameras.xml -o outfile.out -map /Users/faradazerage/Desktop/DataSets/APRIL/Hallway-9-12-13/Twizzler/DS20.csv -v -debug -show-ceres
 
@@ -100,12 +101,12 @@ public:
   {
     glPushMatrix();
     glColor4f( 1.0, 1.0, 1.0, 1.0 );
-    //    pangolin::glDrawLine(tl[0],tl[1],tl[2],tr[0],tr[1],tr[2]);
-    //    pangolin::glDrawLine(bl[0],bl[1],bl[2],br[0],br[1],br[2]);
-    //    pangolin::glDrawLine(tl[0],tl[1],tl[2],bl[0],bl[1],bl[2]);
-    //    pangolin::glDrawLine(tr[0],tr[1],tr[2],br[0],br[1],br[2]);
-
-    if (has_data) {
+    if (!has_data) {
+      pangolin::glDrawLine(tl[0],tl[1],tl[2],tr[0],tr[1],tr[2]);
+      pangolin::glDrawLine(bl[0],bl[1],bl[2],br[0],br[1],br[2]);
+      pangolin::glDrawLine(tl[0],tl[1],tl[2],bl[0],bl[1],bl[2]);
+      pangolin::glDrawLine(tr[0],tr[1],tr[2],br[0],br[1],br[2]);
+    } else {
       Eigen::Vector3d dx, dy;
       dx = (tl - tr) / 8;
       dy = (tl - bl) / 8;
@@ -398,6 +399,13 @@ void homography_minimization( std::shared_ptr< detection > d,
   //  d->pose = _T2Cart( _Cart2T(d->pose) * h.inverse() );
 }
 
+void normalize(cv::Mat& im)
+{
+  double min, max;
+  cv::minMaxLoc(im, &min, &max);
+  im = (im - min) / (max - min);
+}
+
 /////////////////////////////////////////////////////////////////////////
 int main( int argc, char** argv )
 {
@@ -417,13 +425,14 @@ int main( int argc, char** argv )
   fprintf(stdout, "Finished parsing survey map\n");
 
   calibu::Rig<double> rig;
+  std::string rig_name_;
   if (!cl.search("-cmod")) {
-    std::string rig_name_( cam.GetDeviceProperty(hal::DeviceDirectory) );
+    rig_name_ = cam.GetDeviceProperty(hal::DeviceDirectory);
     rig_name_ += std::string("/cameras.xml");
-    calibu::LoadRig( rig_name_, &rig );
   } else {
-    calibu::LoadRig( cl.follow("cameras.xml", "-cmod"), &rig );
+    rig_name_ = cl.follow("cameras.xml", "-cmod");
   }
+  calibu::LoadRig( rig_name_, &rig );
   calibu::CameraInterface<double> *cmod = rig.cameras_[0];
   Eigen::Matrix3d K;
   double* params = cmod->GetParams().data();
@@ -444,7 +453,7 @@ int main( int argc, char** argv )
 
   int count = 0;
   bool capture = cl.search("-capture");
-  while( cam.Capture( vImages ) && (count < 40)){
+  while( cam.Capture( vImages ) && (count < 100)){
 
     count++;
     // 1) Capture and rectify
@@ -592,6 +601,9 @@ int main( int argc, char** argv )
   SceneGraph::GLSimCam sim_cam;
   sim_cam.Init( &glGraph, Eigen::Matrix4d::Identity(), K,
                 cam.Width(), cam.Height(), SceneGraph::eSimCamLuminance );
+  SceneGraph::GLSimCam depth_cam;
+  depth_cam.Init( &glGraph, Eigen::Matrix4d::Identity(), K,
+                  cam.Width(), cam.Height(), SceneGraph::eSimCamDepth );
 
   ceres::Solver::Options options2;
   //    options2.minimizer_type = ceres::LINE_SEARCH;
@@ -599,10 +611,17 @@ int main( int argc, char** argv )
   //  options2.linear_solver_type = ceres::CGNR;
   options2.max_num_iterations = 100;
 
+  DTrack dtrack;
+  dtrack.Init();
+  calibu::CameraRig old_rig = calibu::ReadXmlRig(rig_name_);
+  dtrack.SetParams(old_rig.cameras[0].camera, old_rig.cameras[0].camera,
+      old_rig.cameras[0].camera, Sophus::SE3d());
+
+  cv::Mat dtrackWeights(rect.rows, rect.cols, CV_32FC1);
   for( std::map<int, std::vector< std::shared_ptr< detection > > >::iterator it = detections.begin();
        it != detections.end(); it++){
     //    if (it->second.size() > 0) {
-    ceres::Problem problem;
+    //    ceres::Problem problem;
     //      fprintf(stdout, "Pose before: <%f, %f, %f, %f, %f, %f>\n",
     //              detections[it->first][0]->pose(0),
     //              detections[it->first][0]->pose(1),
@@ -613,18 +632,67 @@ int main( int argc, char** argv )
     //      fflush(stdout);
     for (int i = 0; i < /*it->second.size()*/1; i++) {
       std::shared_ptr< detection > d = detections[it->first][i];
+      cv::Mat temp(rect.rows, rect.cols, rect.type());
+      cv::Mat synthetic(rect.rows, rect.cols, CV_32FC1);
+      cv::Mat depth(rect.rows, rect.cols, CV_32FC1);
+
+      sim_cam.SetPoseVision( _Cart2T(d->pose) );
+      sim_cam.RenderToTexture();
+      sim_cam.DrawCamera();
+      sim_cam.CaptureGrey( temp.data );
+      temp.convertTo(synthetic, CV_32FC1);
+
+      depth_cam.SetPoseVision( _Cart2T(d->pose) );
+      depth_cam.RenderToTexture();
+      depth_cam.DrawCamera();
+      depth_cam.CaptureDepth( depth.data );
+
+      normalize(synthetic);
+      //      cv::imshow("synthetic", synthetic);
+      //      cv::imshow("depth", depth);
+      //      cv::waitKey();
+
+      Sophus::SE3d t_dt;
+      dtrack.SetKeyframe(synthetic, depth);
+      d->image.convertTo(temp, CV_32FC1);
+      normalize(temp);
+      dtrack.Estimate(temp, t_dt, dtrackWeights);
+
+      //      cv::Mat temp2(rect.rows, rect.cols, rect.type());
+      //      cv::Mat synthetic2(rect.rows, rect.cols, CV_32FC1);
+      //      cv::Mat depth2(rect.rows, rect.cols, CV_32FC1);
+
+      //      sim_cam.SetPoseVision( _Cart2T(d->pose) * t_dt.matrix() );
+      //      sim_cam.RenderToTexture();
+      //      sim_cam.DrawCamera();
+      //      sim_cam.CaptureGrey( temp2.data );
+      //      temp2.convertTo(synthetic2, CV_32FC1);
+      //      normalize(synthetic2);
+
+      //      depth_cam.SetPoseVision( _Cart2T(d->pose) * t_dt.matrix() );
+      //      depth_cam.RenderToTexture();
+      //      depth_cam.DrawCamera();
+      //      depth_cam.CaptureDepth( depth2.data );
+
+      //      cv::imshow("synthetic after", synthetic2);
+      //      cv::imshow("depth after", depth2);
+      //      cv::waitKey();
+
+      Sophus::SE3d tr( _Cart2T(d->pose));
+      d->pose = _T2Cart( (tr * t_dt).matrix());
+
       //        if (detections.find(it->first - 1) != detections.end()) {
       //          d->pose = detections[it->first - 1][0]->pose;
       //        }
-      ceres::CostFunction* dense_cost_function =
-          PhotometricCost( d, &sim_cam, K, cmod, cl.search("-show-ceres") );
-      problem.AddResidualBlock( dense_cost_function, NULL,
-                                (detections[it->first][0]->pose.data()));
+      //      ceres::CostFunction* dense_cost_function =
+      //          PhotometricCost( d, &sim_cam, K, cmod, cl.search("-show-ceres") );
+      //      problem.AddResidualBlock( dense_cost_function, NULL,
+      //                                (detections[it->first][0]->pose.data()));
       //      homography_minimization( d, &sim_cam, K );
     }
 
-    ceres::Solver::Summary summary;
-    ceres::Solve(options2, &problem, &summary);
+    //    ceres::Solver::Summary summary;
+    //    ceres::Solve(options2, &problem, &summary);
 
     //      std::shared_ptr< detection > d = it->second[0];
     //      fprintf(stdout, "Pose after : <%f, %f, %f, %f, %f, %f>\n", d->pose(0),
