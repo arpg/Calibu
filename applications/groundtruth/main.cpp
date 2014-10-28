@@ -101,12 +101,13 @@ public:
   {
     glPushMatrix();
     glColor4f( 1.0, 1.0, 1.0, 1.0 );
-    if (!has_data) {
-      pangolin::glDrawLine(tl[0],tl[1],tl[2],tr[0],tr[1],tr[2]);
-      pangolin::glDrawLine(bl[0],bl[1],bl[2],br[0],br[1],br[2]);
-      pangolin::glDrawLine(tl[0],tl[1],tl[2],bl[0],bl[1],bl[2]);
-      pangolin::glDrawLine(tr[0],tr[1],tr[2],br[0],br[1],br[2]);
-    } else {
+    //    if (!has_data) {
+    //      pangolin::glDrawLine(tl[0],tl[1],tl[2],tr[0],tr[1],tr[2]);
+    //      pangolin::glDrawLine(bl[0],bl[1],bl[2],br[0],br[1],br[2]);
+    //      pangolin::glDrawLine(tl[0],tl[1],tl[2],bl[0],bl[1],bl[2]);
+    //      pangolin::glDrawLine(tr[0],tr[1],tr[2],br[0],br[1],br[2]);
+    //    } else {
+    if (has_data) {
       Eigen::Vector3d dx, dy;
       dx = (tl - tr) / 8;
       dy = (tl - bl) / 8;
@@ -270,6 +271,136 @@ void threshold( cv::Mat& img, float low, float high )
   img = img > ave;
 }
 
+cv::Mat get_mask( std::shared_ptr< detection> d,
+                  Sophus::SE3d t,
+                  Eigen::Matrix3d k,
+                  bool from_ts = true)
+{
+  double p[4][2];
+
+  // These corners should really be determined from the pixel information
+  Eigen::Vector3d temp;
+
+  if (from_ts) {
+    temp = k * (t.inverse() * d->tag_data.tl);
+    d->tag_data.tl(0) = temp(0) / temp(2);
+    d->tag_data.tl(1) = temp(1) / temp(2);
+
+    temp = k * (t.inverse() * d->tag_data.tr);
+    d->tag_data.tr(0) = temp(0) / temp(2);
+    d->tag_data.tr(1) = temp(1) / temp(2);
+
+    temp = k * (t.inverse() * d->tag_data.bl);
+    d->tag_data.bl(0) = temp(0) / temp(2);
+    d->tag_data.bl(1) = temp(1) / temp(2);
+
+    temp = k * (t.inverse() * d->tag_data.br);
+    d->tag_data.br(0) = temp(0) / temp(2);
+    d->tag_data.br(1) = temp(1) / temp(2);
+
+    p[0][0] = d->tag_corners.tl(0);
+    p[0][1] = d->tag_corners.tl(1);
+
+    p[1][0] = d->tag_corners.bl(0);
+    p[1][1] = d->tag_corners.bl(1);
+
+    p[2][0] = d->tag_corners.br(0);
+    p[2][1] = d->tag_corners.br(1);
+
+    p[3][0] = d->tag_corners.tr(0);
+    p[3][1] = d->tag_corners.tr(1);
+  } else {
+    p[0][0] = d->tag_corners.tl(0);
+    p[0][1] = d->tag_corners.tl(1);
+
+    p[1][0] = d->tag_corners.bl(0);
+    p[1][1] = d->tag_corners.bl(1);
+
+    p[2][0] = d->tag_corners.br(0);
+    p[2][1] = d->tag_corners.br(1);
+
+    p[3][0] = d->tag_corners.tr(0);
+    p[3][1] = d->tag_corners.tr(1);
+  }
+
+  cv::Mat mask(d->image.rows, d->image.cols, d->image.type());
+  mask = cv::Scalar(0);
+  std::vector< std::vector< cv::Point > > pts;
+  std::vector< cv::Point > ps;
+  ps.push_back( cv::Point(p[0][0], p[0][1]));
+  ps.push_back( cv::Point(p[1][0], p[1][1]));
+  ps.push_back( cv::Point(p[2][0], p[2][1]));
+  ps.push_back( cv::Point(p[3][0], p[3][1]));
+  pts.push_back(ps);
+  cv::fillPoly(mask, pts, 255);
+  return mask;
+}
+
+void normalize(cv::Mat& im)
+{
+  double min, max;
+  cv::minMaxLoc(im, &min, &max);
+  im = (im - min) / (max - min);
+}
+
+void dtrack_update( std::vector< std::shared_ptr< detection > > &ds,
+                    DTrack* dtrack,
+                    SceneGraph::GLSimCam* sim_cam,
+                    SceneGraph::GLSimCam* depth_cam,
+                    Eigen::Matrix3d k )
+{
+  cv::Mat rect;
+  std::shared_ptr< detection > d = ds[0];
+  d->image.copyTo(rect);
+  cv::Mat dtrackWeights(rect.rows, rect.cols, CV_32FC1);
+  cv::Mat temp(rect.rows, rect.cols, rect.type());
+  cv::Mat synthetic(rect.rows, rect.cols, CV_32FC1);
+  cv::Mat depth(rect.rows, rect.cols, CV_32FC1);
+
+  sim_cam->SetPoseVision( _Cart2T(d->pose) );
+  sim_cam->RenderToTexture();
+  sim_cam->DrawCamera();
+  sim_cam->CaptureGrey( temp.data );
+  temp.convertTo(synthetic, CV_32FC1);
+
+  depth_cam->SetPoseVision( _Cart2T(d->pose) );
+  depth_cam->RenderToTexture();
+  depth_cam->DrawCamera();
+  depth_cam->CaptureDepth( depth.data );
+
+  Sophus::SE3d t_dt;
+  Sophus::SE3d t_ws(_Cart2T(d->pose));
+
+  cv::Mat all_masks(d->image.rows, d->image.cols, CV_32FC1);
+  all_masks = cv::Scalar(0.0f);
+  for (int count = 0; count < ds.size(); count++) {
+    d = ds[count];
+    cv::Mat mask = get_mask( d, t_ws, k, false);
+    mask.convertTo(mask, CV_32FC1);
+    mask /= 255.0f;
+    all_masks = all_masks + mask;
+  }
+
+  d = ds[0];
+  synthetic /= 255.0f;
+  d->image.convertTo(temp, CV_32FC1);
+  temp /= 255.0f;
+  for (int jj = 0; jj < temp.rows; jj++) {
+    for (int ii = 0; ii < temp.cols; ii++) {
+      if (all_masks.at<float>(jj, ii) == 0) {
+        temp.at<float>(jj, ii) = 0;
+        depth.at<float>(jj, ii) = 0;
+        synthetic.at<float>(jj, ii) = 0;
+      }
+    }
+  }
+
+  dtrack->SetKeyframe(synthetic, depth);
+  dtrack->Estimate(temp, t_dt, dtrackWeights);
+
+//  d->pose = _T2Cart(_Cart2T(d->pose) * t_dt.matrix());
+}
+
 void homography_minimization( std::shared_ptr< detection > d,
                               SceneGraph::GLSimCam* simcam,
                               Eigen::Matrix3d k )
@@ -397,13 +528,6 @@ void homography_minimization( std::shared_ptr< detection > d,
   Eigen::Matrix4d h = cameraPoseFromHomography( H );
   std::cout << h << std::endl;
   //  d->pose = _T2Cart( _Cart2T(d->pose) * h.inverse() );
-}
-
-void normalize(cv::Mat& im)
-{
-  double min, max;
-  cv::minMaxLoc(im, &min, &max);
-  im = (im - min) / (max - min);
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -617,7 +741,6 @@ int main( int argc, char** argv )
   dtrack.SetParams(old_rig.cameras[0].camera, old_rig.cameras[0].camera,
       old_rig.cameras[0].camera, Sophus::SE3d());
 
-  cv::Mat dtrackWeights(rect.rows, rect.cols, CV_32FC1);
   for( std::map<int, std::vector< std::shared_ptr< detection > > >::iterator it = detections.begin();
        it != detections.end(); it++){
     //    if (it->second.size() > 0) {
@@ -630,56 +753,10 @@ int main( int argc, char** argv )
     //              detections[it->first][0]->pose(4),
     //              detections[it->first][0]->pose(5) );
     //      fflush(stdout);
-    for (int i = 0; i < /*it->second.size()*/1; i++) {
-      std::shared_ptr< detection > d = detections[it->first][i];
-      cv::Mat temp(rect.rows, rect.cols, rect.type());
-      cv::Mat synthetic(rect.rows, rect.cols, CV_32FC1);
-      cv::Mat depth(rect.rows, rect.cols, CV_32FC1);
-
-      sim_cam.SetPoseVision( _Cart2T(d->pose) );
-      sim_cam.RenderToTexture();
-      sim_cam.DrawCamera();
-      sim_cam.CaptureGrey( temp.data );
-      temp.convertTo(synthetic, CV_32FC1);
-
-      depth_cam.SetPoseVision( _Cart2T(d->pose) );
-      depth_cam.RenderToTexture();
-      depth_cam.DrawCamera();
-      depth_cam.CaptureDepth( depth.data );
-
-      normalize(synthetic);
-      //      cv::imshow("synthetic", synthetic);
-      //      cv::imshow("depth", depth);
-      //      cv::waitKey();
-
-      Sophus::SE3d t_dt;
-      dtrack.SetKeyframe(synthetic, depth);
-      d->image.convertTo(temp, CV_32FC1);
-      normalize(temp);
-      dtrack.Estimate(temp, t_dt, dtrackWeights);
-
-      //      cv::Mat temp2(rect.rows, rect.cols, rect.type());
-      //      cv::Mat synthetic2(rect.rows, rect.cols, CV_32FC1);
-      //      cv::Mat depth2(rect.rows, rect.cols, CV_32FC1);
-
-      //      sim_cam.SetPoseVision( _Cart2T(d->pose) * t_dt.matrix() );
-      //      sim_cam.RenderToTexture();
-      //      sim_cam.DrawCamera();
-      //      sim_cam.CaptureGrey( temp2.data );
-      //      temp2.convertTo(synthetic2, CV_32FC1);
-      //      normalize(synthetic2);
-
-      //      depth_cam.SetPoseVision( _Cart2T(d->pose) * t_dt.matrix() );
-      //      depth_cam.RenderToTexture();
-      //      depth_cam.DrawCamera();
-      //      depth_cam.CaptureDepth( depth2.data );
-
-      //      cv::imshow("synthetic after", synthetic2);
-      //      cv::imshow("depth after", depth2);
-      //      cv::waitKey();
-
-      Sophus::SE3d tr( _Cart2T(d->pose));
-      d->pose = _T2Cart( (tr * t_dt).matrix());
+//    for (int i = 0; i < /*it->second.size()*/1; i++) {
+//      std::shared_ptr< detection > d = detections[it->first][i];
+      dtrack_update(detections[it->first], &dtrack, &sim_cam, &depth_cam, K);
+      //      d->pose = _T2Cart( (tr * t_dt).matrix());
 
       //        if (detections.find(it->first - 1) != detections.end()) {
       //          d->pose = detections[it->first - 1][0]->pose;
@@ -699,7 +776,7 @@ int main( int argc, char** argv )
     //              d->pose(1), d->pose(2), d->pose(3), d->pose(4), d->pose(5) );
     //      fflush(stdout);
     //    }
-  }
+//  }
 
   if (cl.search("-o")) {
     FILE* ofile = fopen(cl.follow("", "-o").c_str(), "w");
