@@ -343,7 +343,7 @@ void normalize(cv::Mat& im)
   im = (im - min) / (max - min);
 }
 
-void dtrack_update( std::vector< std::shared_ptr< detection > > &ds,
+Eigen::Vector6d dtrack_update( std::vector< std::shared_ptr< detection > > &ds,
                     DTrack* dtrack,
                     SceneGraph::GLSimCam* sim_cam,
                     SceneGraph::GLSimCam* depth_cam,
@@ -368,7 +368,7 @@ void dtrack_update( std::vector< std::shared_ptr< detection > > &ds,
   depth_cam->DrawCamera();
   depth_cam->CaptureDepth( depth.data );
 
-  Sophus::SE3d t_dt;
+  Sophus::SE3d t_sl(Eigen::Matrix4d::Identity());
   Sophus::SE3d t_ws(_Cart2T(d->pose));
 
   cv::Mat all_masks(d->image.rows, d->image.cols, CV_32FC1);
@@ -395,10 +395,24 @@ void dtrack_update( std::vector< std::shared_ptr< detection > > &ds,
     }
   }
 
-  dtrack->SetKeyframe(synthetic, depth);
-  dtrack->Estimate(temp, t_dt, dtrackWeights);
+  cv::Mat original;
+  temp.copyTo(original);
 
-//  d->pose = _T2Cart(_Cart2T(d->pose) * t_dt.matrix());
+//  cv::imshow("Before", synthetic + original);
+
+  dtrack->SetKeyframe(synthetic, depth);
+  dtrack->Estimate(temp, t_sl, dtrackWeights);
+
+  sim_cam->SetPoseVision( (t_ws * t_sl).matrix() );
+  sim_cam->RenderToTexture();
+  sim_cam->DrawCamera();
+  sim_cam->CaptureGrey( temp.data );
+  temp.convertTo(synthetic, CV_32FC1);
+
+//  cv::imshow("After", synthetic + original);
+//  cv::waitKey();
+
+  return _T2Cart((t_ws * t_sl).matrix());
 }
 
 void homography_minimization( std::shared_ptr< detection > d,
@@ -573,11 +587,9 @@ int main( int argc, char** argv )
 
   std::vector<cv::Mat> vImages;
   std::map< int, std::vector< std::shared_ptr< detection > > > detections;
-  Eigen::Vector6d temp_pose;
 
   int count = 0;
-  bool capture = cl.search("-capture");
-  while( cam.Capture( vImages ) && (count < 100)){
+  while( cam.Capture( vImages ) ){
 
     count++;
     // 1) Capture and rectify
@@ -656,17 +668,16 @@ int main( int argc, char** argv )
         ceres::CostFunction* cost_function_tr = ProjectionCost( d->tag_data.tr, d->tag_corners.tr, K, cmod);
         ceres::CostFunction* cost_function_bl = ProjectionCost( d->tag_data.bl, d->tag_corners.bl, K, cmod);
         ceres::CostFunction* cost_function_br = ProjectionCost( d->tag_data.br, d->tag_corners.br, K, cmod);
-        problem.AddResidualBlock( cost_function_tl, NULL, (it->second[0]->pose.data()));
-        problem.AddResidualBlock( cost_function_tr, NULL, (it->second[0]->pose.data()));
-        problem.AddResidualBlock( cost_function_bl, NULL, (it->second[0]->pose.data()));
-        problem.AddResidualBlock( cost_function_br, NULL, (it->second[0]->pose.data()));
+        problem.AddResidualBlock( cost_function_tl, NULL, (it->second[i]->pose.data()));
+        problem.AddResidualBlock( cost_function_tr, NULL, (it->second[i]->pose.data()));
+        problem.AddResidualBlock( cost_function_bl, NULL, (it->second[i]->pose.data()));
+        problem.AddResidualBlock( cost_function_br, NULL, (it->second[i]->pose.data()));
       }
 
       ceres::Solver::Summary summary;
       ceres::Solve(options, &problem, &summary);
     }
   }
-
 
   // Setup OpenGL Display (based on GLUT)
   pangolin::CreateWindowAndBind("Visualizer");
@@ -741,42 +752,12 @@ int main( int argc, char** argv )
   dtrack.SetParams(old_rig.cameras[0].camera, old_rig.cameras[0].camera,
       old_rig.cameras[0].camera, Sophus::SE3d());
 
+  std::vector< Eigen::Vector6d > poses;
+
   for( std::map<int, std::vector< std::shared_ptr< detection > > >::iterator it = detections.begin();
        it != detections.end(); it++){
-    //    if (it->second.size() > 0) {
-    //    ceres::Problem problem;
-    //      fprintf(stdout, "Pose before: <%f, %f, %f, %f, %f, %f>\n",
-    //              detections[it->first][0]->pose(0),
-    //              detections[it->first][0]->pose(1),
-    //              detections[it->first][0]->pose(2),
-    //              detections[it->first][0]->pose(3),
-    //              detections[it->first][0]->pose(4),
-    //              detections[it->first][0]->pose(5) );
-    //      fflush(stdout);
-//    for (int i = 0; i < /*it->second.size()*/1; i++) {
-//      std::shared_ptr< detection > d = detections[it->first][i];
-      dtrack_update(detections[it->first], &dtrack, &sim_cam, &depth_cam, K);
-      //      d->pose = _T2Cart( (tr * t_dt).matrix());
-
-      //        if (detections.find(it->first - 1) != detections.end()) {
-      //          d->pose = detections[it->first - 1][0]->pose;
-      //        }
-      //      ceres::CostFunction* dense_cost_function =
-      //          PhotometricCost( d, &sim_cam, K, cmod, cl.search("-show-ceres") );
-      //      problem.AddResidualBlock( dense_cost_function, NULL,
-      //                                (detections[it->first][0]->pose.data()));
-      //      homography_minimization( d, &sim_cam, K );
+      poses.push_back(dtrack_update(detections[it->first], &dtrack, &sim_cam, &depth_cam, K));
     }
-
-    //    ceres::Solver::Summary summary;
-    //    ceres::Solve(options2, &problem, &summary);
-
-    //      std::shared_ptr< detection > d = it->second[0];
-    //      fprintf(stdout, "Pose after : <%f, %f, %f, %f, %f, %f>\n", d->pose(0),
-    //              d->pose(1), d->pose(2), d->pose(3), d->pose(4), d->pose(5) );
-    //      fflush(stdout);
-    //    }
-//  }
 
   if (cl.search("-o")) {
     FILE* ofile = fopen(cl.follow("", "-o").c_str(), "w");

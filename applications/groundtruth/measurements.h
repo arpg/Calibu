@@ -119,12 +119,6 @@ const double w
   std::vector<cv::Point3f> cv_obj;
   std::vector<cv::Point2f> cv_img;
 
-//  fprintf(stderr, "Before: (%f, %f)\n", pts_2d[0][0], pts_2d[0][1]);
-//  for (int i = 0; i < 4; i++)
-//    Warp_Pts(pts_2d[i][0], pts_2d[i][1], w);
-//  fprintf(stderr, "After: (%f, %f)\n", pts_2d[0][0], pts_2d[0][1]);
-//  fflush(stderr);
-
   cv_obj.push_back( cv::Point3f(pts_3d[0][0],pts_3d[0][1],pts_3d[0][2]) );
   cv_obj.push_back( cv::Point3f(pts_3d[3][0],pts_3d[3][1],pts_3d[3][2]) );
   cv_obj.push_back( cv::Point3f(pts_3d[2][0],pts_3d[2][1],pts_3d[2][2]) );

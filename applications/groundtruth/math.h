@@ -51,7 +51,7 @@ inline Eigen::Matrix<Scalar, 4, 4> _Cart2T(
     return T;
 }
 
-template <typename T>
+template <typename T = double>
 inline Eigen::Matrix<T, 4, 4> _Cart2T( Eigen::Matrix<T,6,1> x)
 {
     return _Cart2T<T>(x(0),x(1),x(2),x(3),x(4),x(5));
