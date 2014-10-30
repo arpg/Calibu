@@ -589,7 +589,7 @@ int main( int argc, char** argv )
   std::map< int, std::vector< std::shared_ptr< detection > > > detections;
 
   int count = 0;
-  while( cam.Capture( vImages ) ){
+  while( cam.Capture( vImages ) && (count < 40)){
 
     count++;
     // 1) Capture and rectify
@@ -703,11 +703,23 @@ int main( int argc, char** argv )
         pangolin::ModelViewLookAt(-10, 0, -5, 0, 0, 0, pangolin::AxisNegZ)
         );
 
-  view3d.SetBounds(0, 1, 0, 1)
+  view3d.SetBounds(0, 0.5, 0, 0.5)
       .SetHandler(new SceneGraph::HandlerSceneGraph(glGraph,stacks3d, pangolin::AxisNegZ))
       .SetDrawFunction(SceneGraph::ActivateDrawFunctor(glGraph, stacks3d));
-
   container.AddDisplay(view3d);
+
+  SceneGraph::ImageView sim_image;
+  sim_image.SetBounds(0, 0.5, 0.5, 1);
+  container.AddDisplay(sim_image);
+
+  SceneGraph::ImageView live_image;
+  live_image.SetBounds(0.5, 1, 0.5, 1);
+  container.AddDisplay(live_image);
+
+  SceneGraph::ImageView diff_image;
+  diff_image.SetBounds(0.5, 1, 0, 0.5);
+  container.AddDisplay(diff_image);
+
 
   std::vector< Eigen::Vector6d > camPoses;
   std::vector< GLTag > glTags;
@@ -756,7 +768,8 @@ int main( int argc, char** argv )
 
   for( std::map<int, std::vector< std::shared_ptr< detection > > >::iterator it = detections.begin();
        it != detections.end(); it++){
-      poses.push_back(dtrack_update(detections[it->first], &dtrack, &sim_cam, &depth_cam, K));
+//      poses.push_back(dtrack_update(detections[it->first], &dtrack, &sim_cam, &depth_cam, K));
+    poses.push_back( detections[it->first][0]->pose );
     }
 
   if (cl.search("-o")) {
@@ -778,18 +791,27 @@ int main( int argc, char** argv )
     return 0;
   }
 
+  Eigen::Vector6d p;
+
   if (cl.search("-capture")) {
 
     std::shared_ptr< detection > d = detections.begin()->second[0];
 
+//    Eigen::Matrix4d T = _Cart2T<double>(d->pose);
+//    std::cout<<T<<std::endl;
+
     FILE* dfile = fopen("data.out", "w");
     fprintf(dfile, "%f\t%f\t%f\t%f\t%f\t%f\n", d->pose(0), d->pose(1), d->pose(2),
             d->pose(3), d->pose(4), d->pose(5));
-
+    p = d->pose;
     fprintf(dfile, "%f\t%f\t%f\n", d->tag_data.tl(0), d->tag_data.tl(1), d->tag_data.tl(2));
-    fprintf(dfile, "%f\t%f\t%f\n", d->tag_data.tl(0), d->tag_data.bl(1), d->tag_data.bl(2));
-    fprintf(dfile, "%f\t%f\t%f\n", d->tag_data.tl(0), d->tag_data.br(1), d->tag_data.br(2));
-    fprintf(dfile, "%f\t%f\t%f\n", d->tag_data.tl(0), d->tag_data.tr(1), d->tag_data.tr(2));
+    fprintf(dfile, "%f\t%f\t%f\n", d->tag_data.bl(0), d->tag_data.bl(1), d->tag_data.bl(2));
+    fprintf(dfile, "%f\t%f\t%f\n", d->tag_data.br(0), d->tag_data.br(1), d->tag_data.br(2));
+    fprintf(dfile, "%f\t%f\t%f\n", d->tag_data.tr(0), d->tag_data.tr(1), d->tag_data.tr(2));
+    fprintf(dfile, "%f\t%f\n", d->tag_corners.tl(0), d->tag_corners.tl(1));
+    fprintf(dfile, "%f\t%f\n", d->tag_corners.bl(0), d->tag_corners.bl(1));
+    fprintf(dfile, "%f\t%f\n", d->tag_corners.br(0), d->tag_corners.br(1));
+    fprintf(dfile, "%f\t%f\n", d->tag_corners.tr(0), d->tag_corners.tr(1));
     fprintf(dfile, "%d\t%d\n", d->tag_data.color_low, d->tag_data.color_high);
 
     unsigned long long value = tags[d->tag_id].data;
@@ -842,17 +864,27 @@ int main( int argc, char** argv )
     glGraph.AddChild( &campose[count]);
   }
 
+  SceneGraph::GLWireSphere sphere(0.1);
+  sphere.SetPose( p );
+  glGraph.AddChild( &sphere );
+
   bool bRun = false;
   bool bStep = false;
   unsigned long nFrame=0;
-
-  pangolin::RegisterKeyPressCallback(pangolin::PANGO_SPECIAL + pangolin::PANGO_KEY_RIGHT, [&bStep](){bStep=true;} );
+  int pose_number = 0;
+  pangolin::RegisterKeyPressCallback(pangolin::PANGO_SPECIAL + pangolin::PANGO_KEY_RIGHT, [&](){bStep=true; pose_number++;} );
+  pangolin::RegisterKeyPressCallback(pangolin::PANGO_SPECIAL + pangolin::PANGO_KEY_LEFT, [&](){bStep=true; pose_number--;} );
   pangolin::RegisterKeyPressCallback(' ', [&](){bRun = !bRun;} );
+
+
+  cv::Mat synth(cmod->Height(), cmod->Width(), CV_8UC1);
+  cv::Mat diff(cmod->Height(), cmod->Width(), CV_8UC1);
+
+  std::map<int, std::vector< std::shared_ptr< detection > > >::iterator it;
+  it = detections.begin();
 
   for(; !pangolin::ShouldQuit(); nFrame++)
   {
-    const bool bGo = bRun || pangolin::Pushed(bStep);
-
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glColor4f(1.0f,1.0f,1.0f,1.0f);
 
@@ -864,7 +896,22 @@ int main( int argc, char** argv )
           camPoses[ii][0], camPoses[ii][1], camPoses[ii][2]);
     }
 
+    if (bStep) {
+      pose_number = std::min((int) camPoses.size() - 1, pose_number);
+      pose_number = std::max(0, pose_number);
+      sphere.SetPose(camPoses[pose_number]);
+      sim_cam.SetPoseVision(_Cart2T(camPoses[pose_number]));
+      sim_cam.RenderToTexture();
+      sim_cam.CaptureGrey( synth.data );
+      bStep = false;
+      it = detections.begin();
+      std::advance(it, pose_number);
+    }
 
+    sim_image.SetImage( synth.data, cmod->Width(), cmod->Height(), GL_RGB, GL_LUMINANCE, GL_UNSIGNED_BYTE);
+    live_image.SetImage( it->second[0]->image.data, cmod->Width(), cmod->Height(), GL_RGB, GL_LUMINANCE, GL_UNSIGNED_BYTE);
+    diff = synth + it->second[0]->image;
+    diff_image.SetImage( diff.data, cmod->Width(), cmod->Height(), GL_RGB, GL_LUMINANCE, GL_UNSIGNED_BYTE, true);
 
     glColor4f(1, 1, 1, 1);
 

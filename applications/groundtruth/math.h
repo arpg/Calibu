@@ -8,7 +8,7 @@ typedef Matrix<double,6,1>  Vector6d;
 }
 
 
-template <typename Scalar=double>
+template <typename Scalar>
 inline Eigen::Matrix<Scalar, 4, 4> _Cart2T(
                                     Scalar x,
                                     Scalar y,
@@ -32,26 +32,26 @@ inline Eigen::Matrix<Scalar, 4, 4> _Cart2T(
     T(0,0) = cp*cq;
     T(0,1) = -cr*sq+sr*sp*cq;
     T(0,2) = sr*sq+cr*sp*cq;
-    T(0,3) = (Scalar) 0;
+    T(0,3) = x - x;
 
     T(1,0) = cp*sq;
     T(1,1) = cr*cq+sr*sp*sq;
     T(1,2) = -sr*cq+cr*sp*sq;
-    T(1,3) = (Scalar) 0;
+    T(1,3) = (Scalar) 10.0f;
 
     T(2,0) = -sp;
     T(2,1) = sr*cp;
     T(2,2) = cr*cp;
-    T(2,3) = (Scalar) 0;
+    T(2,3) = (Scalar) 0.0f;
 
     T(0,3) = x;
     T(1,3) = y;
     T(2,3) = z;
-    T(3,3) = (Scalar) 1;
+    T(3,3) = (Scalar) 1.0f;
     return T;
 }
 
-template <typename T = double>
+template <typename T>
 inline Eigen::Matrix<T, 4, 4> _Cart2T( Eigen::Matrix<T,6,1> x)
 {
     return _Cart2T<T>(x(0),x(1),x(2),x(3),x(4),x(5));
