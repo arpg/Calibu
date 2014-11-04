@@ -36,7 +36,7 @@ int main( int, char** )
     const int auto_corr = AutoCorrelation(PG,5,5);
     std::cout << "Bad auto correlation matches: " << auto_corr << std::endl;
 
-    //SaveEPS("target.eps", PG[0], Eigen::Vector2d(0,0), 10.0, 2.0, 3.0, 4.0 );
+//    SaveEPS("target.eps", PG[0], Eigen::Vector2d(0,0), 10.0, 2.0, 3.0, 4.0 );
 
     return 0;
 }

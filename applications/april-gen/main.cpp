@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <apriltags/apriltag.h>
 #include <apriltags/tag36h11.h>
-#include <HAL/Utils/GetPot>
 
 void write_tags( FILE* f, int x, int y, unsigned char* tag, int id )
 {
@@ -53,6 +52,17 @@ void tag_from_id( int id, unsigned char* tag)
   tag36h11_destroy(tf);
 }
 
+void write_csv( FILE* f, int x, int y, int id )
+{
+  id *= 100;
+  float del = (8 / 72.0f) * ( 0.0254);
+  float xf = 0.0254*(x / 72.0f);
+  float yf = 0.0254*(y / 72.0f);
+  fprintf(f, "%d, %f, %f,  0\n", id, xf, yf);
+  fprintf(f, "%d, %f, %f,  0\n", id + 1, xf + del, yf);
+  fprintf(f, "%d, %f, %f,  0\n", id + 2, xf + del, yf + del);
+  fprintf(f, "%d, %f, %f,  0\n", id + 3, xf, yf + del);
+}
 
 int main( int argc, char** argv )
 {  
@@ -64,6 +74,7 @@ int main( int argc, char** argv )
   }
 
   FILE* f = fopen("APRIL_tags.eps", "w");
+  FILE* csv = fopen("Data.csv", "w");
   fprintf(f, "%%!PS-Adobe EPSF-3.0\n");
   fprintf(f, "%%%%Boundingbox: 0 0 612 792\n");
   fprintf(f, "/Times-Roman findfont 20 scalefont setfont\n");
@@ -73,11 +84,14 @@ int main( int argc, char** argv )
     tag_from_id(atoi(argv[count]), tag);
     write_tags(f, atoi(argv[count + 1]), atoi(argv[count + 2]),
         tag, atoi(argv[count]));
+    write_csv(csv, atoi(argv[count + 1]), atoi(argv[count + 2]),
+        atoi(argv[count]));
     count += 3;
   }
 
   fprintf(f, "showpage\n");
   fclose(f);
+  fclose(csv);
   delete[] tag;
   return 0;
 }
