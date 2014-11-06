@@ -138,7 +138,6 @@ struct PhotometricCostFunctor
       cv::Mat img(det->image.rows, det->image.cols, det->image.type());
       simcam->SetPoseVision(t_wi.matrix());
       simcam->RenderToTexture();
-      simcam->DrawCamera();
       simcam->CaptureGrey( img.data );
 
 

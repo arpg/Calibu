@@ -101,12 +101,12 @@ public:
   {
     glPushMatrix();
     glColor4f( 1.0, 1.0, 1.0, 1.0 );
-    //    if (!has_data) {
-    //      pangolin::glDrawLine(tl[0],tl[1],tl[2],tr[0],tr[1],tr[2]);
-    //      pangolin::glDrawLine(bl[0],bl[1],bl[2],br[0],br[1],br[2]);
-    //      pangolin::glDrawLine(tl[0],tl[1],tl[2],bl[0],bl[1],bl[2]);
-    //      pangolin::glDrawLine(tr[0],tr[1],tr[2],br[0],br[1],br[2]);
-    //    } else {
+        if (!has_data) {
+          pangolin::glDrawLine(tl[0],tl[1],tl[2],tr[0],tr[1],tr[2]);
+          pangolin::glDrawLine(bl[0],bl[1],bl[2],br[0],br[1],br[2]);
+          pangolin::glDrawLine(tl[0],tl[1],tl[2],bl[0],bl[1],bl[2]);
+          pangolin::glDrawLine(tr[0],tr[1],tr[2],br[0],br[1],br[2]);
+        }
     if (has_data) {
       Eigen::Vector3d dx, dy;
       dx = (tl - tr) / 8;
@@ -395,23 +395,6 @@ Eigen::Vector6d dtrack_update( std::vector< std::shared_ptr< detection > > &ds,
     }
   }
 
-  cv::Mat original;
-  temp.copyTo(original);
-
-//  cv::imshow("Before", synthetic + original);
-
-  dtrack->SetKeyframe(synthetic, depth);
-  dtrack->Estimate(temp, t_sl, dtrackWeights);
-
-  sim_cam->SetPoseVision( (t_ws * t_sl).matrix() );
-  sim_cam->RenderToTexture();
-  sim_cam->DrawCamera();
-  sim_cam->CaptureGrey( temp.data );
-  temp.convertTo(synthetic, CV_32FC1);
-
-//  cv::imshow("After", synthetic + original);
-//  cv::waitKey();
-
   return _T2Cart((t_ws * t_sl).matrix());
 }
 
@@ -589,7 +572,7 @@ int main( int argc, char** argv )
   std::map< int, std::vector< std::shared_ptr< detection > > > detections;
 
   int count = 0;
-  while( cam.Capture( vImages ) && (count < 40)){
+  while( cam.Capture( vImages ) && (count < 100)){
 
     count++;
     // 1) Capture and rectify
@@ -598,7 +581,9 @@ int main( int argc, char** argv )
     // 2) Run tag detector and get tag corners
     std::vector<april_tag_detection_t> vDetections;
     td.Detect( rect, vDetections );
-    if( vDetections.empty() ){
+    if( vDetections.empty() ){      
+      fprintf(stderr, "No detections at frame %d\n", count);
+      fflush(stderr);
       continue;
     }
 
@@ -613,10 +598,10 @@ int main( int argc, char** argv )
       d->tag_data = tags[t_id];
 
       Eigen::Vector3d pts_3d[4];
-      pts_3d[0] = tags[t_id].tl; //survey_map[t_id*100];
-      pts_3d[1] = tags[t_id].bl; //survey_map[t_id*100 + 1];
-      pts_3d[2] = tags[t_id].br; //survey_map[t_id*100 + 2];
-      pts_3d[3] = tags[t_id].tr; //survey_map[t_id*100 + 3];
+      pts_3d[0] = tags[t_id].tl;
+      pts_3d[1] = tags[t_id].tr;
+      pts_3d[2] = tags[t_id].br;
+      pts_3d[3] = tags[t_id].bl;
 
       april_tag_detection_t* p = &vDetections[ii];
       tags[t_id].data = td.tf_->codes[p->id];
@@ -625,6 +610,7 @@ int main( int argc, char** argv )
       d->tag_data.color_low = min_max(0);
       tags[t_id].color_high = min_max(1);
       d->tag_data.color_high = min_max(1);
+
       Eigen::Vector6d T_tc = CalcPose( vDetections[ii].p, pts_3d, K, params[4] );
       rect.copyTo(d->image);
       d->pose = T_tc;
@@ -637,11 +623,11 @@ int main( int argc, char** argv )
 
       if (cl.search("-debug")) {
         cv::Mat out;
-        rect.copyTo(out);
-        cv::circle(out, cv::Point2d(p->p[0][0], p->p[0][1]), 3, 'r');
-        cv::circle(out, cv::Point2d(p->p[1][0], p->p[1][1]), 3, 'r');
-        cv::circle(out, cv::Point2d(p->p[2][0], p->p[2][1]), 3, 'r');
-        cv::circle(out, cv::Point2d(p->p[3][0], p->p[3][1]), 3, 'r');
+        cv::cvtColor(rect, out, CV_GRAY2RGB);
+        cv::circle(out, cv::Point2d(p->p[0][0], p->p[0][1]), 3, cv::Scalar(255, 0, 255));
+        cv::circle(out, cv::Point2d(p->p[1][0], p->p[1][1]), 3, cv::Scalar(0, 255, 0));
+        cv::circle(out, cv::Point2d(p->p[2][0], p->p[2][1]), 3, cv::Scalar(0, 0, 255));
+        cv::circle(out, cv::Point2d(p->p[3][0], p->p[3][1]), 3, cv::Scalar(255, 255, 255));
         cv::imshow("Detected Corners", out);
         cv::waitKey();
       }
@@ -746,17 +732,11 @@ int main( int argc, char** argv )
   }
 
   SceneGraph::GLSimCam sim_cam;
-  sim_cam.Init( &glGraph, Eigen::Matrix4d::Identity(), K,
-                cam.Width(), cam.Height(), SceneGraph::eSimCamLuminance );
+  sim_cam.Init( &glGraph, _Cart2T(detections.begin()->second[0]->pose), K,
+                cam.Width(), cam.Height(), SceneGraph::eSimCamLuminance, 0.01 );
   SceneGraph::GLSimCam depth_cam;
-  depth_cam.Init( &glGraph, Eigen::Matrix4d::Identity(), K,
-                  cam.Width(), cam.Height(), SceneGraph::eSimCamDepth );
-
-  ceres::Solver::Options options2;
-  //    options2.minimizer_type = ceres::LINE_SEARCH;
-  options2.linear_solver_type = ceres::DENSE_SCHUR;
-  //  options2.linear_solver_type = ceres::CGNR;
-  options2.max_num_iterations = 100;
+  depth_cam.Init( &glGraph, _Cart2T(detections.begin()->second[0]->pose), K,
+                  cam.Width(), cam.Height(), SceneGraph::eSimCamDepth, 0.01 );
 
   DTrack dtrack;
   dtrack.Init();
@@ -765,12 +745,12 @@ int main( int argc, char** argv )
       old_rig.cameras[0].camera, Sophus::SE3d());
 
   std::vector< Eigen::Vector6d > poses;
-
   for( std::map<int, std::vector< std::shared_ptr< detection > > >::iterator it = detections.begin();
        it != detections.end(); it++){
-//      poses.push_back(dtrack_update(detections[it->first], &dtrack, &sim_cam, &depth_cam, K));
-    poses.push_back( detections[it->first][0]->pose );
+    poses.push_back(dtrack_update(detections[it->first], &dtrack, &sim_cam, &depth_cam, K));
+//    poses.push_back( detections[it->first][0]->pose );
     }
+
 
   if (cl.search("-o")) {
     FILE* ofile = fopen(cl.follow("", "-o").c_str(), "w");
@@ -796,9 +776,6 @@ int main( int argc, char** argv )
   if (cl.search("-capture")) {
 
     std::shared_ptr< detection > d = detections.begin()->second[0];
-
-//    Eigen::Matrix4d T = _Cart2T<double>(d->pose);
-//    std::cout<<T<<std::endl;
 
     FILE* dfile = fopen("data.out", "w");
     fprintf(dfile, "%f\t%f\t%f\t%f\t%f\t%f\n", d->pose(0), d->pose(1), d->pose(2),
@@ -864,10 +841,6 @@ int main( int argc, char** argv )
     glGraph.AddChild( &campose[count]);
   }
 
-  SceneGraph::GLWireSphere sphere(0.1);
-  sphere.SetPose( p );
-  glGraph.AddChild( &sphere );
-
   bool bRun = false;
   bool bStep = false;
   unsigned long nFrame=0;
@@ -875,6 +848,20 @@ int main( int argc, char** argv )
   pangolin::RegisterKeyPressCallback(pangolin::PANGO_SPECIAL + pangolin::PANGO_KEY_RIGHT, [&](){bStep=true; pose_number++;} );
   pangolin::RegisterKeyPressCallback(pangolin::PANGO_SPECIAL + pangolin::PANGO_KEY_LEFT, [&](){bStep=true; pose_number--;} );
   pangolin::RegisterKeyPressCallback(' ', [&](){bRun = !bRun;} );
+
+  pangolin::RegisterKeyPressCallback('a', [&](){camPoses[pose_number][0] += 0.01; bStep = true;} );
+  pangolin::RegisterKeyPressCallback('d', [&](){camPoses[pose_number][0] -= 0.01; bStep = true;} );
+  pangolin::RegisterKeyPressCallback('s', [&](){camPoses[pose_number][1] += 0.01; bStep = true;} );
+  pangolin::RegisterKeyPressCallback('w', [&](){camPoses[pose_number][1] -= 0.01; bStep = true;} );
+  pangolin::RegisterKeyPressCallback('q', [&](){camPoses[pose_number][2] += 0.01; bStep = true;} );
+  pangolin::RegisterKeyPressCallback('e', [&](){camPoses[pose_number][2] -= 0.01; bStep = true;} );
+  pangolin::RegisterKeyPressCallback('j', [&](){camPoses[pose_number][3] += 0.01; bStep = true;} );
+  pangolin::RegisterKeyPressCallback('l', [&](){camPoses[pose_number][3] -= 0.01; bStep = true;} );
+  pangolin::RegisterKeyPressCallback('k', [&](){camPoses[pose_number][4] += 0.01; bStep = true;} );
+  pangolin::RegisterKeyPressCallback('i', [&](){camPoses[pose_number][4] -= 0.01; bStep = true;} );
+  pangolin::RegisterKeyPressCallback('u', [&](){camPoses[pose_number][5] += 0.01; bStep = true;} );
+  pangolin::RegisterKeyPressCallback('o', [&](){camPoses[pose_number][5] -= 0.01; bStep = true;} );
+  pangolin::RegisterKeyPressCallback('r', [&](){camPoses[pose_number] = poses[pose_number]; bStep = true;} );
 
 
   cv::Mat synth(cmod->Height(), cmod->Width(), CV_8UC1);
@@ -889,6 +876,7 @@ int main( int argc, char** argv )
     glColor4f(1.0f,1.0f,1.0f,1.0f);
 
     view3d.Activate(stacks3d);
+    sim_cam.DrawCamera();
 
     glColor4f(1.0, 0, 0, 1);
     for (int ii = 1; ii < camPoses.size(); ii++) {
@@ -899,7 +887,6 @@ int main( int argc, char** argv )
     if (bStep) {
       pose_number = std::min((int) camPoses.size() - 1, pose_number);
       pose_number = std::max(0, pose_number);
-      sphere.SetPose(camPoses[pose_number]);
       sim_cam.SetPoseVision(_Cart2T(camPoses[pose_number]));
       sim_cam.RenderToTexture();
       sim_cam.CaptureGrey( synth.data );

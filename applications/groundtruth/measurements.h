@@ -120,9 +120,9 @@ const double w
   std::vector<cv::Point2f> cv_img;
 
   cv_obj.push_back( cv::Point3f(pts_3d[0][0],pts_3d[0][1],pts_3d[0][2]) );
-  cv_obj.push_back( cv::Point3f(pts_3d[3][0],pts_3d[3][1],pts_3d[3][2]) );
-  cv_obj.push_back( cv::Point3f(pts_3d[2][0],pts_3d[2][1],pts_3d[2][2]) );
   cv_obj.push_back( cv::Point3f(pts_3d[1][0],pts_3d[1][1],pts_3d[1][2]) );
+  cv_obj.push_back( cv::Point3f(pts_3d[2][0],pts_3d[2][1],pts_3d[2][2]) );
+  cv_obj.push_back( cv::Point3f(pts_3d[3][0],pts_3d[3][1],pts_3d[3][2]) );
 
   cv_img.push_back( cv::Point2f(pts_2d[0][0],pts_2d[0][1]) );
   cv_img.push_back( cv::Point2f(pts_2d[1][0],pts_2d[1][1]) );
@@ -143,8 +143,8 @@ const double w
   cv::cv2eigen(cv_trans, trans);
 
   Eigen::Vector6d pose;
+//  pose << -trans(0), trans(1), -trans(2), rot(0) + M_PI, rot(1), rot(2) - M_PI / 2;
   pose << trans(0), trans(1), trans(2), rot(0), rot(1), rot(2);
-
   return pose;
 }
 

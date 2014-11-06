@@ -97,5 +97,3 @@ ceres::CostFunction* ProjectionCost(
   }
   return NULL;
 }
-
-

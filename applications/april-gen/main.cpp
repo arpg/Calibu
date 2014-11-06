@@ -55,7 +55,7 @@ void tag_from_id( int id, unsigned char* tag)
 void write_csv( FILE* f, int x, int y, int id )
 {
   id *= 100;
-  float del = (8 / 72.0f) * ( 0.0254);
+  float del = (80 / 72.0f) * ( 0.0254);
   float xf = 0.0254*(x / 72.0f);
   float yf = 0.0254*(y / 72.0f);
   fprintf(f, "%d, %f, %f,  0\n", id, xf, yf);

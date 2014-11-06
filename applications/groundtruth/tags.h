@@ -12,7 +12,7 @@ class TagDetector
       tf_ = tag36h11_create();
       td_ = april_tag_detector_create(tf_);
 //      td_->debug = 1;
-      td_->small_tag_refinement = 1;
+//      td_->small_tag_refinement = 1;
       td_->nthreads = 8;
     }
 
