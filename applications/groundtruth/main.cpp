@@ -86,27 +86,18 @@ public:
       px[count] = t_reverse[35 - count];
     }
 
-    //    //  The points captured include a black border.  Remove it.
-    //    Eigen::Vector3d dx, dy;
-    //    dx = (tl - tr) / 8;
-    //    dy = (tl - bl) / 8;
-    //    tl = tl - dx - dy;
-    //    tr = tr + dx - dy;
-    //    bl = bl - dx + dy;
-    //    br = br + dx + dy;
-
   }
 
   inline void DrawCanonicalObject()
   {
     glPushMatrix();
     glColor4f( 1.0, 1.0, 1.0, 1.0 );
-        if (!has_data) {
-          pangolin::glDrawLine(tl[0],tl[1],tl[2],tr[0],tr[1],tr[2]);
-          pangolin::glDrawLine(bl[0],bl[1],bl[2],br[0],br[1],br[2]);
-          pangolin::glDrawLine(tl[0],tl[1],tl[2],bl[0],bl[1],bl[2]);
-          pangolin::glDrawLine(tr[0],tr[1],tr[2],br[0],br[1],br[2]);
-        }
+    if (!has_data) {
+      pangolin::glDrawLine(tl[0],tl[1],tl[2],tr[0],tr[1],tr[2]);
+      pangolin::glDrawLine(bl[0],bl[1],bl[2],br[0],br[1],br[2]);
+      pangolin::glDrawLine(tl[0],tl[1],tl[2],bl[0],bl[1],bl[2]);
+      pangolin::glDrawLine(tr[0],tr[1],tr[2],br[0],br[1],br[2]);
+    }
     if (has_data) {
       Eigen::Vector3d dx, dy;
       dx = (tl - tr) / 8;
@@ -182,7 +173,7 @@ void ParseSurveyMapFile(
 
     survey_map.insert( std::pair<int, Eigen::Vector3d >(uid, Eigen::Vector3d( x, y, z )));
 
-    // first two digits are tag id, secnod two are landmark id:
+    // first two digits are tag id, second two are landmark id:
     int lmid = uid % 100;
     int tagid = uid / 100;
     if (tags.find(tagid) == tags.end()) {
@@ -216,6 +207,11 @@ Eigen::Vector2i find_minmax(cv::Mat img, double p[4][2])
   ps.push_back( cv::Point(p[3][0], p[3][1]));
   pts.push_back(ps);
   cv::fillPoly(test, pts, 255);
+
+  y1 = std::max(0, y1);
+  y2 = std::min(test.rows, y2);
+  x1 = std::max(0, x1);
+  x2 = std::min(test.cols, x2);
 
   for (int jj = (int) y1; jj <= (int) y2; jj++) {
     for (int ii = (int) x1; ii <= (int) x2; ii++) {
@@ -254,7 +250,7 @@ Eigen::Matrix4d cameraPoseFromHomography(const cv::Mat& H)
 
   cv::Mat p3 = p1.cross(p2);   // Computes the cross-product of p1 and p2
   cv::Mat c2 = pose.col(2);    // Pointer to third column of pose
-  p3.copyTo(c2);       // Third column is the crossproduct of columns one and two
+  p3.copyTo(c2);               // Third column is the crossproduct of columns one and two
 
   pose.col(3) = H.col(2) / tnorm;  //vector t [R|t] is the last column of pose
   Eigen::Matrix4d toRet;
@@ -278,7 +274,6 @@ cv::Mat get_mask( std::shared_ptr< detection> d,
 {
   double p[4][2];
 
-  // These corners should really be determined from the pixel information
   Eigen::Vector3d temp;
 
   if (from_ts) {
@@ -344,10 +339,10 @@ void normalize(cv::Mat& im)
 }
 
 Eigen::Vector6d dtrack_update( std::vector< std::shared_ptr< detection > > &ds,
-                    DTrack* dtrack,
-                    SceneGraph::GLSimCam* sim_cam,
-                    SceneGraph::GLSimCam* depth_cam,
-                    Eigen::Matrix3d k )
+                               DTrack* dtrack,
+                               SceneGraph::GLSimCam* sim_cam,
+                               SceneGraph::GLSimCam* depth_cam,
+                               Eigen::Matrix3d k )
 {
   cv::Mat rect;
   std::shared_ptr< detection > d = ds[0];
@@ -512,7 +507,6 @@ void homography_minimization( std::shared_ptr< detection > d,
   std::vector<cv::Point2f> obj;
   std::vector<cv::Point2f> scene;
 
-
   for( int i = 0; i < good_matches.size(); i++ )
   {
     //-- Get the keypoints from the good matches
@@ -572,16 +566,18 @@ int main( int argc, char** argv )
   std::map< int, std::vector< std::shared_ptr< detection > > > detections;
 
   int count = 0;
-  while( cam.Capture( vImages ) && (count < 100)){
+
+  while( cam.Capture( vImages ) /*&& (count < 100)*/){
 
     count++;
+    fprintf(stdout, "Frame: %d\n", count);
     // 1) Capture and rectify
     calibu::Rectify( lut, vImages[0].data, rect.data, rect.cols, rect.rows );
 
     // 2) Run tag detector and get tag corners
     std::vector<april_tag_detection_t> vDetections;
     td.Detect( rect, vDetections );
-    if( vDetections.empty() ){      
+    if( vDetections.empty() ){
       fprintf(stderr, "No detections at frame %d\n", count);
       fflush(stderr);
       continue;
@@ -636,34 +632,35 @@ int main( int argc, char** argv )
       ds.push_back(d);
 
     }
-    detections.insert( std::pair<int, std::vector< std::shared_ptr< detection > > >(count, ds) );
-  }
 
-  ceres::Solver::Options options;
-  options.linear_solver_type = ceres::DENSE_SCHUR;
-  options.num_threads = 2;
-  options.max_num_iterations = 100;
-  options.minimizer_progress_to_stdout = false;
-  for( std::map<int, std::vector< std::shared_ptr< detection > > >::iterator it = detections.begin();
-       it != detections.end(); it++){
-    if (it->second.size() > 0) {
+    if (ds.size() > 1) {
+      ceres::Solver::Options options;
+      options.linear_solver_type = ceres::DENSE_SCHUR;
+      options.num_threads = 1;
+      options.max_num_iterations = 100;
+      options.minimizer_progress_to_stdout = false;
       ceres::Problem problem;
-      for (int i = 0; i < it->second.size(); i++) {
-        std::shared_ptr< detection > d = it->second[i];
+      for( int count = 0; count < ds.size(); count++) {
+        std::shared_ptr< detection > d = ds[count];
         ceres::CostFunction* cost_function_tl = ProjectionCost( d->tag_data.tl, d->tag_corners.tl, K, cmod);
         ceres::CostFunction* cost_function_tr = ProjectionCost( d->tag_data.tr, d->tag_corners.tr, K, cmod);
         ceres::CostFunction* cost_function_bl = ProjectionCost( d->tag_data.bl, d->tag_corners.bl, K, cmod);
         ceres::CostFunction* cost_function_br = ProjectionCost( d->tag_data.br, d->tag_corners.br, K, cmod);
-        problem.AddResidualBlock( cost_function_tl, NULL, (it->second[i]->pose.data()));
-        problem.AddResidualBlock( cost_function_tr, NULL, (it->second[i]->pose.data()));
-        problem.AddResidualBlock( cost_function_bl, NULL, (it->second[i]->pose.data()));
-        problem.AddResidualBlock( cost_function_br, NULL, (it->second[i]->pose.data()));
-      }
+        problem.AddResidualBlock( cost_function_tl, NULL, (ds[0]->pose.data()));
+        problem.AddResidualBlock( cost_function_tr, NULL, (ds[0]->pose.data()));
+        problem.AddResidualBlock( cost_function_bl, NULL, (ds[0]->pose.data()));
+        problem.AddResidualBlock( cost_function_br, NULL, (ds[0]->pose.data()));
 
+      }
       ceres::Solver::Summary summary;
       ceres::Solve(options, &problem, &summary);
     }
+
+    detections.insert( std::pair<int, std::vector< std::shared_ptr< detection > > >(count, ds) );
   }
+
+  fprintf(stdout, "Finished parsing file\n");
+  fflush(stdout);
 
   // Setup OpenGL Display (based on GLUT)
   pangolin::CreateWindowAndBind("Visualizer");
@@ -715,7 +712,6 @@ int main( int argc, char** argv )
   glTagPoses.resize( tags.size() );
   count = 0;
   for (std::map<int, tag_t>::iterator it = tags.begin(); it != tags.end(); it++, count++) {
-    //    tags[it->first].remove_border();
     glTags[count].tr = tags[it->first].tr;
     glTags[count].br = tags[it->first].br;
     glTags[count].tl = tags[it->first].tl;
@@ -733,10 +729,27 @@ int main( int argc, char** argv )
 
   SceneGraph::GLSimCam sim_cam;
   sim_cam.Init( &glGraph, _Cart2T(detections.begin()->second[0]->pose), K,
-                cam.Width(), cam.Height(), SceneGraph::eSimCamLuminance, 0.01 );
+      cam.Width(), cam.Height(), SceneGraph::eSimCamLuminance, 0.01 );
   SceneGraph::GLSimCam depth_cam;
   depth_cam.Init( &glGraph, _Cart2T(detections.begin()->second[0]->pose), K,
-                  cam.Width(), cam.Height(), SceneGraph::eSimCamDepth, 0.01 );
+      cam.Width(), cam.Height(), SceneGraph::eSimCamDepth, 0.01 );
+
+  for (std::map<int, std::vector< std::shared_ptr< detection > > >::iterator it = detections.begin(); it != detections.end(); it++) {
+    ceres::Solver::Options options;
+    options.linear_solver_type = ceres::DENSE_SCHUR;
+    options.num_threads = 1;
+    options.max_num_iterations = 10;
+    options.minimizer_progress_to_stdout = false;
+    ceres::Problem problem;
+    std::vector< std::shared_ptr< detection > > dets = it->second;
+    for( int count = 0; count < dets.size(); count++) {
+      std::shared_ptr< detection > d = dets[count];
+        ceres::CostFunction* dense_cost = PhotometricCost( d, &sim_cam, K, cmod);
+        problem.AddResidualBlock( dense_cost, NULL, (dets[0]->pose.data()));
+    }
+    ceres::Solver::Summary summary;
+    ceres::Solve(options, &problem, &summary);
+  }
 
   DTrack dtrack;
   dtrack.Init();
@@ -748,11 +761,11 @@ int main( int argc, char** argv )
   for( std::map<int, std::vector< std::shared_ptr< detection > > >::iterator it = detections.begin();
        it != detections.end(); it++){
     poses.push_back(dtrack_update(detections[it->first], &dtrack, &sim_cam, &depth_cam, K));
-//    poses.push_back( detections[it->first][0]->pose );
-    }
-
+//    poses.push_back(it->second[0]->pose);
+  }
 
   if (cl.search("-o")) {
+    std::cerr << cl.follow("", "-o") << std::endl;
     FILE* ofile = fopen(cl.follow("", "-o").c_str(), "w");
     for( std::map<int, std::vector< std::shared_ptr< detection > > >::iterator it = detections.begin();
          it != detections.end(); it++){

@@ -138,14 +138,25 @@ const double w
 
   cv::solvePnP( cv_obj, cv_img, cv_K, cv_coeff, cv_rot, cv_trans, false );
 
-  Eigen::Vector3d rot, trans;
-  cv::cv2eigen(cv_rot, rot);
-  cv::cv2eigen(cv_trans, trans);
+  cv::Mat R;
+  cv::Rodrigues(cv_rot, R);
+  R = R.t();
+  cv_trans = -R * cv_trans;
 
-  Eigen::Vector6d pose;
-//  pose << -trans(0), trans(1), -trans(2), rot(0) + M_PI, rot(1), rot(2) - M_PI / 2;
-  pose << trans(0), trans(1), trans(2), rot(0), rot(1), rot(2);
-  return pose;
+  cv::Mat T(4, 4, R.type());
+  T( cv::Range(0,3), cv::Range(0,3) ) = R * 1; // copies R into T
+  T( cv::Range(0,3), cv::Range(3,4) ) = cv_trans * 1; // copies tvec into T
+  // fill the last row of T (NOTE: depending on your types, use float or double)
+  double *p = T.ptr<double>(3);
+  p[0] = p[1] = p[2] = 0; p[3] = 1;
+
+  Eigen::Matrix4d temp;
+  temp << T.at<double>(0, 0), T.at<double>(0, 1), T.at<double>(0, 2), T.at<double>(0, 3),
+          T.at<double>(1, 0), T.at<double>(1, 1), T.at<double>(1, 2), T.at<double>(1, 3),
+          T.at<double>(2, 0), T.at<double>(2, 1), T.at<double>(2, 2), T.at<double>(2, 3),
+                           0,                  0,                  0,                  1;
+
+  return _T2Cart( temp );
 }
 
 struct measurement_t

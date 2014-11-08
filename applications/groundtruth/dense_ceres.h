@@ -12,7 +12,7 @@
 template <typename Scalar>
 double diff( cv::Mat img_a,
              std::shared_ptr< detection > d,
-//             calibu::CameraInterface<Scalar>* cm,
+             //             calibu::CameraInterface<Scalar>* cm,
              const Eigen::Matrix3d &k,
              Sophus::SE3Group<Scalar> t,
              bool debug)
@@ -29,39 +29,47 @@ double diff( cv::Mat img_a,
   Eigen::Matrix<Scalar, 3, 1> temp;
 
   temp = (k.template cast<Scalar>()) * (t.inverse() * d->tag_data.tl);
-  d->tag_data.tl(0) = temp(0) / temp(2);
-  d->tag_data.tl(1) = temp(1) / temp(2);
+  double dx = temp(0) / temp(2);
+  double dy = temp(1) / temp(2);
+  if ((dx < 0) || (dy < 0) || (dx > img_a.cols) || (dy > img_a.rows))
+    return FLT_MAX;
+  p[0][0] = dx;
+  p[0][1] = dy;
 
   temp = (k.template cast<Scalar>()) * (t.inverse() * d->tag_data.tr);
-  d->tag_data.tr(0) = temp(0) / temp(2);
-  d->tag_data.tr(1) = temp(1) / temp(2);
-
-  temp = (k.template cast<Scalar>()) * (t.inverse() * d->tag_data.bl);
-  d->tag_data.bl(0) = temp(0) / temp(2);
-  d->tag_data.bl(1) = temp(1) / temp(2);
+  dx = temp(0) / temp(2);
+  dy = temp(1) / temp(2);
+  if ((dx < 0) || (dy < 0) || (dx > img_a.cols) || (dy > img_a.rows))
+    return FLT_MAX;
+  p[1][0] = dx;
+  p[1][1] = dy;
 
   temp = (k.template cast<Scalar>()) * (t.inverse() * d->tag_data.br);
-  d->tag_data.br(0) = temp(0) / temp(2);
-  d->tag_data.br(1) = temp(1) / temp(2);
+  dx = temp(0) / temp(2);
+  dy = temp(1) / temp(2);
+  if ((dx < 0) || (dy < 0) || (dx > img_a.cols) || (dy > img_a.rows))
+    return FLT_MAX;
+  p[2][0] = dx;
+  p[2][1] = dy;
 
-
-  p[0][0] = d->tag_corners.tl(0);
-  p[0][1] = d->tag_corners.tl(1);
-
-  p[1][0] = d->tag_corners.bl(0);
-  p[1][1] = d->tag_corners.bl(1);
-
-  p[2][0] = d->tag_corners.br(0);
-  p[2][1] = d->tag_corners.br(1);
-
-  p[3][0] = d->tag_corners.tr(0);
-  p[3][1] = d->tag_corners.tr(1);
+  temp = (k.template cast<Scalar>()) * (t.inverse() * d->tag_data.bl);
+  dx = temp(0) / temp(2);
+  dy = temp(1) / temp(2);
+  if ((dx < 0) || (dy < 0) || (dx > img_a.cols) || (dy > img_a.rows))
+    return FLT_MAX;
+  p[3][0] = dx;
+  p[3][1] = dy;
 
   x1 = std::min(p[0][0], std::min(p[1][0], std::min(p[2][0], p[3][0])));
   y1 = std::min(p[0][1], std::min(p[1][1], std::min(p[2][1], p[3][1])));
 
   x2 = std::max(p[0][0], std::max(p[1][0], std::max(p[2][0], p[3][0])));
   y2 = std::max(p[0][1], std::max(p[1][1], std::max(p[2][1], p[3][1])));
+
+  x1 = std::max(0, x1);
+  y1 = std::max(0, y1);
+  x2 = std::min(x2, img_a.cols);
+  y2 = std::min(y2, img_a.rows);
 
   cv::Mat mask(img_a.rows, img_a.cols, img_a.type());
   mask = cv::Scalar(0);
@@ -75,9 +83,9 @@ double diff( cv::Mat img_a,
   cv::fillPoly(mask, pts, 255);
 
   cv::Mat temp1 = img_a + img_b;
-//  cv::imshow("img a", img_a);
-//  cv::imshow("img b", img_b);
   if(debug){
+    cv::imshow("img a", img_a);
+    cv::imshow("img b", img_b);
     cv::imshow("sum", temp1);
     cv::waitKey();
   }
@@ -117,33 +125,33 @@ struct PhotometricCostFunctor
   }
 
   template<typename T>
-    bool operator()(
-        const T* const _t_wi,  // world pose of i'th camera
-        T* residuals
-        ) const
-    {
-      CHECK_NOTNULL(_t_wi);
-      CHECK_NOTNULL(residuals);
+  bool operator()(
+      const T* const _t_wi,  // world pose of i'th camera
+      T* residuals
+      ) const
+  {
+    CHECK_NOTNULL(_t_wi);
+    CHECK_NOTNULL(residuals);
 
-      const Eigen::Map< const Eigen::Matrix<T,6,1> > temp(_t_wi);
-      const Sophus::SE3Group<T> t_wi = Sophus::SE3Group<T>( _Cart2T<T>(temp) );
+    const Eigen::Map< const Eigen::Matrix<T,6,1> > temp(_t_wi);
+    const Sophus::SE3Group<T> t_wi = Sophus::SE3Group<T>( _Cart2T<T>(temp) );
 
-      if (debug) {
-        fprintf(stdout, "Pose : <%f, %f, %f, %f, %f, %f>\n", temp(0),
-                temp(1), temp(2), temp(3), temp(4), temp(5) );
-        fflush(stdout);
-      }
-
-
-      cv::Mat img(det->image.rows, det->image.cols, det->image.type());
-      simcam->SetPoseVision(t_wi.matrix());
-      simcam->RenderToTexture();
-      simcam->CaptureGrey( img.data );
-
-
-      residuals[0] = (T)( diff( img, det, k, t_wi, debug) );
-      return true;
+    if (debug) {
+      fprintf(stdout, "Pose : <%f, %f, %f, %f, %f, %f>\n", temp(0),
+              temp(1), temp(2), temp(3), temp(4), temp(5) );
+      fflush(stdout);
     }
+
+
+    cv::Mat img(det->image.rows, det->image.cols, det->image.type());
+    simcam->SetPoseVision(t_wi.matrix());
+    simcam->RenderToTexture();
+    simcam->CaptureGrey( img.data );
+
+
+    residuals[0] = (T)( diff( img, det, k, t_wi, debug) );
+    return true;
+  }
 
   std::shared_ptr< detection >          det;
   SceneGraph::GLSimCam*                 simcam;
@@ -165,12 +173,12 @@ ceres::CostFunction* PhotometricCost(
   if( dynamic_cast<calibu::LinearCamera<Scalar>*>( _cam ) ){
     typedef calibu::LinearCamera<Scalar> CamT;
     return (new ceres::NumericDiffCostFunction<PhotometricCostFunctor<CamT>, ceres::CENTRAL, 1,6>(
-          new PhotometricCostFunctor<CamT>( _d,_sim_cam,_k, debug ) ) );
+              new PhotometricCostFunctor<CamT>( _d,_sim_cam,_k, debug ) ) );
   }
   else if( dynamic_cast<calibu::FovCamera<Scalar>*>( _cam ) ){
     typedef calibu::FovCamera<Scalar> CamT;
     return (new ceres::NumericDiffCostFunction<PhotometricCostFunctor<CamT>,ceres::CENTRAL, 1,6>(
-          new PhotometricCostFunctor<CamT>( _d,_sim_cam,_k, debug ) ) );
+              new PhotometricCostFunctor<CamT>( _d,_sim_cam,_k, debug ) ) );
   }
   return NULL;
 }
