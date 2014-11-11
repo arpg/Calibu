@@ -562,17 +562,27 @@ int main( int argc, char** argv )
 
   TagDetector td;
 
-  std::vector<cv::Mat> vImages;
+  std::shared_ptr<pb::ImageArray> vImages = pb::ImageArray::Create();
   std::map< int, std::vector< std::shared_ptr< detection > > > detections;
 
   int count = 0;
 
-  while( cam.Capture( vImages ) /*&& (count < 100)*/){
-
+  bool capture = false;
+  bool start = true;
+  cv::Mat last_image;
+  while( start || capture && (count < 316)){
+    capture = cam.Capture( *vImages );
     count++;
-    fprintf(stdout, "Frame: %d\n", count);
+    if (start) {
+      start = false;
+    } else {
+      if (cv::sum(vImages->at(0)->Mat() - last_image) == cv::Scalar(0))
+        break;
+    }
+    vImages->at(0)->Mat().copyTo(last_image);
+
     // 1) Capture and rectify
-    calibu::Rectify( lut, vImages[0].data, rect.data, rect.cols, rect.rows );
+    calibu::Rectify( lut, vImages->at(0)->Mat().data, rect.data, rect.cols, rect.rows );
 
     // 2) Run tag detector and get tag corners
     std::vector<april_tag_detection_t> vDetections;
@@ -738,14 +748,23 @@ int main( int argc, char** argv )
     ceres::Solver::Options options;
     options.linear_solver_type = ceres::DENSE_SCHUR;
     options.num_threads = 1;
-    options.max_num_iterations = 10;
+    options.max_num_iterations = 100;
     options.minimizer_progress_to_stdout = false;
     ceres::Problem problem;
     std::vector< std::shared_ptr< detection > > dets = it->second;
     for( int count = 0; count < dets.size(); count++) {
       std::shared_ptr< detection > d = dets[count];
-        ceres::CostFunction* dense_cost = PhotometricCost( d, &sim_cam, K, cmod);
-        problem.AddResidualBlock( dense_cost, NULL, (dets[0]->pose.data()));
+      double pts[4][2];
+      pts[0][0] = d->tag_corners.tl(0);
+      pts[0][1] = d->tag_corners.tl(1);
+      pts[1][0] = d->tag_corners.tr(0);
+      pts[1][1] = d->tag_corners.tr(1);
+      pts[2][0] = d->tag_corners.br(0);
+      pts[2][1] = d->tag_corners.br(1);
+      pts[3][0] = d->tag_corners.bl(0);
+      pts[3][1] = d->tag_corners.bl(1);
+      ceres::CostFunction* dense_cost = PhotometricCost( d, &sim_cam, K, cmod, pts);
+      problem.AddResidualBlock( dense_cost, NULL, (dets[0]->pose.data()));
     }
     ceres::Solver::Summary summary;
     ceres::Solve(options, &problem, &summary);
@@ -761,7 +780,7 @@ int main( int argc, char** argv )
   for( std::map<int, std::vector< std::shared_ptr< detection > > >::iterator it = detections.begin();
        it != detections.end(); it++){
     poses.push_back(dtrack_update(detections[it->first], &dtrack, &sim_cam, &depth_cam, K));
-//    poses.push_back(it->second[0]->pose);
+    poses.push_back(it->second[0]->pose);
   }
 
   if (cl.search("-o")) {
@@ -784,64 +803,6 @@ int main( int argc, char** argv )
     return 0;
   }
 
-  Eigen::Vector6d p;
-
-  if (cl.search("-capture")) {
-
-    std::shared_ptr< detection > d = detections.begin()->second[0];
-
-    FILE* dfile = fopen("data.out", "w");
-    fprintf(dfile, "%f\t%f\t%f\t%f\t%f\t%f\n", d->pose(0), d->pose(1), d->pose(2),
-            d->pose(3), d->pose(4), d->pose(5));
-    p = d->pose;
-    fprintf(dfile, "%f\t%f\t%f\n", d->tag_data.tl(0), d->tag_data.tl(1), d->tag_data.tl(2));
-    fprintf(dfile, "%f\t%f\t%f\n", d->tag_data.bl(0), d->tag_data.bl(1), d->tag_data.bl(2));
-    fprintf(dfile, "%f\t%f\t%f\n", d->tag_data.br(0), d->tag_data.br(1), d->tag_data.br(2));
-    fprintf(dfile, "%f\t%f\t%f\n", d->tag_data.tr(0), d->tag_data.tr(1), d->tag_data.tr(2));
-    fprintf(dfile, "%f\t%f\n", d->tag_corners.tl(0), d->tag_corners.tl(1));
-    fprintf(dfile, "%f\t%f\n", d->tag_corners.bl(0), d->tag_corners.bl(1));
-    fprintf(dfile, "%f\t%f\n", d->tag_corners.br(0), d->tag_corners.br(1));
-    fprintf(dfile, "%f\t%f\n", d->tag_corners.tr(0), d->tag_corners.tr(1));
-    fprintf(dfile, "%d\t%d\n", d->tag_data.color_low, d->tag_data.color_high);
-
-    unsigned long long value = tags[d->tag_id].data;
-    bool t_reverse[36];
-    bool t[36];
-    int idx = 0;
-    for (int count = 0; count < 9; count++) {
-      unsigned long long temp = value - ((value >> 4) << 4);
-      t_reverse[idx + 0] = temp & 1;
-      t_reverse[idx + 1] = temp & 2;
-      t_reverse[idx + 2] = temp & 4;
-      t_reverse[idx + 3] = temp & 8;
-      idx += 4;
-      value >>= 4;
-    }
-    for (int count = 0; count < 36; count++){
-      t[count] = t_reverse[35 - count];
-    }
-
-    for (int jj = 0; jj < 6; jj++){
-      for (int ii = 0; ii < 6; ii++) {
-        if (t[ii + 6*jj])
-          fprintf(dfile, "1\t");
-        else
-          fprintf(dfile, "0\t");
-      }
-      fprintf(dfile, "\n");
-    }
-    fclose(dfile);
-
-    cv::imwrite("image.jpg", d->image);
-
-    cv::Mat img(rect.rows, rect.cols, rect.type());
-    sim_cam.SetPoseVision( _Cart2T(d->pose) );
-    sim_cam.RenderToTexture();
-    sim_cam.DrawCamera();
-    sim_cam.CaptureGrey( img.data );
-    cv::imwrite("synthetic.jpg", img);
-  }
-
   std::vector< SceneGraph::GLAxis > campose;
   campose.resize(detections.size());
   camPoses.resize(detections.size());
@@ -860,22 +821,6 @@ int main( int argc, char** argv )
   int pose_number = 0;
   pangolin::RegisterKeyPressCallback(pangolin::PANGO_SPECIAL + pangolin::PANGO_KEY_RIGHT, [&](){bStep=true; pose_number++;} );
   pangolin::RegisterKeyPressCallback(pangolin::PANGO_SPECIAL + pangolin::PANGO_KEY_LEFT, [&](){bStep=true; pose_number--;} );
-  pangolin::RegisterKeyPressCallback(' ', [&](){bRun = !bRun;} );
-
-  pangolin::RegisterKeyPressCallback('a', [&](){camPoses[pose_number][0] += 0.01; bStep = true;} );
-  pangolin::RegisterKeyPressCallback('d', [&](){camPoses[pose_number][0] -= 0.01; bStep = true;} );
-  pangolin::RegisterKeyPressCallback('s', [&](){camPoses[pose_number][1] += 0.01; bStep = true;} );
-  pangolin::RegisterKeyPressCallback('w', [&](){camPoses[pose_number][1] -= 0.01; bStep = true;} );
-  pangolin::RegisterKeyPressCallback('q', [&](){camPoses[pose_number][2] += 0.01; bStep = true;} );
-  pangolin::RegisterKeyPressCallback('e', [&](){camPoses[pose_number][2] -= 0.01; bStep = true;} );
-  pangolin::RegisterKeyPressCallback('j', [&](){camPoses[pose_number][3] += 0.01; bStep = true;} );
-  pangolin::RegisterKeyPressCallback('l', [&](){camPoses[pose_number][3] -= 0.01; bStep = true;} );
-  pangolin::RegisterKeyPressCallback('k', [&](){camPoses[pose_number][4] += 0.01; bStep = true;} );
-  pangolin::RegisterKeyPressCallback('i', [&](){camPoses[pose_number][4] -= 0.01; bStep = true;} );
-  pangolin::RegisterKeyPressCallback('u', [&](){camPoses[pose_number][5] += 0.01; bStep = true;} );
-  pangolin::RegisterKeyPressCallback('o', [&](){camPoses[pose_number][5] -= 0.01; bStep = true;} );
-  pangolin::RegisterKeyPressCallback('r', [&](){camPoses[pose_number] = poses[pose_number]; bStep = true;} );
-
 
   cv::Mat synth(cmod->Height(), cmod->Width(), CV_8UC1);
   cv::Mat diff(cmod->Height(), cmod->Width(), CV_8UC1);

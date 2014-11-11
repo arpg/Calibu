@@ -11,54 +11,10 @@
 
 template <typename Scalar>
 double diff( cv::Mat img_a,
-             std::shared_ptr< detection > d,
-             //             calibu::CameraInterface<Scalar>* cm,
-             const Eigen::Matrix3d &k,
-             Sophus::SE3Group<Scalar> t,
-             bool debug)
+             cv::Mat img_b,
+             Scalar p[4][2])
 {
-  int min, max;
-  min = 255;
-  max = 0;
   int x1, x2, y1, y2;
-  double p[4][2];
-
-  cv::Mat img_b = d->image;
-
-  // These corners should really be determined from the pixel information
-  Eigen::Matrix<Scalar, 3, 1> temp;
-
-  temp = (k.template cast<Scalar>()) * (t.inverse() * d->tag_data.tl);
-  double dx = temp(0) / temp(2);
-  double dy = temp(1) / temp(2);
-  if ((dx < 0) || (dy < 0) || (dx > img_a.cols) || (dy > img_a.rows))
-    return FLT_MAX;
-  p[0][0] = dx;
-  p[0][1] = dy;
-
-  temp = (k.template cast<Scalar>()) * (t.inverse() * d->tag_data.tr);
-  dx = temp(0) / temp(2);
-  dy = temp(1) / temp(2);
-  if ((dx < 0) || (dy < 0) || (dx > img_a.cols) || (dy > img_a.rows))
-    return FLT_MAX;
-  p[1][0] = dx;
-  p[1][1] = dy;
-
-  temp = (k.template cast<Scalar>()) * (t.inverse() * d->tag_data.br);
-  dx = temp(0) / temp(2);
-  dy = temp(1) / temp(2);
-  if ((dx < 0) || (dy < 0) || (dx > img_a.cols) || (dy > img_a.rows))
-    return FLT_MAX;
-  p[2][0] = dx;
-  p[2][1] = dy;
-
-  temp = (k.template cast<Scalar>()) * (t.inverse() * d->tag_data.bl);
-  dx = temp(0) / temp(2);
-  dy = temp(1) / temp(2);
-  if ((dx < 0) || (dy < 0) || (dx > img_a.cols) || (dy > img_a.rows))
-    return FLT_MAX;
-  p[3][0] = dx;
-  p[3][1] = dy;
 
   x1 = std::min(p[0][0], std::min(p[1][0], std::min(p[2][0], p[3][0])));
   y1 = std::min(p[0][1], std::min(p[1][1], std::min(p[2][1], p[3][1])));
@@ -82,14 +38,6 @@ double diff( cv::Mat img_a,
   pts.push_back(ps);
   cv::fillPoly(mask, pts, 255);
 
-  cv::Mat temp1 = img_a + img_b;
-  if(debug){
-    cv::imshow("img a", img_a);
-    cv::imshow("img b", img_b);
-    cv::imshow("sum", temp1);
-    cv::waitKey();
-  }
-
   float sum = 0;
   int count = 0;
   for (int jj = (int) y1; jj <= (int) y2; jj++) {
@@ -101,12 +49,7 @@ double diff( cv::Mat img_a,
     }
   }
 
-  sum /= count;
-
-  if (debug) {
-    fprintf(stderr, "Sum = %f\n", sum);
-    fflush(stderr);
-  }
+  sum /= (1.0f*count);
 
   return sum;
 }
@@ -119,9 +62,14 @@ struct PhotometricCostFunctor
       std::shared_ptr< detection> _d, // detection
       SceneGraph::GLSimCam* _cam,
       const Eigen::Matrix3d _k,
+      double _pts[4][2],
       bool dbug
       ) : det(_d), simcam(_cam), k(_k), debug(dbug)
   {
+    for (int x = 0; x < 4; x++) {
+      pts[x][0] = _pts[x][0];
+      pts[x][1] = _pts[x][1];
+    }
   }
 
   template<typename T>
@@ -149,7 +97,7 @@ struct PhotometricCostFunctor
     simcam->CaptureGrey( img.data );
 
 
-    residuals[0] = (T)( diff( img, det, k, t_wi, debug) );
+    residuals[0] = (T)( diff( img, det->image, pts) );
     return true;
   }
 
@@ -157,6 +105,7 @@ struct PhotometricCostFunctor
   SceneGraph::GLSimCam*                 simcam;
   calibu::CameraInterface<Scalar>*      cmod;
   Eigen::Matrix3d                       k;
+  double                                pts[4][2];
   bool                                  debug;
 };
 
@@ -166,6 +115,7 @@ ceres::CostFunction* PhotometricCost(
     SceneGraph::GLSimCam* _sim_cam,
     Eigen::Matrix3d _k,
     calibu::CameraInterface<Scalar>* _cam,
+    double pts[4][2],
     bool debug = false
     )
 {
@@ -173,12 +123,12 @@ ceres::CostFunction* PhotometricCost(
   if( dynamic_cast<calibu::LinearCamera<Scalar>*>( _cam ) ){
     typedef calibu::LinearCamera<Scalar> CamT;
     return (new ceres::NumericDiffCostFunction<PhotometricCostFunctor<CamT>, ceres::CENTRAL, 1,6>(
-              new PhotometricCostFunctor<CamT>( _d,_sim_cam,_k, debug ) ) );
+              new PhotometricCostFunctor<CamT>( _d,_sim_cam,_k, pts, debug ) ) );
   }
   else if( dynamic_cast<calibu::FovCamera<Scalar>*>( _cam ) ){
     typedef calibu::FovCamera<Scalar> CamT;
     return (new ceres::NumericDiffCostFunction<PhotometricCostFunctor<CamT>,ceres::CENTRAL, 1,6>(
-              new PhotometricCostFunctor<CamT>( _d,_sim_cam,_k, debug ) ) );
+              new PhotometricCostFunctor<CamT>( _d,_sim_cam,_k, pts, debug ) ) );
   }
   return NULL;
 }
