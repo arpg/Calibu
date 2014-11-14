@@ -1,3 +1,4 @@
+#pragma once
 #include <Eigen/Eigen>
 #include <map>
 #include <vector>
@@ -180,6 +181,7 @@ struct detection{
   tag_t                       tag_data;
   tag2d                       tag_corners;
   cv::Mat                     image;
+  double                      covariance;
 };
 
 

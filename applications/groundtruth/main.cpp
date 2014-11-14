@@ -570,7 +570,7 @@ int main( int argc, char** argv )
   bool capture = false;
   bool start = true;
   cv::Mat last_image;
-  while( start || capture && (count < 316)){
+  while( start || capture && (count < 116)){
     capture = cam.Capture( *vImages );
     count++;
     if (start) {
@@ -643,27 +643,41 @@ int main( int argc, char** argv )
 
     }
 
-    if (ds.size() > 1) {
+    if (ds.size() >= 1) {
       ceres::Solver::Options options;
       options.linear_solver_type = ceres::DENSE_SCHUR;
       options.num_threads = 1;
       options.max_num_iterations = 100;
       options.minimizer_progress_to_stdout = false;
+      double x[6];
       ceres::Problem problem;
+      problem.AddParameterBlock(x, 6);
+      for (int count = 0; count < 6; count++)
+        x[count] = ds[0]->pose.data()[count];
       for( int count = 0; count < ds.size(); count++) {
         std::shared_ptr< detection > d = ds[count];
-        ceres::CostFunction* cost_function_tl = ProjectionCost( d->tag_data.tl, d->tag_corners.tl, K, cmod);
-        ceres::CostFunction* cost_function_tr = ProjectionCost( d->tag_data.tr, d->tag_corners.tr, K, cmod);
-        ceres::CostFunction* cost_function_bl = ProjectionCost( d->tag_data.bl, d->tag_corners.bl, K, cmod);
-        ceres::CostFunction* cost_function_br = ProjectionCost( d->tag_data.br, d->tag_corners.br, K, cmod);
-        problem.AddResidualBlock( cost_function_tl, NULL, (ds[0]->pose.data()));
-        problem.AddResidualBlock( cost_function_tr, NULL, (ds[0]->pose.data()));
-        problem.AddResidualBlock( cost_function_bl, NULL, (ds[0]->pose.data()));
-        problem.AddResidualBlock( cost_function_br, NULL, (ds[0]->pose.data()));
-
+        ceres::CostFunction* cost_function = ProjectionCost( d, K, cmod);
+        problem.AddResidualBlock( cost_function, NULL, x);
       }
       ceres::Solver::Summary summary;
       ceres::Solve(options, &problem, &summary);
+
+      ceres::Covariance::Options cov_options;
+      ceres::Covariance cov(cov_options);
+      std::vector<std::pair<const double*, const double*> > covariance_blocks;
+
+      covariance_blocks.push_back(std::make_pair(x, x));
+      cov.Compute( covariance_blocks, &problem );
+
+      double covariance_xx[36];
+
+      cov.GetCovarianceBlock(x, x, covariance_xx);
+
+      Eigen::Map< const Eigen::Matrix<double,6,6> > covariance(covariance_xx);
+      std::cout<< covariance << std::endl << " -------------------- " <<std::endl;
+//      fprintf(stdout, "Covariance at frame %d is %f\n", count, covariance.determinant());
+      ds[0]->covariance = covariance.determinant();
+
     }
 
     detections.insert( std::pair<int, std::vector< std::shared_ptr< detection > > >(count, ds) );
@@ -738,48 +752,62 @@ int main( int argc, char** argv )
   }
 
   SceneGraph::GLSimCam sim_cam;
-  sim_cam.Init( &glGraph, _Cart2T(detections.begin()->second[0]->pose), K,
+  sim_cam.Init( &glGraph, Eigen::Matrix4d::Identity(), K,
       cam.Width(), cam.Height(), SceneGraph::eSimCamLuminance, 0.01 );
   SceneGraph::GLSimCam depth_cam;
-  depth_cam.Init( &glGraph, _Cart2T(detections.begin()->second[0]->pose), K,
+  depth_cam.Init( &glGraph, Eigen::Matrix4d::Identity(), K,
       cam.Width(), cam.Height(), SceneGraph::eSimCamDepth, 0.01 );
 
-  for (std::map<int, std::vector< std::shared_ptr< detection > > >::iterator it = detections.begin(); it != detections.end(); it++) {
-    ceres::Solver::Options options;
-    options.linear_solver_type = ceres::DENSE_SCHUR;
-    options.num_threads = 1;
-    options.max_num_iterations = 100;
-    options.minimizer_progress_to_stdout = false;
-    ceres::Problem problem;
-    std::vector< std::shared_ptr< detection > > dets = it->second;
-    for( int count = 0; count < dets.size(); count++) {
-      std::shared_ptr< detection > d = dets[count];
-      double pts[4][2];
-      pts[0][0] = d->tag_corners.tl(0);
-      pts[0][1] = d->tag_corners.tl(1);
-      pts[1][0] = d->tag_corners.tr(0);
-      pts[1][1] = d->tag_corners.tr(1);
-      pts[2][0] = d->tag_corners.br(0);
-      pts[2][1] = d->tag_corners.br(1);
-      pts[3][0] = d->tag_corners.bl(0);
-      pts[3][1] = d->tag_corners.bl(1);
-      ceres::CostFunction* dense_cost = PhotometricCost( d, &sim_cam, K, cmod, pts);
-      problem.AddResidualBlock( dense_cost, NULL, (dets[0]->pose.data()));
-    }
-    ceres::Solver::Summary summary;
-    ceres::Solve(options, &problem, &summary);
-  }
+//  for (std::map<int, std::vector< std::shared_ptr< detection > > >::iterator it = detections.begin(); it != detections.end(); it++) {
+//    ceres::Solver::Options options;
+//    options.linear_solver_type = ceres::DENSE_SCHUR;
+//    options.num_threads = 1;
+//    options.max_num_iterations = 100;
+//    options.minimizer_progress_to_stdout = false;
+//    ceres::Problem problem;
+//    std::vector< std::shared_ptr< detection > > dets = it->second;
+//    problem.AddParameterBlock(dets[0]->pose.data(), 6);
+//    for( int count = 0; count < dets.size(); count++) {
+//      std::shared_ptr< detection > d = dets[count];
+//      double pts[4][2];
+//      pts[0][0] = d->tag_corners.tl(0);
+//      pts[0][1] = d->tag_corners.tl(1);
+//      pts[1][0] = d->tag_corners.tr(0);
+//      pts[1][1] = d->tag_corners.tr(1);
+//      pts[2][0] = d->tag_corners.br(0);
+//      pts[2][1] = d->tag_corners.br(1);
+//      pts[3][0] = d->tag_corners.bl(0);
+//      pts[3][1] = d->tag_corners.bl(1);
+//      ceres::CostFunction* dense_cost = PhotometricCost( d, &sim_cam, K, cmod, pts);
+//      problem.AddResidualBlock( dense_cost, NULL, (dets[0]->pose.data()));
+//    }
+//    ceres::Solver::Summary summary;
+//    ceres::Solve(options, &problem, &summary);
 
-  DTrack dtrack;
-  dtrack.Init();
-  calibu::CameraRig old_rig = calibu::ReadXmlRig(rig_name_);
-  dtrack.SetParams(old_rig.cameras[0].camera, old_rig.cameras[0].camera,
-      old_rig.cameras[0].camera, Sophus::SE3d());
+//    ceres::Covariance::Options cov_options;
+//    ceres::Covariance cov(cov_options);
+//    std::vector<std::pair<const double*, const double*> > covariance_blocks;
+//    double* x = dets[0]->pose.data();
+//    covariance_blocks.push_back(std::make_pair(x, x));
+
+//    CHECK(cov.Compute(covariance_blocks, &problem));
+
+//    double covariance_xx[36];
+//    cov.GetCovarianceBlock(x, x, covariance_xx);
+//    Eigen::Map< const Eigen::Matrix<double,6,6> > covariance(covariance_xx);
+//    fprintf(stdout, "Covariance at frame %d is %f\n", it->first, covariance.determinant());
+//  }
+
+//  DTrack dtrack;
+//  dtrack.Init();
+//  calibu::CameraRig old_rig = calibu::ReadXmlRig(rig_name_);
+//  dtrack.SetParams(old_rig.cameras[0].camera, old_rig.cameras[0].camera,
+//      old_rig.cameras[0].camera, Sophus::SE3d());
 
   std::vector< Eigen::Vector6d > poses;
   for( std::map<int, std::vector< std::shared_ptr< detection > > >::iterator it = detections.begin();
        it != detections.end(); it++){
-    poses.push_back(dtrack_update(detections[it->first], &dtrack, &sim_cam, &depth_cam, K));
+//    poses.push_back(dtrack_update(detections[it->first], &dtrack, &sim_cam, &depth_cam, K));
     poses.push_back(it->second[0]->pose);
   }
 
@@ -851,6 +879,8 @@ int main( int argc, char** argv )
       bStep = false;
       it = detections.begin();
       std::advance(it, pose_number);
+      fprintf(stdout, "Covariance at this frame is: %f\n", it->second[0]->covariance);
+      fflush(stdout);
     }
 
     sim_image.SetImage( synth.data, cmod->Width(), cmod->Height(), GL_RGB, GL_LUMINANCE, GL_UNSIGNED_BYTE);

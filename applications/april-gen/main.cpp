@@ -2,29 +2,45 @@
 #include <apriltags/apriltag.h>
 #include <apriltags/tag36h11.h>
 
-void write_tags( FILE* f, int x, int y, unsigned char* tag, int id )
+void write_tags( FILE* f, int x, int y, unsigned char* tag, int id, float scale = 25.4, float wb = 0.0f )
 {
+  // Convert scale to EPS units, default set to 1"
+  scale *= 72;
+  scale /= 25.4;
+  scale /= 8;
+
   fprintf(f, "%d %d translate\n", x, y);
   for(int ii = 0; ii < 8; ii++) {
     for(int jj = 0; jj < 8; jj++){
       if ((ii == 0) || (ii == 7) || (jj == 0) || (jj == 7)) {
-        fprintf(f, "%d %d 11 11 rectfill\n", ii*10, jj*10);
+        fprintf(f, "%f %f %f %f rectfill\n", ii*scale, jj*scale, scale, scale);
       }
       else{
         int i = ii - 1;
         int j = jj - 1;
         if (tag[j + 6*i] == 0){
-          fprintf(f, "%d %d 11 11 rectfill\n", ii*10, jj*10);
+          fprintf(f, "%f %f %f %f rectfill\n", ii*scale, jj*scale, scale, scale);
         }
       }
     }
   }
-  fprintf(f, "110 10 translate\n");
+  if (wb != 0.0f) {
+    // Convert from mm to EPS units [ 72eps = 1in = 25.4mm ]
+    wb *= 72;
+    wb /= 25.4;
+    fprintf(f, "%f %f moveto\n", -wb, -wb);
+    fprintf(f, "%f %f lineto\n", wb + 8*scale, -wb);
+    fprintf(f, "%f %f lineto\n", wb + 8*scale, wb + 8*scale);
+    fprintf(f, "%f %f lineto\n", -wb, wb + 8*scale);
+    fprintf(f, "%f %f lineto\n", -wb, -wb);
+    fprintf(f, "closepath stroke\n", -wb, -wb);
+  }
+  fprintf(f, "%f %f translate\n", wb + 10*scale, scale);
   fprintf(f, "90 rotate\n");
   fprintf(f, "newpath\n0 0 moveto\n");
   fprintf(f, "(Tag: %d) show\n", id);
   fprintf(f, "-90 rotate\n");
-  fprintf(f, "-110 -10 translate\n");
+  fprintf(f, "%f %f translate\n", -(wb + 10*scale), -scale);
   fprintf(f, "%d %d translate\n", -x, -y);
 }
 
@@ -68,8 +84,10 @@ int main( int argc, char** argv )
 {  
   unsigned char* tag = new unsigned char[36];
 
-  if (((argc - 1) % 3 != 0) || (argc < 4)) {
-    fprintf(stdout, "Usage: %s tag1 x1 y1 tag2 x2 y2 . . . \n", argv[0]);
+  if ((argc % 3 != 0) || (argc < 5)) {
+    fprintf(stdout, "Usage: %s scale wb tag1 x1 y1 tag2 x2 y2 . . . \n", argv[0]);
+    fprintf(stdout, "Scale and wb (white border) are in units of mm\n");
+    fprintf(stdout, "Assigning a value of 0 to 'wb' will not draw an outline.\n");
     exit(0);
   }
 
@@ -79,11 +97,13 @@ int main( int argc, char** argv )
   fprintf(f, "%%%%Boundingbox: 0 0 612 792\n");
   fprintf(f, "/Times-Roman findfont 20 scalefont setfont\n");
 
-  int count = 1;
+  int count = 3;
+  float scale = atof(argv[1]);
+  float wb = atof(argv[2]);
   while (count < argc){
     tag_from_id(atoi(argv[count]), tag);
     write_tags(f, atoi(argv[count + 1]), atoi(argv[count + 2]),
-        tag, atoi(argv[count]));
+        tag, atoi(argv[count]), scale, wb);
     write_csv(csv, atoi(argv[count + 1]), atoi(argv[count + 2]),
         atoi(argv[count]));
     count += 3;
