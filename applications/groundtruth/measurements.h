@@ -17,6 +17,8 @@ namespace Eigen{
 struct tag_t
 {
   Eigen::Vector3d tr, tl, br, bl;
+  Eigen::Vector3d tr_wb, tl_wb, br_wb, bl_wb;
+  float wb;
   Eigen::Matrix<double, 6, 1> pose;
   unsigned long long data;
   unsigned char color_high, color_low;
@@ -26,11 +28,32 @@ struct tag_t
     tl << 0, 0, 0;
     br << 0, 0, 0;
     bl << 0, 0, 0;
+    wb = 0;
   }
 
   bool CheckZero( Eigen::Vector3d t )
   {
     return (t.norm() == 0);
+  }
+
+  void add_white_border( float _wb )
+  {
+    wb = _wb;
+    Eigen::Vector3d i, j, k;
+
+    i = 0.5*((br - bl) + (tr - tl));
+    i /= i.norm();
+    j = 0.5*((tl - bl) + (tr - br));
+    j /= j.norm();
+    k = i.cross(j);
+
+    k = k / k.norm();
+    j = k.cross(i);
+
+    tr_wb = tr + wb*i + wb*j;
+    tl_wb = tl - wb*i + wb*j;
+    br_wb = br + wb*i - wb*j;
+    bl_wb = bl - wb*i - wb*j;
   }
 
   void remove_border( void )
@@ -59,7 +82,6 @@ struct tag_t
     if (!CheckZero(tr) && !CheckZero(tl) && !CheckZero(br) && !CheckZero(bl)) {
       Eigen::Vector3d i, j, k, ave;
 
-//      remove_border();
       i = 0.5*((br - bl) + (tr - tl));
       i /= i.norm();
       j = 0.5*((tl - bl) + (tr - br));
@@ -182,6 +204,7 @@ struct detection{
   tag2d                       tag_corners;
   cv::Mat                     image;
   double                      covariance;
+  double                      border;
 };
 
 

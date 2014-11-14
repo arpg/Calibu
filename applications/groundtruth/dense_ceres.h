@@ -10,10 +10,46 @@
 #include <opencv2/opencv.hpp>
 
 template <typename Scalar>
-double diff( cv::Mat img_a,
-             cv::Mat img_b,
-             Scalar p[4][2])
+double diff( cv::Mat img_a,             
+             const std::shared_ptr<detection> d,
+             const Sophus::SE3Group<Scalar> t_wi,
+             const Eigen::Matrix3d k
+             )
 {
+  double p[4][2];
+  cv::Mat img_b = d->image;
+
+  Eigen::Matrix<Scalar,3,1> pwj;
+  Eigen::Matrix<Scalar,3,1> pij;
+
+  pwj = (d->tag_data.wb == 0) ? d->tag_data.tl.template cast<Scalar>() :
+                                d->tag_data.tl_wb.template cast<Scalar>();
+  pij = t_wi.inverse() * pwj.template cast<Scalar>();
+  pij = (k.template cast<Scalar>()) * pij;
+  p[0][0] = pij[0] / pij[2];
+  p[0][1] = pij[1] / pij[2];
+
+  pwj = (d->tag_data.wb == 0) ? d->tag_data.tr.template cast<Scalar>() :
+                                d->tag_data.tr_wb.template cast<Scalar>();
+  pij = t_wi.inverse() * pwj.template cast<Scalar>();
+  pij = (k.template cast<Scalar>()) * pij;
+  p[1][0] = pij[0] / pij[2];
+  p[1][1] = pij[1] / pij[2];
+
+  pwj = (d->tag_data.wb == 0) ? d->tag_data.br.template cast<Scalar>() :
+                                d->tag_data.br_wb.template cast<Scalar>();
+  pij = t_wi.inverse() * pwj.template cast<Scalar>();
+  pij = (k.template cast<Scalar>()) * pij;
+  p[2][0] = pij[0] / pij[2];
+  p[2][1] = pij[1] / pij[2];
+
+  pwj = (d->tag_data.wb == 0) ? d->tag_data.bl.template cast<Scalar>() :
+                                d->tag_data.bl_wb.template cast<Scalar>();
+  pij = t_wi.inverse() * pwj.template cast<Scalar>();
+  pij = (k.template cast<Scalar>()) * pij;
+  p[3][0] = pij[0] / pij[2];
+  p[3][1] = pij[1] / pij[2];
+
   int x1, x2, y1, y2;
 
   x1 = std::min(p[0][0], std::min(p[1][0], std::min(p[2][0], p[3][0])));
@@ -97,7 +133,7 @@ struct PhotometricCostFunctor
     simcam->CaptureGrey( img.data );
 
 
-    residuals[0] = (T)( diff( img, det->image, pts) );
+    residuals[0] = (T)( diff( img, det, t_wi, k) );
     return true;
   }
 

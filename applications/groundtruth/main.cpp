@@ -46,11 +46,13 @@ class GLTag : public SceneGraph::GLObject {
 
 public:
   Eigen::Vector3d tr, tl, br, bl;
+  Eigen::Vector3d tr_wb, tl_wb, br_wb, bl_wb;
   unsigned long long data;
   bool px[36];
   bool has_data;
   float color_high;
   float color_low;
+  float wb;
 
   GLTag(){
     has_data = false;
@@ -88,6 +90,25 @@ public:
 
   }
 
+  void add_white_border( void )
+  {
+    Eigen::Vector3d i, j, k;
+
+    i = 0.5*((br - bl) + (tr - tl));
+    i /= i.norm();
+    j = 0.5*((tl - bl) + (tr - br));
+    j /= j.norm();
+    k = i.cross(j);
+
+    k = k / k.norm();
+    j = k.cross(i);
+
+    tr_wb = tr + wb*i + wb*j;
+    tl_wb = tl - wb*i + wb*j;
+    br_wb = br + wb*i - wb*j;
+    bl_wb = bl - wb*i - wb*j;
+  }
+
   inline void DrawCanonicalObject()
   {
     glPushMatrix();
@@ -103,6 +124,29 @@ public:
       dx = (tl - tr) / 8;
       dy = (tl - bl) / 8;
       glBegin(GL_QUADS);
+      if (wb != 0) {
+        glColor3f(color_high, color_high, color_high);
+
+        glVertex3d(tl_wb(0), tl_wb(1), tl_wb(2));
+        glVertex3d(tl(0), tl(1), tl(2));
+        glVertex3d(bl(0), bl(1), bl(2));
+        glVertex3d(bl_wb(0), bl_wb(1), bl_wb(2));
+
+        glVertex3d(bl_wb(0), bl_wb(1), bl_wb(2));
+        glVertex3d(bl(0), bl(1), bl(2));
+        glVertex3d(br(0), br(1), br(2));
+        glVertex3d(br_wb(0), br_wb(1), br_wb(2));
+
+        glVertex3d(br_wb(0), br_wb(1), br_wb(2));
+        glVertex3d(br(0), br(1), br(2));
+        glVertex3d(tr(0), tr(1), tr(2));
+        glVertex3d(tr_wb(0), tr_wb(1), tr_wb(2));
+
+        glVertex3d(tr_wb(0), tr_wb(1), tr_wb(2));
+        glVertex3d(tr(0), tr(1), tr(2));
+        glVertex3d(tl(0), tl(1), tl(2));
+        glVertex3d(tl_wb(0), tl_wb(1), tl_wb(2));
+      }
       for (int jj = 0; jj < 8; jj++) {
         for (int ii = 0; ii < 8; ii++) {
           if ((ii == 0) || (ii == 7) || (jj == 0) || (jj == 7)) {
@@ -538,6 +582,10 @@ int main( int argc, char** argv )
   std::map<int, tag_t>  tags;
   ParseSurveyMapFile( cl.follow("", "-map"), survey_map, tags );
   fprintf(stdout, "Finished parsing survey map\n");
+  if (cl.search("-wb")) {
+    for(auto& kv : tags)
+      kv.second.add_white_border(atof(cl.follow("0", "-wb").c_str()));
+  }
 
   calibu::Rig<double> rig;
   std::string rig_name_;
@@ -662,21 +710,22 @@ int main( int argc, char** argv )
       ceres::Solver::Summary summary;
       ceres::Solve(options, &problem, &summary);
 
-      ceres::Covariance::Options cov_options;
-      ceres::Covariance cov(cov_options);
-      std::vector<std::pair<const double*, const double*> > covariance_blocks;
+//      ceres::Covariance::Options cov_options;
+//      ceres::Covariance cov(cov_options);
+//      std::vector<std::pair<const double*, const double*> > covariance_blocks;
 
-      covariance_blocks.push_back(std::make_pair(x, x));
-      cov.Compute( covariance_blocks, &problem );
+//      covariance_blocks.push_back(std::make_pair(x, x));
+//      cov.Compute( covariance_blocks, &problem );
 
-      double covariance_xx[36];
+//      double covariance_xx[36];
 
-      cov.GetCovarianceBlock(x, x, covariance_xx);
+//      cov.GetCovarianceBlock(x, x, covariance_xx);
 
-      Eigen::Map< const Eigen::Matrix<double,6,6> > covariance(covariance_xx);
-      std::cout<< covariance << std::endl << " -------------------- " <<std::endl;
+//      Eigen::Map< const Eigen::Matrix<double,6,6> > covariance(covariance_xx);
+//      std::cout<< covariance << std::endl << " -------------------- " <<std::endl;
 //      fprintf(stdout, "Covariance at frame %d is %f\n", count, covariance.determinant());
-      ds[0]->covariance = covariance.determinant();
+//      ds[0]->covariance = covariance.determinant();
+      ds[0]->covariance = 0;
 
     }
 
@@ -744,6 +793,8 @@ int main( int argc, char** argv )
     glTags[count].color_low  = tags[it->first].color_low / 255.0f;
     glTags[count].data = tags[it->first].data;
     glTags[count].CreateData();
+    glTags[count].wb = tags[it->first].wb;
+    glTags[count].add_white_border();
     glGraph.AddChild( &glTags[count] );
 
     glTagPoses[count].SetPose( tags[it->first].pose );
@@ -758,31 +809,31 @@ int main( int argc, char** argv )
   depth_cam.Init( &glGraph, Eigen::Matrix4d::Identity(), K,
       cam.Width(), cam.Height(), SceneGraph::eSimCamDepth, 0.01 );
 
-//  for (std::map<int, std::vector< std::shared_ptr< detection > > >::iterator it = detections.begin(); it != detections.end(); it++) {
-//    ceres::Solver::Options options;
-//    options.linear_solver_type = ceres::DENSE_SCHUR;
-//    options.num_threads = 1;
-//    options.max_num_iterations = 100;
-//    options.minimizer_progress_to_stdout = false;
-//    ceres::Problem problem;
-//    std::vector< std::shared_ptr< detection > > dets = it->second;
-//    problem.AddParameterBlock(dets[0]->pose.data(), 6);
-//    for( int count = 0; count < dets.size(); count++) {
-//      std::shared_ptr< detection > d = dets[count];
-//      double pts[4][2];
-//      pts[0][0] = d->tag_corners.tl(0);
-//      pts[0][1] = d->tag_corners.tl(1);
-//      pts[1][0] = d->tag_corners.tr(0);
-//      pts[1][1] = d->tag_corners.tr(1);
-//      pts[2][0] = d->tag_corners.br(0);
-//      pts[2][1] = d->tag_corners.br(1);
-//      pts[3][0] = d->tag_corners.bl(0);
-//      pts[3][1] = d->tag_corners.bl(1);
-//      ceres::CostFunction* dense_cost = PhotometricCost( d, &sim_cam, K, cmod, pts);
-//      problem.AddResidualBlock( dense_cost, NULL, (dets[0]->pose.data()));
-//    }
-//    ceres::Solver::Summary summary;
-//    ceres::Solve(options, &problem, &summary);
+  for (std::map<int, std::vector< std::shared_ptr< detection > > >::iterator it = detections.begin(); it != detections.end(); it++) {
+    ceres::Solver::Options options;
+    options.linear_solver_type = ceres::DENSE_SCHUR;
+    options.num_threads = 1;
+    options.max_num_iterations = 100;
+    options.minimizer_progress_to_stdout = false;
+    ceres::Problem problem;
+    std::vector< std::shared_ptr< detection > > dets = it->second;
+    problem.AddParameterBlock(dets[0]->pose.data(), 6);
+    for( int count = 0; count < dets.size(); count++) {
+      std::shared_ptr< detection > d = dets[count];
+      double pts[4][2];
+      pts[0][0] = d->tag_corners.tl(0);
+      pts[0][1] = d->tag_corners.tl(1);
+      pts[1][0] = d->tag_corners.tr(0);
+      pts[1][1] = d->tag_corners.tr(1);
+      pts[2][0] = d->tag_corners.br(0);
+      pts[2][1] = d->tag_corners.br(1);
+      pts[3][0] = d->tag_corners.bl(0);
+      pts[3][1] = d->tag_corners.bl(1);
+      ceres::CostFunction* dense_cost = PhotometricCost( d, &sim_cam, K, cmod, pts);
+      problem.AddResidualBlock( dense_cost, NULL, (dets[0]->pose.data()));
+    }
+    ceres::Solver::Summary summary;
+    ceres::Solve(options, &problem, &summary);
 
 //    ceres::Covariance::Options cov_options;
 //    ceres::Covariance cov(cov_options);
@@ -796,7 +847,7 @@ int main( int argc, char** argv )
 //    cov.GetCovarianceBlock(x, x, covariance_xx);
 //    Eigen::Map< const Eigen::Matrix<double,6,6> > covariance(covariance_xx);
 //    fprintf(stdout, "Covariance at frame %d is %f\n", it->first, covariance.determinant());
-//  }
+  }
 
 //  DTrack dtrack;
 //  dtrack.Init();
