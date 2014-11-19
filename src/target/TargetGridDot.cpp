@@ -645,7 +645,11 @@ void TargetGridDot::SaveSVG(
         ) const
 {
     Eigen::MatrixXi M = GetBinaryPattern(0);
-    const double offset = rad1 * 1e3; // mm
+    //const double cross_length = rad0 * 1e3; // mm
+    //const double offset_right = rad1 * 1e3; // mm
+    const double vicon_rad = 8.5; // mm, vicon dot rad
+    const double cross_length = vicon_rad; // mm
+    const double offset_right = std::max(cross_length, rad1*1e3);
 
     std::ofstream f(filename.c_str());
     f << "<?xml version=\"1.0\" standalone=\"no\"?>" << std::endl
@@ -653,19 +657,86 @@ void TargetGridDot::SaveSVG(
          "\"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">" << std::endl;
 
     // units in mm
-    double canvas_width = ((M.cols()-1) * grid_spacing * 1e3) + offset * 2.;
-    double canvas_height = ((M.rows()-1) * grid_spacing * 1e3) + offset * 2.;
+    double canvas_width = ((M.cols()) * grid_spacing * 1e3) +
+        cross_length + offset_right;
+    double canvas_height = ((M.rows()+1) * grid_spacing * 1e3) +
+        cross_length + offset_right;
     f << "<svg width=\"" << canvas_width << "mm\" height=\""
       << canvas_height << "mm\">" << std::endl;
 
+    // vertical crosses
     for( int r=0; r<M.rows(); ++r ) {
-        const double cy = offset + r * grid_spacing  * 1e3;
+        const double cx = cross_length;
+        const double cy = cross_length + (r+1) * grid_spacing * 1e3;
+        f << "<line x1=\"" << cx - cross_length << "mm\" x2=\""
+          << cx + cross_length << "mm\" y1=\"" << cy << "mm\" y2=\""
+          << cy << "mm\" stroke=\"black\" stroke-width=\"1\"/>" << std::endl
+          << "<line x1=\"" << cx<< "mm\" x2=\"" << cx << "mm\" y1=\""
+          << cy - cross_length << "mm\" y2=\"" << cy + cross_length << "mm\" "
+             "stroke=\"black\" stroke-width=\"1\"/>" << std::endl;
+    }
+
+    // horizontal crosses
+    for( int c=0; c<M.cols(); ++c ) {
+        const double cx = cross_length + (c+1) * grid_spacing * 1e3;
+        const double cy = cross_length;
+        f << "<line x1=\"" << cx - cross_length << "mm\" x2=\""
+          << cx + cross_length << "mm\" y1=\"" << cy << "mm\" y2=\""
+          << cy << "mm\" stroke=\"black\" stroke-width=\"1\"/>" << std::endl
+          << "<line x1=\"" << cx<< "mm\" x2=\"" << cx << "mm\" y1=\""
+          << cy - cross_length << "mm\" y2=\"" << cy + cross_length << "mm\" "
+             "stroke=\"black\" stroke-width=\"1\"/>" << std::endl;
+    }
+
+    // dots
+    for( int r=0; r<M.rows(); ++r ) {
+        const double cy = cross_length + (r+1) * grid_spacing  * 1e3;
         for( int c=0; c<M.cols(); ++c ) {
             const double rad = ((M(r,c) == 1) ? rad1 : rad0) * 1e3;
-            const double cx = offset + c * grid_spacing * 1e3;
+            const double cx = cross_length + (c+1) * grid_spacing * 1e3;
             f << "<circle cx=\"" << cx << "mm\" cy=\"" << cy << "mm\" r=\""
               << rad << "mm\" fill=\"black\" stoke-width=\"0\"/>" << std::endl;
         }
+    }
+
+    // vicon circles
+    for( int i = 0; i < 5; ++i ) {
+        const double rad = vicon_rad; // mm
+        double cx, cy;
+        switch(i) {
+          case 0: // top left
+            cx = cross_length;
+            cy = cross_length;
+            break;
+          case 1: // top right
+            cx = cross_length + (M.cols()) * grid_spacing * 1e3;
+            cy = cross_length;
+            break;
+          case 2: // bottom right
+            cx = cross_length + (M.cols()) * grid_spacing * 1e3;
+            cy = cross_length + (M.rows()+1) * grid_spacing * 1e3;
+            break;
+          case 3: // bottom left
+            cx = cross_length;
+            cy = cross_length + (M.rows()+1) * grid_spacing * 1e3;
+            break;
+          case 4: // middle left
+            //cx = cross_length + (M.cols()+1) * grid_spacing * 1e3;
+            cx = cross_length;
+            cy = cross_length + (M.rows()/2+1) * grid_spacing * 1e3;
+            break;
+        }
+        f << "<circle cx=\"" << cx << "mm\" cy=\"" << cy << "mm\" fill=\"none\""
+          << " r=\"" << rad << "mm\" stroke=\"black\" stroke-width=\"1\" />"
+          << std::endl;
+        //if( i != 3 ) {
+          f << "<line x1=\"" << cx - cross_length << "mm\" x2=\""
+            << cx + cross_length << "mm\" y1=\"" << cy << "mm\" y2=\""
+            << cy << "mm\" stroke=\"black\" stroke-width=\"1\"/>" << std::endl
+            << "<line x1=\"" << cx<< "mm\" x2=\"" << cx << "mm\" y1=\""
+            << cy - cross_length << "mm\" y2=\"" << cy + cross_length << "mm\" "
+               "stroke=\"black\" stroke-width=\"1\"/>" << std::endl;
+        //}
     }
     f << "</svg>" << std::endl;
 }
