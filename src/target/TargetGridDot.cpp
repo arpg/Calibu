@@ -648,8 +648,9 @@ void TargetGridDot::SaveSVG(
     //const double cross_length = rad0 * 1e3; // mm
     //const double offset_right = rad1 * 1e3; // mm
     const double vicon_rad = 8.5; // mm, vicon dot rad
-    const double cross_length = vicon_rad; // mm
-    const double offset_right = std::max(cross_length, rad1*1e3);
+    const double vicon_bg_rad = 20; // mm, vicon dot background rad
+    const double cross_length = rad1*1e3; // mm
+    const double offset_right = std::max(cross_length, vicon_bg_rad);
 
     std::ofstream f(filename.c_str());
     f << "<?xml version=\"1.0\" standalone=\"no\"?>" << std::endl
@@ -658,11 +659,14 @@ void TargetGridDot::SaveSVG(
 
     // units in mm
     double canvas_width = ((M.cols()) * grid_spacing * 1e3) +
-        cross_length + offset_right;
+        offset_right * 2;
     double canvas_height = ((M.rows()+1) * grid_spacing * 1e3) +
-        cross_length + offset_right;
+        offset_right * 2;
     f << "<svg width=\"" << canvas_width << "mm\" height=\""
-      << canvas_height << "mm\">" << std::endl;
+      << canvas_height << "mm\" "
+      << "transform=\"translate(" << offset_right - cross_length << "mm,"
+      << offset_right - cross_length << "mm)\""
+      << ">" << std::endl;
 
     // vertical crosses
     for( int r=0; r<M.rows(); ++r ) {
@@ -726,7 +730,15 @@ void TargetGridDot::SaveSVG(
             cy = cross_length + (M.rows()/2+1) * grid_spacing * 1e3;
             break;
         }
-        f << "<circle cx=\"" << cx << "mm\" cy=\"" << cy << "mm\" fill=\"none\""
+        // black background
+        const double x = cx - vicon_bg_rad;
+        const double y = cy - vicon_bg_rad;
+        const double len = vicon_bg_rad * 2;
+        f << "<rect x=\"" << x << "mm\" y=\"" << y << "mm\" fill=\"black\""
+          << " width=\"" << len << "mm\" height=\"" << len << "mm\" />"
+          << std::endl;
+
+        f << "<circle cx=\"" << cx << "mm\" cy=\"" << cy << "mm\" fill=\"white\""
           << " r=\"" << rad << "mm\" stroke=\"black\" stroke-width=\"1\" />"
           << std::endl;
         //if( i != 3 ) {
