@@ -37,10 +37,13 @@ class CameraInterface {
       image_size_(other.image_size_), params_(other.params_) {}
   virtual ~CameraInterface() {}
 
-  /** Unproject an image location into world coordinates */
+  /** Change camera model image size. */
+  virtual void Scale( const Scalar s) const = 0;
+
+  /** Unproject an image location into world coordinates. */
   virtual Vec3t Unproject(const Vec2t& pix) const = 0;
 
-  /** Project a world point into an image location */
+  /** Project a world point into an image location. */
   virtual Vec2t Project(const Vec3t& ray) const = 0;
 
   /** Derivative of the Project along a ray */

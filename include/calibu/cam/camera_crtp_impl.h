@@ -49,6 +49,11 @@ class CameraImpl : public CameraInterface<Scalar> {
       CameraInterface<Scalar>(params, image_size) {
   }
 
+  void Scale( const Scalar s) const override {
+    Derived::Scale( s, this->params_.data() );
+  }
+
+
   Vec3t
   Unproject(const Vec2t& pix) const override {
     Vec3t ray;
