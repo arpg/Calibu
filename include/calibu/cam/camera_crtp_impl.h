@@ -6,6 +6,7 @@
   Steven Lovegrove,
   Nima Keivan
   Jack Morrison
+  Christoffer Heckman
   Gabe Sibley
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,6 +28,7 @@
  * Avoids copying inherited function implementations for all camera models.
  *
  * Requires the following functions in the derived class:
+ * - static void Scale()
  * - static void Unproject(const T* pix, const T* params, T* ray) {
  * - static void Project(const T* ray, const T* params, T* pix) {
  * - static void dProject_dray(const T* ray, const T* params, T* j) {
@@ -53,6 +55,46 @@ class CameraImpl : public CameraInterface<Scalar> {
     Derived::Scale( s, this->params_.data() );
   }
 
+  /** Version get/set for version, type, sn, idx, name. */
+  /// Does m_pCam make sense in this, or do we need to use Derived:: & this-> ?
+  int Version() const {
+    return m_pCam.get();
+  }
+
+  void SetVersion( int nVersion ) {
+    m_pCam->SetVersion( nVersion );
+  }
+
+  std::string Type() const {
+    return m_pCam->Type();
+  }
+
+  uint64_t SerialNumber() const {
+    return m_pCam->SerialNumber();
+  }
+
+  /** Set the camera serial number. */
+  void SetSerialNumber( const uint64_t nSerialNo ) {
+    m_pCam->SetSerialNumber( nSerialNo );
+  }
+
+  int Index() const {
+    return m_pCam->Index();
+  }
+
+  /** Set the camera index (for multi-camera rigs). */
+  void SetIndex( const int nIndex ) {
+    m_pCam->SetIndex( nIndex );
+  }
+
+  std::string Name() const {
+    return m_pCam->Name();
+  }
+
+  /** Set the camera model name. e.g., "Left". */
+  void SetName( const std::string& sName ) {
+    m_pCam->SetName( sName );
+  }
 
   Vec3t
   Unproject(const Vec2t& pix) const override {

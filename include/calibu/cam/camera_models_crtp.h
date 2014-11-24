@@ -126,7 +126,10 @@ class LinearCamera : public CameraImpl<Scalar, 4, LinearCamera<Scalar> > {
 
   template<typename T>
   static void Scale( const T s, const T* params ) {
-      // code here...           
+      params[0] *= scale;
+      params[1] *= scale;
+      params[2] = scale*(params[2]+0.5) - 0.5;
+      params[3] = scale*(params[3]+0.5) - 0.5;
   }
 
   template<typename T>
@@ -184,7 +187,10 @@ class FovCamera : public CameraImpl<Scalar, 5, FovCamera<Scalar> > {
 
   template<typename T>
   static void Scale( const T s, const T* params ) {
-      // code here...           
+      params[0] *= scale;
+      params[1] *= scale;
+      params[2] = scale*(params[2]+0.5) - 0.5;
+      params[3] = scale*(params[3]+0.5) - 0.5;
   }
 
   // For these derivatives, refer to the camera_derivatives.m matlab file.
@@ -453,7 +459,10 @@ class Poly3Camera : public CameraImpl<Scalar, 7, Poly3Camera<Scalar> > {
 
   template<typename T>
   static void Scale( const T s, const T* params ) {
-      // code here...           
+      params[0] *= scale;
+      params[1] *= scale;
+      params[2] = scale*(params[2]+0.5) - 0.5;
+      params[3] = scale*(params[3]+0.5) - 0.5;
   }
 
 
