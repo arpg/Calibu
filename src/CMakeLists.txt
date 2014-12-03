@@ -29,6 +29,7 @@ set(HEADERS
   ${INC_DIR}/conics/ConicFinder.h
   ${INC_DIR}/conics/FindConics.h
   ${INC_DIR}/gl/Drawing.h
+  ${INC_DIR}/image/Threshold.h
   ${INC_DIR}/image/AdaptiveThreshold.h
   ${INC_DIR}/image/Gradient.h
   ${INC_DIR}/image/ImageProcessing.h
@@ -41,6 +42,7 @@ set(HEADERS
   ${INC_DIR}/target/Target.h
   ${INC_DIR}/target/TargetGridDot.h
   ${INC_DIR}/target/TargetRandomDot.h
+  ${INC_DIR}/target/TargetViconGridDot.h
   ${INC_DIR}/utils/Rectangle.h
   ${INC_DIR}/utils/Range.h
   ${INC_DIR}/utils/Utils.h
@@ -65,6 +67,7 @@ SET(SOURCES
   ${SRC_DIR}/target/RandomGrid.cpp
   ${SRC_DIR}/target/TargetGridDot.cpp
   ${SRC_DIR}/target/TargetRandomDot.cpp
+  ${SRC_DIR}/target/TargetViconGridDot.cpp
   ${SRC_DIR}/utils/Utils.cpp
   ${SRC_DIR}/utils/Xml.cpp
   )

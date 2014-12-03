@@ -20,6 +20,7 @@
 
 #include <calibu/image/ImageProcessing.h>
 #include <calibu/image/Gradient.h>
+#include <calibu/image/Threshold.h>
 #include <calibu/image/AdaptiveThreshold.h>
 #include <calibu/image/IntegralImage.h>
 #include <calibu/image/Label.h>
@@ -70,11 +71,16 @@ void ImageProcessing::Process(const unsigned char* greyscale_image,
   integral_image(width, height, &I[0], &intI[0] );
 
   // Threshold image
-  AdaptiveThreshold(
-      width, height, &I[0], &intI[0], &tI[0], params.at_threshold,
-      width / params.at_window_ratio, 20,
-      (unsigned char)0, (unsigned char)255
-                    );
+  if (params.adaptive_thresholding) {
+    AdaptiveThreshold(
+        width, height, &I[0], &intI[0], &tI[0], params.at_threshold,
+        width / params.at_window_ratio, 20,
+        (unsigned char)0, (unsigned char)255
+                      );
+  } else {
+    Threshold(width, height, &I[0], &tI[0], params.at_threshold,
+        (unsigned char)0, (unsigned char)255);
+  }
 
   // Label image (connected components)
   labels.clear();

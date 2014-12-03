@@ -31,10 +31,12 @@ namespace calibu {
 struct ParamsImageProcessing {
   ParamsImageProcessing() : at_threshold(0.7),
                             at_window_ratio(3),
-                            black_on_white(true) {}
+                            black_on_white(true),
+                            adaptive_thresholding(true){}
   float at_threshold;
   int at_window_ratio;
   bool black_on_white;
+  bool adaptive_thresholding;
 };
 
 CALIBU_EXPORT

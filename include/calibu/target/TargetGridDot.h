@@ -94,6 +94,19 @@ public:
             std::vector<int>& ellipse_target_map
             );
 
+    virtual bool HasViconMarkers() const {
+        return false;
+    }
+
+    virtual bool FindViconTarget(
+        const std::vector<Conic, Eigen::aligned_allocator<Conic> >& grid_conics,
+        const std::vector<int>& grid_conics_map,
+        const std::vector<Conic, Eigen::aligned_allocator<Conic> >& new_conics,
+        std::vector<int>& vicon_map
+        ) {
+      return false;
+    }
+
     ////////////////////////////////////////////////////////////////////////////
 
     inline double CircleRadius() const
@@ -120,7 +133,7 @@ public:
 
     ////////////////////////////////////////////////////////////////////////////
 
-  const std::vector<Vertex,
+    const std::vector<Vertex,
                     Eigen::aligned_allocator<Vertex> >& Map() const {
         return vs;
     }
@@ -143,7 +156,8 @@ public:
             unsigned char id = 0
             ) const;
 
-    void SaveSVG(
+    // rad0, rad1 in meters
+    virtual void SaveSVG(
             std::string filename,
             double rad0,
             double rad1
@@ -153,14 +167,21 @@ public:
     void Init();
     void Clear();
     void SetGrid(Vertex& v, const Eigen::Vector2i& g);
-  bool Match(std::map<Eigen::Vector2i, Vertex*,
-             std::less<Eigen::Vector2i>,
-             Eigen::aligned_allocator<std::pair<Eigen::Vector2i, Vertex*> > >& obs,
-             const std::array<Eigen::MatrixXi,4>& PG);
+    bool Match(std::map<Eigen::Vector2i, Vertex*,
+               std::less<Eigen::Vector2i>,
+               Eigen::aligned_allocator<std::pair<Eigen::Vector2i, Vertex*> > >& obs,
+               const std::array<Eigen::MatrixXi,4>& PG);
+    void SaveSVGHead(std::ofstream& f) const;
+    void SaveSVGEnd(std::ofstream& f) const;
+    // rad0, rad1 and margins in meters
+    void SaveSVGBody(std::ofstream& f, double rad0, double rad1,
+                     bool draw_crosses = false,
+                     double left_margin = 0, double top_margin = 0,
+                     double right_margin = 0, double bottom_margin = 0) const;
 
     std::vector<Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> > tpts2d;
     std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > tpts3d;
-  std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > codepts3d;
+    std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > codepts3d;
 
     double grid_spacing;
     Eigen::Vector2i grid_size;
@@ -168,7 +189,7 @@ public:
 
     ParamsGridDot params;
 
-  std::vector<Vertex, Eigen::aligned_allocator<Vertex> > vs;
+    std::vector<Vertex, Eigen::aligned_allocator<Vertex> > vs;
     std::map<Eigen::Vector2i, Vertex*,
              std::less<Eigen::Vector2i>,
              Eigen::aligned_allocator<
