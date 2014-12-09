@@ -26,6 +26,7 @@
 #include <set>
 #include <algorithm>
 #include <iostream>
+#include <iomanip>
 #include <deque>
 
 namespace calibu {
@@ -653,8 +654,10 @@ void TargetGridDot::SaveSVG(
          "\"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">" << std::endl;
 
     // units in mm
+    const double margin_bottom = 20; // mm
     double canvas_width = ((M.cols()-1) * grid_spacing * 1e3) + offset * 2.;
-    double canvas_height = ((M.rows()-1) * grid_spacing * 1e3) + offset * 2.;
+    double canvas_height = ((M.rows()-1) * grid_spacing * 1e3) + offset * 2. +
+        margin_bottom;
     f << "<svg width=\"" << canvas_width << "mm\" height=\""
       << canvas_height << "mm\">" << std::endl;
 
@@ -667,7 +670,23 @@ void TargetGridDot::SaveSVG(
               << rad << "mm\" fill=\"black\" stoke-width=\"0\"/>" << std::endl;
         }
     }
+
+    const double text_x = 1;
+    const double text_y = canvas_height - margin_bottom +
+        std::max(rad0, rad1) * 1e3 + 5;
+    f << "<text x=\"" << text_x << "mm\" y=\"" << text_y << "mm\" "
+      << "font-size=\"8mm\">"
+      << "Distance between circle centers: "
+      << std::fixed << std::setprecision(3) << grid_spacing * 1e3 << " mm. "
+      << "Long radius: " << std::fixed << std::setprecision(3)
+      << std::max(rad0, rad1) * 1e3 << " mm. "
+      << "Short radius: " << std::fixed << std::setprecision(3)
+      << std::min(rad0, rad1) * 1e3 << " mm."
+      << "</text>" << std::endl;
+
     f << "</svg>" << std::endl;
 }
+
+
 
 }
