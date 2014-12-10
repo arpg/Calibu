@@ -131,6 +131,11 @@ public:
         return codepts3d;
     }
 
+    virtual inline const std::vector<Eigen::Vector3d,
+      Eigen::aligned_allocator<Eigen::Vector3d> >& ViconCircles3D() const {
+        return vicon3d;
+    }
+
     ////////////////////////////////////////////////////////////////////////////
 
     const std::vector<Vertex,
@@ -182,6 +187,7 @@ public:
     std::vector<Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> > tpts2d;
     std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > tpts3d;
     std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > codepts3d;
+    std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > vicon3d;
 
     double grid_spacing;
     Eigen::Vector2i grid_size;

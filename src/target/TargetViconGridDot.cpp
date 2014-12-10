@@ -51,6 +51,11 @@ TargetViconGridDot::TargetViconGridDot(TargetGridDot grid, ViconLayout layout)
   for(const auto& marker : m_markers)
     tpts2d.emplace_back(Eigen::Vector2d(grid_spacing * marker.x,
                                         grid_spacing * marker.y));
+
+  // Vicon frame ("m" means marker):
+  // X = vector(m[0] to m[1])
+  // Z = X cross_product vector(m[0] to m[2])
+  // Y = Z cross_product X
 }
 
 bool TargetViconGridDot::FindViconTarget(
@@ -75,7 +80,6 @@ bool TargetViconGridDot::FindViconTarget(
   for(size_t i = 0; i < grid_conics_map.size(); ++i) {
     if(grid_conics_map[i] != -1) {
       const Eigen::Vector2d& c = grid_conics[i].center;
-      // ToDo: make sure c(0) is col and c(1) is row
       const int row = grid_conics_map[i] / grid_size(0);
       const int col = grid_conics_map[i] % grid_size(0);
       target_dots.push_back(cv::Point2f(col, row));
@@ -102,7 +106,6 @@ bool TargetViconGridDot::FindViconTarget(
 
     for(size_t j = 0; j < new_conics.size(); ++j) {
       const Conic& c = new_conics[j];
-      // ToDo: make sure (0) is col and (1) row
       double sq_dist =
           (c.center(0) - im_markers[i].x) * (c.center(0) - im_markers[i].x) +
           (c.center(1) - im_markers[i].y) * (c.center(1) - im_markers[i].y);
@@ -166,10 +169,12 @@ bool TargetViconGridDot::FindViconTarget(
   // ###
   */
 
-  // consider it found only if the three first markers (the ones that define
-  // the coordinate frame) are found
-  return associations[0].first != -1 && associations[1].first != -1 &&
-      associations[2].first != -1;
+  // consider it found only if all the markers are found
+  return std::all_of(associations.begin(), associations.end(),
+                     [](const std::pair<int, double>& assoc)
+  {
+    return assoc.first != -1;
+  });
 }
 
 void TargetViconGridDot::SaveSVG(std::string filename, double rad0,
