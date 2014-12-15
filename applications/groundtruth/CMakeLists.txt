@@ -41,7 +41,7 @@ include_directories(
 
 add_executable( ${PROJECT_NAME} main.cpp measurements.h
                                 math.h usage.h tags.h usage.h
-                                dense_ceres.h dtrack.h
+                                dense_ceres.h dtrack.h hess.h
                                 ceres_cost_functions.h)
 
 target_link_libraries( ${PROJECT_NAME}

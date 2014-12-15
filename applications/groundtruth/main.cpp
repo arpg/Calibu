@@ -36,11 +36,14 @@
 #include <opencv2/nonfree/nonfree.hpp>
 #include "ceres_cost_functions.h"
 #include "dense_ceres.h"
+#include "hess.h"
 #include "dtrack.h"
 
 // -cam split:[roi1=0+0+640+480]//proto:[startframe=1500]///Users/faradazerage/Desktop/DataSets/APRIL/Hallway-9-12-13/Twizzler/proto.log -cmod /Users/faradazerage/Desktop/DataSets/APRIL/Hallway-9-12-13/Twizzler/cameras.xml -o outfile.out -map /Users/faradazerage/Desktop/DataSets/APRIL/Hallway-9-12-13/Twizzler/DS20.csv -v -debug -show-ceres
 
 using namespace std;
+
+typedef std::map<int, std::vector< std::shared_ptr< detection > > > DMap;
 
 class GLTag : public SceneGraph::GLObject {
 
@@ -271,10 +274,10 @@ Eigen::Vector2i find_minmax(cv::Mat img, double p[4][2])
   return Eigen::Vector2i(min, max);
 }
 
-Eigen::Matrix4d cameraPoseFromHomography(const cv::Mat& H)
+Eigen::Matrix4d cameraPoseFromHomography(cv::Mat H)
 {
   cv::Mat pose;
-  pose = cv::Mat::eye(3, 4, CV_32FC1);      // 3x4 matrix, the camera pose
+  pose = cv::Mat::eye(3, 4, CV_32F);      // 3x4 matrix, the camera pose
   float norm1 = (float)norm(H.col(0));
   float norm2 = (float)norm(H.col(1));
   float tnorm = (norm1 + norm2) / 2.0f; // Normalization value
@@ -297,6 +300,7 @@ Eigen::Matrix4d cameraPoseFromHomography(const cv::Mat& H)
   p3.copyTo(c2);               // Third column is the crossproduct of columns one and two
 
   pose.col(3) = H.col(2) / tnorm;  //vector t [R|t] is the last column of pose
+  std::cout<<"Pose from homo: "<<pose<<std::endl;
   Eigen::Matrix4d toRet;
   toRet << pose.at<float>(0, 0), pose.at<float>(0, 1), pose.at<float>(0, 2), pose.at<float>(0, 3),
       pose.at<float>(1, 0), pose.at<float>(1, 1), pose.at<float>(1, 2), pose.at<float>(1, 3),
@@ -501,8 +505,8 @@ void homography_minimization( std::shared_ptr< detection > d,
   pts.push_back(ps);
   cv::fillPoly(mask, pts, 255);
 
-  threshold( img_object, d->tag_data.color_low, d->tag_data.color_high);
-  threshold( img_scene, d->tag_data.color_low, d->tag_data.color_high);
+  //  threshold( img_object, d->tag_data.color_low, d->tag_data.color_high);
+  //  threshold( img_scene, d->tag_data.color_low, d->tag_data.color_high);
 
   detector.detect( img_object, keypoints_object, mask );
   detector.detect( img_scene, keypoints_scene, mask );
@@ -545,7 +549,6 @@ void homography_minimization( std::shared_ptr< detection > d,
                    vector<char>(), cv::DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
 
   cv::imshow("matches", img_matches);
-  cv::waitKey();
 
   //-- Localize the object
   std::vector<cv::Point2f> obj;
@@ -560,9 +563,127 @@ void homography_minimization( std::shared_ptr< detection > d,
 
   cv::Mat H = cv::findHomography( obj, scene, CV_RANSAC );
 
+
   Eigen::Matrix4d h = cameraPoseFromHomography( H );
   std::cout << h << std::endl;
   //  d->pose = _T2Cart( _Cart2T(d->pose) * h.inverse() );
+}
+
+void sparse_frame_optimize( std::vector<std::shared_ptr < detection > > ds,
+                            Eigen::Matrix3d K,
+                            calibu::CameraInterface<double> *cmod )
+{
+  ceres::Solver::Options options;
+  options.trust_region_strategy_type = ceres::DOGLEG;
+  options.num_threads = 4;
+  options.max_num_iterations = 50;
+  options.minimizer_progress_to_stdout = false;
+  double x[6];
+  ceres::Problem problem;
+  problem.AddParameterBlock(x, 6);
+  for (int count = 0; count < 6; count++)
+    x[count] = ds[0]->pose.data()[count];
+  for( int count = 0; count < ds.size(); count++) {
+    std::shared_ptr< detection > d = ds[count];
+    ceres::CostFunction* cost_function = ProjectionCost( d, K, cmod);
+    problem.AddResidualBlock( cost_function, NULL, x);
+  }
+  ceres::Solver::Summary summary;
+  ceres::Solve(options, &problem, &summary);
+  for (int count = 0; count < 6; count++)
+    ds[0]->pose.data()[count] = x[count];
+
+  ceres::Covariance::Options cov_options;
+  cov_options.apply_loss_function = false;
+  ceres::Covariance cov(cov_options);
+  std::vector<std::pair<const double*, const double*> > covariance_blocks;
+
+  covariance_blocks.push_back(std::make_pair(x, x));
+  if (cov.Compute( covariance_blocks, &problem )) {
+
+    double covariance_xx[36];
+
+    cov.GetCovarianceBlock(x, x, covariance_xx);
+
+    Eigen::Map< const Eigen::Matrix<double,6,6> > covariance(covariance_xx);
+    ds[0]->covariance = covariance.determinant();
+  } else {
+    ds[0]->covariance = FLT_MAX;
+  }
+}
+
+void sparse_optimize( DMap detections,
+                      Eigen::Matrix3d K,
+                      calibu::CameraInterface<double> *cmod )
+{
+  for (DMap::iterator it = detections.begin(); it != detections.end(); it++) {
+    sparse_frame_optimize(it->second, K, cmod);
+  }
+}
+
+void dense_frame_optimize( std::vector<std::shared_ptr < detection > > dets,
+                           SceneGraph::GLSimCam* sim_cam,
+                           Eigen::Matrix3d k,
+                           int level = 2)
+{
+  for (int l = level; l >= 0; l--) {
+    fprintf(stdout, "Level = %d\n", l);
+    fflush(stdout);
+    ceres::Solver::Options options;
+//    options.linear_solver_type = ceres::DENSE_QR;
+
+    ceres::Problem problem;
+    for( int count = 0; count < dets.size(); count++) {
+      std::shared_ptr< detection > d = dets[0];
+      ceres::CostFunction* dense_cost
+          = new ceres::NumericDiffCostFunction<PhotometricCostFunctor, ceres::CENTRAL, 1, 6> (
+            new PhotometricCostFunctor( d, sim_cam, l)
+            );
+
+      problem.AddResidualBlock( dense_cost, NULL, dets[0]->pose.data());
+    }
+    ceres::Solver::Summary summary;
+    ceres::Solve(options, &problem, &summary);
+  }
+  //  for (int i = 0; i < 6; i++) dets[0]->pose.data()[i] = x[i];
+
+  //  ceres::Covariance::Options cov_options;
+  //  cov_options.apply_loss_function = false;
+  //  ceres::Covariance cov(cov_options);
+  //  std::vector<std::pair<const double*, const double*> > covariance_blocks;
+  //  covariance_blocks.push_back(std::make_pair(x, x));
+
+  //  if (cov.Compute(covariance_blocks, &problem)) {
+
+  //    double covariance_xx[36];
+  //    cov.GetCovarianceBlock(x, x, covariance_xx);
+  //    Eigen::Map< const Eigen::Matrix<double,6,6> > covariance(covariance_xx);
+  //    dets[0]->covariance = covariance.determinant();
+  //  } else {
+  //    dets[0]->covariance = FLT_MAX;
+  //  }
+  //  make_hessian(sim_cam, dets[0], level);
+  //  fundamentally_essential( sim_cam, dets[0], k);
+}
+
+void dense_optimize( DMap detections,
+                     SceneGraph::GLSimCam* sim_cam,
+                     Eigen::Matrix3d K)
+{
+  for (DMap::iterator it = detections.begin(); it != detections.end(); it++) {
+    dense_frame_optimize(it->second, sim_cam, K, 2);
+  }
+}
+
+void update_objects( DMap detections, std::vector< Eigen::Vector6d > &camPoses,
+                     std::vector< SceneGraph::GLAxis > &campose )
+{
+  int count = 0;
+  for(DMap::iterator it = detections.begin();
+      it != detections.end(); it++, count++) {
+    camPoses[count] = it->second[0]->pose;
+    campose[count].SetPose(it->second[0]->pose);
+  }
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -691,44 +812,6 @@ int main( int argc, char** argv )
 
     }
 
-    if (ds.size() >= 1) {
-      ceres::Solver::Options options;
-      options.linear_solver_type = ceres::DENSE_SCHUR;
-      options.num_threads = 1;
-      options.max_num_iterations = 100;
-      options.minimizer_progress_to_stdout = false;
-      double x[6];
-      ceres::Problem problem;
-      problem.AddParameterBlock(x, 6);
-      for (int count = 0; count < 6; count++)
-        x[count] = ds[0]->pose.data()[count];
-      for( int count = 0; count < ds.size(); count++) {
-        std::shared_ptr< detection > d = ds[count];
-        ceres::CostFunction* cost_function = ProjectionCost( d, K, cmod);
-        problem.AddResidualBlock( cost_function, NULL, x);
-      }
-      ceres::Solver::Summary summary;
-      ceres::Solve(options, &problem, &summary);
-
-//      ceres::Covariance::Options cov_options;
-//      ceres::Covariance cov(cov_options);
-//      std::vector<std::pair<const double*, const double*> > covariance_blocks;
-
-//      covariance_blocks.push_back(std::make_pair(x, x));
-//      cov.Compute( covariance_blocks, &problem );
-
-//      double covariance_xx[36];
-
-//      cov.GetCovarianceBlock(x, x, covariance_xx);
-
-//      Eigen::Map< const Eigen::Matrix<double,6,6> > covariance(covariance_xx);
-//      std::cout<< covariance << std::endl << " -------------------- " <<std::endl;
-//      fprintf(stdout, "Covariance at frame %d is %f\n", count, covariance.determinant());
-//      ds[0]->covariance = covariance.determinant();
-      ds[0]->covariance = 0;
-
-    }
-
     detections.insert( std::pair<int, std::vector< std::shared_ptr< detection > > >(count, ds) );
   }
 
@@ -804,61 +887,21 @@ int main( int argc, char** argv )
 
   SceneGraph::GLSimCam sim_cam;
   sim_cam.Init( &glGraph, Eigen::Matrix4d::Identity(), K,
-      cam.Width(), cam.Height(), SceneGraph::eSimCamLuminance, 0.01 );
+                cam.Width(), cam.Height(), SceneGraph::eSimCamLuminance, 0.01 );
   SceneGraph::GLSimCam depth_cam;
   depth_cam.Init( &glGraph, Eigen::Matrix4d::Identity(), K,
-      cam.Width(), cam.Height(), SceneGraph::eSimCamDepth, 0.01 );
+                  cam.Width(), cam.Height(), SceneGraph::eSimCamDepth, 0.01 );
 
-  for (std::map<int, std::vector< std::shared_ptr< detection > > >::iterator it = detections.begin(); it != detections.end(); it++) {
-    ceres::Solver::Options options;
-    options.linear_solver_type = ceres::DENSE_SCHUR;
-    options.num_threads = 1;
-    options.max_num_iterations = 100;
-    options.minimizer_progress_to_stdout = false;
-    ceres::Problem problem;
-    std::vector< std::shared_ptr< detection > > dets = it->second;
-    problem.AddParameterBlock(dets[0]->pose.data(), 6);
-    for( int count = 0; count < dets.size(); count++) {
-      std::shared_ptr< detection > d = dets[count];
-      double pts[4][2];
-      pts[0][0] = d->tag_corners.tl(0);
-      pts[0][1] = d->tag_corners.tl(1);
-      pts[1][0] = d->tag_corners.tr(0);
-      pts[1][1] = d->tag_corners.tr(1);
-      pts[2][0] = d->tag_corners.br(0);
-      pts[2][1] = d->tag_corners.br(1);
-      pts[3][0] = d->tag_corners.bl(0);
-      pts[3][1] = d->tag_corners.bl(1);
-      ceres::CostFunction* dense_cost = PhotometricCost( d, &sim_cam, K, cmod, pts);
-      problem.AddResidualBlock( dense_cost, NULL, (dets[0]->pose.data()));
-    }
-    ceres::Solver::Summary summary;
-    ceres::Solve(options, &problem, &summary);
-
-//    ceres::Covariance::Options cov_options;
-//    ceres::Covariance cov(cov_options);
-//    std::vector<std::pair<const double*, const double*> > covariance_blocks;
-//    double* x = dets[0]->pose.data();
-//    covariance_blocks.push_back(std::make_pair(x, x));
-
-//    CHECK(cov.Compute(covariance_blocks, &problem));
-
-//    double covariance_xx[36];
-//    cov.GetCovarianceBlock(x, x, covariance_xx);
-//    Eigen::Map< const Eigen::Matrix<double,6,6> > covariance(covariance_xx);
-//    fprintf(stdout, "Covariance at frame %d is %f\n", it->first, covariance.determinant());
-  }
-
-//  DTrack dtrack;
-//  dtrack.Init();
-//  calibu::CameraRig old_rig = calibu::ReadXmlRig(rig_name_);
-//  dtrack.SetParams(old_rig.cameras[0].camera, old_rig.cameras[0].camera,
-//      old_rig.cameras[0].camera, Sophus::SE3d());
+  //  DTrack dtrack;
+  //  dtrack.Init();
+  //  calibu::CameraRig old_rig = calibu::ReadXmlRig(rig_name_);
+  //  dtrack.SetParams(old_rig.cameras[0].camera, old_rig.cameras[0].camera,
+  //      old_rig.cameras[0].camera, Sophus::SE3d());
 
   std::vector< Eigen::Vector6d > poses;
   for( std::map<int, std::vector< std::shared_ptr< detection > > >::iterator it = detections.begin();
        it != detections.end(); it++){
-//    poses.push_back(dtrack_update(detections[it->first], &dtrack, &sim_cam, &depth_cam, K));
+    //    poses.push_back(dtrack_update(detections[it->first], &dtrack, &sim_cam, &depth_cam, K));
     poses.push_back(it->second[0]->pose);
   }
 
@@ -886,7 +929,7 @@ int main( int argc, char** argv )
   campose.resize(detections.size());
   camPoses.resize(detections.size());
   count = 0;
-  for(std::map<int, std::vector< std::shared_ptr< detection > > >::iterator it = detections.begin();
+  for(DMap::iterator it = detections.begin();
       it != detections.end(); it++, count++) {
     camPoses[count] = it->second[0]->pose;
     campose[count].SetPose(it->second[0]->pose);
@@ -894,18 +937,35 @@ int main( int argc, char** argv )
     glGraph.AddChild( &campose[count]);
   }
 
-  bool bRun = false;
   bool bStep = false;
   unsigned long nFrame=0;
   int pose_number = 0;
+  DMap::iterator it;
+  it = detections.begin();
+
   pangolin::RegisterKeyPressCallback(pangolin::PANGO_SPECIAL + pangolin::PANGO_KEY_RIGHT, [&](){bStep=true; pose_number++;} );
   pangolin::RegisterKeyPressCallback(pangolin::PANGO_SPECIAL + pangolin::PANGO_KEY_LEFT, [&](){bStep=true; pose_number--;} );
+  pangolin::RegisterKeyPressCallback('h', [&](){ homography_minimization(it->second[0], &sim_cam, K);});
+  pangolin::RegisterKeyPressCallback('s', [&](){ sparse_optimize(detections, K, cmod);
+    update_objects(detections,
+                   camPoses,
+                   campose);} );
+  pangolin::RegisterKeyPressCallback('d', [&](){ dense_optimize(detections, &sim_cam, K);
+    update_objects(detections,
+                   camPoses,
+                   campose);} );
+  pangolin::RegisterKeyPressCallback('w', [&](){ sparse_frame_optimize(it->second, K, cmod);
+    update_objects(detections,
+                   camPoses,
+                   campose);} );
+  pangolin::RegisterKeyPressCallback('e', [&](){ dense_frame_optimize(it->second, &sim_cam, K);
+    update_objects(detections,
+                   camPoses,
+                   campose);
+    std::cout<<"Dense optimizing this frame . . . "<<std::endl;} );
 
   cv::Mat synth(cmod->Height(), cmod->Width(), CV_8UC1);
   cv::Mat diff(cmod->Height(), cmod->Width(), CV_8UC1);
-
-  std::map<int, std::vector< std::shared_ptr< detection > > >::iterator it;
-  it = detections.begin();
 
   for(; !pangolin::ShouldQuit(); nFrame++)
   {
@@ -924,19 +984,20 @@ int main( int argc, char** argv )
     if (bStep) {
       pose_number = std::min((int) camPoses.size() - 1, pose_number);
       pose_number = std::max(0, pose_number);
-      sim_cam.SetPoseVision(_Cart2T(camPoses[pose_number]));
-      sim_cam.RenderToTexture();
-      sim_cam.CaptureGrey( synth.data );
       bStep = false;
       it = detections.begin();
       std::advance(it, pose_number);
-      fprintf(stdout, "Covariance at this frame is: %f\n", it->second[0]->covariance);
-      fflush(stdout);
     }
 
+    sim_cam.SetPoseVision(_Cart2T(camPoses[pose_number]));
+    sim_cam.RenderToTexture();
+    sim_cam.CaptureGrey( synth.data );
+    cv::GaussianBlur(synth, synth, cv::Size(5, 5), 0);
     sim_image.SetImage( synth.data, cmod->Width(), cmod->Height(), GL_RGB, GL_LUMINANCE, GL_UNSIGNED_BYTE);
     live_image.SetImage( it->second[0]->image.data, cmod->Width(), cmod->Height(), GL_RGB, GL_LUMINANCE, GL_UNSIGNED_BYTE);
-    diff = synth + it->second[0]->image;
+    live_image.Activate();
+    diff.release();
+    cv::subtract(it->second[0]->image, synth, diff, synth);
     diff_image.SetImage( diff.data, cmod->Width(), cmod->Height(), GL_RGB, GL_LUMINANCE, GL_UNSIGNED_BYTE, true);
 
     glColor4f(1, 1, 1, 1);
