@@ -1,4 +1,4 @@
-mex -I/opt/local/include/eigen3 project.cpp;
+% mex -I/opt/local/include/eigen3 project.cpp;
 file = fopen('/Users/faradazerage/code/CoreDev/Calibu/build/applications/groundtruth/data.out', 'r');
 pose = fscanf(file, '%f\t%f\t%f\t%f\t%f\t%f\n', 6);
 pose = pose';
@@ -28,31 +28,43 @@ h = 480;
 im = project(w, h, pose, K, corners(1, :), corners(2, :), corners(3, :), corners(4, :), tag);
 imshow(im);
 
-figure;
-
-plot3(corners(:, 1), corners(:, 2), corners(:, 3));
-hold on;
-
-plot3(pose(1), pose(2), pose(3), 'ro');
-
-l = intersect(cs(1, 1), cs(1, 2), K, pose, corners);
-l = [l; intersect(cs(2, 1), cs(2, 2), K, pose, corners);];
-l = [l; intersect(cs(3, 1), cs(3, 2), K, pose, corners);];
-l = [l; intersect(cs(4, 1), cs(4, 2), K, pose, corners);];
-l = [l; intersect(506, 159, K, pose, corners);];
-
-t = intersect(506, 159, K, pose, corners);
-inpoly( t, corners);
-
-plot3(l(:, 1), l(:, 2), l(:, 3));
-
-dx = corners(3, :) - corners(2, :);
-dy = corners(1, :) - corners(2, :);
-n = cross(dx, dy);
-n = n / norm(n);
-
-nrm = [corners(1, 1:3); corners(1, 1:3) + n];
-plot3(nrm(:, 1), nrm(:, 2), nrm(:, 3), '-k');
-plot3(corners(1, 1), corners(1, 2), corners(1, 3), 'or');
-plot3(corners(2, 1), corners(2, 2), corners(2, 3), 'og');
-plot3(corners(3, 1), corners(3, 2), corners(3, 3), 'ob');
+% figure;
+% 
+% plot3(corners(:, 1), corners(:, 2), corners(:, 3));
+% hold on;
+% 
+% plot3(pose(1), pose(2), pose(3), 'ro');
+% 
+% l = intersect(cs(1, 1), cs(1, 2), K, pose, corners);
+% l = [l; intersect(cs(2, 1), cs(2, 2), K, pose, corners);];
+% l = [l; intersect(cs(3, 1), cs(3, 2), K, pose, corners);];
+% l = [l; intersect(cs(4, 1), cs(4, 2), K, pose, corners);];
+% l = [l; intersect(506, 159, K, pose, corners);];
+% 
+% t = intersect(506, 159, K, pose, corners);
+% inpoly( t, corners);
+% 
+% tl = corners(4, :);
+% tr = corners(1, :);
+% bl = corners(3, :);
+% br = corners(2, :);
+% 
+% dx = (tr - tl) / 8;
+% dy = (bl - tl) / 8;
+% 
+% a = t(2, :) - tl;
+% x = dot(a, dx) / (norm(dx)*norm(dx));
+% y = dot(a, dy) / (norm(dy)*norm(dy));
+% 
+% plot3(l(:, 1), l(:, 2), l(:, 3));
+% 
+% dx = corners(3, :) - corners(2, :);
+% dy = corners(1, :) - corners(2, :);
+% n = cross(dx, dy);
+% n = n / norm(n);
+% 
+% nrm = [corners(1, 1:3); corners(1, 1:3) + n];
+% plot3(nrm(:, 1), nrm(:, 2), nrm(:, 3), '-k');
+% plot3(corners(1, 1), corners(1, 2), corners(1, 3), 'or');
+% plot3(corners(2, 1), corners(2, 2), corners(2, 3), 'og');
+% plot3(corners(3, 1), corners(3, 2), corners(3, 3), 'ob');

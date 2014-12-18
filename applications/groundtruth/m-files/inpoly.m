@@ -1,5 +1,5 @@
 function in = inpoly(x, corners)
-    x = x(2, :)
+    x = x(2, :);
     o = corners(1, :) - x;
     t = corners(2, :) - x;
     r = corners(3, :) - x;

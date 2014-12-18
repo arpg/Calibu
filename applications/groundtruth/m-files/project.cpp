@@ -43,9 +43,25 @@ Matrix4d Cart2T( Vector6d pz )
   return T;
 }
 
-double bilinear( double px, double py, double* tex )
+double bilinear( double x, double y, double* Im )
 {
-  return 1.0f;
+  int width = 8;
+  int px = floor(x);
+  int py = floor(y);
+  float dx = x - px;
+  float dy = y - py;
+
+  if ((px > 6) || (py > 6)) {
+    return Im[px + py*width];
+  }
+  float a = Im[px + py*width];
+  float b = Im[px + 1 + py*width];
+  float c = Im[px + (py + 1)*width];
+  float d = Im[px + 1 + (py + 1)*width];
+
+  return   a*(1 - dx)*(1 - dy) + b*(dx)*(1 - dy)
+         + c*(dy)*(1 - dx) + d*(dx * dy);
+
 }
 
 double color( Vector3d pt,
@@ -71,14 +87,17 @@ double color( Vector3d pt,
   theta += acos(r.dot(f));
   theta += acos(f.dot(o));
 
-  if (fabs(theta - 2*M_PI) < 0.01) {
+  if (fabs(theta - 2*M_PI) < 0.001) {
     Vector3d dx, dy;
     dx = (tr - tl) / 8;
-    dy = (tr - tl) / 8;
-    double x, y;
-    x = (pt - tl).dot(dx);
-    y = (pt - tl).dot(dy);
-    return bilinear(x, y, tex);
+    dy = (bl - tl) / 8;
+    float x, y;
+    x = (pt - tl).dot(dx) / (dx.norm() * dx.norm());
+    y = (pt - tl).dot(dy) / (dy.norm() * dy.norm());
+    if ((x >= 0) && (x < 7) && (y >= 0) && (y < 7))
+      return bilinear(x, y, tex);
+    else
+      return 0;
   }
   else {
     return 0;
@@ -138,7 +157,7 @@ void project( double* im, int w, int h, Matrix3d K,
   int j = 0;
   for (j = 0; j < h; j++ ){
     for (i = 0; i < w; i++){
-      im[i + j*w] = color( intersect(i, j, K, pose, tl, tr, bl, br),
+      im[j + i*h] = color( intersect(i, j, K, pose, tl, tr, bl, br),
                            tl, tr, bl, br, tex);
     }
   }
