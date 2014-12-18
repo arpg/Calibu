@@ -629,40 +629,41 @@ void dense_frame_optimize( std::vector<std::shared_ptr < detection > > dets,
   for (int l = level; l >= 0; l--) {
     fprintf(stdout, "Level = %d\n", l);
     fflush(stdout);
-    ceres::Solver::Options options;
+//    ceres::Solver::Options options;
 //    options.linear_solver_type = ceres::DENSE_QR;
 
-    ceres::Problem problem;
-    for( int count = 0; count < dets.size(); count++) {
-      std::shared_ptr< detection > d = dets[0];
-      ceres::CostFunction* dense_cost
-          = new ceres::NumericDiffCostFunction<PhotometricCostFunctor, ceres::CENTRAL, 1, 6> (
-            new PhotometricCostFunctor( d, sim_cam, l)
-            );
+//    ceres::Problem problem;
+//    for( int count = 0; count < dets.size(); count++) {
+//      std::shared_ptr< detection > d = dets[0];
+//      ceres::CostFunction* dense_cost
+//          = new ceres::NumericDiffCostFunction<PhotometricCostFunctor, ceres::CENTRAL, 1, 6> (
+//            new PhotometricCostFunctor( d, sim_cam, l)
+//            );
 
-      problem.AddResidualBlock( dense_cost, NULL, dets[0]->pose.data());
-    }
-    ceres::Solver::Summary summary;
-    ceres::Solve(options, &problem, &summary);
+//      problem.AddResidualBlock( dense_cost, NULL, dets[0]->pose.data());
+//    }
+//    ceres::Solver::Summary summary;
+//    ceres::Solve(options, &problem, &summary);
+    //  }
+    //  for (int i = 0; i < 6; i++) dets[0]->pose.data()[i] = x[i];
+
+    //  ceres::Covariance::Options cov_options;
+    //  cov_options.apply_loss_function = false;
+    //  ceres::Covariance cov(cov_options);
+    //  std::vector<std::pair<const double*, const double*> > covariance_blocks;
+    //  covariance_blocks.push_back(std::make_pair(x, x));
+
+    //  if (cov.Compute(covariance_blocks, &problem)) {
+
+    //    double covariance_xx[36];
+    //    cov.GetCovarianceBlock(x, x, covariance_xx);
+    //    Eigen::Map< const Eigen::Matrix<double,6,6> > covariance(covariance_xx);
+    //    dets[0]->covariance = covariance.determinant();
+    //  } else {
+    //    dets[0]->covariance = FLT_MAX;
+    //  }
+    make_hessian(sim_cam, dets[0], l);
   }
-  //  for (int i = 0; i < 6; i++) dets[0]->pose.data()[i] = x[i];
-
-  //  ceres::Covariance::Options cov_options;
-  //  cov_options.apply_loss_function = false;
-  //  ceres::Covariance cov(cov_options);
-  //  std::vector<std::pair<const double*, const double*> > covariance_blocks;
-  //  covariance_blocks.push_back(std::make_pair(x, x));
-
-  //  if (cov.Compute(covariance_blocks, &problem)) {
-
-  //    double covariance_xx[36];
-  //    cov.GetCovarianceBlock(x, x, covariance_xx);
-  //    Eigen::Map< const Eigen::Matrix<double,6,6> > covariance(covariance_xx);
-  //    dets[0]->covariance = covariance.determinant();
-  //  } else {
-  //    dets[0]->covariance = FLT_MAX;
-  //  }
-  //  make_hessian(sim_cam, dets[0], level);
   //  fundamentally_essential( sim_cam, dets[0], k);
 }
 
@@ -993,11 +994,17 @@ int main( int argc, char** argv )
     sim_cam.RenderToTexture();
     sim_cam.CaptureGrey( synth.data );
     cv::GaussianBlur(synth, synth, cv::Size(5, 5), 0);
+//    threshold(synth, it->second[0]->tag_data.color_low, it->second[0]->tag_data.color_high);
     sim_image.SetImage( synth.data, cmod->Width(), cmod->Height(), GL_RGB, GL_LUMINANCE, GL_UNSIGNED_BYTE);
-    live_image.SetImage( it->second[0]->image.data, cmod->Width(), cmod->Height(), GL_RGB, GL_LUMINANCE, GL_UNSIGNED_BYTE);
+
+    cv::Mat temp;
+    it->second[0]->image.copyTo(temp);
+//    threshold(temp, it->second[0]->tag_data.color_low, it->second[0]->tag_data.color_high);
+    live_image.SetImage( temp.data, cmod->Width(), cmod->Height(), GL_RGB, GL_LUMINANCE, GL_UNSIGNED_BYTE);
     live_image.Activate();
     diff.release();
-    cv::subtract(it->second[0]->image, synth, diff, synth);
+//    cv::subtract(synth, temp, synth, diff/*, synth*/);
+    diff = cv::abs(synth - temp);
     diff_image.SetImage( diff.data, cmod->Width(), cmod->Height(), GL_RGB, GL_LUMINANCE, GL_UNSIGNED_BYTE, true);
 
     glColor4f(1, 1, 1, 1);
