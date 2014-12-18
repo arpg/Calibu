@@ -18,37 +18,37 @@ inline Eigen::Matrix<Scalar, 4, 4> _Cart2T(
                                     Scalar q
                                     )
 {
-    Eigen::Matrix<Scalar, 4, 4> T;
-    // psi = roll, th = pitch, phi = yaw
-    Scalar cq, cp, cr, sq, sp, sr;
-    cr = cos( r );
-    cp = cos( p );
-    cq = cos( q );
+  Eigen::Matrix< Scalar, 4, 4> T;
+  // psi = roll, th = pitch, phi = yaw
+  Scalar cq, cp, cr, sq, sp, sr;
+  cr = cos(r);
+  cp = cos(p);
+  cq = cos(q);
 
-    sr = sin( r );
-    sp = sin( p );
-    sq = sin( q );
+  sr = sin(r);
+  sp = sin(p);
+  sq = sin(q);
 
-    T(0,0) = cp*cq;
-    T(0,1) = -cr*sq+sr*sp*cq;
-    T(0,2) = sr*sq+cr*sp*cq;
-    T(0,3) = x - x;
+  T(0, 0) = cp * cq;
+  T(0, 1) = -cr * sq + sr * sp * cq;
+  T(0, 2) = sr * sq + cr * sp * cq;
+  T(0, 3) = (Scalar) (0.0);
 
-    T(1,0) = cp*sq;
-    T(1,1) = cr*cq+sr*sp*sq;
-    T(1,2) = -sr*cq+cr*sp*sq;
-    T(1,3) = (Scalar) 10.0f;
+  T(1, 0) = cp * sq;
+  T(1, 1) = cr * cq + sr * sp * sq;
+  T(1, 2) = -sr * cq + cr * sp * sq;
+  T(1, 3) = (Scalar) (0.0);
 
-    T(2,0) = -sp;
-    T(2,1) = sr*cp;
-    T(2,2) = cr*cp;
-    T(2,3) = (Scalar) 0.0f;
+  T(2, 0) = -sp;
+  T(2, 1) = sr * cp;
+  T(2, 2) = cr * cp;
+  T(2, 3) = (Scalar) (0.0);
 
-    T(0,3) = x;
-    T(1,3) = y;
-    T(2,3) = z;
-    T(3,3) = (Scalar) 1.0f;
-    return T;
+  T(0, 3) = x;
+  T(1, 3) = y;
+  T(2, 3) = z;
+  T(3, 3) = (Scalar) (1.0);
+  return T;
 }
 
 template <typename T>
