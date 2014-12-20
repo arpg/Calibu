@@ -28,6 +28,18 @@ h = 480;
 im = project(w, h, pose, K, corners(1, :), corners(2, :), corners(3, :), corners(4, :), tag);
 imshow(im);
 
+pose(1) = pose(1) + 0.5;
+figure;
+im2 = project(w, h, pose, K, corners(1, :), corners(2, :), corners(3, :), corners(4, :), tag);
+imshow(im2);
+
+
+figure;
+im3 = abs(im2 - im);
+imshow(im3);
+
+S = sum(im3(:))
+
 % figure;
 % 
 % plot3(corners(:, 1), corners(:, 2), corners(:, 3));
