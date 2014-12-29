@@ -624,26 +624,26 @@ void sparse_optimize( DMap detections,
 void dense_frame_optimize( std::vector<std::shared_ptr < detection > > dets,
                            SceneGraph::GLSimCam* sim_cam,
                            Eigen::Matrix3d k,
-                           int level = 2)
+                           int level = 5)
 {
   for (int l = level; l >= 0; l--) {
     fprintf(stdout, "Level = %d\n", l);
     fflush(stdout);
-    ceres::Solver::Options options;
-    options.linear_solver_type = ceres::DENSE_QR;
+//    ceres::Solver::Options options;
+//    options.linear_solver_type = ceres::DENSE_QR;
 
-    ceres::Problem problem;
-    for( int count = 0; count < dets.size(); count++) {
-      std::shared_ptr< detection > d = dets[0];
-      ceres::CostFunction* dense_cost
-          = new ceres::NumericDiffCostFunction<PhotometricCostFunctor, ceres::CENTRAL, 1, 6> (
-            new PhotometricCostFunctor( d, sim_cam, l)
-            );
+//    ceres::Problem problem;
+//    for( int count = 0; count < dets.size(); count++) {
+//      std::shared_ptr< detection > d = dets[0];
+//      ceres::CostFunction* dense_cost
+//          = new ceres::NumericDiffCostFunction<PhotometricCostFunctor, ceres::CENTRAL, 1, 6> (
+//            new PhotometricCostFunctor( d, sim_cam, l)
+//            );
 
-      problem.AddResidualBlock( dense_cost, NULL, dets[0]->pose.data());
-    }
-    ceres::Solver::Summary summary;
-    ceres::Solve(options, &problem, &summary);
+//      problem.AddResidualBlock( dense_cost, NULL, dets[0]->pose.data());
+//    }
+//    ceres::Solver::Summary summary;
+//    ceres::Solve(options, &problem, &summary);
     //  }
     //  for (int i = 0; i < 6; i++) dets[0]->pose.data()[i] = x[i];
 
@@ -662,7 +662,7 @@ void dense_frame_optimize( std::vector<std::shared_ptr < detection > > dets,
     //  } else {
     //    dets[0]->covariance = FLT_MAX;
     //  }
-//    make_hessian(sim_cam, dets[0], l);
+    make_hessian(sim_cam, dets[0], l);
   }
   //  fundamentally_essential( sim_cam, dets[0], k);
 }
@@ -740,7 +740,7 @@ int main( int argc, char** argv )
   bool capture = false;
   bool start = true;
   cv::Mat last_image;
-  while( start || capture && (count < 316)){
+  while( start || capture && (count < 116)){
     capture = cam.Capture( *vImages );
     count++;
     if (start) {

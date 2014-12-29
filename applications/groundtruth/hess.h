@@ -41,7 +41,6 @@ double cost( SceneGraph::GLSimCam* simcam,
   img_d /= 255;
   data_d /= 255;
   cv::Mat sum;
-//  cv::subtract(img_d, data_d, sum, img);
   sum = cv::abs(img_d - data_d);
 
   return (double) cv::sum(sum)[0];
@@ -54,7 +53,6 @@ double D1( SceneGraph::GLSimCam* simcam,
            int level,
            float step = STEP )
 {
-//  step *= pow(10, level);
   Eigen::Vector6d pose1 = pose;
   pose1(a) += step;
   double c1 = cost(simcam, d, pose1, level);
@@ -70,7 +68,6 @@ double D2( SceneGraph::GLSimCam* simcam,
            int level,
            float step = STEP )
 {
-//  step *= pow(10, level);
   Eigen::Vector6d pose1 = pose;
   pose1(b) += step;
   double c1 = D1(simcam, d, a, pose1, level);
@@ -92,30 +89,30 @@ void make_hessian( SceneGraph::GLSimCam* simcam,
   double new_ = cost(simcam, d, pose, level);
   std::cout<<"Initial cost: "<<new_ <<" at level "<<level<<std::endl;
   double last_ = FLT_MAX;
-  while (((fabs(new_ - last_) > 1e-2) || step == 0) && (step < 25)) {
+  pose = d->pose;
+  while (((new_ < last_)) && (step < 25)) {
     step++;
-    pose = d->pose;
     std::cout<< "Step: "<<step<<" -- C:"<<new_<<" -- ["<<update.norm()<<"]"<<std::endl;
-    for (int jj = 0; jj < 6; jj++) {
-      for (int ii = 0; ii < 6; ii++) {
-        hess(ii, jj) = D2(simcam, d, ii, jj, pose, level);
-      }
-    }
+//    for (int jj = 0; jj < 6; jj++) {
+//      for (int ii = 0; ii < 6; ii++) {
+//        hess(ii, jj) = D2(simcam, d, ii, jj, pose, level);
+//      }
+//    }
 
     for (int ii = 0; ii < 6; ii++) {
       grad(ii) = D1(simcam, d, ii, pose, level);
     }
 
-    update = hess.inverse() * grad;
+//    update = hess.inverse() * grad;
+    update = grad;
 
     last_ = new_;
-    pose = pose - update;
+    pose = pose - 1e-7*update;
 
     new_ = cost(simcam, d, pose, level);
 
-    if (new_ < last_)
-      d->pose = pose;
   }
+  d->pose = pose;
 }
 
 

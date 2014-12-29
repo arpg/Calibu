@@ -67,7 +67,8 @@ double bilinear( double x, double y, double* Im )
 double color( Vector3d pt,
               Vector3d tl, Vector3d tr,
               Vector3d bl, Vector3d br,
-              double* tex )
+              double* tex,
+              bool rnd = false)
 
 {
   Vector3d o, t, r, f;
@@ -81,6 +82,10 @@ double color( Vector3d pt,
   r = r / r.norm();
   f = f / f.norm();
   double theta = 0;
+
+  float col = 0.0f;
+  if (rnd)
+    col = (rand() % 255) / 255.0f;
 
   theta += acos(o.dot(t));
   theta += acos(t.dot(r));
@@ -97,10 +102,10 @@ double color( Vector3d pt,
     if ((x >= 0) && (x < 7) && (y >= 0) && (y < 7))
       return bilinear(x, y, tex);
     else
-      return 0;
+      return col;
   }
   else {
-    return 0;
+    return col;
   }
 }
 
@@ -151,14 +156,15 @@ void project( double* im, int w, int h, Matrix3d K,
               Vector3d tr,
               Vector3d bl,
               Vector3d br,
-              double* tex )
+              double* tex,
+              bool r = false )
 {
   int i = 0;
   int j = 0;
   for (j = 0; j < h; j++ ){
     for (i = 0; i < w; i++){
       im[j + i*h] = color( intersect(i, j, K, pose, tl, tr, bl, br),
-                           tl, tr, bl, br, tex);
+                           tl, tr, bl, br, tex, r);
     }
   }
 }
@@ -194,6 +200,8 @@ void mexFunction(int nlhs, mxArray *plhs[],
   _bl = mxGetPr( prhs[7] );
   _br = mxGetPr( prhs[4] );
 
+  bool col = mxGetScalar(prhs[9]);
+
   Map< Matrix< double, 3, 1 > > tl(_tl);
   Map< Matrix< double, 3, 1 > > tr(_tr);
   Map< Matrix< double, 3, 1 > > bl(_bl);
@@ -202,6 +210,6 @@ void mexFunction(int nlhs, mxArray *plhs[],
   plhs[0] = mxCreateDoubleMatrix(h, w, mxREAL);
   im = mxGetPr(plhs[0]);
 
-  project(im, w, h, K, pose, tl, tr, bl, br, tex);
+  project(im, w, h, K, pose, tl, tr, bl, br, tex, col);
   return;
 }
