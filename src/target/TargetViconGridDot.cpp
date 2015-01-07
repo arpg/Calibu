@@ -36,7 +36,7 @@ TargetViconGridDot::TargetViconGridDot(TargetGridDot grid, ViconLayout layout)
   const float H2 = floor(H / 2.f);
 
   // Note: the 3 first points are the ones that define the coordinate frame
-  // of the vixon markers
+  // of the vicon markers
   // {col, row}
   switch(layout)
   {
@@ -53,9 +53,40 @@ TargetViconGridDot::TargetViconGridDot(TargetGridDot grid, ViconLayout layout)
                                         grid_spacing * marker.y));
 
   // Vicon frame ("m" means marker):
+  // Origin: m[0]
   // X = vector(m[0] to m[1])
   // Z = X cross_product vector(m[0] to m[2])
   // Y = Z cross_product X
+  const double zof = 9.1e-3; // measured distance from fiducial base to center
+  std::vector<cv::Point3f> markers3d;
+  markers3d.reserve(m_markers.size());
+  for(const auto& marker : m_markers) {
+    markers3d.emplace_back(cv::Point3f(marker.x, marker.y, 0) * grid_spacing);
+    markers3d.back().z = -zof;
+  }
+
+  cv::Point3f o = markers3d[0];
+  cv::Point3f x = markers3d[1] - markers3d[0];
+  cv::Point3f v = markers3d[2] - markers3d[0];
+  cv::Point3f z = x.cross(v);
+  cv::Point3f y = z.cross(x);
+
+  x *= 1. / cv::norm(x);
+  y *= 1. / cv::norm(y);
+  z *= 1. / cv::norm(z);
+
+  double t[16];
+  cv::Mat Tcv(4, 4, CV_64F, t);
+  t[0]  = x.x;   t[1]  = y.x;   t[2]  = z.x;   t[3]  = o.x;
+  t[4]  = x.y;   t[5]  = y.y;   t[6]  = z.y;   t[7]  = o.y;
+  t[8]  = x.z;   t[9]  = y.z;   t[10] = z.z;   t[11] = o.z;
+  t[12] = 0;     t[13] = 0;     t[14] = 0;     t[15] = 1;
+
+  cv::perspectiveTransform(markers3d, markers3d, Tcv.inv());
+
+  vicon3d.reserve(markers3d.size());
+  for(const auto& m : markers3d)
+    vicon3d.emplace_back(Eigen::Vector3d(m.x, m.y, m.z));
 }
 
 bool TargetViconGridDot::FindViconTarget(
