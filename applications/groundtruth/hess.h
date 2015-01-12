@@ -42,7 +42,6 @@ double cost( SceneGraph::GLSimCam* simcam,
   data_d /= 255;
   cv::Mat sum;
   sum = cv::abs(img_d - data_d);
-
   return (double) cv::sum(sum)[0];
 }
 
@@ -86,6 +85,7 @@ void make_hessian( SceneGraph::GLSimCam* simcam,
   int step = 0;
 
   Eigen::Vector6d pose = d->pose;
+  Eigen::Vector6d temp;
   double new_ = cost(simcam, d, pose, level);
   std::cout<<"Initial cost: "<<new_ <<" at level "<<level<<std::endl;
   double last_ = FLT_MAX;
@@ -107,9 +107,11 @@ void make_hessian( SceneGraph::GLSimCam* simcam,
     update = grad;
 
     last_ = new_;
-    pose = pose - 1e-7*update;
+    temp = pose - update;
 
-    new_ = cost(simcam, d, pose, level);
+    new_ = cost(simcam, d, temp, level);
+    if (new_ < last_)
+      pose = temp;
 
   }
   d->pose = pose;

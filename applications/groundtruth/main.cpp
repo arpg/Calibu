@@ -37,6 +37,7 @@
 #include "ceres_cost_functions.h"
 #include "dense_ceres.h"
 #include "hess.h"
+#include "align.h"
 #include "dtrack.h"
 
 // -cam split:[roi1=0+0+640+480]//proto:[startframe=1500]///Users/faradazerage/Desktop/DataSets/APRIL/Hallway-9-12-13/Twizzler/proto.log -cmod /Users/faradazerage/Desktop/DataSets/APRIL/Hallway-9-12-13/Twizzler/cameras.xml -o outfile.out -map /Users/faradazerage/Desktop/DataSets/APRIL/Hallway-9-12-13/Twizzler/DS20.csv -v -debug -show-ceres
@@ -962,11 +963,15 @@ int main( int argc, char** argv )
   pangolin::RegisterKeyPressCallback('e', [&](){ dense_frame_optimize(it->second, &sim_cam, K);
     update_objects(detections,
                    camPoses,
-                   campose);
+                   campose);    
     std::cout<<"Dense optimizing this frame . . . "<<std::endl;} );
-
   cv::Mat synth(cmod->Height(), cmod->Width(), CV_8UC1);
   cv::Mat diff(cmod->Height(), cmod->Width(), CV_8UC1);
+  cv::Mat temp;
+  pangolin::RegisterKeyPressCallback('o', [&]{
+    cv::imwrite("synthetic.jpg", synth);
+    cv::imwrite("captured.jpg", temp);
+  });
 
   for(; !pangolin::ShouldQuit(); nFrame++)
   {
@@ -997,7 +1002,6 @@ int main( int argc, char** argv )
 //    threshold(synth, it->second[0]->tag_data.color_low, it->second[0]->tag_data.color_high);
     sim_image.SetImage( synth.data, cmod->Width(), cmod->Height(), GL_RGB, GL_LUMINANCE, GL_UNSIGNED_BYTE);
 
-    cv::Mat temp;
     it->second[0]->image.copyTo(temp);
 //    threshold(temp, it->second[0]->tag_data.color_low, it->second[0]->tag_data.color_high);
     live_image.SetImage( temp.data, cmod->Width(), cmod->Height(), GL_RGB, GL_LUMINANCE, GL_UNSIGNED_BYTE);
