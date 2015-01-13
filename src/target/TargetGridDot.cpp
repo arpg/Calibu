@@ -587,7 +587,7 @@ void TargetGridDot::SaveEPS(
         unsigned char id
         ) const
 {
-    Eigen::MatrixXi M = GetBinaryPattern(1);
+    Eigen::MatrixXi M = GetBinaryPattern(0);
 
     const double border = 3*rad1;
     const Eigen::Vector2d border2d(border,border);
@@ -605,7 +605,6 @@ void TargetGridDot::SaveEPS(
     // usletter BoundingBox is 0, 0, 612, 792
     f << "%%BoundingBox: 0 0 " << max_pts[0] << " " << max_pts[1] << std::endl;
     f << std::endl;
-    f << "270 rotate 0 " << -max_pts[0] << " 0 translate" << std::endl;
 
     for( int r=0; r<M.rows(); ++r ) {
         for( int c=0; c<M.cols(); ++c) {
