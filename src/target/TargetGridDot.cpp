@@ -49,12 +49,14 @@ TargetGridDot::TargetGridDot(double grid_spacing, const Eigen::MatrixXi& grid)
 void TargetGridDot::Init() {
   // Create cached grid coordinates
   tpts2d.resize(grid_size(0) * grid_size(1));
+  tpts2d_radius.resize(tpts2d.size());
   tpts3d.resize(grid_size(0) * grid_size(1));
 
   for(int r=0; r< grid_size(1); ++r) {
     for(int c=0; c< grid_size(0); ++c) {
       Eigen::Vector2i p = Eigen::Vector2i(c,r);
       tpts2d[r*grid_size(0)+c] = grid_spacing * Eigen::Vector2d(p(0), p(1));
+      tpts2d_radius[r* grid_size(0) + c] = PG[0](r, c);
       tpts3d[r*grid_size(0)+c] = grid_spacing * Eigen::Vector3d(p(0), p(1), 0);
     }
   }
@@ -598,7 +600,7 @@ void TargetGridDot::SaveEPS(
 
     std::ofstream f;
     f.open(filename.c_str());
-    f << "%!PS-Adobe-3.0 EPSF-3.0" << std::endl;
+    f << "%!PS-Adobe-3.1 EPSF-3.0" << std::endl;
     f << "%%Creator: CalibuCalibrationTarget" << std::endl;
     f << "%%Title: Calibration Target" << std::endl;
     f << "%%Origin: 0 0" << std::endl;
@@ -616,6 +618,9 @@ void TargetGridDot::SaveEPS(
                 << std::endl;
         }
     }
+
+    std::cerr << "Wrote bounding box: " <<
+                 max_pts[0] << " " << max_pts[1] << std::endl;
 
     // output the binary code -- blank if id == 0, which is the default
     double r = grid_spacing*( M.rows()+2.5 );

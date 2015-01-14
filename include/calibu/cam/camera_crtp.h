@@ -137,7 +137,7 @@ class CameraInterface {
  protected:
   CameraInterface(const Eigen::VectorXd& params_in,
                   const Eigen::Vector2i& image_size)
-      : image_size_(image_size), params_(params_in) {
+      : params_(params_in), image_size_(image_size) {
   }
 
   Eigen::Vector2i image_size_;
