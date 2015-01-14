@@ -381,7 +381,7 @@ int main(int argc, char** argv)
     pangolin::RegisterKeyPressCallback(']', [&](){calibrator.Stop();} );
 
     bool step = false;
-    pangolin::RegisterKeyPressCallback(pangolin::PANGO_SPECIAL+ GLUT_KEY_RIGHT, [&](){step = true;} );
+    pangolin::RegisterKeyPressCallback(pangolin::PANGO_SPECIAL+ pangolin::PANGO_KEY_RIGHT, [&](){step = true;} );
     pangolin::RegisterKeyPressCallback(' ', [&](){run = !run;} );
 
     pangolin::RegisterKeyPressCallback('r', [&](){calibrator.PrintResults();} );
