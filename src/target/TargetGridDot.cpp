@@ -49,12 +49,14 @@ TargetGridDot::TargetGridDot(double grid_spacing, const Eigen::MatrixXi& grid)
 void TargetGridDot::Init() {
   // Create cached grid coordinates
   tpts2d.resize(grid_size(0) * grid_size(1));
+  tpts2d_radius.resize(tpts2d.size());
   tpts3d.resize(grid_size(0) * grid_size(1));
 
   for(int r=0; r< grid_size(1); ++r) {
     for(int c=0; c< grid_size(0); ++c) {
       Eigen::Vector2i p = Eigen::Vector2i(c,r);
       tpts2d[r*grid_size(0)+c] = grid_spacing * Eigen::Vector2d(p(0), p(1));
+      tpts2d_radius[r* grid_size(0) + c] = PG[0](r, c);
       tpts3d[r*grid_size(0)+c] = grid_spacing * Eigen::Vector3d(p(0), p(1), 0);
     }
   }

@@ -54,10 +54,10 @@ inline void glDrawPlane(const Eigen::Vector4d& N_w, float scale, int grid)
 
 inline void glDrawTarget( const TargetInterface& t, const Eigen::Vector2d& offset, double scale, double sat, double val )
 {
-    const double r = t.CircleRadius() * scale;
 
     for( unsigned int i=0; i<t.Circles2D().size(); ++i )
     {
+        const double r = t.CircleRadius(i) * scale;
         const Eigen::Vector2d p = t.Circles2D()[i] * scale + offset;
         pangolin::glColorBin(i,t.Circles2D().size(),sat,val);
         pangolin::glDrawCircle(p,r);
