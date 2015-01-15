@@ -94,11 +94,11 @@ public:
     
     ////////////////////////////////////////////////////////////////////////////
     /// Set the camera serial number.
-    virtual uint64_t SerialNumber() const = 0;
+    virtual long int SerialNumber() const = 0;
 
     ////////////////////////////////////////////////////////////////////////////
     /// Set the camera serial number.
-    virtual void SetSerialNumber( const uint64_t nSerialNo ) = 0;
+    virtual void SetSerialNumber( const long int nSerialNo ) = 0;
 
     ////////////////////////////////////////////////////////////////////////////
     /// Set the camera index (for multi-camera rigs).

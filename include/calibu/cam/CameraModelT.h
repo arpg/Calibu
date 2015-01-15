@@ -225,13 +225,13 @@ namespace calibu
                 return StaticType();
             }
 
-            uint64_t SerialNumber() const
+            long int SerialNumber() const
             {
                 return m_nSerialNo;
             }
 
             /// Set the camera serial number.
-            void SetSerialNumber( const uint64_t nSerialNo )
+            void SetSerialNumber( const long int nSerialNo )
             {
                 m_nSerialNo = nSerialNo;
             }
@@ -468,7 +468,7 @@ namespace calibu
             Eigen::Matrix<Scalar,NUM_PARAMS,1> m_params;
             std::string      m_sName;     //< Model name, e.g., "left"
             int              m_nVersion;  //< Calibu or MVL camera model version.
-            uint64_t         m_nSerialNo; //< Camera serial number, if appropriate.
+            long int         m_nSerialNo; //< Camera serial number, if appropriate.
             int              m_nIndex;    //< Camera index, for multi-camera systems.
             Matrix3t         m_RDF;       //< Define coordinate-frame convention from Right, Down, Forward vectors.
     };

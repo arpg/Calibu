@@ -21,11 +21,11 @@
 */
 #pragma once
 #include <calibu/cam/camera_crtp.h>
-#include <calibu/cam/camera_crtp_impl.h>
 #include <iostream>
 
 namespace calibu {
 struct CameraUtils {
+
   /** Euclidean distance from (0, 0) to given pixel */
   template<typename T>
   static inline T PixNorm(const T* pix) {
@@ -118,11 +118,56 @@ struct CameraUtils {
   }
 };
 
+
+/**
+ * Avoids copying inherited function implementations for all camera models.
+ *
+ * Requires the following functions in the derived class:
+ * - static void Unproject(const T* pix, const T* params, T* ray) {
+ * - static void Project(const T* ray, const T* params, T* pix) {
+ * - static void dProject_dray(const T* ray, const T* params, T* j) {
+ */
+#define CAMERA_MODEL_IMPL(CameraT, n_params)                            \
+  static constexpr int kParamSize = n_params;                           \
+  CameraT(const Eigen::VectorXd& params,                                \
+          const Eigen::Vector2i& image_size) :                          \
+      CameraInterface<Scalar>(params, image_size) {                     \
+  }                                                                     \
+  Vec3t<Scalar> Unproject(const Vec2t<Scalar>& pix) const override {    \
+    Vec3t<Scalar> ray;                                                  \
+    Unproject(pix.data(), this->params_.data(), ray.data());            \
+    return ray;                                                         \
+  }                                                                     \
+  Vec2t<Scalar> Project(const Vec3t<Scalar>& ray) const override {      \
+    Vec2t<Scalar> pix;                                                  \
+    Project(ray.data(), this->params_.data(), pix.data());              \
+    return pix;                                                         \
+  }                                                                     \
+  Eigen::Matrix<Scalar, 2, Eigen::Dynamic> dProject_dparams(            \
+      const Vec3t<Scalar>& ray) const override                          \
+  {                                                                     \
+    Eigen::Matrix<Scalar, 2, kParamSize> j;                             \
+    dProject_dparams(ray.data(), this->params_.data(), j.data());       \
+    return j;                                                           \
+  }                                                                     \
+  Eigen::Matrix<Scalar, 3, Eigen::Dynamic> dUnproject_dparams(          \
+      const Vec2t<Scalar>& pix) const override                          \
+  {                                                                     \
+    Eigen::Matrix<Scalar, 3, kParamSize> j;                             \
+    dUnproject_dparams(pix.data(), this->params_.data(), j.data());     \
+    return j;                                                           \
+  }                                                                     \
+  Eigen::Matrix<Scalar, 2, 3>                                           \
+  dProject_dray(const Vec3t<Scalar>& ray) const override {              \
+    Eigen::Matrix<Scalar, 2, 3> j;                                      \
+    dProject_dray(ray.data(), this->params_.data(), j.data());          \
+    return j;                                                           \
+  }
+
 template<typename Scalar = double>
-class LinearCamera : public CameraImpl<Scalar, 4, LinearCamera<Scalar> > {
-  typedef CameraImpl<Scalar, 4, LinearCamera<Scalar> > Base;
+class LinearCamera : public CameraInterface<Scalar> {
  public:
-  using Base::Base;
+  CAMERA_MODEL_IMPL(LinearCamera, 4);
 
   template<typename T>
   static void Unproject(const T* pix, const T* params, T* ray) {
@@ -170,20 +215,19 @@ class LinearCamera : public CameraImpl<Scalar, 4, LinearCamera<Scalar> > {
   }
 };
 
-constexpr double kFovCamDistEps = 1e-5;
+#define FOV_CAM_DIST_EPS 1e-5
 template<typename Scalar = double>
-class FovCamera : public CameraImpl<Scalar, 5, FovCamera<Scalar> > {
-  typedef CameraImpl<Scalar, 5, FovCamera<Scalar> > Base;
+class FovCamera : public CameraInterface<Scalar> {
  public:
-  using Base::Base;
+  CAMERA_MODEL_IMPL(FovCamera, 5);
 
   // For these derivatives, refer to the camera_derivatives.m matlab file.
   template<typename T>
-  static T Factor(const T rad, const T* params) {
+  inline static T Factor(const T rad, const T* params) {
     const T param = params[4];
-    if (param * param > (T)kFovCamDistEps) {
+    if (param * param > (T)FOV_CAM_DIST_EPS) {
       const T mul2_tanw_by2 = (T)2.0 * tan(param / (T)2.0);
-      if (rad * rad < (T)kFovCamDistEps) {
+      if (rad * rad < (T)FOV_CAM_DIST_EPS) {
         // limit r->0
         return mul2_tanw_by2 / param;
       }
@@ -194,12 +238,12 @@ class FovCamera : public CameraImpl<Scalar, 5, FovCamera<Scalar> > {
   }
 
   template<typename T>
-  static T dFactor_dparam(const T rad, const T* params, T* fac) {
+  inline static T dFactor_dparam(const T rad, const T* params, T* fac) {
     const T param = params[4];
-    if (param * param > kFovCamDistEps) {
+    if (param * param > FOV_CAM_DIST_EPS) {
       const T tanw_by2 = tan(param / (T)2.0);
       const T mul2_tanw_by2 = (T)2.0 * tanw_by2;
-      if (rad * rad < kFovCamDistEps) {
+      if (rad * rad < FOV_CAM_DIST_EPS) {
         // limit r->0
         *fac = mul2_tanw_by2 / param;
         return ((T)2 * ((tanw_by2 * tanw_by2) / (T)2 + (T)0.5)) / param -
@@ -219,16 +263,16 @@ class FovCamera : public CameraImpl<Scalar, 5, FovCamera<Scalar> > {
   }
 
   template<typename T>
-  static T dFactor_drad(const T rad, const T* params, T* fac) {
+  inline static T dFactor_drad(const T rad, const T* params, T* fac) {
     const T param = params[4];
-    if(param * param < kFovCamDistEps) {
+    if(param * param < FOV_CAM_DIST_EPS) {
       *fac = (T)1;
       return (T)0;
     }else{
       const T tan_wby2 = tan(param / (T)2.0);
       const T mul2_tanw_by2 = (T)2.0 * tan_wby2;
 
-      if(rad * rad < kFovCamDistEps) {
+      if(rad * rad < FOV_CAM_DIST_EPS) {
         *fac = mul2_tanw_by2 / param;
         return (T)0;
       }else{
@@ -245,13 +289,13 @@ class FovCamera : public CameraImpl<Scalar, 5, FovCamera<Scalar> > {
 
 
   template<typename T>
-  static T Factor_inv(const T rad, const T* params) {
+  inline static T Factor_inv(const T rad, const T* params) {
     const T param = params[4];
-    if(param * param > kFovCamDistEps) {
+    if(param * param > FOV_CAM_DIST_EPS) {
       const T w_by2 = param / (T)2.0;
       const T mul_2tanw_by2 = tan(w_by2) * (T)2.0;
 
-      if(rad * rad < kFovCamDistEps) {
+      if(rad * rad < FOV_CAM_DIST_EPS) {
         // limit r->0
         return param / mul_2tanw_by2;
       }
@@ -262,11 +306,11 @@ class FovCamera : public CameraImpl<Scalar, 5, FovCamera<Scalar> > {
   }
 
   template<typename T>
-  static T dFactor_inv_dparam(const T rad, const T* params) {
+  inline static T dFactor_inv_dparam(const T rad, const T* params) {
     const T param = params[4];
-    if(param * param > kFovCamDistEps) {
+    if(param * param > FOV_CAM_DIST_EPS) {
       const T tan_wby2 = tan(param / (T)2.0);
-      if(rad * rad < kFovCamDistEps) {
+      if(rad * rad < FOV_CAM_DIST_EPS) {
         return (T)1.0 / ((T)2 * tan_wby2) -
             (param * (tan_wby2 * tan_wby2 / (T)2.0 + (T)0.5)) /
             ((T)2.0 * tan_wby2 * tan_wby2);
@@ -282,13 +326,13 @@ class FovCamera : public CameraImpl<Scalar, 5, FovCamera<Scalar> > {
   }
 
   template<typename T>
-  static T dFactor_inv_drad(const T rad, const T* params, T* fac) {
+  inline static T dFactor_inv_drad(const T rad, const T* params, T* fac) {
     const T param = params[4];
-    if(param * param > kFovCamDistEps) {
+    if(param * param > FOV_CAM_DIST_EPS) {
       const T w_by2 = param / (T)2.0;
       const T tan_w_by2 = tan(w_by2);
       const T mul_2tanw_by2 = tan_w_by2 * (T)2.0;
-      if(rad * rad < kFovCamDistEps) {
+      if(rad * rad < FOV_CAM_DIST_EPS) {
         *fac = param / tan_w_by2;
         return (T)0;
       }
@@ -334,7 +378,7 @@ class FovCamera : public CameraImpl<Scalar, 5, FovCamera<Scalar> > {
     const T dfac_inv_drad_byrad =
         dFactor_inv_drad(rad, params, &fac_inv) / rad;
     const T dfac_inv_dp[2] = { pix_kinv[0] * dfac_inv_drad_byrad,
-                               pix_kinv[1] * dfac_inv_drad_byrad };
+                           pix_kinv[1] * dfac_inv_drad_byrad };
     // Calculate the jacobian of the factor w.r.t. the K parameters.
     T dfac_dparams[4];
     dfac_dparams[0] = dfac_inv_dp[0] * j[0];
@@ -436,13 +480,12 @@ class FovCamera : public CameraImpl<Scalar, 5, FovCamera<Scalar> > {
 
 /** A third degree polynomial distortion model */
 template<typename Scalar = double>
-class Poly3Camera : public CameraImpl<Scalar, 7, Poly3Camera<Scalar> > {
-  typedef CameraImpl<Scalar, 7, Poly3Camera<Scalar> > Base;
+class Poly3Camera : public CameraInterface<Scalar> {
  public:
-  using Base::Base;
+  CAMERA_MODEL_IMPL(Poly3Camera, 7);
 
   template<typename T>
-  static T Factor(const T rad, const T* params) {
+  inline static T Factor(const T rad, const T* params) {
     T r2 = rad * rad;
     T r4 = r2 * r2;
     return (static_cast<T>(1.0) +
@@ -452,7 +495,7 @@ class Poly3Camera : public CameraImpl<Scalar, 7, Poly3Camera<Scalar> > {
   }
 
   template<typename T>
-  static T dFactor_drad(const T r, const T* params, T* fac) {
+  inline static T dFactor_drad(const T r, const T* params, T* fac) {
     *fac = Factor(r, params);
     T r2 = r * r;
     T r3 = r2 * r;
@@ -462,7 +505,7 @@ class Poly3Camera : public CameraImpl<Scalar, 7, Poly3Camera<Scalar> > {
   }
 
   template<typename T>
-  static T Factor_inv(const T r, const T* params) {
+  inline static T Factor_inv(const T r, const T* params) {
     T k1 = params[4];
     T k2 = params[5];
     T k3 = params[6];
@@ -555,14 +598,14 @@ class Poly3Camera : public CameraImpl<Scalar, 7, Poly3Camera<Scalar> > {
   template<typename T>
   static void dProject_dparams(const T*, const T*, T* ) {
     std::cerr << "dProjedt_dparams not defined for the poly3 model. "
-        " Throwing exception." << std::endl;
+                 " Throwing exception." << std::endl;
     throw 0;
   }
 
   template<typename T>
   static void dUnproject_dparams(const T*, const T*, T* ) {
     std::cerr << "dUnproject_dparams not defined for the poly3 model. "
-        " Throwing exception." << std::endl;
+                 " Throwing exception." << std::endl;
     throw 0;
   }
 };
