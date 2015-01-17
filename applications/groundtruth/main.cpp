@@ -37,8 +37,9 @@
 #include "ceres_cost_functions.h"
 #include "dense_ceres.h"
 #include "hess.h"
-#include "align.h"
 #include "dtrack.h"
+#include "compute_homography.h"
+#include "pfromh.h"
 
 // -cam split:[roi1=0+0+640+480]//proto:[startframe=1500]///Users/faradazerage/Desktop/DataSets/APRIL/Hallway-9-12-13/Twizzler/proto.log -cmod /Users/faradazerage/Desktop/DataSets/APRIL/Hallway-9-12-13/Twizzler/cameras.xml -o outfile.out -map /Users/faradazerage/Desktop/DataSets/APRIL/Hallway-9-12-13/Twizzler/DS20.csv -v -debug -show-ceres
 
@@ -275,9 +276,13 @@ Eigen::Vector2i find_minmax(cv::Mat img, double p[4][2])
   return Eigen::Vector2i(min, max);
 }
 
-Eigen::Matrix4d cameraPoseFromHomography(cv::Mat H)
+Eigen::Matrix4d cameraPoseFromHomography(cv::Mat H, Eigen::Matrix3d K)
 {
   cv::Mat pose;
+  cv::Mat k;
+  Eigen::Matrix3f temp = K.cast<float>();
+  cv::eigen2cv(temp, k);
+  H = k*H;
   pose = cv::Mat::eye(3, 4, CV_32F);      // 3x4 matrix, the camera pose
   float norm1 = (float)norm(H.col(0));
   float norm2 = (float)norm(H.col(1));
@@ -301,7 +306,8 @@ Eigen::Matrix4d cameraPoseFromHomography(cv::Mat H)
   p3.copyTo(c2);               // Third column is the crossproduct of columns one and two
 
   pose.col(3) = H.col(2) / tnorm;  //vector t [R|t] is the last column of pose
-  std::cout<<"Pose from homo: "<<pose<<std::endl;
+  std::cout<< H << std::endl;
+  std::cout<< pose << std::endl;
   Eigen::Matrix4d toRet;
   toRet << pose.at<float>(0, 0), pose.at<float>(0, 1), pose.at<float>(0, 2), pose.at<float>(0, 3),
       pose.at<float>(1, 0), pose.at<float>(1, 1), pose.at<float>(1, 2), pose.at<float>(1, 3),
@@ -565,8 +571,7 @@ void homography_minimization( std::shared_ptr< detection > d,
   cv::Mat H = cv::findHomography( obj, scene, CV_RANSAC );
 
 
-  Eigen::Matrix4d h = cameraPoseFromHomography( H );
-  std::cout << h << std::endl;
+//  Eigen::Matrix4d h = cameraPoseFromHomography( H );
   //  d->pose = _T2Cart( _Cart2T(d->pose) * h.inverse() );
 }
 
@@ -688,9 +693,34 @@ void update_objects( DMap detections, std::vector< Eigen::Vector6d > &camPoses,
   }
 }
 
+void homography_shift( std::shared_ptr< detection > d,
+                       SceneGraph::GLSimCam* simcam,
+                       Eigen::Matrix3d K )
+{
+  cv::Mat captured = d->image;
+  cv::Mat synth(captured.rows, captured.cols, captured.type());
+  simcam->SetPoseVision( _Cart2T(d->pose) );
+  simcam->RenderToTexture();
+  simcam->DrawCamera();
+  simcam->CaptureGrey( synth.data );
+
+//  cv::imshow("Captured", captured);
+//  cv::imshow("Synthetic", synth);
+//  cv::waitKey();
+
+  cv::Mat H = compute_homography_(captured, synth);
+
+  Eigen::Matrix4d h = cameraPoseFromHomography( H, K );
+  std::cout << h << std::endl;
+  d->pose = _T2Cart( _Cart2T(d->pose) * h );
+}
+
 /////////////////////////////////////////////////////////////////////////
 int main( int argc, char** argv )
 {
+
+  pfromh();
+  return 0;
 
   if( argc <= 2 ){
     puts(USAGE);
@@ -947,15 +977,19 @@ int main( int argc, char** argv )
 
   pangolin::RegisterKeyPressCallback(pangolin::PANGO_SPECIAL + pangolin::PANGO_KEY_RIGHT, [&](){bStep=true; pose_number++;} );
   pangolin::RegisterKeyPressCallback(pangolin::PANGO_SPECIAL + pangolin::PANGO_KEY_LEFT, [&](){bStep=true; pose_number--;} );
-  pangolin::RegisterKeyPressCallback('h', [&](){ homography_minimization(it->second[0], &sim_cam, K);});
+//  pangolin::RegisterKeyPressCallback('h', [&](){ homography_minimization(it->second[0], &sim_cam, K);});
+  pangolin::RegisterKeyPressCallback('h', [&](){ homography_shift(it->second[0], &sim_cam, K);
+    update_objects(detections,
+                   camPoses,
+                   campose);});
   pangolin::RegisterKeyPressCallback('s', [&](){ sparse_optimize(detections, K, cmod);
     update_objects(detections,
                    camPoses,
                    campose);} );
-  pangolin::RegisterKeyPressCallback('d', [&](){ dense_optimize(detections, &sim_cam, K);
-    update_objects(detections,
-                   camPoses,
-                   campose);} );
+//  pangolin::RegisterKeyPressCallback('d', [&](){ dense_optimize(detections, &sim_cam, K);
+//    update_objects(detections,
+//                   camPoses,
+//                   campose);} );
   pangolin::RegisterKeyPressCallback('w', [&](){ sparse_frame_optimize(it->second, K, cmod);
     update_objects(detections,
                    camPoses,

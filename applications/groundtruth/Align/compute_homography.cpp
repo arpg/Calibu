@@ -1,4 +1,11 @@
 #include "compute_homography.h"
+#include <time.h>
+#include <ceres/ceres.h>
+
+extern "C"{
+#include <vl/generic.h>
+#include <vl/sift.h>
+}
 
 struct fd{
   float x, y;
@@ -198,10 +205,10 @@ cv::Mat H( std::map<int, int> m,
     h[ii] = H.at<float>(ii % 3, ii / 3) / H.at<float>(2, 2);
   }
   H.at<float>(2, 2) = 1;
-  std::cout << H << std::endl;
+
   ceres::Problem problem;
   cv::Mat ok = oks[id];
-  std::cout << ok << std::endl;
+
   for (unsigned int ii = 0; ii < X1.cols; ii++) {
     if (ok.data[ii] != 0)  {
       ceres::CostFunction* cost_function =
