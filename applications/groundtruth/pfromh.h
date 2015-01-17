@@ -69,7 +69,7 @@ void pfromh( void )
   cv::hconcat(W1, hat((H*v2).t())*H*u1, W1);
 
   cv::hconcat(H*v2, H*u2, W2);
-  cv::hconcat(W1, hat((H*v2).t())*H*u2, W1);
+  cv::hconcat(W2, hat((H*v2).t())*H*u2, W2);
 
   R1 = W1*U1.t();
   cv::Mat N1 = hat(v2.t())*u1;
@@ -78,4 +78,18 @@ void pfromh( void )
   R2 = W2*U2.t();
   cv::Mat N2 = hat(v2.t())*u2;
   T2 = (H - R2)*N2;
+
+  R3 = R1;
+  T3 = -T1;
+  R4 = R2;
+  T4 = -T2;
+
+  std::cout << T1 << std::endl;
+
+  std::cout << T2 << std::endl;
+
+  std::cout << T3 << std::endl;
+
+  std::cout << T4 << std::endl;
+
 }
