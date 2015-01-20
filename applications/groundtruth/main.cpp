@@ -857,8 +857,13 @@ Eigen::Matrix4d pfromh( std::shared_ptr< detection > d,
 //        new DecomposeCostFunctor( d, simcam, T)
 //        );
 
-  double x = 100;
-  double dx = 1e-3;
+  double norm = sqrt(T(0, 3)*T(0, 3) + T(1, 3)*T(1, 3) + T(2, 3)*T(2, 3));
+  T(0, 3) /= norm;
+  T(1, 3) /= norm;
+  T(2, 3) /= norm;
+
+  double x = 1;
+  double dx = 1e-6;
 //  problem.AddResidualBlock( cost_func, NULL, &x);
 
 //  ceres::Solver::Summary summary;
@@ -881,14 +886,23 @@ Eigen::Matrix4d pfromh( std::shared_ptr< detection > d,
     float grad = cost(simcam, d, pose_p, 0) - cost(simcam, d, pose, 0);
 
     last_ = new_;
-
     new_ = cost(simcam, d, pose_p, 0);
     if (new_ < last_) {
-      x = x - 1e-4*grad;
-      T = temp;
+      x = x - 1e-6*grad;
+//      T = temp;
     }
+
     std::cout << "x = "<< x << std::endl;
   }
+
+  T(0, 3) /= (x);
+  T(1, 3) /= (x);
+  T(2, 3) /= (x);
+  T(0, 3) = 0;
+  T(1, 3) = 0;
+  T(2, 3) = 0;
+
+  std::cout << "T = "<< T << std::endl;
 
   return T;
 }
@@ -907,9 +921,14 @@ void homography_shift( std::shared_ptr< detection > d,
 
   cv::Mat H = compute_homography_(captured, synth);
 
+  cv::Mat result;
+  cv::warpPerspective(synth, result, H.inv(), cv::Size(captured.cols,captured.rows));
+  imshow( "Result", captured - result);
+  cv::waitKey();
+
 //  Eigen::Matrix4d h = cameraPoseFromHomography( H, K );
-  Eigen::Matrix4d h = pfromh(d, simcam, K, H);
-  d->pose = _T2Cart( _Cart2T(d->pose) * h );
+//  Eigen::Matrix4d h = pfromh(d, simcam, K, H);
+//  d->pose = _T2Cart( _Cart2T(d->pose) * h );
 }
 
 /////////////////////////////////////////////////////////////////////////
