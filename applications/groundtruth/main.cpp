@@ -39,7 +39,6 @@
 #include "hess.h"
 #include "dtrack.h"
 #include "compute_homography.h"
-#include "pfromh.h"
 
 // -cam split:[roi1=0+0+640+480]//proto:[startframe=1500]///Users/faradazerage/Desktop/DataSets/APRIL/Hallway-9-12-13/Twizzler/proto.log -cmod /Users/faradazerage/Desktop/DataSets/APRIL/Hallway-9-12-13/Twizzler/cameras.xml -o outfile.out -map /Users/faradazerage/Desktop/DataSets/APRIL/Hallway-9-12-13/Twizzler/DS20.csv -v -debug -show-ceres
 
@@ -693,6 +692,208 @@ void update_objects( DMap detections, std::vector< Eigen::Vector6d > &camPoses,
   }
 }
 
+cv::Mat hat(cv::Mat in)
+{
+  cv::Mat toRet(3, 3, CV_32F);
+  toRet.at<float>(0, 0) = 0;
+  toRet.at<float>(0, 1) = -in.at<float>(0, 2);
+  toRet.at<float>(0, 2) = in.at<float>(0, 1);
+  toRet.at<float>(1, 0) = in.at<float>(0, 2);
+  toRet.at<float>(1, 1) = 0;
+  toRet.at<float>(1, 2) = -in.at<float>(0, 0);
+  toRet.at<float>(2, 0) = -in.at<float>(0, 1);
+  toRet.at<float>(2, 1) = in.at<float>(0, 0);
+  toRet.at<float>(2, 2) = 0;
+  return toRet;
+}
+
+struct DecomposeCostFunctor{
+  DecomposeCostFunctor( std::shared_ptr< detection> _d,
+                        SceneGraph::GLSimCam* _cam,
+                        Eigen::Matrix4d _T
+                      ) :
+    det(_d), simcam(_cam), T(_T)
+  {
+  }
+
+  bool operator()(const double* const x, double* residual) const
+  {
+    Eigen::Vector6d pose;
+    Eigen::Matrix4d temp = T;
+    temp(0, 3) /= *x;
+    temp(1, 3) /= *x;
+    temp(2, 3) /= *x;
+    pose = _T2Cart( _Cart2T(det->pose) * temp );
+    residual[0] = cost(simcam, det, pose, 0);
+    return true;
+  }
+
+private:
+  std::shared_ptr< detection> det;
+  SceneGraph::GLSimCam* simcam;
+  Eigen::Matrix4d T;
+};
+
+
+Eigen::Matrix4d pfromh( std::shared_ptr< detection > d,
+                        SceneGraph::GLSimCam* simcam,
+                        Eigen::Matrix3d K,
+                        cv::Mat H )
+// Pose estimation from homography: http://vision.ucla.edu//MASKS/MASKS-ch5.pdf
+{
+  cv::Mat R1, R2, R3, R4;
+  cv::Mat T1, T2, T3, T4;
+  cv::Mat U, S, Vt;
+  cv::SVD::compute(H, S, U, Vt);
+
+  H = H / S.at<float>(0, 1);
+
+  cv::Mat A = H.t()*H;
+  cv::SVD::compute(A, S, U, Vt);
+
+  float s1, s2, s3;
+  if (cv::determinant(U) == -1) {
+    U = U*-1;
+  }
+
+  s1 = S.at<float>(0, 0);
+  s2 = S.at<float>(0, 1);
+  s3 = S.at<float>(0, 2);
+
+  cv::Mat v1, v2, v3;
+  v1 = U.col(0);
+  v2 = U.col(1);
+  v3 = U.col(2);
+
+  cv::Mat u1, u2;
+  u1 = (sqrt(1 - s3)*v1 + sqrt(s1 - 1)*v3) / (sqrt(s1 - s3));
+  u2 = (sqrt(1 - s3)*v1 - sqrt(s1 - 1)*v3) / (sqrt(s1 - s3));
+
+  cv::Mat U1, U2;
+  cv::hconcat(v2, u1, U1);
+  cv::hconcat(U1, hat(v2.t())*u1, U1);
+
+  cv::hconcat(v2, u2, U2);
+  cv::hconcat(U2, hat(v2.t())*u2, U2);
+
+  cv::Mat W1, W2;
+  cv::hconcat(H*v2, H*u1, W1);
+  cv::hconcat(W1, hat((H*v2).t())*H*u1, W1);
+
+  cv::hconcat(H*v2, H*u2, W2);
+  cv::hconcat(W2, hat((H*v2).t())*H*u2, W2);
+
+  R1 = W1*U1.t();
+  cv::Mat N1 = hat(v2.t())*u1;
+  T1 = (H - R1)*N1;
+
+  R2 = W2*U2.t();
+  cv::Mat N2 = hat(v2.t())*u2;
+  T2 = (H - R2)*N2;
+
+  R3 = R1;
+  T3 = -T1;
+  R4 = R2;
+  T4 = -T2;
+
+  cv::Mat R1_good, R2_good, T1_good, T2_good;
+
+  if (N1.at<float>(3, 0) > 0) {
+    R1_good = R1;
+    T1_good = T1;
+  } else {
+    R1_good = R3;
+    T1_good = T3;
+  }
+  if (N2.at<float>(3, 0) > 0) {
+    R2_good = R2;
+    T2_good = T2;
+  } else {
+    R2_good = R4;
+    T2_good = T4;
+  }
+
+  Eigen::Vector3d t(0, 0, 0);
+  Eigen::Matrix3d r1, r2;
+  cv::cv2eigen(R1_good, r1);
+  Eigen::Matrix4d T_1;
+  T_1 << r1(0, 0), r1(0, 1), r1(0, 2), t(0),
+         r1(1, 0), r1(1, 1), r1(1, 2), t(1),
+         r1(2, 0), r1(2, 1), r1(2, 2), t(2),
+                0,        0,        0,    1;
+  cv::cv2eigen(R2_good, r2);
+  Eigen::Matrix4d T_2;
+
+  T_2 << r2(0, 0), r2(0, 1), r2(0, 2), t(0),
+         r2(1, 0), r2(1, 1), r2(1, 2), t(1),
+         r2(2, 0), r2(2, 1), r2(2, 2), t(2),
+                0,        0,        0,    1;
+
+  Eigen::Vector6d p1 = _T2Cart( _Cart2T(d->pose) * T_1 );
+  Eigen::Vector6d p2 = _T2Cart( _Cart2T(d->pose) * T_2 );
+
+  //  TODO:  Optimize for d -> R + (1/d)T;
+
+  Eigen::Matrix4d T;
+  if (cost(simcam, d, p1, 0) < cost(simcam, d, p2, 0)) {
+    T_1(0, 3) = T1_good.at<float>(0, 0);
+    T_1(1, 3) = T1_good.at<float>(1, 0);
+    T_1(2, 3) = T1_good.at<float>(2, 0);
+
+    T = T_1;
+  } else {
+    T_2(0, 3) = T2_good.at<float>(0, 0);
+    T_2(1, 3) = T2_good.at<float>(1, 0);
+    T_2(2, 3) = T2_good.at<float>(2, 0);
+    T = T_2;
+  }
+
+//  ceres::Solver::Options options;
+//  options.linear_solver_type = ceres::DENSE_QR;
+
+//  ceres::Problem problem;
+//  ceres::CostFunction* cost_func
+//      = new ceres::NumericDiffCostFunction<DecomposeCostFunctor, ceres::CENTRAL, 1, 1> (
+//        new DecomposeCostFunctor( d, simcam, T)
+//        );
+
+  double x = 100;
+  double dx = 1e-3;
+//  problem.AddResidualBlock( cost_func, NULL, &x);
+
+//  ceres::Solver::Summary summary;
+//  ceres::Solve(options, &problem, &summary);
+
+  int step = 0;
+
+  Eigen::Vector6d pose = _T2Cart(_Cart2T(d->pose) * T);
+
+  double new_ = cost(simcam, d, pose, 0);
+  std::cout<<"Initial cost: "<<new_ <<std::endl;
+  double last_ = FLT_MAX;
+  while (((new_ < last_)) && (step < 25)) {
+    step++;
+    Eigen::Matrix4d temp = T;
+    temp(0, 3) /= (x + dx);
+    temp(1, 3) /= (x + dx);
+    temp(2, 3) /= (x + dx);
+    Eigen::Vector6d pose_p = _T2Cart(_Cart2T(d->pose) * temp);
+    float grad = cost(simcam, d, pose_p, 0) - cost(simcam, d, pose, 0);
+
+    last_ = new_;
+
+    new_ = cost(simcam, d, pose_p, 0);
+    if (new_ < last_) {
+      x = x - 1e-4*grad;
+      T = temp;
+    }
+    std::cout << "x = "<< x << std::endl;
+  }
+
+  return T;
+}
+
+
 void homography_shift( std::shared_ptr< detection > d,
                        SceneGraph::GLSimCam* simcam,
                        Eigen::Matrix3d K )
@@ -704,24 +905,16 @@ void homography_shift( std::shared_ptr< detection > d,
   simcam->DrawCamera();
   simcam->CaptureGrey( synth.data );
 
-//  cv::imshow("Captured", captured);
-//  cv::imshow("Synthetic", synth);
-//  cv::waitKey();
-
   cv::Mat H = compute_homography_(captured, synth);
 
-  Eigen::Matrix4d h = cameraPoseFromHomography( H, K );
-  std::cout << h << std::endl;
+//  Eigen::Matrix4d h = cameraPoseFromHomography( H, K );
+  Eigen::Matrix4d h = pfromh(d, simcam, K, H);
   d->pose = _T2Cart( _Cart2T(d->pose) * h );
 }
 
 /////////////////////////////////////////////////////////////////////////
 int main( int argc, char** argv )
 {
-
-  pfromh();
-  return 0;
-
   if( argc <= 2 ){
     puts(USAGE);
     return -1;
