@@ -281,7 +281,7 @@ Eigen::Matrix4d cameraPoseFromHomography(cv::Mat H, Eigen::Matrix3d K)
   cv::Mat k;
   Eigen::Matrix3f temp = K.cast<float>();
   cv::eigen2cv(temp, k);
-  H = k*H;
+  //  H = k.inv()*H;
   pose = cv::Mat::eye(3, 4, CV_32F);      // 3x4 matrix, the camera pose
   float norm1 = (float)norm(H.col(0));
   float norm2 = (float)norm(H.col(1));
@@ -570,7 +570,7 @@ void homography_minimization( std::shared_ptr< detection > d,
   cv::Mat H = cv::findHomography( obj, scene, CV_RANSAC );
 
 
-//  Eigen::Matrix4d h = cameraPoseFromHomography( H );
+  //  Eigen::Matrix4d h = cameraPoseFromHomography( H );
   //  d->pose = _T2Cart( _Cart2T(d->pose) * h.inverse() );
 }
 
@@ -634,21 +634,21 @@ void dense_frame_optimize( std::vector<std::shared_ptr < detection > > dets,
   for (int l = level; l >= 0; l--) {
     fprintf(stdout, "Level = %d\n", l);
     fflush(stdout);
-//    ceres::Solver::Options options;
-//    options.linear_solver_type = ceres::DENSE_QR;
+    //    ceres::Solver::Options options;
+    //    options.linear_solver_type = ceres::DENSE_QR;
 
-//    ceres::Problem problem;
-//    for( int count = 0; count < dets.size(); count++) {
-//      std::shared_ptr< detection > d = dets[0];
-//      ceres::CostFunction* dense_cost
-//          = new ceres::NumericDiffCostFunction<PhotometricCostFunctor, ceres::CENTRAL, 1, 6> (
-//            new PhotometricCostFunctor( d, sim_cam, l)
-//            );
+    //    ceres::Problem problem;
+    //    for( int count = 0; count < dets.size(); count++) {
+    //      std::shared_ptr< detection > d = dets[0];
+    //      ceres::CostFunction* dense_cost
+    //          = new ceres::NumericDiffCostFunction<PhotometricCostFunctor, ceres::CENTRAL, 1, 6> (
+    //            new PhotometricCostFunctor( d, sim_cam, l)
+    //            );
 
-//      problem.AddResidualBlock( dense_cost, NULL, dets[0]->pose.data());
-//    }
-//    ceres::Solver::Summary summary;
-//    ceres::Solve(options, &problem, &summary);
+    //      problem.AddResidualBlock( dense_cost, NULL, dets[0]->pose.data());
+    //    }
+    //    ceres::Solver::Summary summary;
+    //    ceres::Solve(options, &problem, &summary);
     //  }
     //  for (int i = 0; i < 6; i++) dets[0]->pose.data()[i] = x[i];
 
@@ -708,29 +708,37 @@ cv::Mat hat(cv::Mat in)
 }
 
 struct DecomposeCostFunctor{
-  DecomposeCostFunctor( std::shared_ptr< detection> _d,
-                        SceneGraph::GLSimCam* _cam,
+  DecomposeCostFunctor( Eigen::Vector2d _px,
+                        Eigen::Vector3d _pt,
+                        Eigen::Matrix3d _k,
                         Eigen::Matrix4d _T
-                      ) :
-    det(_d), simcam(_cam), T(_T)
+                        ) :
+    px(_px), pt(_pt), K(_k), T(_T)
   {
   }
 
   bool operator()(const double* const x, double* residual) const
   {
-    Eigen::Vector6d pose;
     Eigen::Matrix4d temp = T;
     temp(0, 3) /= *x;
     temp(1, 3) /= *x;
     temp(2, 3) /= *x;
-    pose = _T2Cart( _Cart2T(det->pose) * temp );
-    residual[0] = cost(simcam, det, pose, 0);
+    Eigen::Vector4d pt_homo;
+    pt_homo << pt(0), pt(1), pt(2), 1;
+    pt_homo = T*pt_homo;
+    pt << pt_homo(0) / pt_homo(3), pt_homo(1) / pt_homo(3), pt_homo(2) / pt_homo(3);
+    pt = K*pt;
+    pt(0) /= pt(2);
+    pt(1) /= pt(2);
+    residual[0] = px(0) - pt(0);
+    residual[1] = px(1) - pt(1);
     return true;
   }
 
 private:
-  std::shared_ptr< detection> det;
-  SceneGraph::GLSimCam* simcam;
+  Eigen::Vector3d pt;
+  Eigen::Vector2d px;
+  Eigen::Matrix3d K;
   Eigen::Matrix4d T;
 };
 
@@ -818,21 +826,19 @@ Eigen::Matrix4d pfromh( std::shared_ptr< detection > d,
   cv::cv2eigen(R1_good, r1);
   Eigen::Matrix4d T_1;
   T_1 << r1(0, 0), r1(0, 1), r1(0, 2), t(0),
-         r1(1, 0), r1(1, 1), r1(1, 2), t(1),
-         r1(2, 0), r1(2, 1), r1(2, 2), t(2),
-                0,        0,        0,    1;
+      r1(1, 0), r1(1, 1), r1(1, 2), t(1),
+      r1(2, 0), r1(2, 1), r1(2, 2), t(2),
+      0,        0,        0,    1;
   cv::cv2eigen(R2_good, r2);
   Eigen::Matrix4d T_2;
 
   T_2 << r2(0, 0), r2(0, 1), r2(0, 2), t(0),
-         r2(1, 0), r2(1, 1), r2(1, 2), t(1),
-         r2(2, 0), r2(2, 1), r2(2, 2), t(2),
-                0,        0,        0,    1;
+      r2(1, 0), r2(1, 1), r2(1, 2), t(1),
+      r2(2, 0), r2(2, 1), r2(2, 2), t(2),
+      0,        0,        0,    1;
 
   Eigen::Vector6d p1 = _T2Cart( _Cart2T(d->pose) * T_1 );
   Eigen::Vector6d p2 = _T2Cart( _Cart2T(d->pose) * T_2 );
-
-  //  TODO:  Optimize for d -> R + (1/d)T;
 
   Eigen::Matrix4d T;
   if (cost(simcam, d, p1, 0) < cost(simcam, d, p2, 0)) {
@@ -848,59 +854,40 @@ Eigen::Matrix4d pfromh( std::shared_ptr< detection > d,
     T = T_2;
   }
 
-//  ceres::Solver::Options options;
-//  options.linear_solver_type = ceres::DENSE_QR;
-
-//  ceres::Problem problem;
-//  ceres::CostFunction* cost_func
-//      = new ceres::NumericDiffCostFunction<DecomposeCostFunctor, ceres::CENTRAL, 1, 1> (
-//        new DecomposeCostFunctor( d, simcam, T)
-//        );
-
-  double norm = sqrt(T(0, 3)*T(0, 3) + T(1, 3)*T(1, 3) + T(2, 3)*T(2, 3));
-  T(0, 3) /= norm;
-  T(1, 3) /= norm;
-  T(2, 3) /= norm;
-
-  double x = 1;
-  double dx = 1e-6;
-//  problem.AddResidualBlock( cost_func, NULL, &x);
-
-//  ceres::Solver::Summary summary;
-//  ceres::Solve(options, &problem, &summary);
-
-  int step = 0;
-
-  Eigen::Vector6d pose = _T2Cart(_Cart2T(d->pose) * T);
-
-  double new_ = cost(simcam, d, pose, 0);
-  std::cout<<"Initial cost: "<<new_ <<std::endl;
-  double last_ = FLT_MAX;
-  while (((new_ < last_)) && (step < 25)) {
-    step++;
-    Eigen::Matrix4d temp = T;
-    temp(0, 3) /= (x + dx);
-    temp(1, 3) /= (x + dx);
-    temp(2, 3) /= (x + dx);
-    Eigen::Vector6d pose_p = _T2Cart(_Cart2T(d->pose) * temp);
-    float grad = cost(simcam, d, pose_p, 0) - cost(simcam, d, pose, 0);
-
-    last_ = new_;
-    new_ = cost(simcam, d, pose_p, 0);
-    if (new_ < last_) {
-      x = x - 1e-6*grad;
-//      T = temp;
-    }
-
-    std::cout << "x = "<< x << std::endl;
+  T = T.inverse();
+  if (cost(simcam, d, _T2Cart(T), 0) > cost(simcam, d, _T2Cart(-T), 0)) {
+    T = -T;
   }
 
-  T(0, 3) /= (x);
-  T(1, 3) /= (x);
-  T(2, 3) /= (x);
-  T(0, 3) = 0;
-  T(1, 3) = 0;
-  T(2, 3) = 0;
+  ceres::Solver::Options options;
+  options.linear_solver_type = ceres::DENSE_QR;
+
+  ceres::Problem problem;
+  double x = norm;
+
+  ceres::CostFunction* cost_func_tr
+      = new ceres::NumericDiffCostFunction<DecomposeCostFunctor, ceres::CENTRAL, 1, 2> (
+        new DecomposeCostFunctor(d->tag_corners.tr, d->tag_data.tr, K, T)
+        );
+  problem.AddResidualBlock( cost_func_tr, NULL, &x);
+  ceres::CostFunction* cost_func_tl
+      = new ceres::NumericDiffCostFunction<DecomposeCostFunctor, ceres::CENTRAL, 1, 2> (
+        new DecomposeCostFunctor(d->tag_corners.tl, d->tag_data.tl, K, T)
+        );
+  problem.AddResidualBlock( cost_func_tl, NULL, &x);
+  ceres::CostFunction* cost_func_br
+      = new ceres::NumericDiffCostFunction<DecomposeCostFunctor, ceres::CENTRAL, 1, 2> (
+        new DecomposeCostFunctor(d->tag_corners.br, d->tag_data.br, K, T)
+        );
+  problem.AddResidualBlock( cost_func_br, NULL, &x);
+  ceres::CostFunction* cost_func_bl
+      = new ceres::NumericDiffCostFunction<DecomposeCostFunctor, ceres::CENTRAL, 1, 2> (
+        new DecomposeCostFunctor(d->tag_corners.bl, d->tag_data.bl, K, T)
+        );
+  problem.AddResidualBlock( cost_func_bl, NULL, &x);
+
+  ceres::Solver::Summary summary;
+  ceres::Solve(options, &problem, &summary);
 
   std::cout << "T = "<< T << std::endl;
 
@@ -921,14 +908,38 @@ void homography_shift( std::shared_ptr< detection > d,
 
   cv::Mat H = compute_homography_(captured, synth);
 
+  std::cout << H << std::endl;
+
+  //  cv::Mat result;
+  //  cv::warpPerspective(synth, result, H.inv(), cv::Size(captured.cols,captured.rows));
+  //  cv::imshow( "Result", captured - result);
+  //  cv::waitKey();
+
+  //  Eigen::Matrix4d h = cameraPoseFromHomography( H, K );
+  Eigen::Matrix4d h = pfromh(d, simcam, K, H.inv());
+  //  h(0, 3) = 0;
+  //  h(1, 3) = 0;
+  //  h(2, 3) = 0;
+  d->pose = _T2Cart( _Cart2T(d->pose) * h );
+}
+
+void show_homography( std::shared_ptr< detection > d,
+                      SceneGraph::GLSimCam* simcam,
+                      Eigen::Matrix3d K )
+{
+  cv::Mat captured = d->image;
+  cv::Mat synth(captured.rows, captured.cols, captured.type());
+  simcam->SetPoseVision( _Cart2T(d->pose) );
+  simcam->RenderToTexture();
+  simcam->DrawCamera();
+  simcam->CaptureGrey( synth.data );
+
+  cv::Mat H = compute_homography_(captured, synth);
+
   cv::Mat result;
   cv::warpPerspective(synth, result, H.inv(), cv::Size(captured.cols,captured.rows));
-  imshow( "Result", captured - result);
+  cv::imshow( "Result", captured - result);
   cv::waitKey();
-
-//  Eigen::Matrix4d h = cameraPoseFromHomography( H, K );
-//  Eigen::Matrix4d h = pfromh(d, simcam, K, H);
-//  d->pose = _T2Cart( _Cart2T(d->pose) * h );
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -1189,19 +1200,21 @@ int main( int argc, char** argv )
 
   pangolin::RegisterKeyPressCallback(pangolin::PANGO_SPECIAL + pangolin::PANGO_KEY_RIGHT, [&](){bStep=true; pose_number++;} );
   pangolin::RegisterKeyPressCallback(pangolin::PANGO_SPECIAL + pangolin::PANGO_KEY_LEFT, [&](){bStep=true; pose_number--;} );
-//  pangolin::RegisterKeyPressCallback('h', [&](){ homography_minimization(it->second[0], &sim_cam, K);});
+  //  pangolin::RegisterKeyPressCallback('h', [&](){ homography_minimization(it->second[0], &sim_cam, K);});
   pangolin::RegisterKeyPressCallback('h', [&](){ homography_shift(it->second[0], &sim_cam, K);
     update_objects(detections,
                    camPoses,
                    campose);});
+  pangolin::RegisterKeyPressCallback('/', [&](){ show_homography(it->second[0], &sim_cam, K);});
+
   pangolin::RegisterKeyPressCallback('s', [&](){ sparse_optimize(detections, K, cmod);
     update_objects(detections,
                    camPoses,
                    campose);} );
-//  pangolin::RegisterKeyPressCallback('d', [&](){ dense_optimize(detections, &sim_cam, K);
-//    update_objects(detections,
-//                   camPoses,
-//                   campose);} );
+  //  pangolin::RegisterKeyPressCallback('d', [&](){ dense_optimize(detections, &sim_cam, K);
+  //    update_objects(detections,
+  //                   camPoses,
+  //                   campose);} );
   pangolin::RegisterKeyPressCallback('w', [&](){ sparse_frame_optimize(it->second, K, cmod);
     update_objects(detections,
                    camPoses,
@@ -1209,7 +1222,7 @@ int main( int argc, char** argv )
   pangolin::RegisterKeyPressCallback('e', [&](){ dense_frame_optimize(it->second, &sim_cam, K);
     update_objects(detections,
                    camPoses,
-                   campose);    
+                   campose);
     std::cout<<"Dense optimizing this frame . . . "<<std::endl;} );
   cv::Mat synth(cmod->Height(), cmod->Width(), CV_8UC1);
   cv::Mat diff(cmod->Height(), cmod->Width(), CV_8UC1);
@@ -1245,15 +1258,15 @@ int main( int argc, char** argv )
     sim_cam.RenderToTexture();
     sim_cam.CaptureGrey( synth.data );
     cv::GaussianBlur(synth, synth, cv::Size(5, 5), 0);
-//    threshold(synth, it->second[0]->tag_data.color_low, it->second[0]->tag_data.color_high);
+    //    threshold(synth, it->second[0]->tag_data.color_low, it->second[0]->tag_data.color_high);
     sim_image.SetImage( synth.data, cmod->Width(), cmod->Height(), GL_RGB, GL_LUMINANCE, GL_UNSIGNED_BYTE);
 
     it->second[0]->image.copyTo(temp);
-//    threshold(temp, it->second[0]->tag_data.color_low, it->second[0]->tag_data.color_high);
+    //    threshold(temp, it->second[0]->tag_data.color_low, it->second[0]->tag_data.color_high);
     live_image.SetImage( temp.data, cmod->Width(), cmod->Height(), GL_RGB, GL_LUMINANCE, GL_UNSIGNED_BYTE);
     live_image.Activate();
     diff.release();
-//    cv::subtract(synth, temp, synth, diff/*, synth*/);
+    //    cv::subtract(synth, temp, synth, diff/*, synth*/);
     diff = cv::abs(synth - temp);
     diff_image.SetImage( diff.data, cmod->Width(), cmod->Height(), GL_RGB, GL_LUMINANCE, GL_UNSIGNED_BYTE, true);
 
