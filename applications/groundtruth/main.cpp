@@ -708,12 +708,11 @@ cv::Mat hat(cv::Mat in)
 }
 
 struct DecomposeCostFunctor{
-  DecomposeCostFunctor( Eigen::Vector2d _px,
-                        Eigen::Vector3d _pt,
+  DecomposeCostFunctor( std::shared_ptr< detection > _d,
                         Eigen::Matrix3d _k,
                         Eigen::Matrix4d _T
                         ) :
-    px(_px), pt(_pt), K(_k), T(_T)
+    d(_d), K(_k), T(_T)
   {
   }
 
@@ -723,21 +722,65 @@ struct DecomposeCostFunctor{
     temp(0, 3) /= *x;
     temp(1, 3) /= *x;
     temp(2, 3) /= *x;
+    temp = _Cart2T(d->pose) * temp;
     Eigen::Vector4d pt_homo;
+    Eigen::Vector3d pt;
+    Eigen::Vector2d px;
+
+    // TL
+    pt = d->tag_data.tl;
+    px = d->tag_corners.tl;
     pt_homo << pt(0), pt(1), pt(2), 1;
-    pt_homo = T*pt_homo;
+    pt_homo = temp*pt_homo;
     pt << pt_homo(0) / pt_homo(3), pt_homo(1) / pt_homo(3), pt_homo(2) / pt_homo(3);
     pt = K*pt;
     pt(0) /= pt(2);
     pt(1) /= pt(2);
     residual[0] = px(0) - pt(0);
     residual[1] = px(1) - pt(1);
+
+
+    // TR
+    pt = d->tag_data.tr;
+    px = d->tag_corners.tr;
+    pt_homo << pt(0), pt(1), pt(2), 1;
+    pt_homo = temp*pt_homo;
+    pt << pt_homo(0) / pt_homo(3), pt_homo(1) / pt_homo(3), pt_homo(2) / pt_homo(3);
+    pt = K*pt;
+    pt(0) /= pt(2);
+    pt(1) /= pt(2);
+    residual[2] = px(0) - pt(0);
+    residual[3] = px(1) - pt(1);
+
+    // BL
+    pt = d->tag_data.bl;
+    px = d->tag_corners.bl;
+    pt_homo << pt(0), pt(1), pt(2), 1;
+    pt_homo = temp*pt_homo;
+    pt << pt_homo(0) / pt_homo(3), pt_homo(1) / pt_homo(3), pt_homo(2) / pt_homo(3);
+    pt = K*pt;
+    pt(0) /= pt(2);
+    pt(1) /= pt(2);
+    residual[4] = px(0) - pt(0);
+    residual[5] = px(1) - pt(1);
+
+    // BR
+    pt = d->tag_data.br;
+    px = d->tag_corners.br;
+    pt_homo << pt(0), pt(1), pt(2), 1;
+    pt_homo = temp*pt_homo;
+    pt << pt_homo(0) / pt_homo(3), pt_homo(1) / pt_homo(3), pt_homo(2) / pt_homo(3);
+    pt = K*pt;
+    pt(0) /= pt(2);
+    pt(1) /= pt(2);
+    residual[6] = px(0) - pt(0);
+    residual[7] = px(1) - pt(1);
+
     return true;
   }
 
 private:
-  Eigen::Vector3d pt;
-  Eigen::Vector2d px;
+  std::shared_ptr< detection > d;
   Eigen::Matrix3d K;
   Eigen::Matrix4d T;
 };
@@ -855,41 +898,35 @@ Eigen::Matrix4d pfromh( std::shared_ptr< detection > d,
   }
 
   T = T.inverse();
-  if (cost(simcam, d, _T2Cart(T), 0) > cost(simcam, d, _T2Cart(-T), 0)) {
+  T = calibu::ToCoordinateConvention(Sophus::SE3d(T), calibu::RdfVision).matrix();
+//  if (cost(simcam, d, _T2Cart(T), 0) > cost(simcam, d, _T2Cart(-T), 0)) {
+  if (T(3, 3) < 0) {
     T = -T;
   }
 
   ceres::Solver::Options options;
   options.linear_solver_type = ceres::DENSE_QR;
+  options.minimizer_progress_to_stdout = true;
 
   ceres::Problem problem;
-  double x = norm;
+  double x = sqrt(T(0, 3)*T(0, 3) + T(1, 3)*T(1, 3) + T(2, 3)*T(2, 3));
+  std::cout << "x = "<< x << std::endl;
 
-  ceres::CostFunction* cost_func_tr
-      = new ceres::NumericDiffCostFunction<DecomposeCostFunctor, ceres::CENTRAL, 1, 2> (
-        new DecomposeCostFunctor(d->tag_corners.tr, d->tag_data.tr, K, T)
+  ceres::CostFunction* cost_func
+      = new ceres::NumericDiffCostFunction<DecomposeCostFunctor, ceres::CENTRAL, 8, 1> (
+        new DecomposeCostFunctor(d, K, T)
         );
-  problem.AddResidualBlock( cost_func_tr, NULL, &x);
-  ceres::CostFunction* cost_func_tl
-      = new ceres::NumericDiffCostFunction<DecomposeCostFunctor, ceres::CENTRAL, 1, 2> (
-        new DecomposeCostFunctor(d->tag_corners.tl, d->tag_data.tl, K, T)
-        );
-  problem.AddResidualBlock( cost_func_tl, NULL, &x);
-  ceres::CostFunction* cost_func_br
-      = new ceres::NumericDiffCostFunction<DecomposeCostFunctor, ceres::CENTRAL, 1, 2> (
-        new DecomposeCostFunctor(d->tag_corners.br, d->tag_data.br, K, T)
-        );
-  problem.AddResidualBlock( cost_func_br, NULL, &x);
-  ceres::CostFunction* cost_func_bl
-      = new ceres::NumericDiffCostFunction<DecomposeCostFunctor, ceres::CENTRAL, 1, 2> (
-        new DecomposeCostFunctor(d->tag_corners.bl, d->tag_data.bl, K, T)
-        );
-  problem.AddResidualBlock( cost_func_bl, NULL, &x);
+  problem.AddResidualBlock( cost_func, NULL, &x);
 
   ceres::Solver::Summary summary;
   ceres::Solve(options, &problem, &summary);
 
+  T(0, 3) /= x;
+  T(1, 3) /= x;
+  T(2, 3) /= x;
+
   std::cout << "T = "<< T << std::endl;
+  std::cout << "x = "<< x << std::endl;
 
   return T;
 }
