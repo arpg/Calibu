@@ -719,9 +719,9 @@ struct DecomposeCostFunctor{
   bool operator()(const double* const x, double* residual) const
   {
     Eigen::Matrix4d temp = T;
-    temp(0, 3) /= *x;
-    temp(1, 3) /= *x;
-    temp(2, 3) /= *x;
+    temp(0, 3) /= x[0];
+    temp(1, 3) /= x[0];
+    temp(2, 3) /= x[0];
     temp = _Cart2T(d->pose) * temp;
     Eigen::Vector4d pt_homo;
     Eigen::Vector3d pt;
@@ -897,7 +897,7 @@ Eigen::Matrix4d pfromh( std::shared_ptr< detection > d,
     T = T_2;
   }
 
-  T = T.inverse();
+//  T = T.inverse();
   T = calibu::ToCoordinateConvention(Sophus::SE3d(T), calibu::RdfVision).matrix();
 //  if (cost(simcam, d, _T2Cart(T), 0) > cost(simcam, d, _T2Cart(-T), 0)) {
   if (T(3, 3) < 0) {
@@ -953,7 +953,7 @@ void homography_shift( std::shared_ptr< detection > d,
   //  cv::waitKey();
 
   //  Eigen::Matrix4d h = cameraPoseFromHomography( H, K );
-  Eigen::Matrix4d h = pfromh(d, simcam, K, H.inv());
+  Eigen::Matrix4d h = pfromh(d, simcam, K, H);
   //  h(0, 3) = 0;
   //  h(1, 3) = 0;
   //  h(2, 3) = 0;
@@ -1237,6 +1237,23 @@ int main( int argc, char** argv )
 
   pangolin::RegisterKeyPressCallback(pangolin::PANGO_SPECIAL + pangolin::PANGO_KEY_RIGHT, [&](){bStep=true; pose_number++;} );
   pangolin::RegisterKeyPressCallback(pangolin::PANGO_SPECIAL + pangolin::PANGO_KEY_LEFT, [&](){bStep=true; pose_number--;} );
+  pangolin::RegisterKeyPressCallback(pangolin::PANGO_SPECIAL + pangolin::PANGO_KEY_UP,
+                                     [&](){ std::shared_ptr< detection > d = it->second[0];
+                                            d->pose(0) *= 1.05;
+                                            d->pose(1) *= 1.05;
+                                            d->pose(2) *= 1.05;
+                                            update_objects(detections,
+                                                           camPoses,
+                                                           campose);});
+
+  pangolin::RegisterKeyPressCallback(pangolin::PANGO_SPECIAL + pangolin::PANGO_KEY_DOWN,
+                                     [&](){ std::shared_ptr< detection > d = it->second[0];
+                                            d->pose(0) /= 1.05;
+                                            d->pose(1) /= 1.05;
+                                            d->pose(2) /= 1.05;
+                                            update_objects(detections,
+                                                           camPoses,
+                                                           campose);});
   //  pangolin::RegisterKeyPressCallback('h', [&](){ homography_minimization(it->second[0], &sim_cam, K);});
   pangolin::RegisterKeyPressCallback('h', [&](){ homography_shift(it->second[0], &sim_cam, K);
     update_objects(detections,
