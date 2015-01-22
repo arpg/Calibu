@@ -93,6 +93,11 @@ class TargetRandomDot
         return radius;
     }
 
+    inline double CircleRadius(uint32_t circle_index) const
+    {
+        return CircleRadius();
+    }
+
   const std::vector<Eigen::Vector2d,
                     Eigen::aligned_allocator<Eigen::Vector2d> >& Circles2D() const {
         return tpts;

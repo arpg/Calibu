@@ -102,6 +102,13 @@ public:
         return grid_spacing / 10.0;
     }
 
+    inline double CircleRadius(uint32_t circle_index) const
+    {
+        // TODO: Load this from eps or something.
+        return grid_spacing / 10.0 *
+            (tpts2d_radius[circle_index] == 1 ? 2.0 : 0.5);
+    }
+
     inline const std::vector<Eigen::Vector2d,
                              Eigen::aligned_allocator<Eigen::Vector2d> >& Circles2D() const
     {
@@ -159,6 +166,7 @@ public:
              const std::array<Eigen::MatrixXi,4>& PG);
 
     std::vector<Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> > tpts2d;
+    std::vector<double> tpts2d_radius;
     std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > tpts3d;
   std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > codepts3d;
 

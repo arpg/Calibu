@@ -67,6 +67,7 @@ public:
 
     // Return circle radius
     virtual double CircleRadius() const = 0;
+    virtual double CircleRadius(uint32_t circle_index) const = 0;
 
     // Return canonical set of known 2D/3D points.
     virtual const std::vector<Eigen::Vector2d,
