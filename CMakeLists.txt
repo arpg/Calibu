@@ -10,6 +10,7 @@ set(CALIBU_VERSION_MINOR 1)
 set(CALIBU_VERSION ${CALIBU_VERSION_MAJOR}.${CALIBU_VERSION_MINOR})
 
 option(BUILD_APPLICATIONS "Build Applications" ON)
+option(BUILD_MATLAB "Build Matlab Wrappers" OFF)
 option(BUILD_SHARED_LIBS "Build Shared Library" ON)
 
 set(CMAKE_CXX_FLAGS "-std=c++0x -Wall ${CMAKE_CXX_FLAGS}")
@@ -47,3 +48,6 @@ if( BUILD_APPLICATIONS )
   add_subdirectory( examples )
 endif()
 
+if( BUILD_MATLAB )
+  add_subdirectory( matlab )
+endif()
