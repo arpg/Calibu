@@ -988,18 +988,14 @@ void pose_shift( std::shared_ptr< detection > d,
   cv::Mat synth(captured.rows, captured.cols, captured.type());
   simcam->SetPoseVision( _Cart2T(d->pose) );
   simcam->RenderToTexture();
-  simcam->DrawCamera();
   simcam->CaptureGrey( synth.data );
 
-  cv::Mat depth(captured.rows, captured.cols, captured.type());
+  cv::Mat depth(captured.rows, captured.cols, CV_32FC1);
   depth_cam->SetPoseVision( _Cart2T(d->pose) );
   depth_cam->RenderToTexture();
-  depth_cam->DrawCamera();
-  depth_cam->CaptureGrey( depth.data );
+  depth_cam->CaptureDepth( depth.data );
 
   Eigen::Matrix4d h = estimate_pose_(captured, synth, depth, K);
-
-  std::cout << h << std::endl;
 
   d->pose = _T2Cart( _Cart2T(d->pose) * h );
 }
@@ -1204,7 +1200,7 @@ int main( int argc, char** argv )
 
   SceneGraph::GLSimCam sim_cam;
   sim_cam.Init( &glGraph, Eigen::Matrix4d::Identity(), K,
-                cam.Width(), cam.Height(), SceneGraph::eSimCamLuminance, 0.01 );
+                cam.Width(), cam.Height(), SceneGraph::eSimCamLuminance || SceneGraph::eSimCamDepth, 0.01 );
   SceneGraph::GLSimCam depth_cam;
   depth_cam.Init( &glGraph, Eigen::Matrix4d::Identity(), K,
                   cam.Width(), cam.Height(), SceneGraph::eSimCamDepth, 0.01 );
