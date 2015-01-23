@@ -9,7 +9,7 @@ set( CMAKE_CXX_FLAGS "-O3 -std=c++11 -lprotobuf" )
 #set( CMAKE_CXX_FLAGS "-g -Wall -Wextra -std=c++11" )
 #set( CMAKE_C_FLAGS "-O3 -funroll-loops -msse4 -mavx -ffast-math -Wall -Wextra" )
 #set( CMAKE_CXX_FLAGS "-O3 -funroll-loops -msse4 -mavx -ffast-math -Wall -Wextra -std=c++11" )
-add_subdirectory( Align )
+add_subdirectory( ImageAlign )
 
 find_package( PbMsgs REQUIRED )
 find_package( Calibu REQUIRED )

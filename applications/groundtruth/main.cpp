@@ -38,7 +38,7 @@
 #include "dense_ceres.h"
 #include "hess.h"
 #include "dtrack.h"
-#include "compute_homography.h"
+#include "ImageAlign/compute_homography.h"
 
 // -cam split:[roi1=0+0+640+480]//proto:[startframe=1500]///Users/faradazerage/Desktop/DataSets/APRIL/Hallway-9-12-13/Twizzler/proto.log -cmod /Users/faradazerage/Desktop/DataSets/APRIL/Hallway-9-12-13/Twizzler/cameras.xml -o outfile.out -map /Users/faradazerage/Desktop/DataSets/APRIL/Hallway-9-12-13/Twizzler/DS20.csv -v -debug -show-ceres
 
@@ -629,7 +629,7 @@ void sparse_optimize( DMap detections,
 void dense_frame_optimize( std::vector<std::shared_ptr < detection > > dets,
                            SceneGraph::GLSimCam* sim_cam,
                            Eigen::Matrix3d k,
-                           int level = 5)
+                           int level = 0)
 {
   for (int l = level; l >= 0; l--) {
     fprintf(stdout, "Level = %d\n", l);
@@ -792,6 +792,10 @@ Eigen::Matrix4d pfromh( std::shared_ptr< detection > d,
                         cv::Mat H )
 // Pose estimation from homography: http://vision.ucla.edu//MASKS/MASKS-ch5.pdf
 {
+  cv::Mat k;
+  Eigen::Matrix3f ke = K.cast<float>();
+  cv::eigen2cv(ke, k);
+  H = k.inv() * H.inv();
   cv::Mat R1, R2, R3, R4;
   cv::Mat T1, T2, T3, T4;
   cv::Mat U, S, Vt;
@@ -905,7 +909,6 @@ Eigen::Matrix4d pfromh( std::shared_ptr< detection > d,
   }
 
   ceres::Solver::Options options;
-  options.linear_solver_type = ceres::DENSE_QR;
   options.minimizer_progress_to_stdout = true;
 
   ceres::Problem problem;
@@ -925,16 +928,17 @@ Eigen::Matrix4d pfromh( std::shared_ptr< detection > d,
   T(1, 3) /= x;
   T(2, 3) /= x;
 
-  std::cout << "T = "<< T << std::endl;
-  std::cout << "x = "<< x << std::endl;
+//  std::cout << "T = "<< T << std::endl;
+//  std::cout << "x = "<< x << std::endl;
 
   return T;
 }
 
 
-void homography_shift( std::shared_ptr< detection > d,
+Eigen::Vector3d homography_shift( std::shared_ptr< detection > d,
                        SceneGraph::GLSimCam* simcam,
-                       Eigen::Matrix3d K )
+                       Eigen::Matrix3d K,
+                       SceneGraph::GLSimCam* depth_cam = NULL )
 {
   cv::Mat captured = d->image;
   cv::Mat synth(captured.rows, captured.cols, captured.type());
@@ -945,19 +949,15 @@ void homography_shift( std::shared_ptr< detection > d,
 
   cv::Mat H = compute_homography_(captured, synth);
 
-  std::cout << H << std::endl;
 
-  //  cv::Mat result;
-  //  cv::warpPerspective(synth, result, H.inv(), cv::Size(captured.cols,captured.rows));
-  //  cv::imshow( "Result", captured - result);
-  //  cv::waitKey();
-
-  //  Eigen::Matrix4d h = cameraPoseFromHomography( H, K );
-  Eigen::Matrix4d h = pfromh(d, simcam, K, H);
-  //  h(0, 3) = 0;
-  //  h(1, 3) = 0;
-  //  h(2, 3) = 0;
+//  Eigen::Matrix4d h = cameraPoseFromHomography( H, K );
+  Eigen::Matrix4d h = pfromh(d, simcam, K, H.inv());
+  Eigen::Vector3d toRet(h(0, 3), h(1, 3), h(2, 3));
+  h(0, 3) = 0;
+  h(1, 3) = 0;
+  h(2, 3) = 0;
   d->pose = _T2Cart( _Cart2T(d->pose) * h );
+  return toRet;
 }
 
 void show_homography( std::shared_ptr< detection > d,
@@ -977,6 +977,31 @@ void show_homography( std::shared_ptr< detection > d,
   cv::warpPerspective(synth, result, H.inv(), cv::Size(captured.cols,captured.rows));
   cv::imshow( "Result", captured - result);
   cv::waitKey();
+}
+
+void pose_shift( std::shared_ptr< detection > d,
+                 SceneGraph::GLSimCam* simcam,
+                 Eigen::Matrix3d K,
+                 SceneGraph::GLSimCam* depth_cam )
+{
+  cv::Mat captured = d->image;
+  cv::Mat synth(captured.rows, captured.cols, captured.type());
+  simcam->SetPoseVision( _Cart2T(d->pose) );
+  simcam->RenderToTexture();
+  simcam->DrawCamera();
+  simcam->CaptureGrey( synth.data );
+
+  cv::Mat depth(captured.rows, captured.cols, captured.type());
+  depth_cam->SetPoseVision( _Cart2T(d->pose) );
+  depth_cam->RenderToTexture();
+  depth_cam->DrawCamera();
+  depth_cam->CaptureGrey( depth.data );
+
+  Eigen::Matrix4d h = estimate_pose_(captured, synth, depth, K);
+
+  std::cout << h << std::endl;
+
+  d->pose = _T2Cart( _Cart2T(d->pose) * h );
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -1234,28 +1259,34 @@ int main( int argc, char** argv )
   int pose_number = 0;
   DMap::iterator it;
   it = detections.begin();
+  Eigen::Vector3d del;
+  float dx = 1e-3;
 
   pangolin::RegisterKeyPressCallback(pangolin::PANGO_SPECIAL + pangolin::PANGO_KEY_RIGHT, [&](){bStep=true; pose_number++;} );
   pangolin::RegisterKeyPressCallback(pangolin::PANGO_SPECIAL + pangolin::PANGO_KEY_LEFT, [&](){bStep=true; pose_number--;} );
   pangolin::RegisterKeyPressCallback(pangolin::PANGO_SPECIAL + pangolin::PANGO_KEY_UP,
                                      [&](){ std::shared_ptr< detection > d = it->second[0];
-                                            d->pose(0) *= 1.05;
-                                            d->pose(1) *= 1.05;
-                                            d->pose(2) *= 1.05;
+                                            d->pose(0) += dx*del(0);
+                                            d->pose(1) += dx*del(1);
+                                            d->pose(2) += dx*del(2);
                                             update_objects(detections,
                                                            camPoses,
                                                            campose);});
 
   pangolin::RegisterKeyPressCallback(pangolin::PANGO_SPECIAL + pangolin::PANGO_KEY_DOWN,
                                      [&](){ std::shared_ptr< detection > d = it->second[0];
-                                            d->pose(0) /= 1.05;
-                                            d->pose(1) /= 1.05;
-                                            d->pose(2) /= 1.05;
+                                            d->pose(0) -= dx*del(0);
+                                            d->pose(1) -= dx*del(1);
+                                            d->pose(2) -= dx*del(2);
                                             update_objects(detections,
                                                            camPoses,
                                                            campose);});
   //  pangolin::RegisterKeyPressCallback('h', [&](){ homography_minimization(it->second[0], &sim_cam, K);});
-  pangolin::RegisterKeyPressCallback('h', [&](){ homography_shift(it->second[0], &sim_cam, K);
+  pangolin::RegisterKeyPressCallback('h', [&](){ del = homography_shift(it->second[0], &sim_cam, K);
+    update_objects(detections,
+                   camPoses,
+                   campose);});
+  pangolin::RegisterKeyPressCallback('p', [&](){ pose_shift(it->second[0], &sim_cam, K, &depth_cam);
     update_objects(detections,
                    camPoses,
                    campose);});
