@@ -1,3 +1,5 @@
+cmake_minimum_required(VERSION 2.8.8)
+
 # Find Calibu.
 find_package(Calibu REQUIRED)
 
@@ -11,3 +13,5 @@ set(MEX_EXTERNAL_LIBS "-Wl,-rpath,${Calibu_DIR} -L${Calibu_DIR} -l${Calibu_LIBRA
 
 # Invoke macro to generate calibu wrapper.
 add_mex(calibu_mex calibu_mex.cpp)
+
+add_dependencies(calibu_mex calibu)
