@@ -109,7 +109,7 @@ std::array<Eigen::MatrixXi, 4> FillGroup(const Eigen::MatrixXi& m)
 
   // Found in this awesome answer http://stackoverflow.com/a/3488737/505049
   patterns[1] = m.transpose().colwise().reverse().eval();  // Rotate 90 CW
-  patterns[2] = m.transpose().reverse().eval();  // Rotate 180. Not in the S.O. post
+  patterns[2] = m.reverse().eval();  // Rotate 180. Not in the S.O. post
   patterns[3] = m.transpose().rowwise().reverse().eval();  // Rotate 270 CW
   return patterns;
 }
