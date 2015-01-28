@@ -125,8 +125,16 @@ struct OptimalCostFunctor
 
     xij << pij(0) / pij(2), pij(1) / pij(2);
 
-    residuals[0] = T(x1(0)) - xij(0);
-    residuals[1] = T(x1(1)) - xij(1);
+    if ((xij(0) < T(0)) || (xij(0) > T(640))) {
+      residuals[0] = T(FLT_MAX);
+    } else {
+      residuals[0] = T(x1(0)) - xij(0);
+    }
+    if ((xij(1) < T(0)) || (xij(1) > T(480))) {
+      residuals[1] = T(FLT_MAX);
+    } else {
+      residuals[1] = T(x1(1)) - xij(1);
+    }
 
     return true;
   }
@@ -290,7 +298,7 @@ cv::Mat H( std::map<int, int> m,
     count++;
   }
 
-  srand(time(NULL));
+//  srand(time(NULL));
   for (int t = 0; t < 100; t++){
     std::vector< int > l = random_vals(n, 4);
     cv::Mat A;
@@ -452,7 +460,7 @@ Eigen::Matrix4d estimate_pose_( cv::Mat image1, cv::Mat image2,
     count++;
   }
 
-  srand(time(NULL));
+//  srand(time(NULL));
   for (int t = 0; t < 100; t++){
     std::vector< int > l = random_vals(n, 4);
     cv::Mat A;
@@ -462,9 +470,9 @@ Eigen::Matrix4d estimate_pose_( cv::Mat image1, cv::Mat image2,
     cv::Mat w, u, v;
     cv::SVD::compute(A, w, u, v);
     v = v.t();
-//    if (cv::determinant(v) < 0) {
-//      v = -v;
-//    }
+    if (cv::determinant(v) < 0) {
+      v = -v;
+    }
     cv::Mat V(3, 3, CV_32F);
     for (int ii = 0; ii < 9; ii++) {
       V.at<float>(ii % 3, ii / 3) = v.at<float>(ii, 8);
@@ -520,27 +528,35 @@ Eigen::Matrix4d estimate_pose_( cv::Mat image1, cv::Mat image2,
     }
   }
 
-  cv::imshow("im1", image1);
-  cv::imshow("im2", image2);
+//  cv::imshow("im1", image1);
+//  cv::imshow("im2", image2);
 //  cv::waitKey();
 
   if (count > 3){
-    std::cout<<count<<std::endl;
     ceres::Solver::Summary summary;
     ceres::Solve(options, &problem, &summary);
   }
 
   vl_sift_delete(sf);
 
-  fprintf(stdout, "<%f, %f, %f, %f, %f, %f>\n", pose(0), pose(1), pose(2), pose(3), pose(4), pose(5));
-  fflush(stdout);
+//  fprintf(stdout, "<%f, %f, %f, %f, %f, %f>\n", pose(0), pose(1), pose(2), pose(3), pose(4), pose(5));
+//  fflush(stdout);
+//  bool big = false;
+//  for (int ii = 0; ii < 6;  ii++) {
+//    if (pose(ii) > 10) {
+//      big = true;
+//    }
+//  }
 
+//  if (big) {
+//    return Eigen::Matrix4d::Identity();
+//  }
   return _Cart2T<double>(pose).inverse();
 }
 
 cv::Mat compute_homography_( cv::Mat image1, cv::Mat image2 )
 {
-  srand(time(NULL));
+//  srand(time(NULL));
 
   int h = image1.rows;
   int w = image1.cols;

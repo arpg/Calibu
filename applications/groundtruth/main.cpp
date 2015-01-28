@@ -1005,7 +1005,9 @@ void sift_optimize( DMap detections,
                      SceneGraph::GLSimCam* depth_cam,
                      Eigen::Matrix3d K)
 {
-  for (DMap::iterator it = detections.begin(); it != detections.end(); it++) {
+  int count = 0;
+  for (DMap::iterator it = detections.begin(); it != detections.end(); it++, count++) {
+    std::cout << count << std::endl;
     pose_shift(it->second[0], sim_cam, K, depth_cam);
   }
 }
@@ -1063,7 +1065,7 @@ int main( int argc, char** argv )
   bool capture = false;
   bool start = true;
   cv::Mat last_image;
-  while( start || capture && (count < 516)){
+  while( start || capture && (count < 116)){
     capture = cam.Capture( *vImages );
     count++;
     if (start) {
