@@ -10,7 +10,7 @@
 #include "math.h"
 #include "measurements.h"
 
-#define STEP 1e-6
+#define STEP 1e-3
 
 double cost( SceneGraph::GLSimCam* simcam,
              std::shared_ptr< detection > d,

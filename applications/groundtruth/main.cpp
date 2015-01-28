@@ -118,10 +118,10 @@ public:
     glPushMatrix();
     glColor4f( 1.0, 1.0, 1.0, 1.0 );
     if (!has_data) {
-      pangolin::glDrawLine(tl[0],tl[1],tl[2],tr[0],tr[1],tr[2]);
-      pangolin::glDrawLine(bl[0],bl[1],bl[2],br[0],br[1],br[2]);
-      pangolin::glDrawLine(tl[0],tl[1],tl[2],bl[0],bl[1],bl[2]);
-      pangolin::glDrawLine(tr[0],tr[1],tr[2],br[0],br[1],br[2]);
+//      pangolin::glDrawLine(tl[0],tl[1],tl[2],tr[0],tr[1],tr[2]);
+//      pangolin::glDrawLine(bl[0],bl[1],bl[2],br[0],br[1],br[2]);
+//      pangolin::glDrawLine(tl[0],tl[1],tl[2],bl[0],bl[1],bl[2]);
+//      pangolin::glDrawLine(tr[0],tr[1],tr[2],br[0],br[1],br[2]);
     }
     if (has_data) {
       Eigen::Vector3d dx, dy;
@@ -629,7 +629,7 @@ void sparse_optimize( DMap detections,
 void dense_frame_optimize( std::vector<std::shared_ptr < detection > > dets,
                            SceneGraph::GLSimCam* sim_cam,
                            Eigen::Matrix3d k,
-                           int level = 0)
+                           int level = 5)
 {
   for (int l = level; l >= 0; l--) {
     fprintf(stdout, "Level = %d\n", l);
@@ -1000,6 +1000,17 @@ void pose_shift( std::shared_ptr< detection > d,
   d->pose = _T2Cart( _Cart2T(d->pose) * h );
 }
 
+void sift_optimize( DMap detections,
+                     SceneGraph::GLSimCam* sim_cam,
+                     SceneGraph::GLSimCam* depth_cam,
+                     Eigen::Matrix3d K)
+{
+  for (DMap::iterator it = detections.begin(); it != detections.end(); it++) {
+    pose_shift(it->second[0], sim_cam, K, depth_cam);
+  }
+}
+
+
 /////////////////////////////////////////////////////////////////////////
 int main( int argc, char** argv )
 {
@@ -1052,7 +1063,7 @@ int main( int argc, char** argv )
   bool capture = false;
   bool start = true;
   cv::Mat last_image;
-  while( start || capture && (count < 116)){
+  while( start || capture && (count < 516)){
     capture = cam.Capture( *vImages );
     count++;
     if (start) {
@@ -1140,7 +1151,7 @@ int main( int argc, char** argv )
 
   glPixelStorei(GL_PACK_ALIGNMENT,1);
   glPixelStorei(GL_UNPACK_ALIGNMENT,1);
-  glDisable(GL_CULL_FACE);
+  glEnable(GL_CULL_FACE);
 
   pangolin::View& container = pangolin::DisplayBase();
 
@@ -1292,10 +1303,10 @@ int main( int argc, char** argv )
     update_objects(detections,
                    camPoses,
                    campose);} );
-  //  pangolin::RegisterKeyPressCallback('d', [&](){ dense_optimize(detections, &sim_cam, K);
-  //    update_objects(detections,
-  //                   camPoses,
-  //                   campose);} );
+  pangolin::RegisterKeyPressCallback('d', [&](){ sift_optimize(detections, &sim_cam, &depth_cam, K);
+    update_objects(detections,
+                   camPoses,
+                   campose);} );
   pangolin::RegisterKeyPressCallback('w', [&](){ sparse_frame_optimize(it->second, K, cmod);
     update_objects(detections,
                    camPoses,
