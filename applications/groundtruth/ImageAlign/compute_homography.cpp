@@ -299,7 +299,7 @@ cv::Mat H( std::map<int, int> m,
     count++;
   }
 
-//  srand(time(NULL));
+  //  srand(time(NULL));
   for (int t = 0; t < 100; t++){
     std::vector< int > l = random_vals(n, 4);
     cv::Mat A;
@@ -413,6 +413,70 @@ void process_image(VlSiftFilt* sf, cv::Mat image, std::vector< fd > &fds)
   delete[] vl_im;
 }
 
+cv::Mat find_ok_( std::vector< fd > fds1,
+                  std::vector< fd > fds2,
+                  std::map<int, int> matches )
+{
+  int n = matches.size();
+  cv::Mat X1(3, n, CV_32F);
+  cv::Mat X2(3, n, CV_32F);
+  int count = 0;
+  std::vector< cv::Mat > hs;
+  std::vector< cv::Mat > oks;
+  std::vector< int > scores;
+
+  for (std::map<int, int>::iterator it = matches.begin(); it != matches.end(); it++) {
+    X1.at<float>(0, count) = fds1[it->first].x;
+    X1.at<float>(1, count) = fds1[it->first].y;
+    X1.at<float>(2, count) = 1;
+    X2.at<float>(0, count) = fds2[it->second].x;
+    X2.at<float>(1, count) = fds2[it->second].y;
+    X2.at<float>(2, count) = 1;
+    count++;
+  }
+
+  //  srand(time(NULL));
+  for (int t = 0; t < 100; t++){
+    std::vector< int > l = random_vals(n, 4);
+    cv::Mat A;
+    for (int c = 0; c < 4; c++){
+      A.push_back(kron(X1.col(l[c]).t(), hat(X2.col(l[c]).t())));
+    }
+    cv::Mat w, u, v;
+    cv::SVD::compute(A, w, u, v);
+    v = v.t();
+    if (cv::determinant(v) < 0) {
+      v = -v;
+    }
+    cv::Mat V(3, 3, CV_32F);
+    for (int ii = 0; ii < 9; ii++) {
+      V.at<float>(ii % 3, ii / 3) = v.at<float>(ii, 8);
+    }
+    hs.push_back(V);
+    cv::Mat X2_;
+    X2_ = V*X1;
+
+    cv::Mat du = (X2_.row(0) / X2_.row(2)) - (X2.row(0) / X2.row(2));
+    cv::Mat dv = (X2_.row(1) / X2_.row(2)) - (X2.row(1) / X2.row(2));
+    cv::Mat ok = (du.mul(du) + dv.mul(dv)) < 6*6;
+    ok = ok / cv::max(ok, 1);
+    double score = cv::sum(ok)[0];
+    oks.push_back(ok);
+    scores.push_back(score);
+  }
+
+  int max_c = 0;
+  int id = 0;
+  for (int count = 0; count < scores.size(); count++) {
+    if (scores[count] > max_c) {
+      max_c = scores[count];
+      id = count;
+    }
+  }
+
+  return oks[id];
+}
+
 Eigen::Matrix4d estimate_pose_( cv::Mat image1, cv::Mat image2,
                                 cv::Mat depth, Eigen::Matrix3d K )
 //  image1 = captured, image2 = synthetic, depth = depth of synthetic
@@ -436,31 +500,36 @@ Eigen::Matrix4d estimate_pose_( cv::Mat image1, cv::Mat image2,
   cv::Mat cv_K(3,3,CV_64F);
   cv::eigen2cv(K, cv_K);
 
+  cv::Mat ok = find_ok_(fds1, fds2, matches);
+
+  int count = 0;
   for (std::map<int, int>::iterator it = matches.begin();
-       it != matches.end(); it++) {
+       it != matches.end(); it++, count++) {
 
-    Eigen::Vector3d pt3d;
-    cv::Point2f px2;
-    px2.x = fds2[it->second].x;
-    px2.y = fds2[it->second].y;
+    if (ok.data[count] != 0){
+      Eigen::Vector3d pt3d;
+      cv::Point2f px2;
+      px2.x = fds2[it->second].x;
+      px2.y = fds2[it->second].y;
 
-    double d = depth.at<float>(px2.y, px2.x);
-    pt3d(0) = d*px2.x;
-    pt3d(1) = d*px2.y;
-    pt3d(2) = d;
-    pt3d = K*pt3d;
+      double d = depth.at<float>(px2.y, px2.x);
+      pt3d(0) = d*px2.x;
+      pt3d(1) = d*px2.y;
+      pt3d(2) = d;
+      pt3d = K.inverse()*pt3d;
 
-    cv::Point3f pt;
-    pt.x = pt3d(0);
-    pt.y = pt3d(1);
-    pt.z = pt3d(2);
+      cv::Point3f pt;
+      pt.x = pt3d(0);
+      pt.y = pt3d(1);
+      pt.z = pt3d(2);
 
-    cv::Point2f px;
-    px.x = fds1[it->first].x;
-    px.y = fds1[it->first].y;
+      cv::Point2f px;
+      px.x = fds1[it->first].x;
+      px.y = fds1[it->first].y;
 
-    cv_obj.push_back( pt );
-    cv_img.push_back( px );
+      cv_obj.push_back( pt );
+      cv_img.push_back( px );
+    }
   }
 
   cv::Mat cv_coeff;
@@ -483,20 +552,20 @@ Eigen::Matrix4d estimate_pose_( cv::Mat image1, cv::Mat image2,
 
   Eigen::Matrix4d temp;
   temp << T.at<double>(0, 0), T.at<double>(0, 1), T.at<double>(0, 2), T.at<double>(0, 3),
-          T.at<double>(1, 0), T.at<double>(1, 1), T.at<double>(1, 2), T.at<double>(1, 3),
-          T.at<double>(2, 0), T.at<double>(2, 1), T.at<double>(2, 2), T.at<double>(2, 3),
-                           0,                  0,                  0,                  1;
+      T.at<double>(1, 0), T.at<double>(1, 1), T.at<double>(1, 2), T.at<double>(1, 3),
+      T.at<double>(2, 0), T.at<double>(2, 1), T.at<double>(2, 2), T.at<double>(2, 3),
+      0,                  0,                  0,                  1;
 
   std::cout << T << std::endl;
 
   Eigen::Matrix4d T_eigen;
   cv::cv2eigen(T, T_eigen);
   return T_eigen;
-//  return _Cart2T<double>(pose).inverse();
+  //  return _Cart2T<double>(pose).inverse();
 }
 
 Eigen::Matrix4d estimate_pose_old_( cv::Mat image1, cv::Mat image2,
-                                cv::Mat depth, Eigen::Matrix3d K )
+                                    cv::Mat depth, Eigen::Matrix3d K )
 //  image1 = captured, image2 = synthetic, depth = depth of synthetic
 {
   int h = image1.rows;
@@ -521,9 +590,9 @@ Eigen::Matrix4d estimate_pose_old_( cv::Mat image1, cv::Mat image2,
   }
 
   Eigen::Matrix< double, 6, 1> pose;
-//  if (matches.size() < 20) {
-//    return _Cart2T<double>(pose);
-//  }
+  //  if (matches.size() < 20) {
+  //    return _Cart2T<double>(pose);
+  //  }
 
   int n = matches.size();
   cv::Mat X1(3, n, CV_32F);
@@ -543,7 +612,7 @@ Eigen::Matrix4d estimate_pose_old_( cv::Mat image1, cv::Mat image2,
     count++;
   }
 
-//  srand(time(NULL));
+  //  srand(time(NULL));
   for (int t = 0; t < 100; t++){
     std::vector< int > l = random_vals(n, 4);
     cv::Mat A;
@@ -611,9 +680,9 @@ Eigen::Matrix4d estimate_pose_old_( cv::Mat image1, cv::Mat image2,
     }
   }
 
-//  cv::imshow("im1", image1);
-//  cv::imshow("im2", image2);
-//  cv::waitKey();
+  //  cv::imshow("im1", image1);
+  //  cv::imshow("im2", image2);
+  //  cv::waitKey();
 
   if (count > 3){
     ceres::Solver::Summary summary;
@@ -622,25 +691,25 @@ Eigen::Matrix4d estimate_pose_old_( cv::Mat image1, cv::Mat image2,
 
   vl_sift_delete(sf);
 
-//  fprintf(stdout, "<%f, %f, %f, %f, %f, %f>\n", pose(0), pose(1), pose(2), pose(3), pose(4), pose(5));
-//  fflush(stdout);
-//  bool big = false;
-//  for (int ii = 0; ii < 6;  ii++) {
-//    if (pose(ii) > 10) {
-//      big = true;
-//    }
-//  }
+  //  fprintf(stdout, "<%f, %f, %f, %f, %f, %f>\n", pose(0), pose(1), pose(2), pose(3), pose(4), pose(5));
+  //  fflush(stdout);
+  //  bool big = false;
+  //  for (int ii = 0; ii < 6;  ii++) {
+  //    if (pose(ii) > 10) {
+  //      big = true;
+  //    }
+  //  }
 
-//  if (big) {
-//    return Eigen::Matrix4d::Identity();
-//  }
+  //  if (big) {
+  //    return Eigen::Matrix4d::Identity();
+  //  }
   return _Cart2T<double>(pose).inverse();
 }
 
 
 cv::Mat compute_homography_( cv::Mat image1, cv::Mat image2 )
 {
-//  srand(time(NULL));
+  //  srand(time(NULL));
 
   int h = image1.rows;
   int w = image1.cols;
