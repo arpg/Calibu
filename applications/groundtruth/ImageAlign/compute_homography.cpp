@@ -3,6 +3,7 @@
 #include <ceres/ceres.h>
 #include <sophus/se3.hpp>
 #include <opencv2/opencv.hpp>
+#include <opencv2/core/eigen.hpp>
 
 extern "C"{
 #include <vl/generic.h>
@@ -425,6 +426,88 @@ Eigen::Matrix4d estimate_pose_( cv::Mat image1, cv::Mat image2,
   process_image(sf, image1, fds1);
   process_image(sf, image2, fds2);
 
+  std::map<int, int> matches;
+  matches = find_matches_(fds1, fds2);
+
+  vl_sift_delete(sf);
+
+  std::vector<cv::Point3f> cv_obj;
+  std::vector<cv::Point2f> cv_img;
+  cv::Mat cv_K(3,3,CV_64F);
+  cv::eigen2cv(K, cv_K);
+
+  for (std::map<int, int>::iterator it = matches.begin();
+       it != matches.end(); it++) {
+
+    Eigen::Vector3d pt3d;
+    cv::Point2f px2;
+    px2.x = fds2[it->second].x;
+    px2.y = fds2[it->second].y;
+
+    double d = depth.at<float>(px2.y, px2.x);
+    pt3d(0) = d*px2.x;
+    pt3d(1) = d*px2.y;
+    pt3d(2) = d;
+    pt3d = K*pt3d;
+
+    cv::Point3f pt;
+    pt.x = pt3d(0);
+    pt.y = pt3d(1);
+    pt.z = pt3d(2);
+
+    cv::Point2f px;
+    px.x = fds1[it->first].x;
+    px.y = fds1[it->first].y;
+
+    cv_obj.push_back( pt );
+    cv_img.push_back( px );
+  }
+
+  cv::Mat cv_coeff;
+  cv::Mat cv_rot(3,1,CV_64F);
+  cv::Mat cv_trans(3,1,CV_64F);
+
+  cv::solvePnP( cv_obj, cv_img, cv_K, cv_coeff, cv_rot, cv_trans, false );
+
+  cv::Mat R;
+  cv::Rodrigues(cv_rot, R);
+  R = R.t();
+  cv_trans = -R * cv_trans;
+
+  cv::Mat T(4, 4, R.type());
+  T( cv::Range(0,3), cv::Range(0,3) ) = R * 1; // copies R into T
+  T( cv::Range(0,3), cv::Range(3,4) ) = cv_trans * 1; // copies tvec into T
+  // fill the last row of T (NOTE: depending on your types, use float or double)
+  double *p = T.ptr<double>(3);
+  p[0] = p[1] = p[2] = 0; p[3] = 1;
+
+  Eigen::Matrix4d temp;
+  temp << T.at<double>(0, 0), T.at<double>(0, 1), T.at<double>(0, 2), T.at<double>(0, 3),
+          T.at<double>(1, 0), T.at<double>(1, 1), T.at<double>(1, 2), T.at<double>(1, 3),
+          T.at<double>(2, 0), T.at<double>(2, 1), T.at<double>(2, 2), T.at<double>(2, 3),
+                           0,                  0,                  0,                  1;
+
+  std::cout << T << std::endl;
+
+  Eigen::Matrix4d T_eigen;
+  cv::cv2eigen(T, T_eigen);
+  return T_eigen;
+//  return _Cart2T<double>(pose).inverse();
+}
+
+Eigen::Matrix4d estimate_pose_old_( cv::Mat image1, cv::Mat image2,
+                                cv::Mat depth, Eigen::Matrix3d K )
+//  image1 = captured, image2 = synthetic, depth = depth of synthetic
+{
+  int h = image1.rows;
+  int w = image1.cols;
+
+  VlSiftFilt* sf = vl_sift_new(w, h, 5, 3, 0);
+
+  std::vector< fd > fds1, fds2;
+  process_image(sf, image1, fds1);
+  process_image(sf, image2, fds2);
+
   std::map<int, int> matches, matches_forward, matches_reverse;
   matches_forward = find_matches_(fds1, fds2);
   matches_reverse = find_matches_(fds2, fds1);
@@ -553,6 +636,7 @@ Eigen::Matrix4d estimate_pose_( cv::Mat image1, cv::Mat image2,
 //  }
   return _Cart2T<double>(pose).inverse();
 }
+
 
 cv::Mat compute_homography_( cv::Mat image1, cv::Mat image2 )
 {

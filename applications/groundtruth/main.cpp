@@ -1000,6 +1000,100 @@ void pose_shift( std::shared_ptr< detection > d,
   d->pose = _T2Cart( _Cart2T(d->pose) * h );
 }
 
+void pose_shift2( std::shared_ptr< detection > d,
+                 SceneGraph::GLSimCam* simcam,
+                 Eigen::Matrix3d K,
+                 SceneGraph::GLSimCam* depth_cam )
+{
+  cv::Mat captured = d->image;
+  cv::Mat synth(captured.rows, captured.cols, captured.type());
+  simcam->SetPoseVision( _Cart2T(d->pose) );
+  simcam->RenderToTexture();
+  simcam->CaptureGrey( synth.data );
+
+  cv::Mat depth(captured.rows, captured.cols, CV_32FC1);
+  depth_cam->SetPoseVision( _Cart2T(d->pose) );
+  depth_cam->RenderToTexture();
+  depth_cam->CaptureDepth( depth.data );
+
+  cv::SurfFeatureDetector detector;
+  std::vector<cv::KeyPoint> keypoints1, keypoints2;
+  detector.detect(captured, keypoints1);
+  detector.detect(synth, keypoints2);
+
+  // computing descriptors
+  cv::SurfDescriptorExtractor extractor;
+  cv::Mat descriptors1, descriptors2;
+  extractor.compute(captured, keypoints1, descriptors1);
+  extractor.compute(synth, keypoints2, descriptors2);
+
+  // matching descriptors
+  cv::BFMatcher matcher;
+  std::vector<cv::DMatch> matches;
+  matcher.match(descriptors1, descriptors2, matches);
+
+//  cv::Mat img_matches;
+//  cv::drawMatches(captured, keypoints1, synth, keypoints2, matches, img_matches);
+//  cv::imshow("matches", img_matches);
+//  cv::waitKey(0);
+
+  std::vector<cv::Point3f> cv_obj;
+  std::vector<cv::Point2f> cv_img;
+
+  cv::Mat cv_K(3,3,CV_64F);
+  cv::eigen2cv(K, cv_K);
+
+  for (int ii = 0; ii < matches.size(); ii++) {
+
+    Eigen::Vector3d pt3d;
+    cv::Point2f px2 = keypoints2[matches[ii].trainIdx].pt;
+    double d = depth.at<float>(px2.y, px2.x);
+    pt3d(0) = d*px2.x;
+    pt3d(1) = d*px2.y;
+    pt3d(2) = d;
+    pt3d = K*pt3d;
+
+    cv::Point3f pt;
+    pt.x = pt3d(0);
+    pt.y = pt3d(1);
+    pt.z = pt3d(2);pt3d(0);
+
+    cv::Point2f px = keypoints1[matches[ii].queryIdx].pt;
+
+    cv_obj.push_back( pt );
+    cv_img.push_back( px );
+  }
+
+  cv::Mat cv_coeff;
+  cv::Mat cv_rot(3,1,CV_64F);
+  cv::Mat cv_trans(3,1,CV_64F);
+
+  cv::solvePnP( cv_obj, cv_img, cv_K, cv_coeff, cv_rot, cv_trans, false );
+
+  cv::Mat R;
+  cv::Rodrigues(cv_rot, R);
+  R = R.t();
+  cv_trans = -R * cv_trans;
+
+  cv::Mat T(4, 4, R.type());
+  T( cv::Range(0,3), cv::Range(0,3) ) = R * 1; // copies R into T
+  T( cv::Range(0,3), cv::Range(3,4) ) = cv_trans * 1; // copies tvec into T
+  // fill the last row of T (NOTE: depending on your types, use float or double)
+  double *p = T.ptr<double>(3);
+  p[0] = p[1] = p[2] = 0; p[3] = 1;
+
+  Eigen::Matrix4d temp;
+  temp << T.at<double>(0, 0), T.at<double>(0, 1), T.at<double>(0, 2), T.at<double>(0, 3),
+          T.at<double>(1, 0), T.at<double>(1, 1), T.at<double>(1, 2), T.at<double>(1, 3),
+          T.at<double>(2, 0), T.at<double>(2, 1), T.at<double>(2, 2), T.at<double>(2, 3),
+                           0,                  0,                  0,                  1;
+
+  std::cout << T << std::endl;
+
+//  d->pose = _T2Cart( _Cart2T(d->pose) * h );
+}
+
+
 void sift_optimize( DMap detections,
                      SceneGraph::GLSimCam* sim_cam,
                      SceneGraph::GLSimCam* depth_cam,
@@ -1065,7 +1159,7 @@ int main( int argc, char** argv )
   bool capture = false;
   bool start = true;
   cv::Mat last_image;
-  while( start || capture && (count < 116)){
+  while( start || capture && (count < 36)){
     capture = cam.Capture( *vImages );
     count++;
     if (start) {
