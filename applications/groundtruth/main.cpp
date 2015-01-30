@@ -580,12 +580,12 @@ void sparse_frame_optimize( std::vector<std::shared_ptr < detection > > ds,
 {
   ceres::Solver::Options options;
   options.trust_region_strategy_type = ceres::DOGLEG;
-  options.num_threads = 4;
+  options.num_threads = 1;
   options.max_num_iterations = 50;
   options.minimizer_progress_to_stdout = false;
   double x[6];
   ceres::Problem problem;
-  problem.AddParameterBlock(x, 6);
+//  problem.AddParameterBlock(x, 6);
   for (int count = 0; count < 6; count++)
     x[count] = ds[0]->pose.data()[count];
   for( int count = 0; count < ds.size(); count++) {
@@ -598,23 +598,23 @@ void sparse_frame_optimize( std::vector<std::shared_ptr < detection > > ds,
   for (int count = 0; count < 6; count++)
     ds[0]->pose.data()[count] = x[count];
 
-  ceres::Covariance::Options cov_options;
-  cov_options.apply_loss_function = false;
-  ceres::Covariance cov(cov_options);
-  std::vector<std::pair<const double*, const double*> > covariance_blocks;
+//  ceres::Covariance::Options cov_options;
+//  cov_options.apply_loss_function = false;
+//  ceres::Covariance cov(cov_options);
+//  std::vector<std::pair<const double*, const double*> > covariance_blocks;
 
-  covariance_blocks.push_back(std::make_pair(x, x));
-  if (cov.Compute( covariance_blocks, &problem )) {
+//  covariance_blocks.push_back(std::make_pair(x, x));
+//  if (cov.Compute( covariance_blocks, &problem )) {
 
-    double covariance_xx[36];
+//    double covariance_xx[36];
 
-    cov.GetCovarianceBlock(x, x, covariance_xx);
+//    cov.GetCovarianceBlock(x, x, covariance_xx);
 
-    Eigen::Map< const Eigen::Matrix<double,6,6> > covariance(covariance_xx);
-    ds[0]->covariance = covariance.determinant();
-  } else {
-    ds[0]->covariance = FLT_MAX;
-  }
+//    Eigen::Map< const Eigen::Matrix<double,6,6> > covariance(covariance_xx);
+//    ds[0]->covariance = covariance.determinant();
+//  } else {
+//    ds[0]->covariance = FLT_MAX;
+//  }
 }
 
 void sparse_optimize( DMap detections,
@@ -979,25 +979,44 @@ void show_homography( std::shared_ptr< detection > d,
   cv::waitKey();
 }
 
+float delta( Eigen::Vector6d a, Eigen::Vector6d b )
+{
+  float sum = 0;
+  for (int j = 0; j < 6; j++) {
+    sum += pow(a(j) - b(j), 2);
+  }
+  return sqrt(sum);
+}
+
 void pose_shift( std::shared_ptr< detection > d,
                  SceneGraph::GLSimCam* simcam,
                  Eigen::Matrix3d K,
                  SceneGraph::GLSimCam* depth_cam )
 {
+  float c_new = cost(simcam, d, d->pose);
+  float c_old = FLT_MAX;
+
   cv::Mat captured = d->image;
   cv::Mat synth(captured.rows, captured.cols, captured.type());
-  simcam->SetPoseVision( _Cart2T(d->pose) );
-  simcam->RenderToTexture();
-  simcam->CaptureGrey( synth.data );
+  c_new = 20;
+  while (c_new > 0.1) {
+    simcam->SetPoseVision( _Cart2T(d->pose) );
+    simcam->RenderToTexture();
+    simcam->CaptureGrey( synth.data );
 
-  cv::Mat depth(captured.rows, captured.cols, CV_32FC1);
-  depth_cam->SetPoseVision( _Cart2T(d->pose) );
-  depth_cam->RenderToTexture();
-  depth_cam->CaptureDepth( depth.data );
+    cv::Mat depth(captured.rows, captured.cols, CV_32FC1);
+    depth_cam->SetPoseVision( _Cart2T(d->pose) );
+    depth_cam->RenderToTexture();
+    depth_cam->CaptureDepth( depth.data );
 
-  Eigen::Matrix4d h = estimate_pose_(captured, synth, depth, K);
-
-  d->pose = _T2Cart( _Cart2T(d->pose) * h );
+    Eigen::Matrix4d h = estimate_pose_(captured, synth, depth, K);
+    c_old = c_new;
+    c_new = delta(d->pose, _T2Cart( _Cart2T(d->pose) * h ));
+    d->pose = _T2Cart( _Cart2T(d->pose) * h );
+//    c_new = cost(simcam, d, d->pose);
+    std::cout<<c_new <<std::endl;
+  }
+  std::cout <<"Stopped."<<std::endl;
 }
 
 void pose_shift2( std::shared_ptr< detection > d,
@@ -1159,7 +1178,7 @@ int main( int argc, char** argv )
   bool capture = false;
   bool start = true;
   cv::Mat last_image;
-  while( start || capture && (count < 36)){
+  while( start || capture && (count < 116)){
     capture = cam.Capture( *vImages );
     count++;
     if (start) {

@@ -15,7 +15,7 @@
 double cost( SceneGraph::GLSimCam* simcam,
              std::shared_ptr< detection > d,
              Eigen::Vector6d pose,
-             int level )
+             int level = 0)
 {
   cv::Mat img(d->image.rows, d->image.cols, CV_8UC1);
 
