@@ -677,7 +677,7 @@ Eigen::Matrix4d estimate_pose_( cv::Mat image1, cv::Mat image2,
       }
     }
   } else {
-    cv::Mat ok(0, matches.size(), CV_32F);
+    cv::Mat ok(1, matches.size(), CV_32F);
     for (int m = 0; m < matches.size(); m++) {
       ok.data[m] = 1;
     }

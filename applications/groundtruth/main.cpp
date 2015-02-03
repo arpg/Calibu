@@ -1014,9 +1014,9 @@ void pose_shift( std::shared_ptr< detection > d,
     c_new = delta(d->pose, _T2Cart( _Cart2T(d->pose) * h ));
     d->pose = _T2Cart( _Cart2T(d->pose) * h );
 //    c_new = cost(simcam, d, d->pose);
-    std::cout<<c_new <<std::endl;
+//    std::cout<<c_new <<std::endl;
   }
-  std::cout <<"Stopped."<<std::endl;
+//  std::cout <<"Stopped."<<std::endl;
 }
 
 void pose_shift2( std::shared_ptr< detection > d,
