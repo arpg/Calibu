@@ -346,6 +346,7 @@ cv::Mat H( std::map<int, int> m,
   ceres::Problem problem;
   cv::Mat ok = oks[id];
 
+  std::cout<<ok<<std::endl;
   for (unsigned int ii = 0; ii < X1.cols; ii++) {
     if (ok.data[ii] != 0)  {
       ceres::CostFunction* cost_function =
@@ -477,114 +478,6 @@ cv::Mat find_ok_( std::vector< fd > fds1,
   return oks[id];
 }
 
-Eigen::Matrix4d estimate_pose_old_( cv::Mat image1, cv::Mat image2,
-                                    cv::Mat depth, Eigen::Matrix3d K )
-//  image1 = captured, image2 = synthetic, depth = depth of synthetic
-{
-  int h = image1.rows;
-  int w = image1.cols;
-
-  VlSiftFilt* sf = vl_sift_new(w, h, 5, 3, 0);
-
-  std::vector< fd > fds1, fds2;
-  process_image(sf, image1, fds1);
-  process_image(sf, image2, fds2);
-
-  if ((fds1.size() == 0) || (fds2.size() == 0)) {
-    return Eigen::Matrix4d::Identity();
-  }
-
-  std::map<int, int> matches;
-  matches = find_matches_(fds1, fds2);
-
-  std::cout<< matches.size() << " matches."<<std::endl;
-
-  vl_sift_delete(sf);
-
-  std::vector<cv::Point3f> cv_obj;
-  std::vector<cv::Point2f> cv_img;
-  cv::Mat cv_K(3,3,CV_64F);
-  cv::eigen2cv(K, cv_K);
-
-  cv::Mat ok = find_ok_(fds1, fds2, matches);
-
-  cv::Mat img1, img2;
-  cv::cvtColor(image1, img1, CV_GRAY2BGR);
-  cv::cvtColor(image2, img2, CV_GRAY2BGR);
-
-  std::vector< cv::Scalar > colors;
-  for (int ii = 0; ii < matches.size(); ii++){
-    colors.push_back(cv::Scalar(rand() % 255, rand() % 255, rand() % 255));
-  }
-
-  int count = 0;
-  for (std::map<int, int>::iterator it = matches.begin();
-       it != matches.end(); it++, count++) {
-
-    if (ok.data[count] != 0){
-      Eigen::Vector3d pt3d;
-      cv::Point2f px2;
-      px2.x = fds2[it->second].x;
-      px2.y = fds2[it->second].y;
-      cv::circle(img2, px2, 3, colors[count]);
-
-      double d = depth.at<float>(px2.y, px2.x);
-      pt3d(0) = d*px2.x;
-      pt3d(1) = d*px2.y;
-      pt3d(2) = d;
-      pt3d = K.inverse()*pt3d;
-
-      cv::Point3f pt;
-      pt.x = pt3d(0);
-      pt.y = pt3d(1);
-      pt.z = pt3d(2);
-
-      cv::Point2f px;
-      px.x = fds1[it->first].x;
-      px.y = fds1[it->first].y;
-      cv::circle(img1, px, 3, colors[count]);
-
-      cv_obj.push_back( pt );
-      cv_img.push_back( px );
-    }
-  }
-
-  cv::imshow("img1", img1);
-  cv::imshow("img2", img2);
-  cv::waitKey();
-
-  cv::Mat cv_coeff;
-  cv::Mat cv_rot(3,1,CV_64F);
-  cv::Mat cv_trans(3,1,CV_64F);
-
-  cv::solvePnP( cv_obj, cv_img, cv_K, cv_coeff, cv_rot, cv_trans, false );
-
-  cv::Mat R;
-  cv::Rodrigues(cv_rot, R);
-  R = R.t();
-  cv_trans = -R * cv_trans;
-
-  cv::Mat T(4, 4, R.type());
-  T( cv::Range(0,3), cv::Range(0,3) ) = R * 1; // copies R into T
-  T( cv::Range(0,3), cv::Range(3,4) ) = cv_trans * 1; // copies tvec into T
-  // fill the last row of T (NOTE: depending on your types, use float or double)
-  double *p = T.ptr<double>(3);
-  p[0] = p[1] = p[2] = 0; p[3] = 1;
-
-  Eigen::Matrix4d temp;
-  temp << T.at<double>(0, 0), T.at<double>(0, 1), T.at<double>(0, 2), T.at<double>(0, 3),
-      T.at<double>(1, 0), T.at<double>(1, 1), T.at<double>(1, 2), T.at<double>(1, 3),
-      T.at<double>(2, 0), T.at<double>(2, 1), T.at<double>(2, 2), T.at<double>(2, 3),
-      0,                  0,                  0,                  1;
-
-  std::cout << T << std::endl;
-
-  Eigen::Matrix4d T_eigen;
-  cv::cv2eigen(T, T_eigen);
-  return T_eigen;
-  //  return _Cart2T<double>(pose).inverse();
-}
-
 Eigen::Matrix4d estimate_pose_( cv::Mat image1, cv::Mat image2,
                                 cv::Mat depth, Eigen::Matrix3d K )
 //  image1 = captured, image2 = synthetic, depth = depth of synthetic
@@ -610,10 +503,9 @@ Eigen::Matrix4d estimate_pose_( cv::Mat image1, cv::Mat image2,
     }
   }
 
-  std::cout << "matches = "<<matches.size()<<std::endl;
-
   Eigen::Matrix< double, 6, 1> pose;
   pose << 0, 0, 0, 0, 0, 0;
+  std::cout << matches.size() << std::endl;
   if (matches.size() < 4) {
     return _Cart2T<double>(pose);
   }
@@ -687,8 +579,9 @@ Eigen::Matrix4d estimate_pose_( cv::Mat image1, cv::Mat image2,
 
   cv::Mat ok = oks[id];
 
+  std::cout << ok << std::endl;
+
   ceres::Solver::Options options;
-  //  options.linear_solver_type = ceres::DENSE_QR;
   options.trust_region_strategy_type = ceres::DOGLEG;
   options.num_threads = 1;
   options.max_num_iterations = 50;
@@ -696,8 +589,6 @@ Eigen::Matrix4d estimate_pose_( cv::Mat image1, cv::Mat image2,
 
   ceres::Problem problem;
   count = 0;
-//  cv::cvtColor(image1, image1, CV_GRAY2BGR);
-//  cv::cvtColor(image2, image2, CV_GRAY2BGR);
 
   for(std::map<int, int>::iterator it = matches.begin(); it != matches.end(); it++) {
     if (ok.data[count] != 0) {
@@ -707,41 +598,21 @@ Eigen::Matrix4d estimate_pose_( cv::Mat image1, cv::Mat image2,
       double d = depth.at<float>(x2(1), x2(0));  // X2 should be the synthetic view
       float dist = distance(fds1[it->first].d, fds2[it->second].d);
       if (d != 0) {
-        count++;
         ceres::CostFunction* optimal_cost
             = new ceres::AutoDiffCostFunction<OptimalCostFunctor, 2, 6> (
               new OptimalCostFunctor( x1, x2, K, d)
               );
         problem.AddResidualBlock( optimal_cost, NULL, pose.data());
-//        cv::circle(image1, cv::Point(x1(0), x1(1)), 3, cv::Scalar(0, 0, 255));
-//        cv::circle(image2, cv::Point(x2(0), x2(1)), 3, cv::Scalar(0, 0, 255));
       }
     }
+    count++;
   }
 
-//  cv::imshow("img1", image1);
-//  cv::imshow("img2", image2);
-//  cv::waitKey();
-
-  //  if (count > 3){
   ceres::Solver::Summary summary;
   ceres::Solve(options, &problem, &summary);
-  //  }
 
   vl_sift_delete(sf);
 
-  //  fprintf(stdout, "<%f, %f, %f, %f, %f, %f>\n", pose(0), pose(1), pose(2), pose(3), pose(4), pose(5));
-  //  fflush(stdout);
-  //  bool big = false;
-  //  for (int ii = 0; ii < 6;  ii++) {
-  //    if (pose(ii) > 10) {
-  //      big = true;
-  //    }
-  //  }
-
-  //  if (big) {
-  //    return Eigen::Matrix4d::Identity();
-  //  }
   return _Cart2T<double>(pose).inverse();
 }
 
