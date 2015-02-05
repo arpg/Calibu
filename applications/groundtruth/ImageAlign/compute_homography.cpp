@@ -206,12 +206,15 @@ std::map<int, int> find_matches_(std::vector< fd > k1,
         int s = k1[ii].d[c] - k2[jj].d[c];
         dist += s*s;
       }
-      if (dist < min1) {
-        id = jj;
-        min2 = min1;
-        min1 = dist;
-      } else if (dist < min2) {
-        min2 = dist;
+      if ((abs(k1[ii].x - k2[jj].x) < 100)
+          && (abs(k1[ii].y - k2[jj].y) < 100)) {
+        if (dist < min1){
+          id = jj;
+          min2 = min1;
+          min1 = dist;
+        } else if (dist < min2) {
+          min2 = dist;
+        }
       }
     }
     if ((1.5*min1 < min2) && (id != -1)) {
@@ -486,6 +489,7 @@ Eigen::Matrix4d estimate_pose_( cv::Mat image1, cv::Mat image2,
   int w = image1.cols;
 
   VlSiftFilt* sf = vl_sift_new(w, h, 5, 3, 0);
+  sf->peak_thresh = 5;
 
   std::vector< fd > fds1, fds2;
   process_image(sf, image1, fds1);
@@ -505,7 +509,6 @@ Eigen::Matrix4d estimate_pose_( cv::Mat image1, cv::Mat image2,
 
   Eigen::Matrix< double, 6, 1> pose;
   pose << 0, 0, 0, 0, 0, 0;
-  std::cout << matches.size() << std::endl;
   if (matches.size() < 4) {
     return _Cart2T<double>(pose);
   }
@@ -530,7 +533,6 @@ Eigen::Matrix4d estimate_pose_( cv::Mat image1, cv::Mat image2,
 
   srand(time(NULL));
   int id = 0;
-  if (matches.size() > 4) {
     for (int t = 0; t < 100; t++){
       std::vector< int > l = random_vals(n, 4);
       cv::Mat A;
@@ -568,18 +570,18 @@ Eigen::Matrix4d estimate_pose_( cv::Mat image1, cv::Mat image2,
         id = count;
       }
     }
-  } else {
-    cv::Mat ok(1, matches.size(), CV_32F);
-    for (int m = 0; m < matches.size(); m++) {
-      ok.data[m] = 1;
-    }
-    oks.push_back(ok);
-    id = 0;
-  }
+//  } else {
+//    cv::Mat ok(1, matches.size(), CV_32F);
+//    for (int m = 0; m < matches.size(); m++) {
+//      ok.data[m] = 1;
+//    }
+//    oks.push_back(ok);
+//    id = 0;
+//  }
 
   cv::Mat ok = oks[id];
 
-  std::cout << ok << std::endl;
+  std::cout<< ok << std::endl;
 
   ceres::Solver::Options options;
   options.trust_region_strategy_type = ceres::DOGLEG;
@@ -589,6 +591,15 @@ Eigen::Matrix4d estimate_pose_( cv::Mat image1, cv::Mat image2,
 
   ceres::Problem problem;
   count = 0;
+
+  cv::Mat img1, img2;
+  cv::cvtColor(image1, img1, CV_GRAY2BGR);
+  cv::cvtColor(image2, img2, CV_GRAY2BGR);
+
+  std::vector< cv::Scalar > colors;
+  for (int ii = 0; ii < matches.size(); ii++) {
+    colors.push_back(cv::Scalar(rand() % 255, rand() % 255, rand() % 255));
+  }
 
   for(std::map<int, int>::iterator it = matches.begin(); it != matches.end(); it++) {
     if (ok.data[count] != 0) {
@@ -603,10 +614,15 @@ Eigen::Matrix4d estimate_pose_( cv::Mat image1, cv::Mat image2,
               new OptimalCostFunctor( x1, x2, K, d)
               );
         problem.AddResidualBlock( optimal_cost, NULL, pose.data());
+        cv::circle(img1, cv::Point(fds1[it->first].x, fds1[it->first].y), 3, colors[count]);
+        cv::circle(img2, cv::Point(fds2[it->second].x, fds2[it->second].y), 3, colors[count]);
       }
     }
     count++;
   }
+
+//  cv::imshow("image1", img1);
+//  cv::imshow("image2", img2);
 
   ceres::Solver::Summary summary;
   ceres::Solve(options, &problem, &summary);

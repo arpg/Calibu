@@ -350,7 +350,7 @@ void pose_shift( std::shared_ptr< detection > d,
 
   cv::Mat captured = d->image;
   cv::Mat synth(captured.rows, captured.cols, captured.type());
-  for (int ii = 0; ii < 2; ii++) {
+//  for (int ii = 0; ii < 2; ii++) {
     c_new = 20;
     while (c_new > 0.1) {
       simcam->SetPoseVision( _Cart2T(d->pose) );
@@ -367,7 +367,7 @@ void pose_shift( std::shared_ptr< detection > d,
       c_new = delta(d->pose, _T2Cart( _Cart2T(d->pose) * h ));
       d->pose = _T2Cart( _Cart2T(d->pose) * h );
     }
-  }
+//  }
 }
 
 void sift_optimize( DMap detections,
@@ -435,7 +435,7 @@ int main( int argc, char** argv )
   bool capture = false;
   bool start = true;
   cv::Mat last_image;
-  while( start || capture && (count < 316)){
+  while( start || capture && (count < 116)){
     capture = cam.Capture( *vImages );
     count++;
     if (start) {
@@ -677,6 +677,7 @@ int main( int argc, char** argv )
     update_objects(detections,
                    camPoses,
                    campose);} );
+  pangolin::RegisterKeyPressCallback('t', [&](){ std::cout<< it->second.size() <<std::endl;} );
   pangolin::RegisterKeyPressCallback('e', [&](){ dense_frame_optimize(it->second, &sim_cam, K);
     update_objects(detections,
                    camPoses,

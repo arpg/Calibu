@@ -92,7 +92,7 @@ void make_hessian( SceneGraph::GLSimCam* simcam,
   pose = d->pose;
   while (((new_ < last_)) && (step < 25)) {
     step++;
-    std::cout<< "Step: "<<step<<" -- C:"<<new_<<" -- ["<<update.norm()<<"]"<<std::endl;
+//    std::cout<< "Step: "<<step<<" -- C:"<<new_<<" -- ["<<update.norm()<<"]"<<std::endl;
 //    for (int jj = 0; jj < 6; jj++) {
 //      for (int ii = 0; ii < 6; ii++) {
 //        hess(ii, jj) = D2(simcam, d, ii, jj, pose, level);
@@ -104,7 +104,7 @@ void make_hessian( SceneGraph::GLSimCam* simcam,
     }
 
 //    update = hess.inverse() * grad;
-    update = grad;
+    update =  1e-9*grad;
 
     last_ = new_;
     temp = pose - update;
