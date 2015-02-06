@@ -32,6 +32,39 @@ struct CameraUtils {
     return sqrt(pix[0] * pix[0] + pix[1] * pix[1]);
   }
 
+  template<typename T>
+  static inline T Scale(const T* scale, T* params) {
+    params[0] *= scale;
+    params[1] *= scale;
+    params[2] = scale*(params[2]+0.5) - 0.5;
+    params[3] = scale*(params[3]+0.5) - 0.5;
+  }
+
+  template<typename T>
+  static std::string Name(const T* params, T* name) {
+    return name;
+  }
+
+  template<typename T>
+  static std::string Type(const T* params, T* type) {
+    return type;
+  }
+
+  template<typename T>
+  static uint64_t SerialNumber(const T* params, T* serialno) {
+    return serialno;
+  }
+
+  template<typename T>
+  static int Index(const T* params, T* index) {
+    return index;
+  }
+
+  template<typename T>
+  static int Version(const T* params, T* version) {
+    return version;
+  }
+
   /** (x, y, z) -> (x, y)
    *
    * @param ray A 3-vector of (x, y, z)
@@ -125,11 +158,33 @@ class LinearCamera : public CameraImpl<Scalar, 4, LinearCamera<Scalar> > {
   using Base::Base;
 
   template<typename T>
-  static void Scale( const T s, const T* params ) {
-      params[0] *= scale;
-      params[1] *= scale;
-      params[2] = scale*(params[2]+0.5) - 0.5;
-      params[3] = scale*(params[3]+0.5) - 0.5;
+  static void Scale( const T* scale, T* params ) {
+    CameraUtils::Scale( scale, params );
+  }
+
+  template<typename T>
+  static void Name( const T* params, T* name) {
+    CameraUtils::Name(params, name);
+  }
+
+  template<typename T>
+  static void Type( const T* params, T* type) {
+    CameraUtils::Type( params, type);
+  }
+
+  template<typename T>
+  static void SerialNumber( const T* params, T* serialno) {
+    CameraUtils::SerialNumber( params, serialno );
+  }
+
+  template<typename T>
+  static void Index( const T* params, T* index) {
+    CameraUtils::Index( params, index);
+  }
+
+  template<typename T>
+  static void Version( const T* params, T* version) {
+    CameraUtils::Version( params, version);
   }
 
   template<typename T>
@@ -186,11 +241,33 @@ class FovCamera : public CameraImpl<Scalar, 5, FovCamera<Scalar> > {
   using Base::Base;
 
   template<typename T>
-  static void Scale( const T s, const T* params ) {
-      params[0] *= scale;
-      params[1] *= scale;
-      params[2] = scale*(params[2]+0.5) - 0.5;
-      params[3] = scale*(params[3]+0.5) - 0.5;
+  static void Scale( const T scale, T* params ) {
+    CameraUtils::Scale( scale, params );
+  }
+
+  template<typename T>
+  static void Name( const T* params, T* name) {
+    CameraUtils::Name(params, name);
+  }
+
+  template<typename T>
+  static void Type( const T* params, T* type) {
+    CameraUtils::Type( params, type);
+  }
+
+  template<typename T>
+  static void SerialNumber( const T* params, T* serialno) {
+    CameraUtils::SerialNumber( params, serialno );
+  }
+
+  template<typename T>
+  static void Index( const T* params, T* index) {
+    CameraUtils::Index( params, index);
+  }
+
+  template<typename T>
+  static void Version( const T* params, T* version) {
+    CameraUtils::Version( params, version);
   }
 
   // For these derivatives, refer to the camera_derivatives.m matlab file.
@@ -458,13 +535,34 @@ class Poly3Camera : public CameraImpl<Scalar, 7, Poly3Camera<Scalar> > {
   using Base::Base;
 
   template<typename T>
-  static void Scale( const T s, const T* params ) {
-      params[0] *= scale;
-      params[1] *= scale;
-      params[2] = scale*(params[2]+0.5) - 0.5;
-      params[3] = scale*(params[3]+0.5) - 0.5;
+  static void Scale( const T* scale, T* params ) {
+    CameraUtils::Scale( scale, params );
   }
 
+  template<typename T>
+  static void Name( const T* params, T* name) {
+    CameraUtils::Name(params, name);
+  }
+
+  template<typename T>
+  static void Type( const T* params, T* type) {
+    CameraUtils::Type( params, type);
+  }
+
+  template<typename T>
+  static void SerialNumber( const T* params, T* serialno) {
+    CameraUtils::SerialNumber( params, serialno );
+  }
+
+  template<typename T>
+  static void Index( const T* params, T* index) {
+    CameraUtils::Index( params, index);
+  }
+
+  template<typename T>
+  static void Version( const T* params, T* version) {
+    CameraUtils::Version( params, version);
+  }
 
   template<typename T>
   static T Factor(const T rad, const T* params) {

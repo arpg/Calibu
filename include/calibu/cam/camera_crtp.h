@@ -37,24 +37,26 @@ class CameraInterface {
       image_size_(other.image_size_), params_(other.params_) {}
   virtual ~CameraInterface() {}
 
-  /** Metadata member functions ported from CameraModelInterface.h (non-CRTP). */
+  /** Metadata member functions from CameraModelInterface.h (non-CRTP). */
   virtual std::string Type() const = 0;
 
   virtual std::string Name() const = 0;
 
-  virtual void SetName( const std::string& sName ) = 0;
-
   virtual uint64_t SerialNumber() const = 0;
-
-  virtual void SetSerialNumber( const uint64_t nSerialNo ) const = 0;
 
   virtual int Index() const = 0;
 
-  virtual void SetIndex( const int nIndex ) const = 0;
-
   virtual int Version() const = 0;
 
+  /*
+  virtual void SetName( const std::string& sName ) = 0;
+
+  virtual void SetSerialNumber( const uint64_t nSerialNo ) const = 0;
+
+  virtual void SetIndex( const int nIndex ) const = 0;
+
   virtual void SetVersion( int nVersion ) = 0;
+  */
 
   /** Change camera model image size. */
   virtual void Scale( const Scalar s) const = 0;

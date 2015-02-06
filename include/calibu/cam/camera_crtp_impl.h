@@ -1,6 +1,6 @@
 /*
   This file is part of the Calibu Project.
-  https://github.com/gwu-robotics/Calibu
+  https://github.com/arpg/Calibu
 
   Copyright (C) 2013 George Washington University,
   Steven Lovegrove,
@@ -51,51 +51,68 @@ class CameraImpl : public CameraInterface<Scalar> {
       CameraInterface<Scalar>(params, image_size) {
   }
 
-  void Scale( const Scalar s) const override {
+  void
+  Scale(const Scalar s) const override {
     Derived::Scale( s, this->params_.data() );
   }
 
-  /** Version get/set for version, type, sn, idx, name. */
-  /// Does m_pCam make sense in this, or do we need to use Derived:: & this-> ?
-  int Version() const {
-    return m_pCam.get();
+  /** Get version, type, sn, idx, name. */
+  int
+  Version() const override {
+    int version;
+    Derived::Version(this->params_.data(), version);
+    return version;
   }
 
+  std::string
+  Type() const override {
+    std::string type;
+    Derived::Type(this->params_.data(), type);
+    return type;
+  }
+
+  uint64_t
+  SerialNumber() const override {
+    uint64_t serialno;
+    Derived::SerialNumber(this->params_.data(), serialno);
+    return serialno;
+  }
+
+  /** Camera index (for multi-camera rigs). */
+  int
+  Index() const override {
+    int idx;
+    Derived::Index(this->params_.data(), idx);
+    return idx;
+  }
+
+  /** Camera name, e.g. "Left". */
+  std::string
+  Name() const override {
+    std::string name;
+    Derived::Name(this->params_.data(), name);
+    return name;
+  }
+
+  /*
   void SetVersion( int nVersion ) {
     m_pCam->SetVersion( nVersion );
   }
 
-  std::string Type() const {
-    return m_pCam->Type();
-  }
-
-  uint64_t SerialNumber() const {
-    return m_pCam->SerialNumber();
-  }
-
-  /** Set the camera serial number. */
   void SetSerialNumber( const uint64_t nSerialNo ) {
     m_pCam->SetSerialNumber( nSerialNo );
   }
 
-  int Index() const {
-    return m_pCam->Index();
-  }
-
-  /** Set the camera index (for multi-camera rigs). */
   void SetIndex( const int nIndex ) {
     m_pCam->SetIndex( nIndex );
   }
 
-  std::string Name() const {
-    return m_pCam->Name();
-  }
-
-  /** Set the camera model name. e.g., "Left". */
   void SetName( const std::string& sName ) {
     m_pCam->SetName( sName );
   }
+  */
 
+  /** Model-dependent operations. */
   Vec3t
   Unproject(const Vec2t& pix) const override {
     Vec3t ray;

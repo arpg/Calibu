@@ -11,6 +11,7 @@ set(HEADERS
   ${INC_DIR}/calib/CostFunctionAndParams.h
   ${INC_DIR}/calib/LocalParamSe3.h
   ${INC_DIR}/cam/camera_crtp.h
+  ${INC_DIR}/cam/camera_crtp_impl.h
   ${INC_DIR}/cam/camera_models_crtp.h
   ${INC_DIR}/cam/camera_crtp_interop.h
   ${INC_DIR}/cam/CameraModel.h
