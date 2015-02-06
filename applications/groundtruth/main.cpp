@@ -306,9 +306,9 @@ void dense_frame_optimize( std::vector<std::shared_ptr < detection > > dets,
                            Eigen::Matrix3d k,
                            int level = 5)
 {
-  for (int l = level; l >= 0; l--) {
-    make_hessian(sim_cam, dets[0], l);
-  }
+//  for (int l = level; l >= 0; l--) {
+    make_hessian(sim_cam, dets[0], /*l*/0);
+//  }
 }
 
 void dense_optimize( DMap detections,
@@ -352,7 +352,7 @@ void pose_shift( std::shared_ptr< detection > d,
   cv::Mat synth(captured.rows, captured.cols, captured.type());
 //  for (int ii = 0; ii < 2; ii++) {
     c_new = 20;
-    while (c_new > 0.1) {
+    while (c_new > 0.01) {
       simcam->SetPoseVision( _Cart2T(d->pose) );
       simcam->RenderToTexture();
       simcam->CaptureGrey( synth.data );
@@ -382,6 +382,40 @@ void sift_optimize( DMap detections,
   }
 }
 
+
+void print_test_data_( std::vector< detection > ds)
+{
+  FILE* f;
+  detection d = ds[0];
+  f = fopen("data.out", "w");
+  fprintf(f, "%f %f %f %f %f %f\n", d.pose(0), d.pose(1), d.pose(2),
+                                    d.pose(3), d.pose(4), d.pose(5));
+  Eigen::Vector3d c3d;
+  c3d = d.tag_data.tl;
+  fprintf(f, "%f %f %f\n", c3d(0), c3d(1), c3d(2) );
+  c3d = d.tag_data.tr;
+  fprintf(f, "%f %f %f\n", c3d(0), c3d(1), c3d(2) );
+  c3d = d.tag_data.bl;
+  fprintf(f, "%f %f %f\n", c3d(0), c3d(1), c3d(2) );
+  c3d = d.tag_data.br;
+  fprintf(f, "%f %f %f\n", c3d(0), c3d(1), c3d(2) );
+
+  Eigen::Vector2d c2d;
+  c2d = d.tag_corners.tl;
+  fprintf(f, "%f %f\n", c2d(0), c2d(1));
+  c2d = d.tag_corners.tr;
+  fprintf(f, "%f %f\n", c2d(0), c2d(1));
+  c2d = d.tag_corners.bl;
+  fprintf(f, "%f %f\n", c2d(0), c2d(1));
+  c2d = d.tag_corners.br;
+  fprintf(f, "%f %f\n", c2d(0), c2d(1));
+
+  fprintf(f, "%d %d\n", d.tag_data.color_low, d.tag_data.color_high);
+  fprintf(f, "%d\n", d.tag_id);
+
+
+  fclose(f);
+}
 
 /////////////////////////////////////////////////////////////////////////
 int main( int argc, char** argv )

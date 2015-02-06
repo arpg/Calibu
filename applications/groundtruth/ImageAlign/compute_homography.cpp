@@ -206,8 +206,7 @@ std::map<int, int> find_matches_(std::vector< fd > k1,
         int s = k1[ii].d[c] - k2[jj].d[c];
         dist += s*s;
       }
-      if ((abs(k1[ii].x - k2[jj].x) < 100)
-          && (abs(k1[ii].y - k2[jj].y) < 100)) {
+      if ((pow(k1[ii].x - k2[jj].x, 2) + pow(k1[ii].y - k2[jj].y, 2)) < 100) {
         if (dist < min1){
           id = jj;
           min2 = min1;
@@ -621,8 +620,8 @@ Eigen::Matrix4d estimate_pose_( cv::Mat image1, cv::Mat image2,
     count++;
   }
 
-//  cv::imshow("image1", img1);
-//  cv::imshow("image2", img2);
+  cv::imshow("image1", img1);
+  cv::imshow("image2", img2);
 
   ceres::Solver::Summary summary;
   ceres::Solve(options, &problem, &summary);

@@ -10,7 +10,7 @@
 #include "math.h"
 #include "measurements.h"
 
-#define STEP 1e-3
+#define STEP 1
 
 double cost( SceneGraph::GLSimCam* simcam,
              std::shared_ptr< detection > d,
@@ -22,15 +22,15 @@ double cost( SceneGraph::GLSimCam* simcam,
   simcam->SetPoseVision(_Cart2T(pose));
   simcam->RenderToTexture();
   simcam->CaptureGrey( img.data );
-  cv::GaussianBlur(img, img, cv::Size(5, 5), 0);
+//  cv::GaussianBlur(img, img, cv::Size(5, 5), 0);
 
   cv::Mat data;
   d->image.copyTo(data);
 
-  for (int count = 1; count <= level; count++) {
-    cv::pyrDown(img, img);
-    cv::pyrDown(data, data);
-  }
+//  for (int count = 1; count <= level; count++) {
+//    cv::pyrDown(img, img);
+//    cv::pyrDown(data, data);
+//  }
 
   cv::Mat img_d;
   img.convertTo(img_d, CV_64F);
@@ -90,9 +90,10 @@ void make_hessian( SceneGraph::GLSimCam* simcam,
   std::cout<<"Initial cost: "<<new_ <<" at level "<<level<<std::endl;
   double last_ = FLT_MAX;
   pose = d->pose;
-  while (((new_ < last_)) && (step < 25)) {
+  std::cout<<"about to enter while loop "<< fabs(new_ - last_)<<std::endl;
+  while ((fabs(new_ - last_) > 1e-3) /*&& (step < 25)*/) {
     step++;
-//    std::cout<< "Step: "<<step<<" -- C:"<<new_<<" -- ["<<update.norm()<<"]"<<std::endl;
+    std::cout<< "Step: "<<step<<" -- C:"<<new_<<" -- ["<<update.norm()<<"]"<<std::endl;
 //    for (int jj = 0; jj < 6; jj++) {
 //      for (int ii = 0; ii < 6; ii++) {
 //        hess(ii, jj) = D2(simcam, d, ii, jj, pose, level);
@@ -104,13 +105,13 @@ void make_hessian( SceneGraph::GLSimCam* simcam,
     }
 
 //    update = hess.inverse() * grad;
-    update =  1e-9*grad;
+    update =  1e-7*grad;
 
     last_ = new_;
     temp = pose - update;
 
     new_ = cost(simcam, d, temp, level);
-    if (new_ < last_)
+//    if (new_ < last_)
       pose = temp;
 
   }
