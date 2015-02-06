@@ -146,7 +146,7 @@ Vector3d intersect(int px, int py, Matrix3d K, Vector6d pose,
 
   Vector3d toRet = d*l + l0;
 
-  //  mexPrintf("Intersection: <%f, %f, %f>\n", toRet(0), toRet(1), toRet(2));
+//  mexPrintf("Intersection: <%f, %f, %f>\n", toRet(0), toRet(1), toRet(2));
   return toRet;
 }
 

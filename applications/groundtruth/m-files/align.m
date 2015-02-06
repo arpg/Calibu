@@ -1,23 +1,23 @@
 % mex -I/opt/local/include/eigen3 project.cpp;
 file = fopen('/Users/faradazerage/code/CoreDev/Calibu/build/applications/groundtruth/data.out', 'r');
 pose = fscanf(file, '%f\t%f\t%f\t%f\t%f\t%f\n', 6);
-pose = pose';
+pose = pose'
 corners = fscanf(file, '%f', 12);
 corners = reshape(corners, 3, 4);
 corners = corners';
-corners = [corners; corners(1, :)];
+corners = [corners; corners(1, :)]
 
 cs = fscanf(file, '%f', 8);
 cs = reshape(cs, 2, 4);
 cs = cs';
-cs = [cs; cs(1, :)];
+cs = [cs; cs(1, :)]
 
 colors = fscanf(file, '%d', 2);
 tg = fscanf(file, '%d', 36);
 tg = reshape(tg, 6, 6);
 tg = tg';
 tag = zeros(8, 8);
-tag(2:7, 2:7) = tg(:,:);
+tag(2:7, 2:7) = tg(:,:)
 
 K = [476.772       0 337.554;
     0 474.912 276.485;
@@ -25,7 +25,10 @@ K = [476.772       0 337.554;
 w = 640;
 h = 480;
 
-im = project(w, h, pose, K, corners(1, :), corners(2, :), corners(3, :), corners(4, :), tag, true);
+figure; 
+plot(cs(:, 1), cs(:, 2));
+
+im = project(w, h, pose, K, corners(1, :), corners(2, :), corners(3, :), corners(4, :), tag, false);
 imshow(im);
 
 %perturb the pose

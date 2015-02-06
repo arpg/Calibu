@@ -382,11 +382,38 @@ void sift_optimize( DMap detections,
   }
 }
 
+void print_tag_(FILE* f, int id) {
+  TagDetector td;
+  unsigned long long value = td.tf_->codes[id];
+  bool t_reverse[36];
+  int idx = 0;
+  for (int count = 0; count < 9; count++) {
+    unsigned long long temp = value - ((value >> 4) << 4);
+    t_reverse[idx + 0] = temp & 1;
+    t_reverse[idx + 1] = temp & 2;
+    t_reverse[idx + 2] = temp & 4;
+    t_reverse[idx + 3] = temp & 8;
+    idx += 4;
+    value >>= 4;
+  }
+  for (int count = 0; count < 36; count++){
+    if (t_reverse[35 - count]) {
+      fprintf(f, "1\t");
+    } else {
+      fprintf(f, "0\t");
+    }
+    if ((count % 6) == 0) {
+      fprintf(f, "\n");
+    }
+  }
 
-void print_test_data_( std::vector< detection > ds)
+}
+
+
+void print_test_data_( std::shared_ptr< detection > ds)
 {
   FILE* f;
-  detection d = ds[0];
+  detection d = *ds;
   f = fopen("data.out", "w");
   fprintf(f, "%f %f %f %f %f %f\n", d.pose(0), d.pose(1), d.pose(2),
                                     d.pose(3), d.pose(4), d.pose(5));
@@ -395,9 +422,9 @@ void print_test_data_( std::vector< detection > ds)
   fprintf(f, "%f %f %f\n", c3d(0), c3d(1), c3d(2) );
   c3d = d.tag_data.tr;
   fprintf(f, "%f %f %f\n", c3d(0), c3d(1), c3d(2) );
-  c3d = d.tag_data.bl;
-  fprintf(f, "%f %f %f\n", c3d(0), c3d(1), c3d(2) );
   c3d = d.tag_data.br;
+  fprintf(f, "%f %f %f\n", c3d(0), c3d(1), c3d(2) );
+  c3d = d.tag_data.bl;
   fprintf(f, "%f %f %f\n", c3d(0), c3d(1), c3d(2) );
 
   Eigen::Vector2d c2d;
@@ -405,14 +432,13 @@ void print_test_data_( std::vector< detection > ds)
   fprintf(f, "%f %f\n", c2d(0), c2d(1));
   c2d = d.tag_corners.tr;
   fprintf(f, "%f %f\n", c2d(0), c2d(1));
-  c2d = d.tag_corners.bl;
-  fprintf(f, "%f %f\n", c2d(0), c2d(1));
   c2d = d.tag_corners.br;
+  fprintf(f, "%f %f\n", c2d(0), c2d(1));
+  c2d = d.tag_corners.bl;
   fprintf(f, "%f %f\n", c2d(0), c2d(1));
 
   fprintf(f, "%d %d\n", d.tag_data.color_low, d.tag_data.color_high);
-  fprintf(f, "%d\n", d.tag_id);
-
+  print_tag_(f, d.tag_id);
 
   fclose(f);
 }
@@ -712,6 +738,7 @@ int main( int argc, char** argv )
                    camPoses,
                    campose);} );
   pangolin::RegisterKeyPressCallback('t', [&](){ std::cout<< it->second.size() <<std::endl;} );
+  pangolin::RegisterKeyPressCallback(';', [&](){ print_test_data_(it->second[0]);} );
   pangolin::RegisterKeyPressCallback('e', [&](){ dense_frame_optimize(it->second, &sim_cam, K);
     update_objects(detections,
                    camPoses,
