@@ -24,6 +24,11 @@
 #include <sophus/se3.hpp>
 
 namespace calibu {
+
+/*
+  CameraInterface is the top-level pure-virtual interface class all cameras must honor.
+*/
+
 template<typename Scalar = double>
 class CameraInterface {
  protected:
@@ -71,9 +76,11 @@ class CameraInterface {
   virtual Eigen::Matrix<Scalar, 2, 3>
   dProject_dray(const Vec3t& ray) const = 0;
 
+  /// TODO comments please
   virtual Eigen::Matrix<Scalar, 2, Eigen::Dynamic>
   dProject_dparams(const Vec3t& ray) const = 0;
 
+  /// TODO comments please
   virtual Eigen::Matrix<Scalar, 3, Eigen::Dynamic>
   dUnproject_dparams(const Vec2t& pix) const = 0;
 
@@ -112,6 +119,7 @@ class CameraInterface {
     return dtransfer3d_dray;
   }
 
+  /// TODO comments please
   Eigen::Matrix<Scalar, 2, Eigen::Dynamic> dTransfer_dparams(
       const SE3t& t_ba,
       const Vec2t& pix,
@@ -134,31 +142,38 @@ class CameraInterface {
     return d_project_dparams + dtransfer3d_dray * dray_dparams;
   }
 
+  /// TODO comments please
   const Eigen::VectorXd& GetParams() const {
     return params_;
   }
 
+  /// TODO comments please
   Eigen::VectorXd& GetParams() {
     return params_;
   }
 
+  /// TODO comments please
   void SetParams(const Eigen::VectorXd& new_params) {
     params_ = new_params;
   }
 
+  /// TODO comments please
   uint32_t NumParams() const {
     return params_.rows();
   }
 
+  /// TODO comments please
   unsigned int Width() const {
     return image_size_[0];
   }
 
+  /// TODO comments please
   unsigned int Height() const {
     return image_size_[1];
   }
 
  protected:
+  /// TODO comments please big time
   CameraInterface(const Eigen::VectorXd& params_in,
                   const Eigen::Vector2i& image_size)
       : params_(params_in), image_size_(image_size) {
@@ -170,15 +185,18 @@ class CameraInterface {
   Eigen::VectorXd params_;
 };
 
+/// this is an important class, right? why?
 template<typename Scalar = double>
 class Rig {
  public:
+  /// TODO comments please -- this is called by who?
   typedef Sophus::SE3Group<Scalar> SE3t;
   void AddCamera(CameraInterface<Scalar>* cam, const SE3t& t_wc) {
     cameras_.push_back(cam);
     t_wc_.push_back(t_wc);
   }
-
+ 
+  /// TODO comments please -- this is called by who?
   void Clear() {
     for (CameraInterface<Scalar>* ptr : cameras_) {
       delete ptr;

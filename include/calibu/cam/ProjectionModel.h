@@ -1,3 +1,5 @@
+#if 0
+
 /* 
    This file is part of the Calibu Project.
    https://github.com/gwu-robotics/Calibu
@@ -347,3 +349,4 @@ typedef ProjectionLinear<DistortionPoly2>    Poly2;
 typedef ProjectionLinear<DistortionPoly3>    Poly3;
 
 }
+#endif

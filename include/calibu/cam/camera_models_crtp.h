@@ -19,6 +19,11 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
+
+/*
+   explain what this file does/is for.
+ */
+
 #pragma once
 #include <calibu/cam/camera_crtp.h>
 #include <calibu/cam/camera_crtp_impl.h>

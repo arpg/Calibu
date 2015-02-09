@@ -26,7 +26,7 @@
 #include <sophus/se3.hpp>
 
 #include <calibu/Platform.h>
-#include <calibu/cam/CameraModel.h>
+#include <calibu/cam/camera_crtp.h>
 #include <calibu/image/ImageProcessing.h>
 #include <calibu/conics/Conic.h>
 
@@ -42,17 +42,19 @@ public:
     // Returns true on success, false on failure
 
     // Assume approximately known camera and pose
+    template<typename Scalar=double>
     virtual bool FindTarget(
             const Sophus::SE3d& T_cw,
-            const CameraModelInterface& cam,
+            const CameraInterface<Scalar>& cam,
             const ImageProcessing& images,
             const std::vector<Conic, Eigen::aligned_allocator<Conic> >& conics,
             std::vector<int>& conics_target_map
             ) = 0;
 
     // Assume approximately known camera
+    template<typename Scalar=double>
     virtual bool FindTarget(
-            const CameraModelInterface& cam,
+            const CameraInterface<Scalar>& cam,
             const ImageProcessing& images,
             const std::vector<Conic, Eigen::aligned_allocator<Conic> >& conics,
             std::vector<int>& conics_target_map

@@ -1,3 +1,4 @@
+#if 0
 /*
   This file is part of the Calibu Project.
   https://github.com/gwu-robotics/Calibu
@@ -81,3 +82,4 @@ inline CameraInterface<Scalar>* LoadCamera(
                              cam_and_transform.T_wc);
 }
 }  // namespace calibu
+#endif

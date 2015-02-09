@@ -1,3 +1,4 @@
+#if 0
 /* 
    This file is part of the Calibu Project.
    https://github.com/gwu-robotics/Calibu
@@ -87,3 +88,4 @@ Eigen::Matrix<double,1,2> dNorm_dx(
 }
 
 }
+#endif

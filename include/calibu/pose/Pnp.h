@@ -23,12 +23,13 @@
 
 #include <vector>
 #include <sophus/se3.hpp>
-#include <calibu/cam/CameraModel.h>
+#include <calibu/cam/camera_crtp.h>
 
 namespace calibu {
 
-std::vector<int> PosePnPRansac(
-        const CameraModelInterface& cam,
+  template<typename Scalar>
+    std::vector<int> PosePnPRansac(
+        const CameraInterface<Scalar>& cam,
         const std::vector<Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> > & img_pts,
         const std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > & ideal_pts,
         const std::vector<int> & candidate_map,
@@ -37,14 +38,15 @@ std::vector<int> PosePnPRansac(
         Sophus::SE3d * T
         );
 
-double ReprojectionErrorRMS(
-        const CameraModelInterface& cam,
+  template<typename Scalar>
+    double ReprojectionErrorRMS(
+        const CameraInterface<Scalar>& cam,
         const Sophus::SE3d& T_cw,
         const std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& pts3d,
         const std::vector<Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> >& pts2d,
         const std::vector<int>& map2d_3d
         );
 
-int CountInliers(const std::vector<int> & conics_target_map);
+  int CountInliers(const std::vector<int> & conics_target_map);
 
 }

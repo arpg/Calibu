@@ -1,3 +1,5 @@
+#if 0
+
 /* 
    This file is part of the Calibu Project.
    https://github.com/gwu-robotics/Calibu
@@ -233,3 +235,4 @@ public:
 typedef CameraModelInterfaceT<double> CameraModelInterface;
 
 }
+#endif
