@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <apriltags/apriltag.h>
 #include <apriltags/tag36h11.h>
+#include <calibu/target/RandomGrid.h>
+#include <Eigen/Eigen>
 
 void write_tags( FILE* f, int x, int y, unsigned char* tag, int id, float scale = 25.4, float wb = 0.0f )
 {
@@ -96,7 +98,6 @@ int main( int argc, char** argv )
   fprintf(f, "%%!PS-Adobe EPSF-3.0\n");
   fprintf(f, "%%%%Boundingbox: 0 0 612 792\n");
   fprintf(f, "/Times-Roman findfont 20 scalefont setfont\n");
-
   int count = 3;
   float scale = atof(argv[1]);
   float wb = atof(argv[2]);
@@ -108,6 +109,39 @@ int main( int argc, char** argv )
         atoi(argv[count]));
     count += 3;
   }
+
+  Eigen::MatrixXi M(19, 10);
+  std::mt19937 rng(14);
+  std::uniform_int_distribution<uint32_t> uint_dist1(0,1);
+
+  for(int r=0; r < M.rows(); ++r) {
+      for(int c=0; c < M.cols(); ++c) {
+          M(r,c) = uint_dist1(rng);
+      }
+  }
+
+  Eigen::Vector2d offset = Eigen::Vector2d(22, 0);
+  double grid_spacing = 10.0;
+  double rad0 = 2.0;
+  double rad1 = 3.0;
+  double pts_per_unit = 4.0;
+  const double border = 3*rad1;
+  const Eigen::Vector2d border2d(border,border);
+  const Eigen::Vector2d max_pts(
+              pts_per_unit * ((M.cols()-1) * grid_spacing + 2*border),
+              pts_per_unit * ((M.rows()-1) * grid_spacing + 2*border)
+              );
+
+  for( int r=0; r<M.rows(); ++r ) {
+      for( int c=0; c<M.cols(); ++c) {
+          const double rad_pts = pts_per_unit * ((M(r,c) == 1) ? rad1 : rad0);
+          const Eigen::Vector2d p_pts = pts_per_unit* (offset + border2d + grid_spacing * Eigen::Vector2d(c,r));
+          fprintf(f,"%f %f %f 0 360 arc closepath\n",p_pts[0],
+              max_pts[1] - p_pts[1], rad_pts);
+          fprintf(f, "0.0 setgray fill\n");
+      }
+  }
+
 
   fprintf(f, "showpage\n");
   fclose(f);

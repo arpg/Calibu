@@ -580,7 +580,7 @@ Eigen::Matrix4d estimate_pose_( cv::Mat image1, cv::Mat image2,
 
   cv::Mat ok = oks[id];
 
-  std::cout<< ok << std::endl;
+//  std::cout<< ok << std::endl;
 
   ceres::Solver::Options options;
   options.trust_region_strategy_type = ceres::DOGLEG;
@@ -620,8 +620,8 @@ Eigen::Matrix4d estimate_pose_( cv::Mat image1, cv::Mat image2,
     count++;
   }
 
-  cv::imshow("image1", img1);
-  cv::imshow("image2", img2);
+//  cv::imshow("image1", img1);
+//  cv::imshow("image2", img2);
 
   ceres::Solver::Summary summary;
   ceres::Solve(options, &problem, &summary);

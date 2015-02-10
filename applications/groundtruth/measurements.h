@@ -198,7 +198,8 @@ struct tag2d{
 };
 
 struct detection{
-  Eigen::Matrix<double,6,1>   pose;
+  Eigen::Matrix<double,6,1>   pose;  
+  int                         frame;
   int                         tag_id;
   tag_t                       tag_data;
   tag2d                       tag_corners;

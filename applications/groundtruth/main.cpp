@@ -306,9 +306,9 @@ void dense_frame_optimize( std::vector<std::shared_ptr < detection > > dets,
                            Eigen::Matrix3d k,
                            int level = 5)
 {
-//  for (int l = level; l >= 0; l--) {
-    make_hessian(sim_cam, dets[0], /*l*/0);
-//  }
+  for (int l = level; l >= 0; l--) {
+    make_hessian(sim_cam, dets[0], l);
+  }
 }
 
 void dense_optimize( DMap detections,
@@ -518,10 +518,11 @@ int main( int argc, char** argv )
       continue;
     }
 
-    // 3) For all tags detected in a frame, add a detection to taht frame
+    // 3) For all tags detected in a frame, add a detection to that frame
     std::vector< std::shared_ptr< detection > > ds;
     for( size_t ii = 0; ii < vDetections.size(); ii++ ){
       std::shared_ptr< detection > d(new detection);
+      d->frame = count;
 
       // Where are the actual (total station measured) locations of the corners?
       int t_id = vDetections[ii].id;
@@ -648,36 +649,32 @@ int main( int argc, char** argv )
   depth_cam.Init( &glGraph, Eigen::Matrix4d::Identity(), K,
                   cam.Width(), cam.Height(), SceneGraph::eSimCamDepth, 0.01 );
 
-  //  DTrack dtrack;
-  //  dtrack.Init();
-  //  calibu::CameraRig old_rig = calibu::ReadXmlRig(rig_name_);
-  //  dtrack.SetParams(old_rig.cameras[0].camera, old_rig.cameras[0].camera,
-  //      old_rig.cameras[0].camera, Sophus::SE3d());
-
   std::vector< Eigen::Vector6d > poses;
   for( std::map<int, std::vector< std::shared_ptr< detection > > >::iterator it = detections.begin();
        it != detections.end(); it++){
-    //    poses.push_back(dtrack_update(detections[it->first], &dtrack, &sim_cam, &depth_cam, K));
     poses.push_back(it->second[0]->pose);
   }
 
-  if (cl.search("-o")) {
-    std::cerr << cl.follow("", "-o") << std::endl;
-    FILE* ofile = fopen(cl.follow("", "-o").c_str(), "w");
-    for( std::map<int, std::vector< std::shared_ptr< detection > > >::iterator it = detections.begin();
-         it != detections.end(); it++){
-      Eigen::Vector6d poze = it->second[0]->pose;
-      fprintf(ofile, "%d\t%f\t%f\t%f\t%f\t%f\t%f\n", it->first, poze(0),
-              poze(1),
-              poze(2),
-              poze(3),
-              poze(4),
-              poze(5));
-    }
-    fclose(ofile);
-  }
-
   if (!cl.search("-v")) {
+    sparse_optimize(detections, K, cmod);
+    sift_optimize(detections, &sim_cam, &depth_cam, K);
+    dense_optimize(detections, &sim_cam, K);
+    if (cl.search("-o")) {
+      std::cerr << cl.follow("", "-o") << std::endl;
+      FILE* ofile = fopen(cl.follow("", "-o").c_str(), "w");
+      for( std::map<int, std::vector< std::shared_ptr< detection > > >::iterator it = detections.begin();
+           it != detections.end(); it++){
+        Eigen::Vector6d poze = it->second[0]->pose;
+        fprintf(ofile, "%d\t%f\t%f\t%f\t%f\t%f\t%f\n", it->second[0]->frame, poze(0),
+                poze(1),
+                poze(2),
+                poze(3),
+                poze(4),
+                poze(5));
+      }
+      fclose(ofile);
+    }
+
     return 0;
   }
 
@@ -742,8 +739,7 @@ int main( int argc, char** argv )
   pangolin::RegisterKeyPressCallback('e', [&](){ dense_frame_optimize(it->second, &sim_cam, K);
     update_objects(detections,
                    camPoses,
-                   campose);
-    std::cout<<"Dense optimizing this frame . . . "<<std::endl;} );
+                   campose);} );
   cv::Mat synth(cmod->Height(), cmod->Width(), CV_8UC1);
   cv::Mat diff(cmod->Height(), cmod->Width(), CV_8UC1);
   cv::Mat temp;

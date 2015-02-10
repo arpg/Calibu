@@ -10,7 +10,7 @@
 #include "math.h"
 #include "measurements.h"
 
-#define STEP 1
+#define STEP 0.01
 
 double cost( SceneGraph::GLSimCam* simcam,
              std::shared_ptr< detection > d,
@@ -81,41 +81,30 @@ void make_hessian( SceneGraph::GLSimCam* simcam,
 {
   Eigen::Matrix<double, 6, 6> hess;
   Eigen::Matrix<double, 6, 1> update;
-  Eigen::Matrix<double, 6, 1> grad;
+
   int step = 0;
 
   Eigen::Vector6d pose = d->pose;
-  Eigen::Vector6d temp;
-  double new_ = cost(simcam, d, pose, level);
-  std::cout<<"Initial cost: "<<new_ <<" at level "<<level<<std::endl;
-  double last_ = FLT_MAX;
+  double gamma = 1e-6;
+  double C = cost(simcam, d, pose, level);
+  double C_last = FLT_MAX;
   pose = d->pose;
-  std::cout<<"about to enter while loop "<< fabs(new_ - last_)<<std::endl;
-  while ((fabs(new_ - last_) > 1e-3) /*&& (step < 25)*/) {
+  while (C < C_last) {
     step++;
-    std::cout<< "Step: "<<step<<" -- C:"<<new_<<" -- ["<<update.norm()<<"]"<<std::endl;
-//    for (int jj = 0; jj < 6; jj++) {
-//      for (int ii = 0; ii < 6; ii++) {
-//        hess(ii, jj) = D2(simcam, d, ii, jj, pose, level);
-//      }
-//    }
+    Eigen::Matrix<double, 6, 1> J;
 
     for (int ii = 0; ii < 6; ii++) {
-      grad(ii) = D1(simcam, d, ii, pose, level);
+      J(ii) = D1(simcam, d, ii, pose, level);
     }
 
-//    update = hess.inverse() * grad;
-    update =  1e-7*grad;
-
-    last_ = new_;
-    temp = pose - update;
-
-    new_ = cost(simcam, d, temp, level);
-//    if (new_ < last_)
-      pose = temp;
-
+    update =  gamma*J;
+    pose = pose - update;
+    C_last = C;
+    C = cost(simcam, d, pose, level);
+    if (C < C_last) {
+      d->pose = pose;
+    }
   }
-  d->pose = pose;
 }
 
 
