@@ -21,7 +21,10 @@
 
 #include <calibu/utils/Xml.h>
 #include <calibu/utils/StreamOperatorsEigen.h>
-#include <calibu/cam/CameraXml.h>
+#include <calibu/cam/camera_xml.h>
+#include <calibu/cam/camera_crtp.h>
+#include <calibu/cam/camera_crtp_impl.h>
+#include <calibu/cam/camera_models_crtp.h>
 #include <fstream>
 
 namespace calibu
@@ -63,7 +66,7 @@ std::string CameraModelType( const std::string& sType )
     }
 }
 
-void WriteXmlCameraModel(std::ostream& out, const CameraModelInterface& cam, int indent)
+void WriteXmlCameraModel(std::ostream& out, const CameraInterface& cam, int indent)
 {
     const std::string dd1 = IndentStr(indent);
     const std::string dd2 = IndentStr(indent+4);
@@ -80,9 +83,9 @@ void WriteXmlCameraModel(std::ostream& out, const CameraModelInterface& cam, int
 
     // hmm, is RDF a model parameter or should it be outside thie model, like the pose is? GTS
     out << dd2 << "<!-- Use RDF matrix, [right down forward], to define the coordinate frame convention -->\n";
-    out << dd2 << "<right> " << (Eigen::Vector3d)cam.RDF().col(0) << " </right>\n";
-    out << dd2 << "<down> " << (Eigen::Vector3d)cam.RDF().col(1) << " </down>\n";
-    out << dd2 << "<forward> " << (Eigen::Vector3d)cam.RDF().col(2) << " </forward>\n";
+    out << dd2 << "<right> " << (Eigen::Vector3d)cam./*RDF()*/.col(0) << " </right>\n";
+    out << dd2 << "<down> " << (Eigen::Vector3d)cam./*RDF()*/.col(1) << " </down>\n";
+    out << dd2 << "<forward> " << (Eigen::Vector3d)cam./*RDF()*/.col(2) << " </forward>\n";
     out.precision(7);
     
     out << dd2 << "<!-- Camera parameters ordered as per type name. -->\n";    
@@ -91,13 +94,13 @@ void WriteXmlCameraModel(std::ostream& out, const CameraModelInterface& cam, int
     out << dd1 << AttribClose(NODE_CAMMODEL) << std::endl;
 }
 
-void WriteXmlCameraModel(const std::string& filename, const CameraModelInterface& cam)
+void WriteXmlCameraModel(const std::string& filename, const CameraInterface& cam)
 {
     std::ofstream of(filename);
     WriteXmlCameraModel(of, cam);
 }
 
-CameraModel ReadXmlCameraModel(TiXmlElement* pEl)
+CameraReadXmlCameraModel(TiXmlElement* pEl)
 {    
     std::string sType = CameraModelType( pEl->Attribute("type"));
 
@@ -271,7 +274,7 @@ CameraRig ReadXmlRig(TiXmlNode* xmlrig)
     return rig;
 }
 
-CameraRig ReadXmlRig(const std::string& filename)
+calibu::Rig ReadXmlRig(const std::string& filename)
 {
     TiXmlDocument doc;
     if(doc.LoadFile(filename)) {

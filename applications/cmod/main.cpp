@@ -125,7 +125,7 @@ int MakeRig( int argc, char** argv )
     cl.search(2, "-c", "--combine-cameras");
 
     std::string sLuts; // lookup tables, if present
-    calibu::CameraRig rig;
+    calibu::Rig rig;
 
     for( string s = cl.next(""); !s.empty(); s = cl.next("") ){
         calibu::CameraModelAndTransform cam = ReadCameraModel( s );

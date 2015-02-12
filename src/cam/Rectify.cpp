@@ -19,14 +19,14 @@
   limitations under the License.
  */
 
-#include <calibu/cam/Rectify.h>
+#include <calibu/cam/rectify_crtp.h>
 #include <calibu/utils/Range.h>
 
 namespace calibu
 {
 
   void CreateLookupTable(
-      const calibu::CameraModelInterface& cam_from,
+      const calibu::CameraInterface& cam_from,
       const Eigen::Matrix3d& R_onKinv,
       Eigen::Matrix<Eigen::Vector2f, Eigen::Dynamic, Eigen::Dynamic>& lookup_warp
       )
@@ -48,7 +48,7 @@ namespace calibu
 
   ///////////////////////////////////////////////////////////////////////////////
   void CreateLookupTable(
-      const calibu::CameraModelInterface& cam_from,
+      const calibu::CameraInterface& cam_from,
       const Eigen::Matrix3d& R_onKinv,
       LookupTable& lut
       )

@@ -23,6 +23,6 @@
 
 #include <calibu/Platform.h>
 
-#include <calibu/cam/CameraXml.h>
+#include <calibu/cam/camera_xml.h>
 #include <calibu/cam/Rectify.h>
 

@@ -53,7 +53,10 @@ class CameraInterface {
 
   virtual int Version() const = 0;
 
-  /*
+  virtual void SetGenericParams() = 0;
+
+  virtual void SetType() = 0;
+
   virtual void SetName( const std::string& sName ) = 0;
 
   virtual void SetSerialNumber( const uint64_t nSerialNo ) const = 0;
@@ -61,7 +64,8 @@ class CameraInterface {
   virtual void SetIndex( const int nIndex ) const = 0;
 
   virtual void SetVersion( int nVersion ) = 0;
-  */
+
+  virtual void SetImageDimensions( const int sWidth, const int sHeight ) = 0;
 
   /** Change camera model image size. */
   virtual void Scale( const Scalar s) const = 0;
@@ -170,6 +174,57 @@ class CameraInterface {
   /// TODO comments please
   unsigned int Height() const {
     return image_size_[1];
+  }
+
+  /** Get version, type, sn, idx, name. */
+  int
+  Version() const {
+    return version_;
+  }
+
+  std::string
+  Type() const {
+    return type_;
+  }
+
+  uint64_t
+  SerialNumber() const {
+    return serialNo_;
+  }
+
+  /** Camera index (for multi-camera rigs). */
+  int
+  Index() const {
+    return index_;
+  }
+
+  /** Camera name, e.g. "Left". */
+  std::string
+  Name() const {
+    return name_;
+  }
+
+  void
+  SetName( const std::string& sName ) {
+    name_ = sName;
+  }
+
+  void
+  SetSerialNumber( const uint64_t nSerialNo ) {
+    serialNo_ = nSerialNo ;
+  }
+
+  void SetIndex( const int nIndex ) {
+    index_ = nIndex ;
+  }
+
+  void SetVersion( int nVersion ) {
+    version_ = nVersion ;
+  }
+
+  void SetImageDimensions( const int sWidth, const int sHeight ) {
+    image_size_[0] = sWidth;
+    image_size_[1] = sHeight;
   }
 
  protected:

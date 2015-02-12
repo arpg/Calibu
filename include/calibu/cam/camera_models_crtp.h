@@ -45,31 +45,6 @@ struct CameraUtils {
     params[3] = scale*(params[3]+0.5) - 0.5;
   }
 
-  template<typename T>
-  static std::string Name(const T* params, T* name) {
-    return name;
-  }
-
-  template<typename T>
-  static std::string Type(const T* params, T* type) {
-    return type;
-  }
-
-  template<typename T>
-  static uint64_t SerialNumber(const T* params, T* serialno) {
-    return serialno;
-  }
-
-  template<typename T>
-  static int Index(const T* params, T* index) {
-    return index;
-  }
-
-  template<typename T>
-  static int Version(const T* params, T* version) {
-    return version;
-  }
-
   /** (x, y, z) -> (x, y)
    *
    * @param ray A 3-vector of (x, y, z)
@@ -168,28 +143,14 @@ class LinearCamera : public CameraImpl<Scalar, 4, LinearCamera<Scalar> > {
   }
 
   template<typename T>
-  static void Name( const T* params, T* name) {
-    CameraUtils::Name(params, name);
+  static void SetGenericParams() {
+    /// TODO
   }
 
   template<typename T>
-  static void Type( const T* params, T* type) {
-    CameraUtils::Type( params, type);
-  }
-
-  template<typename T>
-  static void SerialNumber( const T* params, T* serialno) {
-    CameraUtils::SerialNumber( params, serialno );
-  }
-
-  template<typename T>
-  static void Index( const T* params, T* index) {
-    CameraUtils::Index( params, index);
-  }
-
-  template<typename T>
-  static void Version( const T* params, T* version) {
-    CameraUtils::Version( params, version);
+  static void SetType() {
+    std::string type_;
+    type_ = "LinearCamera";
   }
 
   template<typename T>
@@ -251,28 +212,14 @@ class FovCamera : public CameraImpl<Scalar, 5, FovCamera<Scalar> > {
   }
 
   template<typename T>
-  static void Name( const T* params, T* name) {
-    CameraUtils::Name(params, name);
+  static void SetGenericParams() {
+    /// TODO
   }
 
   template<typename T>
-  static void Type( const T* params, T* type) {
-    CameraUtils::Type( params, type);
-  }
-
-  template<typename T>
-  static void SerialNumber( const T* params, T* serialno) {
-    CameraUtils::SerialNumber( params, serialno );
-  }
-
-  template<typename T>
-  static void Index( const T* params, T* index) {
-    CameraUtils::Index( params, index);
-  }
-
-  template<typename T>
-  static void Version( const T* params, T* version) {
-    CameraUtils::Version( params, version);
+  static void SetType() {
+    std::string type_;
+    type_ = "FovCamera";
   }
 
   // For these derivatives, refer to the camera_derivatives.m matlab file.
@@ -545,28 +492,14 @@ class Poly3Camera : public CameraImpl<Scalar, 7, Poly3Camera<Scalar> > {
   }
 
   template<typename T>
-  static void Name( const T* params, T* name) {
-    CameraUtils::Name(params, name);
+  static void SetGenericParams() {
+    /// TODO
   }
 
   template<typename T>
-  static void Type( const T* params, T* type) {
-    CameraUtils::Type( params, type);
-  }
-
-  template<typename T>
-  static void SerialNumber( const T* params, T* serialno) {
-    CameraUtils::SerialNumber( params, serialno );
-  }
-
-  template<typename T>
-  static void Index( const T* params, T* index) {
-    CameraUtils::Index( params, index);
-  }
-
-  template<typename T>
-  static void Version( const T* params, T* version) {
-    CameraUtils::Version( params, version);
+  static void SetType() {
+    std::string type_;
+    type_ = "Poly3Camera";
   }
 
   template<typename T>

@@ -56,63 +56,18 @@ class CameraImpl : public CameraInterface<Scalar> {
     Derived::Scale( s, this->params_.data() );
   }
 
-  /** Get version, type, sn, idx, name. */
-  int
-  Version() const override {
-    int version;
-    Derived::Version(this->params_.data(), version);
-    return version;
-  }
-
-  std::string
-  Type() const override {
-    std::string type;
-    Derived::Type(this->params_.data(), type);
-    return type;
-  }
-
-  uint64_t
-  SerialNumber() const override {
-    uint64_t serialno;
-    Derived::SerialNumber(this->params_.data(), serialno);
-    return serialno;
-  }
-
-  /** Camera index (for multi-camera rigs). */
-  int
-  Index() const override {
-    int idx;
-    Derived::Index(this->params_.data(), idx);
-    return idx;
-  }
-
-  /** Camera name, e.g. "Left". */
-  std::string
-  Name() const override {
-    std::string name;
-    Derived::Name(this->params_.data(), name);
-    return name;
-  }
-
-  /*
-  void SetVersion( int nVersion ) {
-    m_pCam->SetVersion( nVersion );
-  }
-
-  void SetSerialNumber( const uint64_t nSerialNo ) {
-    m_pCam->SetSerialNumber( nSerialNo );
-  }
-
-  void SetIndex( const int nIndex ) {
-    m_pCam->SetIndex( nIndex );
-  }
-
-  void SetName( const std::string& sName ) {
-    m_pCam->SetName( sName );
-  }
-  */
 
   /** Model-dependent operations. */
+  void
+  SetGenericParams() {
+    Derived::SetGenericParams();
+  }
+
+  void
+  SetType() {
+    Derived::SetType();
+  }
+
   Vec3t
   Unproject(const Vec2t& pix) const override {
     Vec3t ray;

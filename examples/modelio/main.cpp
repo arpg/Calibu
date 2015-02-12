@@ -8,8 +8,8 @@ using namespace calibu;
 
 void Test1()
 {
-    CameraRig rig = ReadXmlRig("cameras.xml");
-    CameraModel cam = rig.cameras[0].camera;
+    Rig rig = ReadXmlRig("cameras.xml");
+    CameraInterface cam = rig.cameras_[0];
 
     Eigen::Vector2d p;
     Eigen::Vector3d P;
@@ -26,12 +26,12 @@ void Test1()
 
 void Test2()
 {
-    CameraRigT<float> rig = ReadXmlRig("cameras.xml");
+    Rig<float> rig = ReadXmlRig("cameras.xml");
     
-    for(size_t i=0; i< rig.cameras.size(); ++i) {
-        CameraModelGeneric<float>& cam = rig.cameras[i].camera;
-        cam.PrintInfo();
-        std::cout << "    Params       = " << cam.GenericParams().transpose() << std::endl;
+    for(size_t i=0; i< rig.cameras_.size(); ++i) {
+        CameraInterface<float>& cam = rig.cameras_[i];
+        // cam.PrintInfo();
+        std::cout << "    Params       = " << cam.GetParams().transpose() << std::endl;
     }    
 }
 

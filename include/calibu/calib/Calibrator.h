@@ -98,7 +98,7 @@ public:
     /// Write XML file containing configuration of camera rig.
     void WriteCameraModels(const std::string filename)
     {
-        CameraRig rig;
+        Rig rig;
         
         for(size_t c=0; c<m_camera.size(); ++c) {
             rig.Add(m_camera[c]->camera, m_camera[c]->T_ck.inverse());
