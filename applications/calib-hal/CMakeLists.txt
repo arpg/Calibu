@@ -14,9 +14,6 @@ find_package( HAL 0.1 QUIET )
 find_package( PbMsgs )
 include_directories( ${HAL_INCLUDE_DIRS} )
 
-find_package( Protobuf REQUIRED )
-include_directories( ${PROTOBUF_INCLUDE_DIR} )
-
 # git clone https://ceres-solver.googlesource.com/ceres-solver
 list(APPEND SEARCH_HEADERS ${EIGEN3_INCLUDE_DIR}) # Help Ceres find Eigen
 find_package( Ceres 1.6.0 QUIET )
@@ -25,7 +22,7 @@ include_directories( ${CERES_INCLUDES} )
 find_package( OpenCV2 QUIET )
 include_directories( ${OpenCV2_INCLUDES} )
 
-find_package( CVARS REQUIRED )
+find_package( CVARS )
 include_directories( ${CVARS_INCLUDE_DIR} )
 
 # This depends on HAL, which in turns depends on Calibu, so we disable this by default
@@ -36,12 +33,10 @@ if(BUILD_CALIBGRID_HAL AND Pangolin_FOUND AND Ceres_FOUND AND HAL_FOUND AND Open
     target_link_libraries( calibgrid-hal ${CERES_LIBRARIES} )
     target_link_libraries( calibgrid-hal ${Pangolin_LIBRARIES} )
     target_link_libraries( calibgrid-hal ${Calibu_LIBRARIES} )
-    target_link_libraries( calibgrid-hal ${PROTOBUF_LIBRARY} )
     target_link_libraries( calibgrid-hal ${HAL_LIBRARIES} )
     target_link_libraries( calibgrid-hal ${CVARS_LIBRARY} )
     target_link_libraries( calibgrid-hal ${OpenCV2_LIBRARIES} )
     target_link_libraries( calibgrid-hal ${PbMsgs_LIBRARY} )
-    target_link_libraries( calibgrid-hal ${CVARS_LIBRARIES} )
 
     install(TARGETS calibgrid-hal
         EXPORT CalibuTargets

@@ -60,7 +60,7 @@ inline void glDrawTarget( const TargetInterface& t, const Eigen::Vector2d& offse
     {
         const Eigen::Vector2d p = t.Circles2D()[i] * scale + offset;
         pangolin::glColorBin(i,t.Circles2D().size(),sat,val);
-        pangolin::glDrawCircle(p,r);
+        pangolin::glDrawCircle(p(1), p(0),r);
     }
 }
 
@@ -75,7 +75,7 @@ inline void glDrawTarget( const std::vector<int>& map, const TargetInterface& ta
         {
             const Eigen::Vector2d p = target.Circles2D()[t] * scale + offset;
             pangolin::glColorBin(t,target.Circles2D().size(),sat,val);
-            pangolin::glDrawCircle(p,r);
+            pangolin::glDrawCircle(p(1), p(0), r);
         }
     }
 }

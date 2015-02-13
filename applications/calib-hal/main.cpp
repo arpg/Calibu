@@ -84,11 +84,13 @@ const char* sUriInfo =
 void saveGrid(const TargetGridDot& grid, const std::string& filename,
               double large, double small);
 static inline Eigen::MatrixXi GWUSmallGrid();
+static inline Eigen::MatrixXi SmallGrid();
 static inline Eigen::MatrixXi GoogleLargeGrid();
 
 enum GridPreset {
   GridPresetGWUSmall  = 0,  // 19x10 grid at GWU
   GridPresetGoogleLarge = 1,  // 25x36 from Google folks
+  GridPresetApril = 2,  // 19x10 with APRIL tags
 };
 
 int main(int argc, char** argv)
@@ -107,7 +109,7 @@ int main(int argc, char** argv)
     // Default configuration values
 
     // Default grid printed on US Letter
-    int grid_preset = GridPresetGWUSmall;
+    int grid_preset = GridPresetApril;
     double grid_spacing;
     int grid_rows;
     int grid_cols;
@@ -142,6 +144,14 @@ int main(int argc, char** argv)
         grid_rows = 10; // grid dots
         grid_cols = 19; // grid dots
         grid_seed = 71;
+        break;
+      case GridPresetApril:
+        grid_spacing = 0.254 / 18;  // meters
+        grid_large_rad = 0.00423; // m
+        grid_small_rad = 0.00283; // m
+        grid_rows = 10; // grid dots
+        grid_cols = 19; // grid dots
+        grid_seed = 14;
         break;
       case GridPresetGoogleLarge:
         grid_spacing = 0.03156;  // meters
@@ -178,6 +188,8 @@ int main(int argc, char** argv)
         target.reset(new TargetGridDot(grid_spacing, GoogleLargeGrid()));
     else if(grid_preset == GridPresetGWUSmall)
         target.reset(new TargetGridDot(grid_spacing, GWUSmallGrid()));
+    else if(grid_preset == GridPresetApril)
+      target.reset(new TargetGridDot(grid_spacing, SmallGrid()));
     else
         target.reset(new TargetGridDot(grid_spacing, grid_size, grid_seed));
 
@@ -381,7 +393,7 @@ int main(int argc, char** argv)
     pangolin::RegisterKeyPressCallback(']', [&](){calibrator.Stop();} );
 
     bool step = false;
-    pangolin::RegisterKeyPressCallback(pangolin::PANGO_SPECIAL + pangolin::PANGO_KEY_RIGHT, [&](){step = true;} );
+    pangolin::RegisterKeyPressCallback(pangolin::PANGO_SPECIAL+ pangolin::PANGO_KEY_RIGHT, [&](){step = true;} );
     pangolin::RegisterKeyPressCallback(' ', [&](){run = !run;} );
 
     pangolin::RegisterKeyPressCallback('r', [&](){calibrator.PrintResults();} );
@@ -557,6 +569,23 @@ void saveGrid(const TargetGridDot& grid, const std::string& filename,
   const Eigen::Vector2d offset(0,0);
   grid.SaveEPS(filename, offset, small, large, pts_per_unit);
   std::cout << "File " << filename << " saved" << std::endl;
+}
+
+inline Eigen::MatrixXi SmallGrid() {
+  Eigen::MatrixXi m(10, 19);
+  m <<
+       1, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1,
+       1, 0, 0, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1,
+       1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 1, 1,
+       1, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1,
+       1, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1, 1, 0, 0, 1, 0, 1,
+       0, 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1, 0, 0, 1, 1, 1, 0, 0,
+       0, 0, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0,
+       1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0,
+       0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 1, 0, 1, 1, 1, 0, 0,
+       1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 0;
+  std::cout << "Small grid: "<<m.rows()<<"x"<<m.cols()<<std::endl;
+  return m;
 }
 
 inline Eigen::MatrixXi GWUSmallGrid() {
