@@ -138,7 +138,7 @@ CALIBU_EXPORT
 void WriteXmlRig(const std::string& filename, const CameraRig& rig);
 
 CALIBU_EXPORT
-CameraRig ReadXmlRig(const std::string& filename);
+Rig ReadXmlRig(const std::string& filename);
 
 template<typename Scalar>
 inline void LoadRig(const std::string& filename, Rig<Scalar>* rig) {

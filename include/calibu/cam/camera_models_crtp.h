@@ -143,12 +143,7 @@ class LinearCamera : public CameraImpl<Scalar, 4, LinearCamera<Scalar> > {
   }
 
   template<typename T>
-  static void SetGenericParams() {
-    /// TODO
-  }
-
-  template<typename T>
-  static void SetType() {
+  static void SetType(){
     std::string type_;
     type_ = "LinearCamera";
   }
@@ -209,11 +204,6 @@ class FovCamera : public CameraImpl<Scalar, 5, FovCamera<Scalar> > {
   template<typename T>
   static void Scale( const T scale, T* params ) {
     CameraUtils::Scale( scale, params );
-  }
-
-  template<typename T>
-  static void SetGenericParams() {
-    /// TODO
   }
 
   template<typename T>
@@ -489,11 +479,6 @@ class Poly3Camera : public CameraImpl<Scalar, 7, Poly3Camera<Scalar> > {
   template<typename T>
   static void Scale( const T* scale, T* params ) {
     CameraUtils::Scale( scale, params );
-  }
-
-  template<typename T>
-  static void SetGenericParams() {
-    /// TODO
   }
 
   template<typename T>

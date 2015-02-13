@@ -42,31 +42,6 @@ class CameraInterface {
       image_size_(other.image_size_), params_(other.params_) {}
   virtual ~CameraInterface() {}
 
-  /** Metadata member functions from CameraModelInterface.h (non-CRTP). */
-  virtual std::string Type() const = 0;
-
-  virtual std::string Name() const = 0;
-
-  virtual uint64_t SerialNumber() const = 0;
-
-  virtual int Index() const = 0;
-
-  virtual int Version() const = 0;
-
-  virtual void SetGenericParams() = 0;
-
-  virtual void SetType() = 0;
-
-  virtual void SetName( const std::string& sName ) = 0;
-
-  virtual void SetSerialNumber( const uint64_t nSerialNo ) const = 0;
-
-  virtual void SetIndex( const int nIndex ) const = 0;
-
-  virtual void SetVersion( int nVersion ) = 0;
-
-  virtual void SetImageDimensions( const int sWidth, const int sHeight ) = 0;
-
   /** Change camera model image size. */
   virtual void Scale( const Scalar s) const = 0;
 
@@ -146,17 +121,20 @@ class CameraInterface {
     return d_project_dparams + dtransfer3d_dray * dray_dparams;
   }
 
+  /** Metadata member functions from CameraModelInterface.h (non-CRTP). */
+  virtual void SetType() = 0;
+
   /// TODO comments please
   const Eigen::VectorXd& GetParams() const {
     return params_;
   }
 
-  /// TODO comments please
+  /// TODO comments please -- why are there const & non-const versions?
   Eigen::VectorXd& GetParams() {
     return params_;
   }
 
-  /// TODO comments please
+  /** Camera parameters (Formerly "GenericParams"). */
   void SetParams(const Eigen::VectorXd& new_params) {
     params_ = new_params;
   }
@@ -185,6 +163,11 @@ class CameraInterface {
   std::string
   Type() const {
     return type_;
+  }
+
+  Eigen::Matrix<Scalar,3,3>
+  RDF() const {
+    return rdf_;
   }
 
   uint64_t
@@ -225,6 +208,10 @@ class CameraInterface {
   void SetImageDimensions( const int sWidth, const int sHeight ) {
     image_size_[0] = sWidth;
     image_size_[1] = sHeight;
+  }
+
+  void SetRDF(const Eigen::Matrix<Scalar, 3, 3>& sRDF) {
+    rdf_ = sRDF;
   }
 
  protected:
