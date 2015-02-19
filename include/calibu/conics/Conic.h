@@ -28,7 +28,7 @@
 
 #include <calibu/Platform.h>
 #include <calibu/utils/Rectangle.h>
-#include <calibu/cam/CameraModel.h>
+#include <calibu/cam/camera_crtp.h>
 
 namespace calibu {
 
@@ -63,7 +63,7 @@ std::pair<Eigen::Vector3d,Eigen::Matrix3d > PlaneFromConics(
     const Eigen::Matrix3d& K, double inlier_threshold
                                                             );
 CALIBU_EXPORT
-Conic UnmapConic( const Conic& c, const CameraModelInterface& cam );
+Conic UnmapConic( const Conic& c, const CameraInterface<double>& cam );
 
 /** Returns the major and minor axes lengths of the conic */
 CALIBU_EXPORT

@@ -9,7 +9,7 @@ set(CALIBU_VERSION_MAJOR 0)
 set(CALIBU_VERSION_MINOR 1)
 set(CALIBU_VERSION ${CALIBU_VERSION_MAJOR}.${CALIBU_VERSION_MINOR})
 
-option(BUILD_APPLICATIONS "Build Applications" ON)
+option(BUILD_APPLICATIONS "Build Applications" OFF)
 option(BUILD_MATLAB "Build Matlab Wrappers" OFF)
 option(BUILD_SHARED_LIBS "Build Shared Library" ON)
 

@@ -1,4 +1,6 @@
-/* 
+#if 0
+
+/*
    This file is part of the Calibu Project.
    https://github.com/gwu-robotics/Calibu
    
@@ -21,15 +23,16 @@
 
 #include <calibu/cam/Rectify.h>
 #include <calibu/cam/StereoRectify.h>
+#include <calibu/cam/camera_crtp.h>
 #include <calibu/utils/Range.h>
 
 namespace calibu
 {
 
-calibu::CameraModelT<Pinhole> CreateScanlineRectifiedLookupAndCameras(
+calibu::CameraInterface<4> CreateScanlineRectifiedLookupAndCameras(
         const Sophus::SE3d& T_rl,
-        const calibu::CameraModelInterface& cam_left,
-        const calibu::CameraModelInterface& cam_right,
+        const calibu::CameraInterface& cam_left,
+        const calibu::CameraInterface& cam_right,
         Sophus::SE3d& T_nr_nl,        
         LookupTable& left_lut,
         LookupTable& right_lut
@@ -81,7 +84,7 @@ calibu::CameraModelT<Pinhole> CreateScanlineRectifiedLookupAndCameras(
     const double v0 = -fv * range_height.minr;
     
     // Setup new camera
-    calibu::CameraModelT<Pinhole> new_cam(cam_left.Width(),cam_left.Height());
+    calibu::CameraInterface<4> new_cam(cam_left.Width(),cam_left.Height());
     new_cam.Params() << fu, fv, u0, v0;
  
     // Homographies which should be applied to left and right images to scan-line rectify them
@@ -95,3 +98,4 @@ calibu::CameraModelT<Pinhole> CreateScanlineRectifiedLookupAndCameras(
 
 }
 
+#endif

@@ -30,6 +30,7 @@
 #include <calibu/conics/Conic.h>
 #include <calibu/pose/Ransac.h>
 #include <calibu/utils/Utils.h>
+#include <calibu/cam/camera_crtp.h>
 
 using namespace std;
 using namespace Eigen;
@@ -609,7 +610,7 @@ Matrix3d RansacHomogModelFunction( const std::vector<int>& indices, RansacMatchD
 
 bool TargetRandomDot::FindTarget(
         const Sophus::SE3d& T_cw,
-        const CameraModelInterface& cam,
+        const CameraInterface<double>& cam,
         const ImageProcessing& images,
         const vector<Conic, Eigen::aligned_allocator<Conic> >& conics,
         vector<int>& conics_target_map
@@ -653,12 +654,12 @@ Vector3d nd_b(const Sophus::SE3d& T_ba, const Vector3d& n_a)
 
 Eigen::Vector3d IntersectCamFeaturePlane(
         const Eigen::Vector2d& p,
-        const CameraModelInterface & cam,
+        const CameraInterface<double>& cam,
         const Sophus::SE3d& T_wk,
         const Eigen::Vector4d& N_w
         )
 {
-    const Vector3d nd_k = nd_b(T_wk.inverse(), Project(N_w));
+    const Vector3d nd_k = nd_b(T_wk.inverse(), cam.Project(N_w));
     const Vector3d kinvp = cam.Unproject(p);
     const double denom = nd_k.dot(kinvp);
     if( denom !=0 ) {
@@ -672,7 +673,7 @@ Eigen::Vector3d IntersectCamFeaturePlane(
 }
 
 bool TargetRandomDot::FindTarget(
-        const CameraModelInterface& cam,
+        const CameraInterface<double>& cam,
         const ImageProcessing& images,
         const vector<Conic, Eigen::aligned_allocator<Conic> >& conics,
         vector<int>& conics_target_map
@@ -682,8 +683,8 @@ bool TargetRandomDot::FindTarget(
   const vector<Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> >& tpts = this->tpts;
   vector<Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> >  mpts;
 
-    pair<Vector3d,Matrix3d > plane = PlaneFromConics(conics,radius,cam.K(), params.plane_inlier_thresh);
-    const Vector4d N_w = Unproject(plane.first) / (plane.first).norm();
+    pair<Vector3d,Matrix3d > plane = PlaneFromConics(conics,radius,cam.GetParams(), params.plane_inlier_thresh);
+    const Vector4d N_w = cam.Unproject(plane.first) / (plane.first).norm();
 
     if( !is_finite(N_w) )
         return false;

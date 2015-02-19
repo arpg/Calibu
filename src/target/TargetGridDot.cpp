@@ -21,6 +21,7 @@
 
 #include <calibu/target/TargetGridDot.h>
 #include <calibu/target/RandomGrid.h>
+#include <calibu/cam/camera_crtp.h>
 
 #include <map>
 #include <set>
@@ -268,7 +269,7 @@ void FindTriples( Vertex& v, std::vector<Dist>& closest, double thresh_dist, dou
 
 bool TargetGridDot::FindTarget(
         const Sophus::SE3d& T_cw,
-        const CameraModelInterface& cam,
+        const CameraInterface<double>& cam,
         const ImageProcessing& images,
         const std::vector<Conic, Eigen::aligned_allocator<Conic> >& conics,
         std::vector<int>& ellipse_target_map
@@ -279,7 +280,7 @@ bool TargetGridDot::FindTarget(
 }
 
 bool TargetGridDot::FindTarget(
-        const CameraModelInterface& cam,
+        const CameraInterface<double>& cam,
         const ImageProcessing& images,
         const std::vector<Conic, Eigen::aligned_allocator<Conic> >& conics,
         std::vector<int>& ellipse_target_map

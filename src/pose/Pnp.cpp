@@ -31,7 +31,7 @@ using namespace Eigen;
 namespace calibu {
 
 vector<int> PosePnPRansac(
-    const CameraModelInterface& cam,
+    const CameraInterface& cam,
     const std::vector<Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> >& img_pts,
     const std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& ideal_pts,
     const vector<int> & candidate_map,
@@ -57,7 +57,7 @@ vector<int> PosePnPRansac(
         {
             // TODO: This is really bad for cameras > 180 FOV
             //       Replace with PNP for general camera.
-            const Eigen::Vector2d center = Project(cam.Unproject(img_pts[i]));
+            const Eigen::Vector2d center = cam.Project(cam.Unproject(img_pts[i]));
             // const Eigen::Vector2d center = cam.Unmap(img_pts[i]);
             const Eigen::Vector3d & c3d = ideal_pts[ideal_point_id];
             cv_img.push_back(cv::Point2f(center.x(), center.y()));
@@ -108,7 +108,7 @@ int CountInliers(const vector<int> & conics_target_map)
     return inliers;
 }
 
-double ReprojectionErrorRMS(const CameraModelInterface& cam,
+double ReprojectionErrorRMS(const CameraInterface& cam,
                             const Sophus::SE3d& T_cw,
                             const std::vector<Eigen::Vector3d,
                             Eigen::aligned_allocator<Eigen::Vector3d> >& pts3d,

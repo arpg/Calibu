@@ -3,8 +3,8 @@
    https://github.com/arpg/Calibu
 
    Copyright (C) 2015 University of Colorado at Boulder,
-                      Christoffer Heckman,
                       Steven Lovegrove,
+                      Christoffer Heckman,
                       Gabe Sibley
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -31,10 +31,10 @@
 namespace calibu
 {
 
-const std::string NODE_RIG           = "rig";
-const std::string NODE_CAMMODEL_POSE = "camera";
-const std::string NODE_CAMMODEL      = "camera_model";
-const std::string NODE_POSE          = "pose";
+const std::string NODE_RIG     	= "rig";
+const std::string NODE_CAM_POSE	= "camera_pose";
+const std::string NODE_CAM      = "camera";
+const std::string NODE_POSE     = "pose";
 
 ///////////////////////////////////////////////////////////////////////////////
 template <class T> inline
@@ -65,7 +65,7 @@ std::string ValToStr( const T& t )
 
 ///////////////////////////////////////////////////////////////////////////////
 CALIBU_EXPORT
-std::string CameraModelType( const std::string& sType );
+std::string CameraType( const std::string& sType );
 
 CALIBU_EXPORT
 std::string IndentStr(int indent);
@@ -77,44 +77,46 @@ CALIBU_EXPORT
 std::string AttribClose(const std::string& attrib);
 
 CALIBU_EXPORT
-void WriteXmlSE3(std::ostream& out, const Sophus::SE3d& t_wc, int indent);
+void WriteXmlSE3(std::ostream& out, const Sophus::SE3d& t_rc, int indent);
 
 CALIBU_EXPORT
-void WriteXmlCameraModel(std::ostream& out, const calibu::CameraInterface<double>& cam, int indent = 0);
+void WriteXmlCamera(std::ostream& out, const calibu::CameraInterface<double>& cam, int indent = 0);
 
 CALIBU_EXPORT
-void WriteXmlCameraModel(const std::string& filename, const calibu::CameraInterface<double>& cam);
+void WriteXmlCamera(const std::string& filename, const calibu::CameraInterface<double>& cam);
 
 
 ////////////////////////////////////////////////////////////////////////////
-inline void WriteXmlCameraModelAndTransformWithLut(
+inline void WriteXmlCameraAndTransformWithLut(
         std::ostream& out,
         std::string& sLutXmlElement,
-        const calibu::Rig& cop,
+        const calibu::CameraInterface<double>& cam,
+        const Sophus::SE3d& t_rc,
         int indent = 0
         )
 {
     const std::string dd = IndentStr(indent);
-    out << dd << AttribOpen(NODE_CAMMODEL_POSE) << std::endl;
-    WriteXmlCameraModel(out, cop.camera, cip.transform, indent+4);
-    WriteXmlSE3(out, cop.t_wc, indent+4);
+    out << dd << AttribOpen(NODE_CAM_POSE) << std::endl;
+    WriteXmlCameraAndTransform(out, cam, indent+4);
 
     out << dd << sLutXmlElement << std::endl; // LUT, if there is one!
-    out << dd << AttribClose(NODE_CAMMODEL_POSE) << std::endl;
+    out << dd << AttribClose(NODE_CAM_POSE) << std::endl;
 }
 
 
 ///////////////////////////////////////////////////////////////////////////////
+template <typename Scalar = double>
 CALIBU_EXPORT
-CameraModel ReadXmlCameraModel(const std::string& filename);
+inline
+CameraInterface<Scalar> ReadXmlCamera(const std::string& filename);
 
 ////////////////////////////////////////////////////////////////////////
 
 CALIBU_EXPORT
-void WriteXmlSE3(std::ostream& out, const Sophus::SE3d& t_wc, int indent = 0);
+void WriteXmlSE3(std::ostream& out, const Sophus::SE3d& t_rc, int indent = 0);
 
 CALIBU_EXPORT
-void WriteXmlSE3(const std::string& filename, const Sophus::SE3d& t_wc);
+void WriteXmlSE3(const std::string& filename, const Sophus::SE3d& t_rc);
 
 CALIBU_EXPORT
 Sophus::SE3d ReadXmlSE3(const std::string& filename);
@@ -122,68 +124,51 @@ Sophus::SE3d ReadXmlSE3(const std::string& filename);
 ////////////////////////////////////////////////////////////////////////
 
 CALIBU_EXPORT
-void WriteXmlCameraModelAndTransform(std::ostream& out, const calibu::Rig& cop, int indent = 0);
+void WriteXmlCameraAndTransform(std::ostream& out, const calibu::CameraInterface<double>& cop, int indent = 0);
 
 CALIBU_EXPORT
-void WriteXmlCameraModelAndTransform(const std::string& filename, const calibu::Rig& cop);
+void WriteXmlCameraAndTransform(const std::string& filename, const calibu::CameraInterface<double>& cop);
 
+template<typename Scalar = double>
 CALIBU_EXPORT
-CameraModelAndTransform ReadXmlCameraModelAndTransform(const std::string& filename);
+inline
+CameraInterface<Scalar> ReadXmlCameraAndTransform(const std::string& filename);
 
 ////////////////////////////////////////////////////////////////////////
 CALIBU_EXPORT
-void WriteXmlRig(std::ostream& out, const CameraRig& rig, int indent = 0);
+void WriteXmlRig(std::ostream& out, const Rig<double>& rig, int indent = 0);
 
 CALIBU_EXPORT
-void WriteXmlRig(const std::string& filename, const CameraRig& rig);
+void WriteXmlRig(const std::string& filename, const Rig<double>& rig);
 
+template<typename Scalar = double>
 CALIBU_EXPORT
-Rig ReadXmlRig(const std::string& filename);
+inline
+Rig<Scalar> ReadXmlRig(const std::string& filename);
 
-template<typename Scalar>
-inline void LoadRig(const std::string& filename, Rig<Scalar>* rig) {
-  CameraRigT<Scalar> old_rig = calibu::ReadXmlRig(filename);
-  for (auto& cam_and_transform: old_rig.cameras) {
-    if (cam_and_transform.Type() == "calibu_fu_fv_u0_v0_w") {
-      return new calibu::FovCamera<Scalar>(
-            cam_and_transform.GenericParams(),
-            Eigen::Vector2i(old_cam.Width(), old_cam.Height()));
-    } else if (cam_and_transform.Type() == "calibu_fu_fv_u0_v0") {
-      return new calibu::LinearCamera<Scalar>(
-            cam_and_transform.GenericParams(),
-            Eigen::Vector2i(old_cam.Width(), old_cam.Height()));
-    } else if (cam_and_transform.Type() == "calibu_fu_fv_u0_v0_k1_k2_k3") {
-      return new calibu::Poly3Camera<Scalar>(
-            cam_and_transform.GenericParams(),
-            Eigen::Vector2i(old_cam.Width(), old_cam.Height()));
-    } else {
-      std::cerr << "Unknown old camera type " << old_cam.Type() << " please "
-          " implement this camera before initializing it using the "
-          " crtp camera system." << std::endl;
-      throw 0;
-     }
-    rig->AddCamera(CreateFromOldCamera(cam_and_transform.camera),
-                   cam_and_transform.T_wc);
-  }
-}
+//template<typename Scalar>
+//Rig ReadXmlRig(const std::string& filename) {
+//for (auto& cam_and_transform: calibu::ReadXmlRig(filename)) {
+//    if (cam_and_transform.Type() == "calibu_fu_fv_u0_v0_w") {
+//      return new calibu::FovCamera<Scalar>(
+//            cam_and_transform.Params(),
+//            Eigen::Vector2i(cam_and_transform.Width(), cam_and_transform.Height()));
+//    } else if (cam_and_transform.Type() == "calibu_fu_fv_u0_v0") {
+//      return new calibu::LinearCamera<Scalar>(
+//            cam_and_transform.Params(),
+//            Eigen::Vector2i(cam_and_transform.Width(), cam_and_transform.Height()));
+//    } else if (cam_and_transform.Type() == "calibu_fu_fv_u0_v0_k1_k2_k3") {
+//      return new calibu::Poly3Camera<Scalar>(
+//            cam_and_transform.Params(),
+//            Eigen::Vector2i(cam_and_transform.Width(), cam_and_transform.Height()));
+//    } else {
+//      std::cerr << "Unknown old camera type " << old_cam.Type() << " please "
+//          " implement this camera before initializing it using the "
+//          " crtp camera system." << std::endl;
+//      throw 0;
+//     }
+//    rig->AddCamera(cam_and_transform);
+//}
+//}
 
-template<typename Scalar>
-inline CameraInterface<Scalar>* CreateFromOldCamera(
-    const CameraModelGeneric<Scalar>& cam) {
-}
-
-template<typename Scalar>
-inline CameraInterface<Scalar>* LoadCamera(
-    const std::string& filename) {
-  CameraRigT<Scalar> old_rig = calibu::ReadXmlRig(filename);
-  if (old_rig.cameras.size() == 0) {
-    std::cerr << "No cameras found in rig." << std::endl;
-    throw 0;
-  }
-  auto& cam_and_transform = old_rig.cameras[0];
-  return CreateFromOldCamera(cam_and_transform.camera,
-                             cam_and_transform.T_wc);
-
-
-}
 } // namespace calibu

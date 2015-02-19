@@ -22,9 +22,7 @@
 #pragma once
 
 #include <calibu/Platform.h>
-#include <calibu/cam/camera_crtp.h>
-#include <calibu/cam/camera_crtp_impl.h>
-#include <calibu/cam/camera_models_crtp.h>
+#include <calibu/cam/CameraModel.h>
 #include <Eigen/Eigen>
 #include <Eigen/StdVector>
 #include <sophus/se3.hpp>
@@ -44,9 +42,9 @@ class CameraModelAndTransformT
     {
     }
 
-    CameraModelAndTransformT( const CameraInterface<Scalar>& camera,
-                              const Sophus::SE3Group<Scalar>& t_wc )
-        : camera(camera), t_wc(t_wc)
+    CameraModelAndTransformT( const CameraModelGeneric<Scalar>& camera,
+                              const Sophus::SE3Group<Scalar>& T_wc )
+        : camera(camera), T_wc(T_wc)
     {
 
     }
@@ -55,11 +53,11 @@ class CameraModelAndTransformT
     template<typename T>
     CameraModelAndTransformT(const CameraModelAndTransformT<T>& other) {
         camera = other.camera;
-        t_wc = other.t_wc.template cast<Scalar>();
+        T_wc = other.T_wc.template cast<Scalar>();
     }
 
-    CameraInterface<Scalar> camera;
-    Sophus::SE3Group<Scalar> t_wc;
+    CameraModelGeneric<Scalar> camera;
+    Sophus::SE3Group<Scalar> T_wc;
 };
 typedef CameraModelAndTransformT<double> CameraModelAndTransform;
 
@@ -83,10 +81,10 @@ public:
     void Add(const CameraModelAndTransformT<Scalar>& cop) {
         cameras.push_back(cop);
     }
-    void Add(const CameraModelInterfaceT<Scalar>& cam, const Sophus::SE3Group<Scalar>& t_wc) {
+    void Add(const CameraModelInterfaceT<Scalar>& cam, const Sophus::SE3Group<Scalar>& T_wc) {
         CameraModelAndTransformT<Scalar> cop;
-        cop.cameras = CameraInterface<Scalar>(cam);
-        cop.t_wc = t_wc;
+        cop.camera = CameraModelGeneric<Scalar>(cam);
+        cop.T_wc = T_wc;
         cameras.push_back(cop);
     }
 

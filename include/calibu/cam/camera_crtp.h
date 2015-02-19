@@ -1,10 +1,12 @@
 /*
   This file is part of the Calibu Project.
-  https://github.com/gwu-robotics/Calibu
+  https://github.com/arpg/Calibu
 
   Copyright (C) 2013 George Washington University,
+  Copyright (C) 2015 University of Colorado,
   Steven Lovegrove,
-  Nima Keivan
+  Nima Keivan,
+  Christoffer Heckman,
   Gabe Sibley
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,24 +24,30 @@
 #pragma once
 #include <Eigen/Eigen>
 #include <sophus/se3.hpp>
+#include <vector>
 
 namespace calibu {
 
 /*
-  CameraInterface is the top-level pure-virtual interface class all cameras must honor.
+  CameraInterface is the top-level mostly pure-virtual interface
+  class all cameras must honor.
 */
 
 template<typename Scalar = double>
 class CameraInterface {
- protected:
+protected:
   typedef Eigen::Matrix<Scalar, 2, 1> Vec2t;
   typedef Eigen::Matrix<Scalar, 3, 1> Vec3t;
   typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> VecXt;
   typedef Sophus::SE3Group<Scalar> SE3t;
 
- public:
+public:
   CameraInterface(const CameraInterface<Scalar>& other) :
-      image_size_(other.image_size_), params_(other.params_) {}
+          image_size_(other.image_size_), params_(other.params_),
+          rdf_(other.rdf_), version_(other.version_),
+          serialNo_(other.serialNo_), name_(other.name_), type_(other.type_)
+
+  {}
   virtual ~CameraInterface() {}
 
   /** Change camera model image size. */
@@ -75,7 +83,7 @@ class CameraInterface {
                    const Vec3t& ray,
                    const Scalar rho) const {
     const Vec3t ray_dehomogenized =
-        t_ba.rotationMatrix() * ray + rho * t_ba.translation();
+                    t_ba.rotationMatrix() * ray + rho * t_ba.translation();
     return Project(ray_dehomogenized);
   }
 
@@ -88,40 +96,40 @@ class CameraInterface {
                                                const Scalar rho) const {
     const Eigen::Matrix<Scalar, 3, 3> rot_matrix = t_ba.rotationMatrix();
     const Vec3t ray_dehomogenized =
-        rot_matrix * ray + rho * t_ba.translation();
+                    rot_matrix * ray + rho * t_ba.translation();
     const Eigen::Matrix<Scalar, 2, 3> dproject_dray =
-        dProject_dray(ray_dehomogenized);
+                    dProject_dray(ray_dehomogenized);
     Eigen::Matrix<Scalar, 2, 4> dtransfer3d_dray;
     dtransfer3d_dray.template topLeftCorner<2, 3>() =
-        dproject_dray * rot_matrix;
+                    dproject_dray * rot_matrix;
     dtransfer3d_dray.col(3) = dproject_dray * t_ba.translation();
     return dtransfer3d_dray;
   }
 
   /// TODO comments please
   Eigen::Matrix<Scalar, 2, Eigen::Dynamic> dTransfer_dparams(
-      const SE3t& t_ba,
-      const Vec2t& pix,
-      const Scalar rho) const
+                  const SE3t& t_ba,
+                  const Vec2t& pix,
+                  const Scalar rho) const
   {
     const Vec3t ray = Unproject(pix);
     const Eigen::Matrix<Scalar, 3, 3> rot_matrix = t_ba.rotationMatrix();
     const Vec3t ray_dehomogenized =
-        rot_matrix * ray + rho * t_ba.translation();
+                    rot_matrix * ray + rho * t_ba.translation();
     const Eigen::Matrix<Scalar, 2, 3> dproject_dray =
-        dProject_dray(ray_dehomogenized);
+                    dProject_dray(ray_dehomogenized);
     const Eigen::Matrix<Scalar, 2, 3> dtransfer3d_dray =
-        dproject_dray * rot_matrix;
+                    dproject_dray * rot_matrix;
     const Eigen::Matrix<Scalar, 3, Eigen::Dynamic> dray_dparams =
-        dUnproject_dparams(pix);
+                    dUnproject_dparams(pix);
 
     const Eigen::Matrix<Scalar, 2, Eigen::Dynamic> d_project_dparams =
-        dProject_dparams(ray_dehomogenized);
+                    dProject_dparams(ray_dehomogenized);
 
     return d_project_dparams + dtransfer3d_dray * dray_dparams;
   }
 
-  /** Metadata member functions from CameraModelInterface.h (non-CRTP). */
+  /// Metadata member functions from CameraModelInterface.h (non-CRTP).
   virtual void SetType() = 0;
 
   /// TODO comments please
@@ -134,7 +142,7 @@ class CameraInterface {
     return params_;
   }
 
-  /** Camera parameters (Formerly "GenericParams"). */
+  /// Camera parameters (Formerly "GenericParams").
   void SetParams(const Eigen::VectorXd& new_params) {
     params_ = new_params;
   }
@@ -152,6 +160,12 @@ class CameraInterface {
   /// TODO comments please
   unsigned int Height() const {
     return image_size_[1];
+  }
+
+  /// Returns if this CameraInterface is initialized and can be used.
+  // Can we excise this method? --crh
+  bool IsInitialized() const {
+    return 1;
   }
 
   /** Get version, type, sn, idx, name. */
@@ -205,26 +219,47 @@ class CameraInterface {
     version_ = nVersion ;
   }
 
-  void SetImageDimensions( const int sWidth, const int sHeight ) {
-    image_size_[0] = sWidth;
-    image_size_[1] = sHeight;
+  void SetImageDimensions( const int nWidth, const int nHeight ) {
+    image_size_[0] = nWidth;
+    image_size_[1] = nHeight;
   }
 
   void SetRDF(const Eigen::Matrix<Scalar, 3, 3>& sRDF) {
     rdf_ = sRDF;
   }
 
- protected:
+  /// Set the pose of the camera (typically in the "rig" frame).
+  void SetPose( const SE3t& t_rc ) {
+    t_rc_ = t_rc;
+  }
+
+  /// Return camera pose (typically in the "rigs" frame).
+  SE3t Pose() const {
+    return t_rc_;
+  }
+
+
+protected:
   /// TODO comments please big time
   CameraInterface(const Eigen::VectorXd& params_in,
                   const Eigen::Vector2i& image_size)
-      : params_(params_in), image_size_(image_size) {
+          : params_(params_in), image_size_(image_size) {
   }
 
   Eigen::Vector2i image_size_;
 
   // All the camera parameters (fu, fv, u0, v0, ...distortion)
   Eigen::VectorXd params_;
+
+
+  //
+  SE3t t_rc_;
+  Eigen::Matrix<Scalar, 3, 3> rdf_;
+  int version_;
+  int index_;
+  uint64_t serialNo_;
+  std::string name_;
+  std::string type_;
 };
 
 /// this is an important class, right? why?
@@ -232,19 +267,18 @@ template<typename Scalar = double>
 class Rig {
  public:
   /// TODO comments please -- this is called by who?
-  typedef Sophus::SE3Group<Scalar> SE3t;
-  void AddCamera(CameraInterface<Scalar>* cam, const SE3t& t_wc) {
+  Rig() {}
+
+  void AddCamera(CameraInterface<Scalar>* cam) {
     cameras_.push_back(cam);
-    t_wc_.push_back(t_wc);
   }
- 
+
   /// TODO comments please -- this is called by who?
   void Clear() {
     for (CameraInterface<Scalar>* ptr : cameras_) {
       delete ptr;
     }
     cameras_.clear();
-    t_wc_.clear();
   }
 
   ~Rig() {
@@ -252,6 +286,5 @@ class Rig {
   }
 
   std::vector<CameraInterface<Scalar>*> cameras_;
-  std::vector<SE3t> t_wc_;
 };
 }  // namespace calibu

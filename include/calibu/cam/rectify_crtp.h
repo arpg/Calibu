@@ -27,9 +27,8 @@
 
 #include <calibu/Platform.h>
 #include <calibu/cam/camera_crtp.h>
+#include <calibu/cam/camera_crtp_impl.h>
 #include <calibu/utils/Range.h>
-
-#include <calibu/cam/CameraUtils.h> // todo remove this file...
 
 #include <iostream>
 
@@ -140,8 +139,8 @@ namespace calibu
 //      std::cout << "rray:  " << rray.transpose() << std::endl;
 //      double angle = acos( lray.dot(rray)/(lray.norm()*rray.norm()) );
 //      printf( "row %zu,  Angle: %f\n", row, angle*180.0/M_PI );
-      const Vector2d ln = Project( lray );
-      const Vector2d rn = Project( rray );
+      const Vector2d ln = cam.Project( lray );
+      const Vector2d rn = cam.Project( rray );
       range.ExcludeLessThan(ln[0]);
       range.ExcludeGreaterThan(rn[0]);
     }
@@ -154,8 +153,8 @@ namespace calibu
   {
     Range range = Range::Open();
     for(size_t col = 0; col < cam.Width(); ++col) {
-      const Eigen::Vector2d tn = Project(Eigen::Vector3d(Rnl_l*cam.Unproject(Eigen::Vector2d(col,0)) ));
-      const Eigen::Vector2d bn = Project(Eigen::Vector3d(Rnl_l*cam.Unproject(Eigen::Vector2d(col,cam.Height()-1)) ));
+      const Eigen::Vector2d tn = cam.Project(Eigen::Vector3d(Rnl_l*cam.Unproject(Eigen::Vector2d(col,0)) ));
+      const Eigen::Vector2d bn = cam.Project(Eigen::Vector3d(Rnl_l*cam.Unproject(Eigen::Vector2d(col,cam.Height()-1)) ));
       range.ExcludeLessThan(tn[1]);
       range.ExcludeGreaterThan(bn[1]);
     }

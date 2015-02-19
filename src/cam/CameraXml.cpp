@@ -1,9 +1,10 @@
 /*
    This file is part of the Calibu Project.
-   https://github.com/gwu-robotics/Calibu
+   https://github.com/arpg/Calibu
 
-   Copyright (C) 2013 George Washington University,
+   Copyright (C) 2015 University of Colorado at Boulder,
                       Steven Lovegrove,
+                      Christoffer Heckman,
                       Gabe Sibley
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -49,7 +50,7 @@ std::string AttribClose(const std::string& attrib)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-std::string CameraModelType( const std::string& sType )
+std::string CameraType( const std::string& sType )
 {
     // Translate non-standard types
     if( sType == "MVL_CAMERA_WARPED" ) {
@@ -66,13 +67,13 @@ std::string CameraModelType( const std::string& sType )
     }
 }
 
-void WriteXmlCameraModel(std::ostream& out, const CameraInterface& cam, int indent)
+void WriteXmlCamera(std::ostream& out, const CameraInterface<double>& cam, int indent)
 {
     const std::string dd1 = IndentStr(indent);
     const std::string dd2 = IndentStr(indent+4);
     
     out << dd1
-        << "<" << NODE_CAMMODEL << " name=\"" << cam.Name() << "\" "
+        << "<" << NODE_CAM << " name=\"" << cam.Name() << "\" "
         << "index=\"" << cam.Index() << "\" "
         << "serialno=\"" << cam.SerialNumber() << "\" "
         << "type=\"" << cam.Type() << "\" "
@@ -83,28 +84,28 @@ void WriteXmlCameraModel(std::ostream& out, const CameraInterface& cam, int inde
 
     // hmm, is RDF a model parameter or should it be outside thie model, like the pose is? GTS
     out << dd2 << "<!-- Use RDF matrix, [right down forward], to define the coordinate frame convention -->\n";
-    out << dd2 << "<right> " << (Eigen::Vector3d)cam./*RDF()*/.col(0) << " </right>\n";
-    out << dd2 << "<down> " << (Eigen::Vector3d)cam./*RDF()*/.col(1) << " </down>\n";
-    out << dd2 << "<forward> " << (Eigen::Vector3d)cam./*RDF()*/.col(2) << " </forward>\n";
+    out << dd2 << "<right> " << (Eigen::Vector3d)cam.RDF().col(0) << " </right>\n";
+    out << dd2 << "<down> " << (Eigen::Vector3d)cam.RDF().col(1) << " </down>\n";
+    out << dd2 << "<forward> " << (Eigen::Vector3d)cam.RDF().col(2) << " </forward>\n";
     out.precision(7);
     
     out << dd2 << "<!-- Camera parameters ordered as per type name. -->\n";    
-    out << dd2 << "<params> " << cam.GenericParams() << " </params>\n";
+    out << dd2 << "<params> " << (Eigen::VectorXd)cam.GetParams() << " </params>\n";
     
-    out << dd1 << AttribClose(NODE_CAMMODEL) << std::endl;
+    out << dd1 << AttribClose(NODE_CAM) << std::endl;
 }
 
-void WriteXmlCameraModel(const std::string& filename, const CameraInterface& cam)
+void WriteXmlCamera(const std::string& filename, const CameraInterface<double>& cam)
 {
     std::ofstream of(filename);
-    WriteXmlCameraModel(of, cam);
+    WriteXmlCamera(of, cam);
 }
 
-CameraReadXmlCameraModel(TiXmlElement* pEl)
+CameraInterface ReadXmlCamera(TiXmlElement* pEl)
 {    
-    std::string sType = CameraModelType( pEl->Attribute("type"));
+    std::string sType = CameraType( pEl->Attribute("type"));
 
-    CameraModel rCam(sType);
+    CameraInterface rCam(sType);
     if(rCam.IsInitialized()) {
         std::string sVer    = pEl->Attribute("version");
         std::string sName   = pEl->Attribute("name");
@@ -129,7 +130,7 @@ CameraReadXmlCameraModel(TiXmlElement* pEl)
         rCam.SetName( sName );
         rCam.SetIndex( StrToVal<int>(sIndex,0) );
         rCam.SetSerialNumber( StrToVal<long int>(sSerial,-1) );
-        rCam.SetGenericParams( StrToVal<Eigen::VectorXd>(sParams, rCam.GenericParams()) );
+        rCam.SetParams( StrToVal<Eigen::VectorXd>(sParams, rCam.GetParams()) );
         rCam.SetImageDimensions( StrToVal<int>(sWidth), StrToVal<int>(sHeight) );
         Eigen::Matrix3d rdf;
         rdf.col(0) = StrToVal<Eigen::Vector3d>(sR);
@@ -141,40 +142,40 @@ CameraReadXmlCameraModel(TiXmlElement* pEl)
     return rCam;
 }
 
-CameraModel ReadXmlCameraModel(const std::string& filename)
+CameraInterface ReadXmlCamera(const std::string& filename)
 {
     TiXmlDocument doc;
     if(doc.LoadFile(filename)) {
-        TiXmlElement* pEl = doc.FirstChildElement(NODE_CAMMODEL);
+        TiXmlElement* pEl = doc.FirstChildElement(NODE_CAM);
         if(pEl) {
-            return ReadXmlCameraModel(pEl);
+            return ReadXmlCamera(pEl);
         }
     }
-    return CameraModel();
+    return CameraInterface();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void WriteXmlSE3(std::ostream& out, const Sophus::SE3d& T_wc, int indent)
+void WriteXmlSE3(std::ostream& out, const Sophus::SE3d& t_rc, int indent)
 {
     const std::string dd1 = IndentStr(indent);
     const std::string dd2 = IndentStr(indent+4);
     
     out << dd1 << AttribOpen(NODE_POSE) << std::endl;
     out << dd2 << "<!-- Camera pose. World from Camera point transfer. 3x4 matrix, in the RDF frame convention defined above -->\n";
-    out << dd2 << "<T_wc> " << T_wc.matrix3x4() << " </T_wc>\n";
+    out << dd2 << "<T_rc> " << t_rc.matrix3x4() << " </T_rc>\n";
     out << dd1 << AttribClose(NODE_POSE) << std::endl;
 }
 
-void WriteXmlSE3(const std::string& filename, const Sophus::SE3d& T_wc)
+void WriteXmlSE3(const std::string& filename, const Sophus::SE3d& t_rc)
 {
     std::ofstream of(filename);
-    WriteXmlSE3(of, T_wc);
+    WriteXmlSE3(of, t_rc);
 }
 
 Sophus::SE3d ReadXmlSE3(TiXmlNode* xmlcampose)
 {
-    const std::string val = xmlcampose->FirstChildElement("T_wc")->GetText();
+    const std::string val = xmlcampose->FirstChildElement("T_rc")->GetText();
     Eigen::Matrix4d m = StrToVal<Eigen::Matrix4d>(val);
     return Sophus::SE3d(m);
 }
@@ -183,7 +184,7 @@ Sophus::SE3d ReadXmlSE3(const std::string& filename)
 {
     TiXmlDocument doc;
     if(doc.LoadFile(filename)) {
-        TiXmlNode* pNode = doc.FirstChild(NODE_CAMMODEL);
+        TiXmlNode* pNode = doc.FirstChild(NODE_POSE);
         if(pNode) {
             return ReadXmlSE3(pNode);
         }
@@ -193,88 +194,88 @@ Sophus::SE3d ReadXmlSE3(const std::string& filename)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void WriteXmlCameraModelAndTransform(std::ostream& out, const CameraModelAndTransform& cop, int indent)
+void WriteXmlCameraAndTransform(std::ostream& out, const CameraInterface<double>& cop, int indent)
 {
     const std::string dd = IndentStr(indent);
-    out << dd << AttribOpen(NODE_CAMMODEL_POSE) << std::endl;
-    WriteXmlCameraModel(out, cop.camera, indent+4);
-    WriteXmlSE3(out, cop.T_wc, indent+4);
-    out << dd << AttribClose(NODE_CAMMODEL_POSE) << std::endl;
+    out << dd << AttribOpen(NODE_CAM_POSE) << std::endl;
+    WriteXmlCameraAndTransform(out, cop, indent+4);
+    out << dd << AttribClose(NODE_CAM_POSE) << std::endl;
 }
 
-void WriteXmlCameraModelAndTransform(const std::string& filename, const CameraModelAndTransform& cop)
+void WriteXmlCameraAndTransform(const std::string& filename, const CameraInterface<double>& cop)
 {
     std::ofstream of(filename);
-    WriteXmlCameraModelAndTransform(of, cop);
+    WriteXmlCameraAndTransform(of, cop);
 }
 
-
-CameraModelAndTransform ReadXmlCameraModelAndTransform(TiXmlNode* xmlcampose)
+template <typename Scalar = double>
+inline
+CameraInterface<Scalar> ReadXmlCameraAndTransform(TiXmlNode* xmlcampose)
 {
-    CameraModelAndTransform cop;
+    CameraInterface<Scalar> cop;
     
-    TiXmlElement* xmlcam  = xmlcampose->FirstChildElement(NODE_CAMMODEL);
+    TiXmlElement* xmlcam  = xmlcampose->FirstChildElement(NODE_CAM);
     if(xmlcam) {
-        cop.camera = ReadXmlCameraModel(xmlcam);
+        cop = ReadXmlCamera(xmlcam);
     }
     
     TiXmlNode* xmlpose = xmlcampose->FirstChild(NODE_POSE);
     if(xmlpose) {
-        cop.T_wc = ReadXmlSE3(xmlpose);
+        cop.t_rc_ = ReadXmlSE3(xmlpose);
     }   
  
     return cop;
 }
 
-CameraModelAndTransform ReadXmlCameraModelAndTransform(const std::string& filename)
+CameraInterface<double> ReadXmlCameraAndTransform(const std::string& filename)
 {
     TiXmlDocument doc;
     if(doc.LoadFile(filename)) {
-        TiXmlNode* pNode = doc.FirstChild(NODE_CAMMODEL_POSE);
+        TiXmlNode* pNode = doc.FirstChild(NODE_CAM_POSE);
         if(pNode) {
-            return ReadXmlCameraModelAndTransform(pNode);
+            return ReadXmlCameraAndTransform(pNode);
         }
     }
-    return CameraModelAndTransform();
+    return CameraInterface<double>;
 }
 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void WriteXmlRig(std::ostream& out, const CameraRig& rig, int indent )
+void WriteXmlRig(std::ostream& out, const Rig& rig, int indent )
 {
     const std::string dd = IndentStr(indent);
     
     out << dd << AttribOpen(NODE_RIG) << std::endl;    
-    for(const CameraModelAndTransform& cop : rig.cameras) {
-        WriteXmlCameraModelAndTransform(out, cop, indent + 4);
+    for(const Rig& cop : rig.cameras_) {
+        WriteXmlCameraAndTransform(out, cop, indent + 4);
     }
     out << dd << AttribClose(NODE_RIG) << std::endl;
 }
 
-void WriteXmlRig(const std::string& filename, const CameraRig& rig)
+void WriteXmlRig(const std::string& filename, const Rig& rig)
 {
     std::ofstream of(filename);
     WriteXmlRig(of, rig);
 }
 
 
-CameraRig ReadXmlRig(TiXmlNode* xmlrig)
+Rig ReadXmlRig(TiXmlNode* xmlrig)
 {
-    CameraRig rig;
+    Rig rig;
     
-    for( TiXmlNode* child = xmlrig->FirstChild(NODE_CAMMODEL_POSE); child; child = child->NextSibling(NODE_CAMMODEL_POSE) )
+    for( TiXmlNode* child = xmlrig->FirstChild(NODE_CAM_POSE); child; child = child->NextSibling(NODE_CAM_POSE) )
     {
-        CameraModelAndTransform cap = ReadXmlCameraModelAndTransform(child);
-        if(cap.camera.IsInitialized()) {
-            rig.cameras.push_back(cap);
+        CameraInterface cap = ReadXmlCameraAndTransform(child);
+        if(cap.IsInitialized()) {		// I don't agree with this. --crh
+            rig.cameras_.push_back(cap);
         }
     }    
     
     return rig;
 }
 
-calibu::Rig ReadXmlRig(const std::string& filename)
+Rig ReadXmlRig(const std::string& filename)
 {
     TiXmlDocument doc;
     if(doc.LoadFile(filename)) {
@@ -285,7 +286,7 @@ calibu::Rig ReadXmlRig(const std::string& filename)
     }else{
         std::cerr << doc.ErrorDesc() << ": '" << filename << "'" << std::endl;
     }
-    return CameraRig();
+    return Rig();
 }
 
 }

@@ -26,7 +26,7 @@ namespace calibu
 {
 
   void CreateLookupTable(
-      const calibu::CameraInterface& cam_from,
+      const calibu::CameraInterface<double>& cam_from,
       const Eigen::Matrix3d& R_onKinv,
       Eigen::Matrix<Eigen::Vector2f, Eigen::Dynamic, Eigen::Dynamic>& lookup_warp
       )
@@ -48,7 +48,7 @@ namespace calibu
 
   ///////////////////////////////////////////////////////////////////////////////
   void CreateLookupTable(
-      const calibu::CameraInterface& cam_from,
+      const calibu::CameraInterface<double>& cam_from,
       const Eigen::Matrix3d& R_onKinv,
       LookupTable& lut
       )
