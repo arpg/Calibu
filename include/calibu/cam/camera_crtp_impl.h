@@ -29,6 +29,8 @@
  *
  * Requires the following functions in the derived class:
  * - static void Scale()
+ * - static void SetParams()
+ * - statid void SetType()
  * - static void Unproject(const T* pix, const T* params, T* ray) {
  * - static void Project(const T* ray, const T* params, T* pix) {
  * - static void dProject_dray(const T* ray, const T* params, T* j) {
@@ -59,13 +61,13 @@ class CameraImpl : public CameraInterface<Scalar> {
 
   /** Model-dependent operations. */
   void
-  SetGenericParams() {
-    Derived::SetGenericParams();
+  SetParams(const Scalar s) const override {
+    Derived::SetParams( s );
   }
 
   void
-  SetType() {
-    Derived::SetType();
+  SetType(const Scalar s) const override {
+    Derived::SetType( s );
   }
 
   Vec3t

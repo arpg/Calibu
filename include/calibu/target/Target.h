@@ -42,19 +42,17 @@ public:
     // Returns true on success, false on failure
 
     // Assume approximately known camera and pose
-    template<typename Scalar=double>
     virtual bool FindTarget(
             const Sophus::SE3d& T_cw,
-            const CameraInterface<Scalar>& cam,
+            const std::shared_ptr<CameraInterface<double>> cam,
             const ImageProcessing& images,
             const std::vector<Conic, Eigen::aligned_allocator<Conic> >& conics,
             std::vector<int>& conics_target_map
             ) = 0;
 
     // Assume approximately known camera
-    template<typename Scalar=double>
     virtual bool FindTarget(
-            const CameraInterface<Scalar>& cam,
+            const std::shared_ptr<CameraInterface<double>> cam,
             const ImageProcessing& images,
             const std::vector<Conic, Eigen::aligned_allocator<Conic> >& conics,
             std::vector<int>& conics_target_map

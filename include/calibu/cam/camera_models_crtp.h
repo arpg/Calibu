@@ -143,9 +143,14 @@ class LinearCamera : public CameraImpl<Scalar, 4, LinearCamera<Scalar> > {
   }
 
   template<typename T>
-  static void SetType(){
+  static inline T SetType(){
     std::string type_;
     type_ = "LinearCamera";
+  }
+
+  template<typename T>
+  static inline Eigen::Matrix<T,3,3> K(const T* params) {
+    Eigen::Matrix<T,3,3>::Identity();
   }
 
   template<typename T>
@@ -207,9 +212,18 @@ class FovCamera : public CameraImpl<Scalar, 5, FovCamera<Scalar> > {
   }
 
   template<typename T>
-  static void SetType() {
+  static inline T SetType() {
     std::string type_;
     type_ = "FovCamera";
+  }
+
+  template<typename T>
+  static inline Eigen::Matrix<T,3,3> K(const T* params) {
+    Eigen::Matrix<T,3,3> K;
+    K << params[0], 0, params[2],
+        0, params[1], params[3],
+        0, 0, 1;
+    return K;
   }
 
   // For these derivatives, refer to the camera_derivatives.m matlab file.
@@ -482,7 +496,7 @@ class Poly3Camera : public CameraImpl<Scalar, 7, Poly3Camera<Scalar> > {
   }
 
   template<typename T>
-  static void SetType() {
+  static inline T SetType() {
     std::string type_;
     type_ = "Poly3Camera";
   }

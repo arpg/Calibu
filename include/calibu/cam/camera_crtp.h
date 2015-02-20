@@ -42,7 +42,7 @@ protected:
   typedef Sophus::SE3Group<Scalar> SE3t;
 
 public:
-  CameraInterface(const CameraInterface<Scalar>& other) :
+  CameraInterface(const std::shared_ptr<CameraInterface<Scalar>> other) :
           image_size_(other.image_size_), params_(other.params_),
           rdf_(other.rdf_), version_(other.version_),
           serialNo_(other.serialNo_), name_(other.name_), type_(other.type_)
@@ -52,6 +52,10 @@ public:
 
   /** Change camera model image size. */
   virtual void Scale( const Scalar s) const = 0;
+
+  virtual void SetParams( const Scalar s) const = 0;
+
+  virtual void SetType( const Scalar s) const = 0;
 
   /** Unproject an image location into world coordinates. */
   virtual Vec3t Unproject(const Vec2t& pix) const = 0;
@@ -130,7 +134,10 @@ public:
   }
 
   /// Metadata member functions from CameraModelInterface.h (non-CRTP).
-  virtual void SetType() = 0;
+
+  Eigen::Matrix<Scalar,3,3> K() {
+    return Eigen::Matrix<Scalar,3,3>::Identity();
+  }
 
   /// TODO comments please
   const Eigen::VectorXd& GetParams() const {
@@ -140,11 +147,6 @@ public:
   /// TODO comments please -- why are there const & non-const versions?
   Eigen::VectorXd& GetParams() {
     return params_;
-  }
-
-  /// Camera parameters (Formerly "GenericParams").
-  void SetParams(const Eigen::VectorXd& new_params) {
-    params_ = new_params;
   }
 
   /// TODO comments please
@@ -269,13 +271,13 @@ class Rig {
   /// TODO comments please -- this is called by who?
   Rig() {}
 
-  void AddCamera(CameraInterface<Scalar>* cam) {
+  void AddCamera(std::shared_ptr<CameraInterface<Scalar>> cam) {
     cameras_.push_back(cam);
   }
 
   /// TODO comments please -- this is called by who?
   void Clear() {
-    for (CameraInterface<Scalar>* ptr : cameras_) {
+    for (std::shared_ptr<CameraInterface<Scalar>> ptr : cameras_) {
       delete ptr;
     }
     cameras_.clear();
@@ -285,6 +287,6 @@ class Rig {
     Clear();
   }
 
-  std::vector<CameraInterface<Scalar>*> cameras_;
+  std::vector<std::shared_ptr<CameraInterface<Scalar>>> cameras_;
 };
 }  // namespace calibu

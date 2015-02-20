@@ -27,9 +27,8 @@
 
 namespace calibu {
 
-  template<typename Scalar>
     std::vector<int> PosePnPRansac(
-        const CameraInterface<double>& cam,
+        const std::shared_ptr<CameraInterface<double>> cam,
         const std::vector<Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> > & img_pts,
         const std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > & ideal_pts,
         const std::vector<int> & candidate_map,
@@ -38,9 +37,8 @@ namespace calibu {
         Sophus::SE3d * T
         );
 
-  template<typename Scalar>
     double ReprojectionErrorRMS(
-        const CameraInterface<double>& cam,
+        const std::shared_ptr<CameraInterface<double>> cam,
         const Sophus::SE3d& T_cw,
         const std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& pts3d,
         const std::vector<Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> >& pts2d,

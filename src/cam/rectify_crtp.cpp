@@ -26,8 +26,7 @@ namespace calibu
 {
 
   ///////////////////////////////////////////////////////////////////////////////
-  void CreateLookupTable(
-      const calibu::CameraInterface<double>& cam_from,
+  void CreateLookupTable(const std::shared_ptr<calibu::CameraInterface<double> > cam_from,
       LookupTable& lut
       )
   {
@@ -57,10 +56,10 @@ namespace calibu
     // matrix.  Really we should workout what a good linear model would be
     // based on what portion of the original image is on the z=1 plane (e.g.,
     // cameras with FOV > 180 will need to ignore some pixels).
-    double fu = cam_from.GetParams()[0];
-    double fv = cam_from.GetParams()[1];
-    double u0 = cam_from.GetParams()[2];
-    double v0 = cam_from.GetParams()[3];
+    double fu = cam_from->GetParams()[0];
+    double fv = cam_from->GetParams()[1];
+    double u0 = cam_from->GetParams()[2];
+    double v0 = cam_from->GetParams()[3];
 
     // linear camera model inv(K) matrix
     Eigen::Matrix3d R_onKinv;
@@ -75,13 +74,13 @@ namespace calibu
 
   ///////////////////////////////////////////////////////////////////////////////
   void CreateLookupTable(
-      const calibu::CameraInterface<double>& cam_from,
+      const std::shared_ptr<calibu::CameraInterface<double>> cam_from,
       const Eigen::Matrix3d& R_onKinv,
       LookupTable& lut
       )
   {
-    const int w = cam_from.Width();
-    const int h = cam_from.Height();
+    const int w = cam_from->Width();
+    const int h = cam_from->Height();
 
     // make sure we have mem in the look up table
     lut.m_vLutPixels.resize( w*h );
@@ -91,7 +90,7 @@ namespace calibu
       for( int c = 0; c < w; ++c) {
         // Remap
         const Eigen::Vector3d p_o = R_onKinv * Eigen::Vector3d(c,r,1);
-        Eigen::Vector2d p_warped = cam_from.Project(p_o);
+        Eigen::Vector2d p_warped = cam_from->Project(p_o);
 
         // Clamp to valid image coords. This will cause out of image
         // data to be stretched from nearest valid coords with

@@ -31,7 +31,7 @@ using namespace Eigen;
 namespace calibu {
 
 vector<int> PosePnPRansac(
-    const CameraInterface& cam,
+    const std::shared_ptr<CameraInterface<double>> cam,
     const std::vector<Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> >& img_pts,
     const std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& ideal_pts,
     const vector<int> & candidate_map,
@@ -57,7 +57,7 @@ vector<int> PosePnPRansac(
         {
             // TODO: This is really bad for cameras > 180 FOV
             //       Replace with PNP for general camera.
-            const Eigen::Vector2d center = cam.Project(cam.Unproject(img_pts[i]));
+            const Eigen::Vector2d center = cam->Project(cam->Unproject(img_pts[i]));
             // const Eigen::Vector2d center = cam.Unmap(img_pts[i]);
             const Eigen::Vector3d & c3d = ideal_pts[ideal_point_id];
             cv_img.push_back(cv::Point2f(center.x(), center.y()));
@@ -73,7 +73,7 @@ vector<int> PosePnPRansac(
 
     if(robust_3pt_its > 0) {
         cv::solvePnPRansac(cv_obj, cv_img, cv_K, cv_coeff, cv_rot, cv_trans,
-                           false, robust_3pt_its, robust_3pt_tol / cam.K()(0,0), 60, cv_inliers);
+                           false, robust_3pt_its, robust_3pt_tol / cam->K()(0,0), 60, cv_inliers);
     }else{
         cv::solvePnP(cv_obj, cv_img, cv_K, cv_coeff, cv_rot, cv_trans, false);
     }
@@ -108,7 +108,7 @@ int CountInliers(const vector<int> & conics_target_map)
     return inliers;
 }
 
-double ReprojectionErrorRMS(const CameraInterface& cam,
+double ReprojectionErrorRMS(const std::shared_ptr<CameraInterface<double>> cam,
                             const Sophus::SE3d& T_cw,
                             const std::vector<Eigen::Vector3d,
                             Eigen::aligned_allocator<Eigen::Vector3d> >& pts3d,
@@ -123,7 +123,7 @@ double ReprojectionErrorRMS(const CameraInterface& cam,
         const int ti = map2d_3d[i];
         if( ti >= 0 )
         {
-            const Vector2d t = cam.Project(T_cw * pts3d[ti]);
+            const Vector2d t = cam->Project(T_cw * pts3d[ti]);
             Vector2d err = t - pts2d[i].head<2>();
             sse += (err).squaredNorm();
             ++n;

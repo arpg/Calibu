@@ -51,8 +51,8 @@ class Tracker
 public:
     Tracker(TargetInterface& target, int w, int h);
 
-    template<typename Scalar>    
-    bool ProcessFrame( CameraInterface<Scalar>& cam, unsigned char *I, size_t w, size_t h, size_t pitch );
+    bool ProcessFrame( std::shared_ptr<CameraInterface<double>> cam,
+                       unsigned char *I, size_t w, size_t h, size_t pitch );
     
     const TargetInterface& Target() const {
         return target;

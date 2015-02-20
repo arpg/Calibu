@@ -26,20 +26,20 @@ namespace calibu
 {
 
   void CreateLookupTable(
-      const calibu::CameraInterface<double>& cam_from,
+      const std::shared_ptr<calibu::CameraInterface<double>> cam_from,
       const Eigen::Matrix3d& R_onKinv,
       Eigen::Matrix<Eigen::Vector2f, Eigen::Dynamic, Eigen::Dynamic>& lookup_warp
       )
   {
-    for(size_t r = 0; r < cam_from.Height(); ++r) {
-      for(size_t c = 0; c < cam_from.Width(); ++c) {
+    for(size_t r = 0; r < cam_from->Height(); ++r) {
+      for(size_t c = 0; c < cam_from->Width(); ++c) {
         // Remap
         const Eigen::Vector3d p_o = R_onKinv * Eigen::Vector3d(c,r,1);
-        Eigen::Vector2d p_warped = cam_from.Project(p_o);
+        Eigen::Vector2d p_warped = cam_from->Project(p_o);
 
         // Clamp to valid image coords
-        p_warped[0] = std::min(std::max(0.0, p_warped[0]), cam_from.Width() - 1.0 );
-        p_warped[1] = std::min(std::max(0.0, p_warped[1]), cam_from.Height() - 1.0 );
+        p_warped[0] = std::min(std::max(0.0, p_warped[0]), cam_from->Width() - 1.0 );
+        p_warped[1] = std::min(std::max(0.0, p_warped[1]), cam_from->Height() - 1.0 );
 
         lookup_warp(r,c) = p_warped.cast<float>();
       }
@@ -48,19 +48,19 @@ namespace calibu
 
   ///////////////////////////////////////////////////////////////////////////////
   void CreateLookupTable(
-      const calibu::CameraInterface<double>& cam_from,
+      const std::shared_ptr<calibu::CameraInterface<double>> cam_from,
       const Eigen::Matrix3d& R_onKinv,
       LookupTable& lut
       )
   {
-    const int w = cam_from.Width();
-    const int h = cam_from.Height();
+    const int w = cam_from->Width();
+    const int h = cam_from->Height();
 
     for( int r = 0; r < h; ++r) {
       for( int c = 0; c < w; ++c) {
         // Remap
         const Eigen::Vector3d p_o = R_onKinv * Eigen::Vector3d(c,r,1);
-        Eigen::Vector2d p_warped = cam_from.Project(p_o);
+        Eigen::Vector2d p_warped = cam_from->Project(p_o);
 
         // Clamp to valid image coords. This will cause out of image
         // data to be stretched from nearest valid coords with

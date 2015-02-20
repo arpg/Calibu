@@ -73,18 +73,16 @@ public:
 
     ////////////////////////////////////////////////////////////////////////////
 
-    template<typename Scalar=double>
     bool FindTarget(
             const Sophus::SE3d& T_cw,
-            const CameraInterface<Scalar>& cam,
+            const std::shared_ptr<CameraInterface<double>> cam,
             const ImageProcessing& images,
             const std::vector<Conic, Eigen::aligned_allocator<Conic> >& conics,
             std::vector<int>& ellipse_target_map
             );
 
-    template<typename Scalar=double>
     bool FindTarget(
-            const CameraInterface<Scalar>& cam,
+            const std::shared_ptr<CameraInterface<double>> cam,
             const ImageProcessing& images,
             const std::vector<Conic, Eigen::aligned_allocator<Conic> >& conics,
             std::vector<int>& ellipse_target_map
