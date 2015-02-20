@@ -110,17 +110,20 @@ int main( int argc, char** argv )
     count += 3;
   }
 
-  Eigen::MatrixXi M(19, 10);
-  std::mt19937 rng(14);
-  std::uniform_int_distribution<uint32_t> uint_dist1(0,1);
+  Eigen::MatrixXi M(10, 19);
+  M <<
+      0, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 0,
+      1, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1,
+      0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0,
+      1, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0,
+      0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 0, 0, 0, 1,
+      0, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 0,
+      1, 1, 0, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1,
+      0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1, 1, 0,
+      0, 1, 0, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0,
+      0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 0;
 
-  for(int r=0; r < M.rows(); ++r) {
-      for(int c=0; c < M.cols(); ++c) {
-          M(r,c) = uint_dist1(rng);
-      }
-  }
-
-  Eigen::Vector2d offset = Eigen::Vector2d(22, 0);
+  Eigen::Vector2d offset = Eigen::Vector2d(22, -90);
   double grid_spacing = 10.0;
   double rad0 = 2.0;
   double rad1 = 3.0;
@@ -134,8 +137,8 @@ int main( int argc, char** argv )
 
   for( int r=0; r<M.rows(); ++r ) {
       for( int c=0; c<M.cols(); ++c) {
-          const double rad_pts = pts_per_unit * ((M(r,c) == 1) ? rad1 : rad0);
-          const Eigen::Vector2d p_pts = pts_per_unit* (offset + border2d + grid_spacing * Eigen::Vector2d(c,r));
+          const double rad_pts = pts_per_unit * ((M(r,M.cols() - c - 1) == 1) ? rad1 : rad0);
+          const Eigen::Vector2d p_pts = pts_per_unit* (offset + border2d + grid_spacing * Eigen::Vector2d(r, c));
           fprintf(f,"%f %f %f 0 360 arc closepath\n",p_pts[0],
               max_pts[1] - p_pts[1], rad_pts);
           fprintf(f, "0.0 setgray fill\n");
