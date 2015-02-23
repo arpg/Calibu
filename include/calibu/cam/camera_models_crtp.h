@@ -38,11 +38,27 @@ struct CameraUtils {
   }
 
   template<typename T>
-  static inline T Scale(const T* scale, T* params) {
-    params[0] *= scale;
-    params[1] *= scale;
-    params[2] = scale*(params[2]+0.5) - 0.5;
-    params[3] = scale*(params[3]+0.5) - 0.5;
+  static void Scale(const double s, T* params) {
+    params[0] *= s;
+    params[1] *= s;
+    params[2] = s*(params[2]+0.5) - 0.5;
+    params[3] = s*(params[3]+0.5) - 0.5;
+  }
+
+  template<typename T>
+  static inline T K(const T* params, T* Kmat) {
+    Kmat[0] = params[0];
+    Kmat[1] = 0;
+    Kmat[2] = params[2];
+    Kmat[3] = 0;
+    Kmat[4] = params[1];
+    Kmat[5] = params[3];
+    Kmat[6] = 0;
+    Kmat[7] = 0;
+    Kmat[8] = 1;
+    //Kmat << params[0], 0, params[2],
+    //    0, params[1], params[3],
+    //    0, 0, 1;
   }
 
   /** (x, y, z) -> (x, y)
@@ -138,19 +154,25 @@ class LinearCamera : public CameraImpl<Scalar, 4, LinearCamera<Scalar> > {
   using Base::Base;
 
   template<typename T>
-  static void Scale( const T* scale, T* params ) {
-    CameraUtils::Scale( scale, params );
+  static void Scale( const double s, T* params ) {
+    CameraUtils::Scale( s, params );
+  }
+
+  // NOTE: A camera calibration matrix only makes sense for a LinearCamera.
+  // Such a matrix only exists if derived for linear projection models. Ideally
+  // any time we call for K it would be on a linear camera, but we provide this
+  // functionality for obtaining approximate solutions.
+  // FURTHER NOTE: We ASSUME the first four entries of params_ to be fu, fv, sx
+  // and sy. If your camera model doesn't respect this ordering, then evaluating
+  // K for it will result in an incorrect (even approximate) matrix.
+  template<typename T>
+  static void K( const T* params , T* Kmat) {
+    CameraUtils::K( params , Kmat);
   }
 
   template<typename T>
-  static inline T SetType(){
-    std::string type_;
+  static void SetType(const T* type_){
     type_ = "LinearCamera";
-  }
-
-  template<typename T>
-  static inline Eigen::Matrix<T,3,3> K(const T* params) {
-    Eigen::Matrix<T,3,3>::Identity();
   }
 
   template<typename T>
@@ -207,23 +229,25 @@ class FovCamera : public CameraImpl<Scalar, 5, FovCamera<Scalar> > {
   using Base::Base;
 
   template<typename T>
-  static void Scale( const T scale, T* params ) {
-    CameraUtils::Scale( scale, params );
+  static void Scale( const double s, T* params ) {
+    CameraUtils::Scale( s, params );
+  }
+
+  // NOTE: A camera calibration matrix only makes sense for a LinearCamera.
+  // Such a matrix only exists if derived for linear projection models. Ideally
+  // any time we call for K it would be on a linear camera, but we provide this
+  // functionality for obtaining approximate solutions.
+  // FURTHER NOTE: We ASSUME the first four entries of params_ to be fu, fv, sx
+  // and sy. If your camera model doesn't respect this ordering, then evaluating
+  // K for it will result in an incorrect (even approximate) matrix.
+  template<typename T>
+  static void K( const T* params , T* Kmat) {
+    CameraUtils::K( params, Kmat);
   }
 
   template<typename T>
-  static inline T SetType() {
-    std::string type_;
+  static void SetType(const T* type_) {
     type_ = "FovCamera";
-  }
-
-  template<typename T>
-  static inline Eigen::Matrix<T,3,3> K(const T* params) {
-    Eigen::Matrix<T,3,3> K;
-    K << params[0], 0, params[2],
-        0, params[1], params[3],
-        0, 0, 1;
-    return K;
   }
 
   // For these derivatives, refer to the camera_derivatives.m matlab file.
@@ -483,7 +507,7 @@ class FovCamera : public CameraImpl<Scalar, 5, FovCamera<Scalar> > {
   }
 };
 
-/** A third degree polynomial distortion model */
+/** A third degree polynomial distortion model. */
 template<typename Scalar = double>
 class Poly3Camera : public CameraImpl<Scalar, 7, Poly3Camera<Scalar> > {
   typedef CameraImpl<Scalar, 7, Poly3Camera<Scalar> > Base;
@@ -491,13 +515,24 @@ class Poly3Camera : public CameraImpl<Scalar, 7, Poly3Camera<Scalar> > {
   using Base::Base;
 
   template<typename T>
-  static void Scale( const T* scale, T* params ) {
-    CameraUtils::Scale( scale, params );
+  static void Scale( const double s, T* params ) {
+    CameraUtils::Scale( s, params );
+  }
+
+  // NOTE: A camera calibration matrix only makes sense for a LinearCamera.
+  // Such a matrix only exists if derived for linear projection models. Ideally
+  // any time we call for K it would be on a linear camera, but we provide this
+  // functionality for obtaining approximate solutions.
+  // FURTHER NOTE: We ASSUME the first four entries of params_ to be fu, fv, sx
+  // and sy. If your camera model doesn't respect this ordering, then evaluating
+  // K for it will result in an incorrect (even approximate) matrix.
+  template<typename T>
+  static void K( const T* params , T* Kmat) {
+    CameraUtils::K( params , Kmat);
   }
 
   template<typename T>
-  static inline T SetType() {
-    std::string type_;
+  static void SetType( const T* type_) {
     type_ = "Poly3Camera";
   }
 

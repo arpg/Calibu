@@ -83,11 +83,12 @@ CALIBU_EXPORT
 void WriteXmlSE3(std::ostream& out, const Sophus::SE3d& t_rc, int indent);
 
 CALIBU_EXPORT
-void WriteXmlCamera(std::ostream& out, const CameraInterfaced* cam,
+void WriteXmlCamera(std::ostream& out, const std::shared_ptr<CameraInterfaced> cam,
                     int indent = 0);
 
 CALIBU_EXPORT
-void WriteXmlCamera(const std::string& filename, const CameraInterfaced* cam);
+void WriteXmlCamera(const std::string& filename,
+                    const std::shared_ptr<CameraInterfaced> cam);
 
 
 ////////////////////////////////////////////////////////////////////////////

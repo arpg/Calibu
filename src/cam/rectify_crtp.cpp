@@ -26,9 +26,9 @@ namespace calibu
 {
 
   ///////////////////////////////////////////////////////////////////////////////
-  void CreateLookupTable(const std::shared_ptr<calibu::CameraInterface<double> > cam_from,
-      LookupTable& lut
-      )
+  void CreateLookupTable(
+      const std::shared_ptr<calibu::CameraInterface<double> > cam_from,
+      LookupTable& lut )
   {
     /*
        TODO figure out what K should be for the "new" camera based on 

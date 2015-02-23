@@ -28,7 +28,7 @@
  * Avoids copying inherited function implementations for all camera models.
  *
  * Requires the following functions in the derived class:
- * - static void Scale()
+ * - static void Scale(const T* scale, const T* params)
  * - static void SetParams()
  * - statid void SetType()
  * - static void Unproject(const T* pix, const T* params, T* ray) {
@@ -49,25 +49,31 @@ class CameraImpl : public CameraInterface<Scalar> {
 
   CameraImpl() {}
   virtual ~CameraImpl() {}
-  CameraImpl(const Eigen::VectorXd& params, const Eigen::Vector2i& image_size) :
+  CameraImpl(const Eigen::VectorXd& params, Eigen::Vector2i& image_size) :
       CameraInterface<Scalar>(params, image_size) {
   }
 
   void
-  Scale(const Scalar s) const override {
+  Scale(const Scalar& s) override {
     Derived::Scale( s, this->params_.data() );
   }
 
-
   /** Model-dependent operations. */
-  void
-  SetParams(const Scalar s) const override {
-    Derived::SetParams( s );
+  Eigen::Matrix<Scalar, 3, 3>
+  K() const override {
+    Eigen::Matrix<Scalar,3,3> Kmat;
+    Derived::K( this->params_.data() , Kmat.data());
+    return Kmat;
   }
 
+//  void
+//  SetParams(const Eigen::VectorXd& params) const override {
+//    Derived::SetParamsthis->params_ = params;
+//  }
+
   void
-  SetType(const Scalar s) const override {
-    Derived::SetType( s );
+  SetType() const override {
+    Derived::SetType( this->type_.data());
   }
 
   Vec3t

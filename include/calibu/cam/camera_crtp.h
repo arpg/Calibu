@@ -42,7 +42,7 @@ protected:
   typedef Sophus::SE3Group<Scalar> SE3t;
 
 public:
-  CameraInterface(const std::shared_ptr<CameraInterface<Scalar>> other) :
+  CameraInterface(const CameraInterface<Scalar>& other) :
           image_size_(other.image_size_), params_(other.params_),
           rdf_(other.rdf_), version_(other.version_),
           serialNo_(other.serialNo_), name_(other.name_), type_(other.type_)
@@ -51,11 +51,11 @@ public:
   virtual ~CameraInterface() {}
 
   /** Change camera model image size. */
-  virtual void Scale( const Scalar s) const = 0;
+  virtual void Scale( const Scalar& s ) = 0;
 
-  virtual void SetParams( const Scalar s) const = 0;
+  virtual Eigen::Matrix<Scalar,3,3> K() const = 0;
 
-  virtual void SetType( const Scalar s) const = 0;
+  virtual void SetType() const = 0;
 
   /** Unproject an image location into world coordinates. */
   virtual Vec3t Unproject(const Vec2t& pix) const = 0;
@@ -134,10 +134,6 @@ public:
   }
 
   /// Metadata member functions from CameraModelInterface.h (non-CRTP).
-
-  Eigen::Matrix<Scalar,3,3> K() {
-    return Eigen::Matrix<Scalar,3,3>::Identity();
-  }
 
   /// TODO comments please
   const Eigen::VectorXd& GetParams() const {
@@ -228,6 +224,10 @@ public:
 
   void SetRDF(const Eigen::Matrix<Scalar, 3, 3>& sRDF) {
     rdf_ = sRDF;
+  }
+
+  void SetParams( const Eigen::VectorXd params ) {
+    params_ = params;
   }
 
   /// Set the pose of the camera (typically in the "rig" frame).
