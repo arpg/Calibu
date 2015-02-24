@@ -43,9 +43,9 @@ protected:
 
 public:
   CameraInterface(const CameraInterface<Scalar>& other) :
-          image_size_(other.image_size_), params_(other.params_),
+          image_size_(other.image_size_), params_(other.params_)/*,
           rdf_(other.rdf_), version_(other.version_),
-          serialNo_(other.serialNo_), name_(other.name_), type_(other.type_)
+          serialNo_(other.serialNo_), name_(other.name_), type_(other.type_)*/
 
   {}
   virtual ~CameraInterface() {}

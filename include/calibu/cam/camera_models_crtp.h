@@ -158,13 +158,9 @@ class LinearCamera : public CameraImpl<Scalar, 4, LinearCamera<Scalar> > {
     CameraUtils::Scale( s, params );
   }
 
-  // NOTE: A camera calibration matrix only makes sense for a LinearCamera.
-  // Such a matrix only exists if derived for linear projection models. Ideally
-  // any time we call for K it would be on a linear camera, but we provide this
-  // functionality for obtaining approximate solutions.
-  // FURTHER NOTE: We ASSUME the first four entries of params_ to be fu, fv, sx
+  // NOTE: We ASSUME the first four entries of params_ to be fu, fv, sx
   // and sy. If your camera model doesn't respect this ordering, then evaluating
-  // K for it will result in an incorrect (even approximate) matrix.
+  // K for it will result in an incorrect matrix.
   template<typename T>
   static void K( const T* params , T* Kmat) {
     CameraUtils::K( params , Kmat);
@@ -221,6 +217,7 @@ class LinearCamera : public CameraImpl<Scalar, 4, LinearCamera<Scalar> > {
   }
 };
 
+/// Model "fov," colloquially known as "fisheye" model.
 constexpr double kFovCamDistEps = 1e-5;
 template<typename Scalar = double>
 class FovCamera : public CameraImpl<Scalar, 5, FovCamera<Scalar> > {
