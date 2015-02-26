@@ -101,7 +101,8 @@ inline void WriteXmlCameraAndTransformWithLut(
 {
     const std::string dd = IndentStr(indent);
     out << dd << AttribOpen(NODE_CAM_POSE) << std::endl;
-    WriteXmlCameraAndTransform(out, cam, indent+4);
+    WriteXmlCamera(out, cam, indent+4);
+    WriteXmlSE3(out,cam->Pose(),indent+4);
 
     out << dd << sLutXmlElement << std::endl; // LUT, if there is one!
     out << dd << AttribClose(NODE_CAM_POSE) << std::endl;

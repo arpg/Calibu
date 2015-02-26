@@ -67,7 +67,8 @@ std::string CameraType( const std::string& sType )
   }
 }
 
-void WriteXmlCamera(std::ostream& out, const CameraInterfaced* cam, int indent)
+void WriteXmlCamera(std::ostream& out,
+                    const std::shared_ptr<CameraInterfaced> cam, int indent)
 {
   const std::string dd1 = IndentStr(indent);
   const std::string dd2 = IndentStr(indent+4);
@@ -95,10 +96,12 @@ void WriteXmlCamera(std::ostream& out, const CameraInterfaced* cam, int indent)
   out << dd1 << AttribClose(NODE_CAM) << std::endl;
 }
 
-void WriteXmlCamera(const std::string& filename, const CameraInterfaced* cam)
+void WriteXmlCamera(const std::string& filename,
+                    const std::shared_ptr<CameraInterfaced> cam)
 {
   std::ofstream of(filename);
-  WriteXmlCamera(of, cam);
+  int indent = 0; // added for crtp classes.
+  WriteXmlCamera(of, cam, indent);
 }
 
 std::shared_ptr<CameraInterfaced> ReadXmlCamera(TiXmlElement* pEl)
@@ -219,11 +222,12 @@ void WriteXmlCameraAndTransform(
   out << dd << AttribClose(NODE_CAM_POSE) << std::endl;
 }
 
-void WriteXmlCameraAndTransform(
-    const std::string& filename, const std::shared_ptr<CameraInterfaced> cop)
+void WriteXmlCameraAndTransform(const std::string& filename,
+                                const std::shared_ptr<CameraInterfaced> cop)
 {
   std::ofstream of(filename);
-  WriteXmlCameraAndTransform(of, cop);
+  int indent = 0; // added for crtp classes.
+  WriteXmlCameraAndTransform(of, cop, indent);
 }
 
 std::shared_ptr<CameraInterfaced> ReadXmlCameraAndTransform(TiXmlNode* xmlcampose)
