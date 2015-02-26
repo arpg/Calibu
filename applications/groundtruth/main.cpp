@@ -240,7 +240,6 @@ void LoadGTPoses( const string& filename, std::vector< Eigen::Vector6d >& gtpose
     std::cerr << line << std::endl;
     sscanf( line.c_str(), "%f\t%f\t%f\t%f\t%f\t%f\n", &x, &y, &z, &r, &p, &q );
     z *= -1;
-    fprintf(stderr, "read: %f, %f, %f, %f, %f, %f\n", &x, &y, &z, &r, &p, &q );
     Eigen::Vector6d pz;
     pz << x, y, z, r, p, q;
     gtposes.push_back(pz);
@@ -727,6 +726,7 @@ int main( int argc, char** argv )
   }
 
   bool bStep = false;
+  bool use_gt_pose_ = false;
   unsigned long nFrame=0;
   int pose_number = 0;
   DMap::iterator it;
@@ -771,6 +771,7 @@ int main( int argc, char** argv )
                    camPoses,
                    campose);} );
   pangolin::RegisterKeyPressCallback('t', [&](){ std::cout<< it->second.size() <<std::endl;} );
+  pangolin::RegisterKeyPressCallback(']', [&](){ use_gt_pose_ = !use_gt_pose_;} );
   pangolin::RegisterKeyPressCallback('g', [&](){
     for (int ii = 0; ii < gt_axis.size(); ii++) { gt_axis[ii].SetVisible(!gt_axis[ii].IsVisible());} ;} );
   pangolin::RegisterKeyPressCallback(';', [&](){ print_test_data_(it->second[0]);} );
@@ -808,7 +809,11 @@ int main( int argc, char** argv )
       std::advance(it, pose_number);
     }
 
-    sim_cam.SetPoseVision(_Cart2T(camPoses[pose_number]));
+    if (use_gt_pose_) {
+      sim_cam.SetPoseRobot(_Cart2T(gt_poses[pose_number]).inverse());
+    } else {
+      sim_cam.SetPoseVision(_Cart2T(camPoses[pose_number]));
+    }
     sim_cam.RenderToTexture();
     sim_cam.CaptureGrey( synth.data );
     cv::GaussianBlur(synth, synth, cv::Size(5, 5), 0);
