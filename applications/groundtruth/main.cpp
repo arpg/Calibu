@@ -39,6 +39,8 @@
 #include "hess.h"
 #include "ImageAlign/compute_homography.h"
 
+#define MAX_FRAMES 116
+
 // -cam split:[roi1=0+0+640+480]//proto:[startframe=1500]///Users/faradazerage/Desktop/DataSets/APRIL/Hallway-9-12-13/Twizzler/proto.log -cmod /Users/faradazerage/Desktop/DataSets/APRIL/Hallway-9-12-13/Twizzler/cameras.xml -o outfile.out -map /Users/faradazerage/Desktop/DataSets/APRIL/Hallway-9-12-13/Twizzler/DS20.csv -v -debug -show-ceres
 
 using namespace std;
@@ -222,6 +224,26 @@ void ParseSurveyMapFile(
       tags.insert( std::pair< int, tag_t >(tagid, t));
     }
     tags[tagid].AddPoint(lmid, survey_map[uid]);
+    std::getline ( ifs, line );
+  }
+  fflush(stderr);
+}
+
+void LoadGTPoses( const string& filename, std::vector< Eigen::Vector6d >& gtposes )
+{
+  std::ifstream ifs( filename );
+  std::string line;
+  fprintf(stderr, "Loading data file %s: \n", filename.c_str());
+  std::getline ( ifs, line );
+  while( ifs.good() ){
+    float x, y, z, r, p, q;
+    std::cerr << line << std::endl;
+    sscanf( line.c_str(), "%f\t%f\t%f\t%f\t%f\t%f\n", &x, &y, &z, &r, &p, &q );
+    z *= -1;
+    fprintf(stderr, "read: %f, %f, %f, %f, %f, %f\n", &x, &y, &z, &r, &p, &q );
+    Eigen::Vector6d pz;
+    pz << x, y, z, r, p, q;
+    gtposes.push_back(pz);
     std::getline ( ifs, line );
   }
   fflush(stderr);
@@ -457,6 +479,10 @@ int main( int argc, char** argv )
 
   std::map<int,Eigen::Vector3d> survey_map;
   std::map<int, tag_t>  tags;
+  std::vector< Eigen::Vector6d > gt_poses;
+  if (cl.search("-poses")) {
+    LoadGTPoses(cl.follow("", "-poses"), gt_poses);
+  }
   ParseSurveyMapFile( cl.follow("", "-map"), survey_map, tags );
   fprintf(stdout, "Finished parsing survey map\n");
   if (cl.search("-wb")) {
@@ -495,7 +521,7 @@ int main( int argc, char** argv )
   bool capture = false;
   bool start = true;
   cv::Mat last_image;
-  while( start || capture && (count < 116)){
+  while( start || capture && (count < MAX_FRAMES)){
     capture = cam.Capture( *vImages );
     count++;
     if (start) {
@@ -690,6 +716,16 @@ int main( int argc, char** argv )
     glGraph.AddChild( &campose[count]);
   }
 
+  std::vector< SceneGraph::GLAxis > gt_axis;
+  gt_axis.resize(gt_poses.size());
+  for (int ii = 0; ii < gt_poses.size(); ii++) {
+    SceneGraph::GLAxis a;
+    a.SetPose(gt_poses[ii]);
+    a.SetScale(0.05);
+    gt_axis[ii] = a;
+    glGraph.AddChild( &gt_axis[ii] );
+  }
+
   bool bStep = false;
   unsigned long nFrame=0;
   int pose_number = 0;
@@ -735,6 +771,8 @@ int main( int argc, char** argv )
                    camPoses,
                    campose);} );
   pangolin::RegisterKeyPressCallback('t', [&](){ std::cout<< it->second.size() <<std::endl;} );
+  pangolin::RegisterKeyPressCallback('g', [&](){
+    for (int ii = 0; ii < gt_axis.size(); ii++) { gt_axis[ii].SetVisible(!gt_axis[ii].IsVisible());} ;} );
   pangolin::RegisterKeyPressCallback(';', [&](){ print_test_data_(it->second[0]);} );
   pangolin::RegisterKeyPressCallback('e', [&](){ dense_frame_optimize(it->second, &sim_cam, K);
     update_objects(detections,
