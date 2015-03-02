@@ -28,6 +28,8 @@
 #include <calibu/target/Target.h>
 #include <calibu/conics/ConicFinder.h>
 #include <calibu/cam/camera_crtp.h>
+#include <calibu/cam/camera_crtp_impl.h>
+#include <calibu/cam/camera_models_crtp.h>
 
 namespace calibu {
 
@@ -45,6 +47,11 @@ struct ParamsTracker
     double max_rms;
 };
 
+template<typename Scalar = double>
+using CameraInterfaced = CameraInterface<Scalar>;
+
+template<typename Scalar = double>
+using Rigd = Rig<Scalar>;
 
 class Tracker
 {

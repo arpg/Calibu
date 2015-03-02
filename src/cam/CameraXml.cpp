@@ -248,7 +248,7 @@ std::shared_ptr<CameraInterfaced> ReadXmlCameraAndTransform(TiXmlNode* xmlcampos
 }
 
 std::shared_ptr<CameraInterfaced> ReadXmlCameraAndTransform(
-    const std::string& filename, const std::shared_ptr<CameraInterfaced> cam)
+    const std::string& filename)//, const std::shared_ptr<CameraInterfaced> cam)
 {
   TiXmlDocument doc;
   if(doc.LoadFile(filename)) {
@@ -257,7 +257,7 @@ std::shared_ptr<CameraInterfaced> ReadXmlCameraAndTransform(
       return ReadXmlCameraAndTransform(pNode);
     }
   }
-  return cam;
+  //return cam;
 }
 
 
@@ -282,12 +282,12 @@ void WriteXmlRig(const std::string& filename, const std::shared_ptr<Rigd> rig)
 
 std::shared_ptr<Rigd> ReadXmlRig(TiXmlNode* xmlrig)
 {
-  std::shared_ptr<Rigd> rig;
+  std::shared_ptr<Rigd> rig(new Rigd());
 
   for( TiXmlNode* child = xmlrig->FirstChild(NODE_CAM_POSE); child; child = child->NextSibling(NODE_CAM_POSE) )
   {
     std::shared_ptr<CameraInterfaced> cap = ReadXmlCameraAndTransform(child);
-    if(cap->IsInitialized()) {		// I don't agree with this. --crh
+    if(cap->IsInitialized()) {		// Kind of stupid. --crh
       rig->AddCamera(cap);
     }
   }
@@ -295,7 +295,7 @@ std::shared_ptr<Rigd> ReadXmlRig(TiXmlNode* xmlrig)
   return rig;
 }
 
-std::shared_ptr<Rigd> ReadXmlRig(const std::string& filename, const std::shared_ptr<Rigd> rig)
+std::shared_ptr<Rigd> ReadXmlRig(const std::string& filename)//, const std::shared_ptr<Rigd> rig)
 {
   TiXmlDocument doc;
   if(doc.LoadFile(filename)) {
@@ -306,7 +306,7 @@ std::shared_ptr<Rigd> ReadXmlRig(const std::string& filename, const std::shared_
   }else{
     std::cerr << doc.ErrorDesc() << ": '" << filename << "'" << std::endl;
   }
-  return rig;
+  //return rig;
 }
 
 }

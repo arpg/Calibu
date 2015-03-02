@@ -1,4 +1,4 @@
-/* 
+/*
    Example demonstrating camera model reading and writing.
 */
 
@@ -9,7 +9,9 @@ using namespace calibu;
 void Test1()
 {
     std::shared_ptr<Rig<double>> rig = ReadXmlRig("cameras.xml");
+    std::cout << "rig established." << std::endl;
     std::shared_ptr<CameraInterface<double>> cam = rig->cameras_[0];
+    std::cout << "camera added to rig." << std::endl;
 
     Eigen::Vector2d p;
     Eigen::Vector3d P;
@@ -26,11 +28,11 @@ void Test1()
 
 void Test2()
 {
-    std::shared_ptr<Rig<double>> rig = ReadXmlRig("cameras.xml");
+    std::shared_ptr<Rig<double>> rig = calibu::ReadXmlRig("cameras.xml");
     
     for(size_t i=0; i< rig->cameras_.size(); ++i) {
         std::shared_ptr<CameraInterface<double>> cam = rig->cameras_[i];
-        // cam.PrintInfo();
+        cam->PrintInfo();
         std::cout << "    Params       = " << cam->K().transpose() << std::endl;
     }    
 }
@@ -41,5 +43,3 @@ int main( int argc, char* argv[] )
     Test2();
     return 0;
 }
-
-

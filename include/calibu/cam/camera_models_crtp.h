@@ -46,7 +46,7 @@ struct CameraUtils {
   }
 
   template<typename T>
-  static inline T K(const T* params, T* Kmat) {
+  static inline void K(const T* params, T* Kmat) {
     Kmat[0] = params[0];
     Kmat[1] = 0;
     Kmat[2] = params[2];

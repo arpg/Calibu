@@ -42,16 +42,17 @@ protected:
   typedef Sophus::SE3Group<Scalar> SE3t;
 
 public:
-  CameraInterface(const CameraInterface<Scalar>& other) :
-          image_size_(other.image_size_), params_(other.params_)/*,
-          rdf_(other.rdf_), version_(other.version_),
-          serialNo_(other.serialNo_), name_(other.name_), type_(other.type_)*/
+  CameraInterface() {}
 
-  {}
+  CameraInterface(const CameraInterface<Scalar>& other) :
+          image_size_(other.image_size_), params_(other.params_) {}
+
   virtual ~CameraInterface() {}
 
   /** Change camera model image size. */
   virtual void Scale( const Scalar& s ) = 0;
+
+  virtual void PrintInfo() const = 0;
 
   virtual Eigen::Matrix<Scalar,3,3> K() const = 0;
 
@@ -67,11 +68,9 @@ public:
   virtual Eigen::Matrix<Scalar, 2, 3>
   dProject_dray(const Vec3t& ray) const = 0;
 
-  /// TODO comments please
   virtual Eigen::Matrix<Scalar, 2, Eigen::Dynamic>
   dProject_dparams(const Vec3t& ray) const = 0;
 
-  /// TODO comments please
   virtual Eigen::Matrix<Scalar, 3, Eigen::Dynamic>
   dUnproject_dparams(const Vec2t& pix) const = 0;
 
@@ -110,7 +109,6 @@ public:
     return dtransfer3d_dray;
   }
 
-  /// TODO comments please
   Eigen::Matrix<Scalar, 2, Eigen::Dynamic> dTransfer_dparams(
                   const SE3t& t_ba,
                   const Vec2t& pix,
@@ -134,28 +132,27 @@ public:
   }
 
   /// Metadata member functions from CameraModelInterface.h (non-CRTP).
-
-  /// TODO comments please
+  /// Returns the camera intrinsics & parameters.
   const Eigen::VectorXd& GetParams() const {
     return params_;
   }
 
-  /// TODO comments please -- why are there const & non-const versions?
+  // Why are there const & non-const versions?
   Eigen::VectorXd& GetParams() {
     return params_;
   }
 
-  /// TODO comments please
+  /// Return the number of camera parameters (4 intrinsics + params by model).
   uint32_t NumParams() const {
     return params_.rows();
   }
 
-  /// TODO comments please
+  /// Returns width of image captured by camera.
   unsigned int Width() const {
     return image_size_[0];
   }
 
-  /// TODO comments please
+  /// Returns height parameter of image captured by camera.
   unsigned int Height() const {
     return image_size_[1];
   }
@@ -166,7 +163,7 @@ public:
     return 1;
   }
 
-  /** Get version, type, sn, idx, name. */
+  /// Get version, type, sn, idx, name, etc.
   int
   Version() const {
     return version_;
@@ -187,45 +184,51 @@ public:
     return serialNo_;
   }
 
-  /** Camera index (for multi-camera rigs). */
   int
   Index() const {
     return index_;
   }
 
-  /** Camera name, e.g. "Left". */
+  /// Camera name, e.g. "Left".
   std::string
   Name() const {
     return name_;
   }
 
+  /// Set name of camera, e.g. "left".
   void
   SetName( const std::string& sName ) {
     name_ = sName;
   }
 
+  /// Set serial number of camera, if applicable.
   void
   SetSerialNumber( const uint64_t nSerialNo ) {
     serialNo_ = nSerialNo ;
   }
 
+  /// Set index for multi-camera rigs.
   void SetIndex( const int nIndex ) {
     index_ = nIndex ;
   }
 
+  /// Set version number of camera.
   void SetVersion( int nVersion ) {
     version_ = nVersion ;
   }
 
+  /// Set width and height of image.
   void SetImageDimensions( const int nWidth, const int nHeight ) {
     image_size_[0] = nWidth;
     image_size_[1] = nHeight;
   }
 
+  /// Set "right-down-forward" convention.
   void SetRDF(const Eigen::Matrix<Scalar, 3, 3>& sRDF) {
     rdf_ = sRDF;
   }
 
+  /// Set generic camera intrinsics and parameters.
   void SetParams( const Eigen::VectorXd params ) {
     params_ = params;
   }
@@ -242,7 +245,7 @@ public:
 
 
 protected:
-  /// TODO comments please big time
+  /// Direct input of parameters and image size to create a camera inteface.
   CameraInterface(const Eigen::VectorXd& params_in,
                   const Eigen::Vector2i& image_size)
           : params_(params_in), image_size_(image_size) {
@@ -250,11 +253,11 @@ protected:
 
   Eigen::Vector2i image_size_;
 
-  // All the camera parameters (fu, fv, u0, v0, ...distortion)
+  /// All the camera parameters (fu, fv, u0, v0, ...distortion).
   Eigen::VectorXd params_;
 
 
-  //
+  /// Protected data structures for CameraInterface.
   SE3t t_rc_;
   Eigen::Matrix<Scalar, 3, 3> rdf_;
   int version_;
@@ -264,21 +267,21 @@ protected:
   std::string type_;
 };
 
-/// this is an important class, right? why?
+/// Rig class: a collection of cameras. Note, cameras contain transformation
+/// from Rig to camera inside the Camera interface.
 template<typename Scalar = double>
 class Rig {
  public:
-  /// TODO comments please -- this is called by who?
   Rig() {}
 
   void AddCamera(std::shared_ptr<CameraInterface<Scalar>> cam) {
     cameras_.push_back(cam);
   }
 
-  /// TODO comments please -- this is called by who?
-  void Clear() {
+  /// Method to clear rig elements.
+    void Clear() {
     for (std::shared_ptr<CameraInterface<Scalar>> ptr : cameras_) {
-      delete ptr;
+      ptr.reset();
     }
     cameras_.clear();
   }

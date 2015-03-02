@@ -22,6 +22,8 @@
 #include <calibu/cam/rectify_crtp.h>
 #include <calibu/utils/Range.h>
 
+#if 0
+
 namespace calibu
 {
 
@@ -127,3 +129,5 @@ namespace calibu
   }
 
 } // end namespace
+
+#endif

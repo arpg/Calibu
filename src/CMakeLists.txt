@@ -14,16 +14,17 @@ set(HEADERS
   ${INC_DIR}/cam/camera_crtp_impl.h
   ${INC_DIR}/cam/camera_models_crtp.h
   ${INC_DIR}/cam/camera_crtp_interop.h
-  ${INC_DIR}/cam/CameraModel.h
-  ${INC_DIR}/cam/CameraModelInterface.h
-  ${INC_DIR}/cam/CameraModelT.h
-  ${INC_DIR}/cam/CameraRig.h
-  ${INC_DIR}/cam/CameraUtils.h
-  ${INC_DIR}/cam/CameraXml.h
-  ${INC_DIR}/cam/DistortionModel.h
-  ${INC_DIR}/cam/ProjectionModel.h
-  ${INC_DIR}/cam/ProjectionKannalaBrandt.h
-  ${INC_DIR}/cam/Rectify.h
+  ${INC_DIR}/cam/camera_xml.h
+  #  ${INC_DIR}/cam/CameraModel.h
+  #  ${INC_DIR}/cam/CameraModelInterface.h
+  #  ${INC_DIR}/cam/CameraModelT.h
+  #  ${INC_DIR}/cam/CameraRig.h
+  #  ${INC_DIR}/cam/CameraUtils.h
+  #  ${INC_DIR}/cam/CameraXml.h
+  #  ${INC_DIR}/cam/DistortionModel.h
+  #  ${INC_DIR}/cam/ProjectionModel.h
+  #  ${INC_DIR}/cam/ProjectionKannalaBrandt.h
+  #  ${INC_DIR}/cam/Rectify.h
   ${INC_DIR}/cam/rectify_crtp.h
   ${INC_DIR}/cam/StereoRectify.h
   ${INC_DIR}/conics/Conic.h

@@ -5,6 +5,7 @@
    Copyright (C) 2015 University of Colorado at Boulder,
                       Steven Lovegrove,
                       Christoffer Heckman,
+                      Nima Keivan,
                       Gabe Sibley
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -82,6 +83,7 @@ std::string AttribClose(const std::string& attrib);
 CALIBU_EXPORT
 void WriteXmlSE3(std::ostream& out, const Sophus::SE3d& t_rc, int indent);
 
+
 CALIBU_EXPORT
 void WriteXmlCamera(std::ostream& out, const std::shared_ptr<CameraInterfaced> cam,
                     int indent = 0);
@@ -139,6 +141,10 @@ void WriteXmlCameraAndTransform(const std::string& filename,
 CALIBU_EXPORT
 std::shared_ptr<CameraInterfaced> ReadXmlCameraAndTransform(
     const std::string& filename, const std::shared_ptr<CameraInterfaced> cop);
+
+CALIBU_EXPORT
+std::shared_ptr<CameraInterfaced> ReadXmlCameraAndTransform(
+    const std::string& filename);
 
 ////////////////////////////////////////////////////////////////////////
 CALIBU_EXPORT

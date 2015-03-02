@@ -58,6 +58,22 @@ class CameraImpl : public CameraInterface<Scalar> {
     Derived::Scale( s, this->params_.data() );
   }
 
+  void
+  PrintInfo() const override {
+      printf("camera model info:\n" );
+      printf("    Right        = [%d; %d; %d] unit vector\n", (int)this->rdf_(0,0), (int)this->rdf_(0,1), (int)this->rdf_(0,2) );
+      printf("    Down         = [%d; %d; %d] unit vector\n", (int)this->rdf_(1,0), (int)this->rdf_(1,1), (int)this->rdf_(1,2) );
+      printf("    Forward      = [%d; %d; %d] unit vector\n", (int)this->rdf_(2,0), (int)this->rdf_(2,1), (int)this->rdf_(2,2) );
+      printf("    Width        = %d pixels\n", (int) this->image_size_[0]);
+      printf("    Height       = %d pixels\n", (int) this->image_size_[1]);
+
+      // TODO ensure this is right for all models...
+      printf("    Horiz Center = %.3f pixels\n", this->params_[2] );
+      printf("    Vert Center  = %.3f pixels\n", this->params_[3] );
+      printf("    Horiz FOV    = %.3f degrees\n", 180.0*2.0*atan2( this->image_size_[0]/2, this->params_[0] )/M_PI );
+      printf("    Vert  FOV    = %.3f degrees\n", 180.0*2.0*atan2( this->image_size_[1]/2, this->params_[1] )/M_PI );
+  }
+
   /** Model-dependent operations. */
   Eigen::Matrix<Scalar, 3, 3>
   K() const override {
@@ -65,11 +81,6 @@ class CameraImpl : public CameraInterface<Scalar> {
     Derived::K( this->params_.data() , Kmat.data());
     return Kmat;
   }
-
-//  void
-//  SetParams(const Eigen::VectorXd& params) const override {
-//    Derived::SetParamsthis->params_ = params;
-//  }
 
   void
   SetType() const override {
@@ -110,5 +121,5 @@ class CameraImpl : public CameraInterface<Scalar> {
     Derived::dProject_dray(ray.data(), this->params_.data(), j.data());
     return j;
   }
-};
+}; // public CameraInterface<Scalar>
 }  // namespace calibu
