@@ -33,6 +33,7 @@ void Test2()
         std::shared_ptr<CameraInterface<double>> cam = rig->cameras_[i];
         cam->PrintInfo();
         std::cout << "    Params       = " << cam->K().transpose() << std::endl;
+        std::cout << "    T_rc         = " << cam->Pose().matrix3x4() << std::endl;
     }    
 }
 
