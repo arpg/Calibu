@@ -39,7 +39,7 @@
 #include "hess.h"
 #include "ImageAlign/compute_homography.h"
 
-#define MAX_FRAMES 116
+#define MAX_FRAMES 16
 
 // -cam split:[roi1=0+0+640+480]//proto:[startframe=1500]///Users/faradazerage/Desktop/DataSets/APRIL/Hallway-9-12-13/Twizzler/proto.log -cmod /Users/faradazerage/Desktop/DataSets/APRIL/Hallway-9-12-13/Twizzler/cameras.xml -o outfile.out -map /Users/faradazerage/Desktop/DataSets/APRIL/Hallway-9-12-13/Twizzler/DS20.csv -v -debug -show-ceres
 
@@ -302,7 +302,7 @@ void sparse_frame_optimize( std::vector<std::shared_ptr < detection > > ds,
   options.trust_region_strategy_type = ceres::DOGLEG;
   options.num_threads = 1;
   options.max_num_iterations = 50;
-  options.minimizer_progress_to_stdout = false;
+  options.minimizer_progress_to_stdout = true;
   double x[6];
   ceres::Problem problem;
   for (int count = 0; count < 6; count++)
@@ -310,6 +310,10 @@ void sparse_frame_optimize( std::vector<std::shared_ptr < detection > > ds,
   for( int count = 0; count < ds.size(); count++) {
     std::shared_ptr< detection > d = ds[count];
     ceres::CostFunction* cost_function = ProjectionCost( d, K, cmod);
+    if (cost_function == NULL) {
+      fprintf(stderr, "cost_function is null\n");
+      fflush(stderr);
+    }
     problem.AddResidualBlock( cost_function, NULL, x);
   }
   ceres::Solver::Summary summary;
@@ -504,6 +508,19 @@ int main( int argc, char** argv )
   }
   calibu::LoadRig( rig_name_, &rig );
   calibu::CameraInterface<double> *cmod = rig.cameras_[0];
+  if( dynamic_cast<calibu::LinearCamera<double>*>( cmod ) ){
+    fprintf(stderr, "Opening Linear Camera\n");
+  }
+  else if( dynamic_cast<calibu::FovCamera<double>*>( cmod ) ){
+    fprintf(stderr, "Opening Fov Camera\n");
+  }
+  else if( dynamic_cast<calibu::Poly3Camera<double>*>( cmod ) ){
+    fprintf(stderr, "Opening Poly3 Camera\n");
+  }
+  else {
+    fprintf(stderr, "No matching camera model.\n");
+  }
+
   Eigen::Matrix3d K;
   double* params = cmod->GetParams().data();
   K << params[0], 0, params[2], 0, params[1], params[3], 0, 0, 1;

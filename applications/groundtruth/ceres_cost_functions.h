@@ -34,7 +34,7 @@ struct ProjectionCostFunctor
       CHECK_NOTNULL(_t_wi);
       CHECK_NOTNULL(residuals);
 
-      const Eigen::Map< const Eigen::Matrix<T,6,1> > temp(_t_wi);      
+      const Eigen::Map< const Eigen::Matrix<T,6,1> > temp(_t_wi);
       const Sophus::SE3Group<T> t_wi = Sophus::SE3Group<T>( _Cart2T<T>(temp) );
 
       Eigen::Matrix<T,3,1> pwj = d->tag_data.tl.template cast<T>();
@@ -100,6 +100,11 @@ ceres::CostFunction* ProjectionCost(
     typedef calibu::FovCamera<Scalar> CamT;
     return (new ceres::AutoDiffCostFunction<ProjectionCostFunctor<CamT>,8,6>(
           new ProjectionCostFunctor<CamT>( _d,_k,_params ) ) );
+  }
+  else if( dynamic_cast<calibu::Poly3Camera<Scalar>*>( _cam ) ){
+    typedef calibu::Poly3Camera<Scalar> CamT;
+    return (new ceres::AutoDiffCostFunction<ProjectionCostFunctor<CamT>,8,6>(
+              new ProjectionCostFunctor<CamT>( _d,_k,_params ) ) );
   }
   return NULL;
 }
