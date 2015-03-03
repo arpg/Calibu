@@ -76,6 +76,11 @@ SET(SOURCES
 
 find_package( Eigen3 REQUIRED )
 
+find_package( GLog REQUIRED )
+set(HAVE_GLOG 1)
+list( APPEND LINK_LIBS ${GLog_LIBRARIES} )
+list( APPEND CALIBU_INC ${Glog_INCLUDE_DIRS} )
+
 # https://github.com/gwu-robotics/Sophus.git
 find_package( Sophus REQUIRED )
 

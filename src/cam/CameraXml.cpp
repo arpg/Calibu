@@ -111,17 +111,20 @@ std::shared_ptr<CameraInterfaced> ReadXmlCamera(TiXmlElement* pEl)
 
     if (sType == "calibu_fu_fv_u0_v0_w") {
     rCam.reset(new calibu::FovCamera<double>());
+    rCam->SetParams(Eigen::VectorXd::Constant(5,1));
   } else if (sType == "calibu_fu_fv_u0_v0") {
     rCam.reset(new calibu::LinearCamera<double>());
+    rCam->SetParams(Eigen::VectorXd::Constant(4,1));
 //  } else if (sType == "calibu_fu_fv_u0_v0_k1_k2") {
 //    rCam.reset(new calibu::Poly2Camera<double>());
 //  } else if (sType == "calibu_fu_fv_u0_v0_kb4") {
 //    rCam.reset(new calibu::KannalaBrandt<double>());
   } else if (sType == "calibu_fu_fv_u0_v0_k1_k2_k3") {
     rCam.reset(new calibu::Poly3Camera<double>());
+    rCam->SetParams(Eigen::VectorXd::Constant(7,1));
   } else {
-    std::cerr << "Unknown old camera type " << sType << " please "
-                                                        " implement this camera before initializing it. " << std::endl;
+    std::cerr << "Unknown old camera type " << sType << " please implement this"
+                 " camera before initializing it. " << std::endl;
     throw 0;
   }
 
@@ -170,7 +173,7 @@ std::shared_ptr<CameraInterfaced> ReadXmlCamera(const std::string& filename)
       return ReadXmlCamera(pEl);
     }
   }
-  return std::shared_ptr<CameraInterfaced>();
+  //return std::shared_ptr<CameraInterfaced>();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -194,7 +197,7 @@ void WriteXmlSE3(const std::string& filename, const Sophus::SE3d& t_rc)
 
 Sophus::SE3d ReadXmlSE3(TiXmlNode* xmlcampose)
 {
-  const std::string val = xmlcampose->FirstChildElement("T_rc")->GetText();
+  const std::string val = xmlcampose->FirstChildElement("T_wc")->GetText();
   Eigen::Matrix4d m = StrToVal<Eigen::Matrix4d>(val);
   return Sophus::SE3d(m);
 }
@@ -287,7 +290,7 @@ std::shared_ptr<Rigd> ReadXmlRig(TiXmlNode* xmlrig)
   for( TiXmlNode* child = xmlrig->FirstChild(NODE_CAM_POSE); child; child = child->NextSibling(NODE_CAM_POSE) )
   {
     std::shared_ptr<CameraInterfaced> cap = ReadXmlCameraAndTransform(child);
-    if(cap->IsInitialized()) {		// Kind of stupid. --crh
+    if(cap->IsInitialized()) {
       rig->AddCamera(cap);
     }
   }

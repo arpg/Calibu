@@ -3,15 +3,14 @@
 */
 
 #include <calibu/Calibu.h>
+#include <glog/logging.h>
 
 using namespace calibu;
 
 void Test1()
 {
     std::shared_ptr<Rig<double>> rig = ReadXmlRig("cameras.xml");
-    std::cout << "rig established." << std::endl;
     std::shared_ptr<CameraInterface<double>> cam = rig->cameras_[0];
-    std::cout << "camera added to rig." << std::endl;
 
     Eigen::Vector2d p;
     Eigen::Vector3d P;

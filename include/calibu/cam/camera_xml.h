@@ -27,14 +27,15 @@
 #include <calibu/cam/camera_crtp.h>
 #include <calibu/cam/camera_crtp_impl.h>
 #include <calibu/cam/camera_models_crtp.h>
+#include <glog/logging.h>
 #include <sstream>
 
 namespace calibu
 {
 
 const std::string NODE_RIG     	= "rig";
-const std::string NODE_CAM_POSE	= "camera_pose";
-const std::string NODE_CAM      = "camera";
+const std::string NODE_CAM_POSE	= "camera";
+const std::string NODE_CAM      = "camera_model";
 const std::string NODE_POSE     = "pose";
 
 typedef CameraInterface<double> CameraInterfaced;

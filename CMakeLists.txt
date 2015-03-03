@@ -9,7 +9,7 @@ set(CALIBU_VERSION_MAJOR 0)
 set(CALIBU_VERSION_MINOR 1)
 set(CALIBU_VERSION ${CALIBU_VERSION_MAJOR}.${CALIBU_VERSION_MINOR})
 
-option(BUILD_APPLICATIONS "Build Applications" OFF)
+option(BUILD_APPLICATIONS "Build Applications" ON)
 option(BUILD_MATLAB "Build Matlab Wrappers" OFF)
 option(BUILD_SHARED_LIBS "Build Shared Library" ON)
 
@@ -19,8 +19,9 @@ if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
 endif()
 
 # Overide with cmake -DCMAKE_BUILD_TYPE=Debug {dir}
-if( NOT CMAKE_BUILD_TYPE )
-   set( CMAKE_BUILD_TYPE Release )
+if( NOT CMAKE_BUILD_TYPE)
+  message(STATUS "Build type not set (defaults to release)")
+  set(CMAKE_BUILD_TYPE Release)
 endif()
 
 string(TOLOWER ${PROJECT_NAME} LIBRARY_NAME)
@@ -30,7 +31,7 @@ include_directories(${EXPORT_CALIBU_INC})
 
 def_library(calibu
   SOURCES ${CALIBU_HEADERS} ${CALIBU_SOURCES}
-  LINK_LIBS ${CALIBU_LINK_LIBS}
+  LINK_LIBS ${CALIBU_LINK_LIBS} ${GFLAGS_LIBRARIES} ${GLOG_LIBRARIES}
   PACKAGE Calibu
   )
 
