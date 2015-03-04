@@ -22,6 +22,7 @@
   limitations under the License.
 */
 #pragma once
+#include <vector>
 #include <Eigen/Eigen>
 #include <sophus/se3.hpp>
 #include <vector>

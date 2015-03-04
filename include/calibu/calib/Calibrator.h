@@ -87,8 +87,6 @@ public:
         m_solver_options.update_state_every_iteration = true;
         m_solver_options.max_num_iterations = 10;
         
-        m_termination_type = ceres::DID_NOT_RUN;
-
         Clear();
     }
     
@@ -259,9 +257,7 @@ public:
     /// Return true if one of the tolerance criteria is reached.
     bool ReachedTolerance()
     {
-    	return ((m_termination_type == ceres::FUNCTION_TOLERANCE) ||
-		(m_termination_type == ceres::PARAMETER_TOLERANCE) ||
-		(m_termination_type == ceres::GRADIENT_TOLERANCE));
+      return ((m_termination_type == ceres::CONVERGENCE));
     }
 
 
@@ -401,7 +397,7 @@ protected:
     bool m_should_run;
     bool m_running;
     bool m_fix_intrinsics;
-    ceres::SolverTerminationType m_termination_type;
+    ceres::TerminationType m_termination_type;
     
     std::vector< std::unique_ptr<Sophus::SE3d> > m_T_kw;
     std::vector< std::unique_ptr<CameraAndPose> > m_camera;

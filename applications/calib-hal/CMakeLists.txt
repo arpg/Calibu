@@ -22,6 +22,9 @@ include_directories( ${CERES_INCLUDES} )
 find_package( OpenCV2 QUIET )
 include_directories( ${OpenCV2_INCLUDES} )
 
+find_package( CVARS )
+include_directories( ${CVARS_INCLUDE_DIR} )
+
 # This depends on HAL, which in turns depends on Calibu, so we disable this by default
 set(BUILD_CALIBGRID_HAL OFF CACHE BOOL "To build or not build calibgrid-hal")
 
