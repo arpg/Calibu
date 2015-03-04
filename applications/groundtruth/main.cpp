@@ -39,7 +39,7 @@
 #include "hess.h"
 #include "ImageAlign/compute_homography.h"
 
-#define MAX_FRAMES 16
+#define MAX_FRAMES 116
 
 // -cam split:[roi1=0+0+640+480]//proto:[startframe=1500]///Users/faradazerage/Desktop/DataSets/APRIL/Hallway-9-12-13/Twizzler/proto.log -cmod /Users/faradazerage/Desktop/DataSets/APRIL/Hallway-9-12-13/Twizzler/cameras.xml -o outfile.out -map /Users/faradazerage/Desktop/DataSets/APRIL/Hallway-9-12-13/Twizzler/DS20.csv -v -debug -show-ceres
 
@@ -240,14 +240,16 @@ void LoadGTPoses( const string& filename, std::vector< Eigen::Vector6d >& gtpose
     sscanf( line.c_str(), "%f\t%f\t%f\t%f\t%f\t%f\n", &x, &y, &z, &r, &p, &q );
 
     Eigen::Vector6d pz;
-    pz << x, y, z, r, p, q;
+    z *= -1;
+    p += M_PI / 2;
+    pz << x, y, z, r, p, q;    
     Eigen::Vector6d temp = _T2Cart(_Cart2T(pz).inverse());
 //    temp(2) *= -1;
 //    pz = _T2Cart(_Cart2T(temp).inverse());
 //    pz(3) += M_PI;
 //    pz(5) += M_PI / 2;
 
-    gtposes.push_back(temp);
+    gtposes.push_back(pz);
     std::getline ( ifs, line );
   }
   fflush(stderr);
@@ -302,7 +304,7 @@ void sparse_frame_optimize( std::vector<std::shared_ptr < detection > > ds,
   options.trust_region_strategy_type = ceres::DOGLEG;
   options.num_threads = 1;
   options.max_num_iterations = 50;
-  options.minimizer_progress_to_stdout = true;
+  options.minimizer_progress_to_stdout = false;
   double x[6];
   ceres::Problem problem;
   for (int count = 0; count < 6; count++)
@@ -796,6 +798,8 @@ int main( int argc, char** argv )
   pangolin::RegisterKeyPressCallback(']', [&](){ use_gt_pose_ = !use_gt_pose_;} );
   pangolin::RegisterKeyPressCallback('g', [&](){
     for (int ii = 0; ii < gt_axis.size(); ii++) { gt_axis[ii].SetVisible(!gt_axis[ii].IsVisible());} ;} );
+  pangolin::RegisterKeyPressCallback('c', [&](){
+    for (int ii = 0; ii < campose.size(); ii++) { campose[ii].SetVisible(!campose[ii].IsVisible());} ;} );
   pangolin::RegisterKeyPressCallback(';', [&](){ print_test_data_(it->second[0]);} );
   pangolin::RegisterKeyPressCallback('e', [&](){ dense_frame_optimize(it->second, &sim_cam, K);
     update_objects(detections,
@@ -832,7 +836,7 @@ int main( int argc, char** argv )
     }
 
     if (use_gt_pose_) {
-      sim_cam.SetPoseVision(_Cart2T(gt_poses[pose_number]));
+      sim_cam.SetPoseRobot(_Cart2T(gt_poses[pose_number]));
     } else {
       sim_cam.SetPoseVision(_Cart2T(camPoses[pose_number]));
     }
