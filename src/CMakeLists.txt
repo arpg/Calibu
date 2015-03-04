@@ -15,6 +15,7 @@ set(HEADERS
   ${INC_DIR}/cam/camera_models_crtp.h
   ${INC_DIR}/cam/camera_crtp_interop.h
   ${INC_DIR}/cam/camera_xml.h
+  ${INC_DIR}/cam/camera_rig.h
   #  ${INC_DIR}/cam/CameraModel.h
   #  ${INC_DIR}/cam/CameraModelInterface.h
   #  ${INC_DIR}/cam/CameraModelT.h
@@ -42,7 +43,6 @@ set(HEADERS
   ${INC_DIR}/target/RandomGrid.h
   ${INC_DIR}/target/Target.h
   ${INC_DIR}/target/TargetGridDot.h
-  ${INC_DIR}/target/TargetRandomDot.h
   ${INC_DIR}/utils/Rectangle.h
   ${INC_DIR}/utils/Range.h
   ${INC_DIR}/utils/Utils.h
@@ -66,7 +66,6 @@ SET(SOURCES
   ${SRC_DIR}/target/Hungarian.cpp
   ${SRC_DIR}/target/RandomGrid.cpp
   ${SRC_DIR}/target/TargetGridDot.cpp
-  ${SRC_DIR}/target/TargetRandomDot.cpp
   ${SRC_DIR}/utils/Utils.cpp
   ${SRC_DIR}/utils/Xml.cpp
   )

@@ -238,7 +238,7 @@ public:
     t_rc_ = t_rc;
   }
 
-  /// Return camera pose (typically in the "rigs" frame).
+  /// Return camera pose (typically in the "rig's" frame).
   SE3t Pose() const {
     return t_rc_;
   }

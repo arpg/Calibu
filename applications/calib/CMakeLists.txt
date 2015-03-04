@@ -23,7 +23,7 @@ if( Pangolin_FOUND AND Ceres_FOUND AND OpenCV_FOUND AND BUILD_CALIBGRID)
     target_link_libraries( calibgrid ${Calibu_LIBRARIES} )
     target_link_libraries( calibgrid ${CVARS_LIBRARY} )
 
-    install(TARGETS calibgrid
+        install(TARGETS calibgrid
         EXPORT CalibuTargets
         RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
     )
