@@ -377,7 +377,7 @@ void cv2vl( cv::Mat in, vl_sift_pix* out )
 
 void process_image(VlSiftFilt* sf, cv::Mat image, std::vector< fd > &fds)
 {
-  vl_sift_pix* vl_im = new vl_sift_pix[image.rows*image.cols];
+  vl_sift_pix* vl_im = new vl_sift_pix[image.rows*image.cols];  
   cv2vl(image, vl_im);
   vl_bool first = true;
 
@@ -492,19 +492,21 @@ Eigen::Matrix4d estimate_pose_( cv::Mat image1, cv::Mat image2,
 
   std::vector< fd > fds1, fds2;
   process_image(sf, image1, fds1);
+  cv::GaussianBlur(image2, image2, cv::Size(3, 3), 5);
   process_image(sf, image2, fds2);
 
   std::map<int, int> matches, matches_forward, matches_reverse;
   matches_forward = find_matches_(fds1, fds2);
-  matches_reverse = find_matches_(fds2, fds1);
+//  matches_reverse = find_matches_(fds2, fds1);
 
-  for (std::map<int,int>::iterator it = matches_forward.begin();
-       it != matches_forward.end(); it++) {
-    int mf = it->first;
-    if (matches_reverse.find(it->second)->second == mf) {
-      matches.insert( std::pair<int, int>(it->first, it->second) );
-    }
-  }
+//  for (std::map<int,int>::iterator it = matches_forward.begin();
+//       it != matches_forward.end(); it++) {
+//    int mf = it->first;
+//    if (matches_reverse.find(it->second)->second == mf) {
+//      matches.insert( std::pair<int, int>(it->first, it->second) );
+//    }
+//  }
+  matches = matches_forward;
 
   Eigen::Matrix< double, 6, 1> pose;
   pose << 0, 0, 0, 0, 0, 0;
@@ -601,7 +603,7 @@ Eigen::Matrix4d estimate_pose_( cv::Mat image1, cv::Mat image2,
   }
 
   for(std::map<int, int>::iterator it = matches.begin(); it != matches.end(); it++) {
-    if (ok.data[count] != 0) {
+    if (ok.data[count] != 0 || 1) {
       Eigen::Vector2d x1, x2;
       x1 << fds1[it->first].x, fds1[it->first].y;
       x2 << fds2[it->second].x, fds2[it->second].y;
@@ -620,8 +622,8 @@ Eigen::Matrix4d estimate_pose_( cv::Mat image1, cv::Mat image2,
     count++;
   }
 
-//  cv::imshow("image1", img1);
-//  cv::imshow("image2", img2);
+  cv::imshow("image1", img1);
+  cv::imshow("image2", img2);
 
   ceres::Solver::Summary summary;
   ceres::Solve(options, &problem, &summary);

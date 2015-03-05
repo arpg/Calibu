@@ -10,7 +10,7 @@
 #include "math.h"
 #include "measurements.h"
 
-#define STEP 0.01
+#define STEP 1e-3
 
 double cost( SceneGraph::GLSimCam* simcam,
              std::shared_ptr< detection > d,
@@ -22,15 +22,15 @@ double cost( SceneGraph::GLSimCam* simcam,
   simcam->SetPoseVision(_Cart2T(pose));
   simcam->RenderToTexture();
   simcam->CaptureGrey( img.data );
-//  cv::GaussianBlur(img, img, cv::Size(5, 5), 0);
+  cv::GaussianBlur(img, img, cv::Size(5, 5), 3);
 
   cv::Mat data;
   d->image.copyTo(data);
 
-//  for (int count = 1; count <= level; count++) {
-//    cv::pyrDown(img, img);
-//    cv::pyrDown(data, data);
-//  }
+  for (int count = 1; count <= level; count++) {
+    cv::pyrDown(img, img);
+    cv::pyrDown(data, data);
+  }
 
   cv::Mat img_d;
   img.convertTo(img_d, CV_64F);
@@ -89,6 +89,7 @@ void make_hessian( SceneGraph::GLSimCam* simcam,
   double C = cost(simcam, d, pose, level);
   double C_last = FLT_MAX;
   pose = d->pose;
+  std::cout << "Cost (0) - level("<< level <<"): "<<C<<std::endl;
   while (C < C_last) {
     step++;
     Eigen::Matrix<double, 6, 1> J;
@@ -101,6 +102,7 @@ void make_hessian( SceneGraph::GLSimCam* simcam,
     pose = pose - update;
     C_last = C;
     C = cost(simcam, d, pose, level);
+    std::cout << "Cost ("<<step<<") - level("<<level<<": "<<C<<std::endl;
     if (C < C_last) {
       d->pose = pose;
     }
@@ -117,7 +119,6 @@ void fundamentally_essential( SceneGraph::GLSimCam* simcam,
   cv::Mat img_object(img_scene.rows, img_scene.cols, img_scene.type());
   simcam->SetPoseVision( _Cart2T(d->pose) );
   simcam->RenderToTexture();
-  simcam->DrawCamera();
   simcam->CaptureGrey( img_object.data );
 
   cv::GaussianBlur( img_object, img_object, cv::Size(10, 10), 0);
@@ -225,7 +226,6 @@ void fundamentally_essential( SceneGraph::GLSimCam* simcam,
   Eigen::Matrix4d current = _Cart2T(d->pose);
   simcam->SetPoseVision( current*P1.inverse() );
   simcam->RenderToTexture();
-  simcam->DrawCamera();
   simcam->CaptureGrey( img_object.data );
 //  cv::imshow("p1", img_object);
   if (cv::sum(img_object)[0] > sum) {
@@ -235,7 +235,6 @@ void fundamentally_essential( SceneGraph::GLSimCam* simcam,
 
   simcam->SetPoseVision( current*P2.inverse() );
   simcam->RenderToTexture();
-  simcam->DrawCamera();
   simcam->CaptureGrey( img_object.data );
 //  cv::imshow("p2", img_object);
   if (cv::sum(img_object)[0] > sum) {
@@ -245,7 +244,6 @@ void fundamentally_essential( SceneGraph::GLSimCam* simcam,
 
   simcam->SetPoseVision( current*P3.inverse() );
   simcam->RenderToTexture();
-  simcam->DrawCamera();
   simcam->CaptureGrey( img_object.data );
 //  cv::imshow("p3", img_object);
   if (cv::sum(img_object)[0] > sum) {
@@ -255,7 +253,6 @@ void fundamentally_essential( SceneGraph::GLSimCam* simcam,
 
   simcam->SetPoseVision( current*P4.inverse() );
   simcam->RenderToTexture();
-  simcam->DrawCamera();
   simcam->CaptureGrey( img_object.data );
 //  cv::imshow("p4", img_object);
   if (cv::sum(img_object)[0] > sum) {

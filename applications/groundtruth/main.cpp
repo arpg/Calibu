@@ -235,7 +235,7 @@ void LoadGTPoses( const string& filename, std::vector< Eigen::Vector6d >& gtpose
   std::string line;
   fprintf(stderr, "Loading data file %s: \n", filename.c_str());
   std::getline ( ifs, line );
-  while( ifs.good() ){
+  while( (ifs.good()) && (gtposes.size() < MAX_FRAMES) ){
     float x, y, z, r, p, q;
     sscanf( line.c_str(), "%f\t%f\t%f\t%f\t%f\t%f\n", &x, &y, &z, &r, &p, &q );
 
@@ -243,7 +243,7 @@ void LoadGTPoses( const string& filename, std::vector< Eigen::Vector6d >& gtpose
     z *= -1;
     p += M_PI / 2;
     pz << x, y, z, r, p, q;    
-    Eigen::Vector6d temp = _T2Cart(_Cart2T(pz).inverse());
+//    Eigen::Vector6d temp = _T2Cart(_Cart2T(pz).inverse());
 //    temp(2) *= -1;
 //    pz = _T2Cart(_Cart2T(temp).inverse());
 //    pz(3) += M_PI;
