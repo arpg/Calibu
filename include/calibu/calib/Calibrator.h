@@ -101,7 +101,8 @@ public:
       std::shared_ptr<Rig<double>> rig(new Rig<double>);
 
         for(size_t c=0; c<m_camera.size(); ++c) {
-            rig->AddCamera(m_camera[c]);
+            m_camera[c]->camera->SetPose(m_camera[c]->T_ck.inverse());
+            rig->AddCamera(m_camera[c]->camera);
         }
         
         WriteXmlRig(filename, rig);
@@ -143,11 +144,12 @@ public:
  
     /// Add camera to sensor rig. The returned ID should be used when adding
     /// measurements for this camera
-    int AddCamera(const std::shared_ptr<CameraInterface<double>> cam, const Sophus::SE3d& T_ck = Sophus::SE3d() )
+    int AddCamera(const std::shared_ptr<CameraInterface<double>> cam,
+                  const Sophus::SE3d& T_ck = Sophus::SE3d() )
     {
         int id = m_camera.size();
         m_camera.push_back( make_unique<CameraAndPose>(cam,T_ck) );
-        m_camera.back()->camera.SetIndex(id);
+        m_camera.back()->camera->SetIndex(id);
         return id;
     }
     
@@ -193,19 +195,26 @@ public:
         
         // Create cost function
         CostFunctionAndParams* cost = new CostFunctionAndParams();
-        
-        if( cp.camera->Type() == "FovCamera" ) {
-            cost->Cost() =  new ceres::AutoDiffCostFunction<ReprojectionCostFunctor<Fov>,
+
+        std::shared_ptr<CameraInterface<double>> interface = cp.camera;
+
+        //if( cp.camera->Type() == "FovCamera" ) {
+        if( dynamic_cast<FovCamera<double>* >(interface.get()) ) {
+            cost->Cost() =  new ceres::AutoDiffCostFunction<ReprojectionCostFunctor<FovCamera<double>>,
                     2, Sophus::SE3d::num_parameters, Sophus::SE3d::num_parameters,
-                    5>( new ReprojectionCostFunctor<Fov>(P_w, p_c) );
+                    calibu::FovCamera<double>::NumParams>( new ReprojectionCostFunctor<FovCamera<double>>(P_w, p_c) );
         //} else if( dynamic_cast<CameraModelT<Poly2>* >(&cp.camera.GetCameraModelInterface()) ) {
         //    cost->Cost() =  new ceres::AutoDiffCostFunction<ReprojectionCostFunctor<Poly2>,
         //            2, Sophus::SE3d::num_parameters, Sophus::SE3d::num_parameters,
         //            Poly2::NUM_PARAMS>( new ReprojectionCostFunctor<Poly2>(P_w, p_c) );
-        } else if( cp.camera->Type() == "Poly3Camera" ) {
-            cost->Cost() =  new ceres::AutoDiffCostFunction<ReprojectionCostFunctor<Poly3>,
+        } else if( dynamic_cast<LinearCamera<double>* >(interface.get()) ) {
+            cost->Cost() =  new ceres::AutoDiffCostFunction<ReprojectionCostFunctor<LinearCamera<double>>,
                     2, Sophus::SE3d::num_parameters, Sophus::SE3d::num_parameters,
-                    7>( new ReprojectionCostFunctor<Poly3>(P_w, p_c) );
+                    calibu::LinearCamera<double>::NumParams>( new ReprojectionCostFunctor<LinearCamera<double>>(P_w, p_c) );
+        } else if( dynamic_cast<Poly3Camera<double>* >(interface.get()) ) {
+            cost->Cost() =  new ceres::AutoDiffCostFunction<ReprojectionCostFunctor<Poly3Camera<double>>,
+                    2, Sophus::SE3d::num_parameters, Sophus::SE3d::num_parameters,
+                    calibu::Poly3Camera<double>::NumParams>( new ReprojectionCostFunctor<Poly3Camera<double>>(P_w, p_c) );
         //} else if( dynamic_cast<CameraModelT<ProjectionKannalaBrandt>* >(&cp.camera.GetCameraModelInterface()) ) {
         //    cost->Cost() =  new ceres::AutoDiffCostFunction<ReprojectionCostFunctor<ProjectionKannalaBrandt>,
         //            2, Sophus::SE3d::num_parameters, Sophus::SE3d::num_parameters,
@@ -215,7 +224,7 @@ public:
         }
 
         cost->Params() = std::vector<double*>{
-                T_kw.data(), cp.T_ck.data(), cp.camera.data()
+                T_kw.data(), cp.T_ck.data(), cp.camera->GetParams().data()
         };
         cost->Loss() = &m_LossFunction;
         m_costs.push_back(std::unique_ptr<CostFunctionAndParams>(cost));
@@ -326,10 +335,10 @@ public:
         
         for(size_t c=0; c < m_camera.size(); ++c) {
             std::cout << "Camera: " << c << std::endl;
-            std::cout << m_camera[c]->GetParams().transpose() << std::endl;
+            std::cout << m_camera[c]->camera->GetParams().transpose() << std::endl;
             
             if(c > 0) {
-                std::cout << m_camera[c]->Pose().matrix3x4() << std::endl;
+                std::cout << m_camera[c]->T_ck.matrix3x4() << std::endl;
             }
             std::cout << std::endl;
         }        
@@ -345,13 +354,13 @@ protected:
         
         // Add parameters
         for(size_t c=0; c<m_camera.size(); ++c) {
-            problem.AddParameterBlock(m_camera[c]->Pose().data(), 7, &m_LocalParamSe3 );
+            problem.AddParameterBlock(m_camera[c]->T_ck.data(), 7, &m_LocalParamSe3 );
             if(c==0) {
                 problem.SetParameterBlockConstant(m_camera[c]->T_ck.data());
             }
             if(m_fix_intrinsics) {
-                problem.AddParameterBlock(m_camera[c]->GetParams().data, m_camera[c]->NumParams() );
-                problem.SetParameterBlockConstant(m_camera[c]->GetParams().data());
+                problem.AddParameterBlock(m_camera[c]->camera->GetParams().data(), m_camera[c]->camera->NumParams() );
+                problem.SetParameterBlockConstant(m_camera[c]->camera->GetParams().data());
             }
         }
         

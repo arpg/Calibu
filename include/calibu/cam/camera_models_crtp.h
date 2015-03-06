@@ -153,6 +153,8 @@ class LinearCamera : public CameraImpl<Scalar, 4, LinearCamera<Scalar> > {
  public:
   using Base::Base;
 
+  static constexpr int NumParams = 4;
+
   template<typename T>
   static void Scale( const double s, T* params ) {
     CameraUtils::Scale( s, params );
@@ -224,6 +226,8 @@ class FovCamera : public CameraImpl<Scalar, 5, FovCamera<Scalar> > {
   typedef CameraImpl<Scalar, 5, FovCamera<Scalar> > Base;
  public:
   using Base::Base;
+
+  static constexpr int NumParams = 5;
 
   template<typename T>
   static void Scale( const double s, T* params ) {
@@ -510,6 +514,8 @@ class Poly3Camera : public CameraImpl<Scalar, 7, Poly3Camera<Scalar> > {
   typedef CameraImpl<Scalar, 7, Poly3Camera<Scalar> > Base;
  public:
   using Base::Base;
+
+  static constexpr int NumParams = 7;
 
   template<typename T>
   static void Scale( const double s, T* params ) {
