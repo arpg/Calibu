@@ -221,7 +221,8 @@ void WriteXmlCameraAndTransform(
 {
   const std::string dd = IndentStr(indent);
   out << dd << AttribOpen(NODE_CAM_POSE) << std::endl;
-  WriteXmlCameraAndTransform(out, cop, indent+4);
+  WriteXmlCamera(out, cop, indent+4);
+  WriteXmlSE3(out, cop->Pose(), indent+4);
   out << dd << AttribClose(NODE_CAM_POSE) << std::endl;
 }
 
@@ -280,7 +281,7 @@ void WriteXmlRig(std::ostream& out, const std::shared_ptr<Rigd> rig, int indent 
 void WriteXmlRig(const std::string& filename, const std::shared_ptr<Rigd> rig)
 {
   std::ofstream of(filename);
-  WriteXmlRig(of, rig);
+  WriteXmlRig(of, rig, 0);
 }
 
 std::shared_ptr<Rigd> ReadXmlRig(TiXmlNode* xmlrig)

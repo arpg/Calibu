@@ -9,7 +9,7 @@ using namespace calibu;
 
 void Test1()
 {
-    std::shared_ptr<Rig<double>> rig = ReadXmlRig("cameras.xml");
+    std::shared_ptr<Rig<double>> rig = ReadXmlRig("cameras_in.xml");
     std::shared_ptr<CameraInterface<double>> cam = rig->cameras_[0];
 
     Eigen::Vector2d p;
@@ -27,7 +27,7 @@ void Test1()
 
 void Test2()
 {
-    std::shared_ptr<Rig<double>> rig = calibu::ReadXmlRig("cameras.xml");
+    std::shared_ptr<Rig<double>> rig = calibu::ReadXmlRig("cameras_in.xml");
     
     for(size_t i=0; i< rig->cameras_.size(); ++i) {
         std::shared_ptr<CameraInterface<double>> cam = rig->cameras_[i];
@@ -35,6 +35,8 @@ void Test2()
         std::cout << "    Params       = " << cam->K().transpose() << std::endl;
         std::cout << "    T_rc         = " << cam->Pose().matrix3x4() << std::endl;
     }    
+
+    WriteXmlRig("cameras_out.xml", rig);
 }
 
 int main( int argc, char* argv[] )
