@@ -111,17 +111,17 @@ std::shared_ptr<CameraInterfaced> ReadXmlCamera(TiXmlElement* pEl)
 
     if (sType == "calibu_fu_fv_u0_v0_w") {
     rCam.reset(new calibu::FovCamera<double>());
-    rCam->SetParams(Eigen::VectorXd::Constant(5,1));
+    rCam->SetParams(Eigen::VectorXd::Constant(FovCamera<double>::NumParams,1));
   } else if (sType == "calibu_fu_fv_u0_v0") {
     rCam.reset(new calibu::LinearCamera<double>());
-    rCam->SetParams(Eigen::VectorXd::Constant(4,1));
+    rCam->SetParams(Eigen::VectorXd::Constant(LinearCamera<double>::NumParams,1));
 //  } else if (sType == "calibu_fu_fv_u0_v0_k1_k2") {
 //    rCam.reset(new calibu::Poly2Camera<double>());
 //  } else if (sType == "calibu_fu_fv_u0_v0_kb4") {
 //    rCam.reset(new calibu::KannalaBrandt<double>());
   } else if (sType == "calibu_fu_fv_u0_v0_k1_k2_k3") {
     rCam.reset(new calibu::Poly3Camera<double>());
-    rCam->SetParams(Eigen::VectorXd::Constant(7,1));
+    rCam->SetParams(Eigen::VectorXd::Constant(Poly3Camera<double>::NumParams,1));
   } else {
     std::cerr << "Unknown old camera type " << sType << " please implement this"
                  " camera before initializing it. " << std::endl;

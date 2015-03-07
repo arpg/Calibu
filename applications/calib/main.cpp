@@ -171,7 +171,7 @@ int main( int argc, char** argv)
 
       if(filename == "fov") {
         Eigen::Vector2i size_;
-        Eigen::VectorXd params_(5);
+        Eigen::VectorXd params_(FovCamera<double>::NumParams);
         size_ << w_i, h_i;
         params_ << 300, 300, w_i/2.0, h_i/2.0, 0.2;
         std::shared_ptr<CameraInterface<double>> starting_cam(new FovCamera<double>(params_, size_));
@@ -182,7 +182,7 @@ int main( int argc, char** argv)
       //  input_cameras.push_back( CameraAndPose(CameraModel(starting_cam), Sophus::SE3d() ) );
       }else if(filename == "poly3" || filename =="poly") {
         Eigen::Vector2i size_;
-        Eigen::VectorXd params_(7);
+        Eigen::VectorXd params_(Poly3Camera<double>::NumParams);
         size_ << w_i, h_i;
         params_ << 300, 300, w_i/2.0, h_i/2.0, 0.0, 0.0, 0.0;
         std::shared_ptr<CameraInterface<double>> starting_cam(new Poly3Camera<double>(params_, size_));
@@ -257,7 +257,7 @@ int main( int argc, char** argv)
     }else{
       // Generic starting set of parameters.
       Eigen::Vector2i size_;
-      Eigen::VectorXd params_(5);
+      Eigen::VectorXd params_(FovCamera<double>::NumParams);
       size_ << w_i, h_i;
       params_ << 300, 300, w_i/2.0, h_i/2.0, 0.2;
       std::shared_ptr<FovCamera<double>>
