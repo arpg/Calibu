@@ -240,14 +240,18 @@ void LoadGTPoses( const string& filename, std::vector< Eigen::Vector6d >& gtpose
     sscanf( line.c_str(), "%f\t%f\t%f\t%f\t%f\t%f\n", &x, &y, &z, &r, &p, &q );
 
     Eigen::Vector6d pz;
-    z *= -1;
-    p += M_PI / 2;
-    pz << x, y, z, r, p, q;    
-//    Eigen::Vector6d temp = _T2Cart(_Cart2T(pz).inverse());
-//    temp(2) *= -1;
-//    pz = _T2Cart(_Cart2T(temp).inverse());
-//    pz(3) += M_PI;
-//    pz(5) += M_PI / 2;
+    Eigen::Vector3d t, rt;
+    Eigen::Matrix3d rot;
+    // Robotics to vision and invert 'z'
+    rot << 0, 1, 0,
+           1, 0, 0,
+           0, 0, -1;
+    t << x, y, z;
+    t = rot*t;
+    rt << r, p, q;
+    rt = _R2Cart(rot*_Cart2R(rt));
+
+    pz << t(0) + 0.04, t(1) + 0.009, t(2), rt(0), rt(1), rt(2);
 
     gtposes.push_back(pz);
     std::getline ( ifs, line );
@@ -836,7 +840,7 @@ int main( int argc, char** argv )
     }
 
     if (use_gt_pose_) {
-      sim_cam.SetPoseRobot(_Cart2T(gt_poses[pose_number]));
+      sim_cam.SetPoseVision(_Cart2T(gt_poses[pose_number]));
     } else {
       sim_cam.SetPoseVision(_Cart2T(camPoses[pose_number]));
     }

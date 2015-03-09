@@ -85,7 +85,7 @@ void make_hessian( SceneGraph::GLSimCam* simcam,
   int step = 0;
 
   Eigen::Vector6d pose = d->pose;
-  double gamma = 1e-6;
+  double gamma = 1e-9;
   double C = cost(simcam, d, pose, level);
   double C_last = FLT_MAX;
   pose = d->pose;
@@ -115,6 +115,7 @@ void fundamentally_essential( SceneGraph::GLSimCam* simcam,
                               Eigen::Matrix3d k )
 {
   cv::Mat img_scene = d->image;
+  img_scene.data;
 
   cv::Mat img_object(img_scene.rows, img_scene.cols, img_scene.type());
   simcam->SetPoseVision( _Cart2T(d->pose) );

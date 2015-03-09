@@ -85,6 +85,21 @@ inline Eigen::Vector3d _R2Cart(
     return rpq;
 }
 
+inline Eigen::Matrix3d _Cart2R(Eigen::Vector3d rpq)
+{
+  Eigen::Matrix3d r, p, q;
+  r << 1,           0,            0,
+       0, cos(rpq(0)), -sin(rpq(0)),
+       0, sin(rpq(0)),  cos(rpq(0));
+  p << cos(rpq(1)), 0, sin(rpq(1)),
+       0,           1,           0,
+      -sin(rpq(1)), 0, cos(rpq(1));
+  q << cos(rpq(2)), -sin(rpq(2)), 0,
+       sin(rpq(2)),  cos(rpq(2)), 0,
+                  0,           0, 1;
+  return q*p*r;
+}
+
 inline Eigen::Matrix<double,6,1> _T2Cart(
         const Eigen::Matrix4d& T
         )
