@@ -251,6 +251,7 @@ void LoadGTPoses( const string& filename, std::vector< Eigen::Vector6d >& gtpose
     rt << r, p, q;
     rt = _R2Cart(rot*_Cart2R(rt));
 
+    //  Calibu offset from tag 1 ~= <9, 40>
     pz << t(0) + 0.04, t(1) + 0.009, t(2), rt(0), rt(1), rt(2);
 
     gtposes.push_back(pz);
