@@ -30,7 +30,6 @@
  * Requires the following functions in the derived class:
  * - static void Scale(const T* scale, const T* params)
  * - static void SetParams()
- * - statid void SetType()
  * - static void Unproject(const T* pix, const T* params, T* ray) {
  * - static void Project(const T* ray, const T* params, T* pix) {
  * - static void dProject_dray(const T* ray, const T* params, T* j) {
@@ -80,11 +79,6 @@ class CameraImpl : public CameraInterface<Scalar> {
     Eigen::Matrix<Scalar,3,3> Kmat;
     Derived::K( this->params_.data() , Kmat.data());
     return Kmat;
-  }
-
-  void
-  SetType() const override {
-    Derived::SetType( this->type_.data());
   }
 
   Vec3t

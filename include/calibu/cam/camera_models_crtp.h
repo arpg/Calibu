@@ -169,11 +169,6 @@ class LinearCamera : public CameraImpl<Scalar, 4, LinearCamera<Scalar> > {
   }
 
   template<typename T>
-  static void SetType(const T* type_){
-    type_ = "LinearCamera";
-  }
-
-  template<typename T>
   static void Unproject(const T* pix, const T* params, T* ray) {
     // First multiply by inverse K and calculate distortion parameter.
     T pix_kinv[2];
@@ -244,11 +239,6 @@ class FovCamera : public CameraImpl<Scalar, 5, FovCamera<Scalar> > {
   template<typename T>
   static void K( const T* params , T* Kmat) {
     CameraUtils::K( params, Kmat);
-  }
-
-  template<typename T>
-  static void SetType(const T* type_) {
-    type_ = "FovCamera";
   }
 
   // For these derivatives, refer to the camera_derivatives.m matlab file.
@@ -532,11 +522,6 @@ class Poly3Camera : public CameraImpl<Scalar, 7, Poly3Camera<Scalar> > {
   template<typename T>
   static void K( const T* params , T* Kmat) {
     CameraUtils::K( params , Kmat);
-  }
-
-  template<typename T>
-  static void SetType( const T* type_) {
-    type_ = "Poly3Camera";
   }
 
   template<typename T>

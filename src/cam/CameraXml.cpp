@@ -68,7 +68,8 @@ std::string CameraType( const std::string& sType )
 }
 
 void WriteXmlCamera(std::ostream& out,
-                    const std::shared_ptr<CameraInterfaced> cam, int indent)
+                    const std::shared_ptr<CameraInterfaced> cam,
+                    int indent)
 {
   const std::string dd1 = IndentStr(indent);
   const std::string dd2 = IndentStr(indent+4);
@@ -149,11 +150,12 @@ std::shared_ptr<CameraInterfaced> ReadXmlCamera(TiXmlElement* pEl)
     std::string sF = xmlForward ? xmlForward->GetText() : "[ 0; 0; 1 ]";
 
     rCam->SetVersion( StrToVal<int>(sVer,0) );
-    rCam->SetName( sName );
     rCam->SetIndex( StrToVal<int>(sIndex,0) );
     rCam->SetSerialNumber( StrToVal<long int>(sSerial,-1) );
     rCam->SetParams( StrToVal<Eigen::VectorXd>(sParams, rCam->GetParams()) );
     rCam->SetImageDimensions( StrToVal<int>(sWidth), StrToVal<int>(sHeight) );
+    rCam->SetName(sName);
+    rCam->SetType(sType);
     Eigen::Matrix3d rdf;
     rdf.col(0) = StrToVal<Eigen::Vector3d>(sR);
     rdf.col(1) = StrToVal<Eigen::Vector3d>(sD);
@@ -185,7 +187,8 @@ void WriteXmlSE3(std::ostream& out, const Sophus::SE3d& t_rc, int indent)
 
   out << dd1 << AttribOpen(NODE_POSE) << std::endl;
   out << dd2 << "<!-- Camera pose. World from Camera point transfer. 3x4 matrix, in the RDF frame convention defined above -->\n";
-  out << dd2 << "<T_rc> " << t_rc.matrix3x4() << " </T_rc>\n";
+  /// Actually now T_rc (rig->camera), but preserving backward compatibility.
+  out << dd2 << "<T_wc> " << t_rc.matrix3x4() << " </T_wc>\n";
   out << dd1 << AttribClose(NODE_POSE) << std::endl;
 }
 
@@ -197,6 +200,7 @@ void WriteXmlSE3(const std::string& filename, const Sophus::SE3d& t_rc)
 
 Sophus::SE3d ReadXmlSE3(TiXmlNode* xmlcampose)
 {
+  /// Actually now T_rc (rig->camera), but preserving backward compatibility.
   const std::string val = xmlcampose->FirstChildElement("T_wc")->GetText();
   Eigen::Matrix4d m = StrToVal<Eigen::Matrix4d>(val);
   return Sophus::SE3d(m);

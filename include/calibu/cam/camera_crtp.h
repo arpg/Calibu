@@ -57,8 +57,6 @@ public:
 
   virtual Eigen::Matrix<Scalar,3,3> K() const = 0;
 
-  virtual void SetType() const = 0;
-
   /** Unproject an image location into world coordinates. */
   virtual Vec3t Unproject(const Vec2t& pix) const = 0;
 
@@ -242,6 +240,11 @@ public:
   /// Return camera pose (typically in the "rig's" frame).
   SE3t Pose() const {
     return t_rc_;
+  }
+
+  /// Set type.
+  void SetType( const std::string type ) {
+    type_ = type;
   }
 
 

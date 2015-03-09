@@ -39,6 +39,7 @@ std::shared_ptr<calibu::CameraInterface<double>> MvlToCalibu( const mvl::CameraM
                 CamAndPose.reset(new calibu::LinearCamera<double>());
                 CamAndPose->SetImageDimensions( mvlcam.Width(), mvlcam.Height());
                 CamAndPose->SetParams(p);
+                CamAndPose->SetType("calibu_fu_fv_u0_v0");
             }
             else{
                 // Eigen::Matrix<double,5,1> params;
@@ -53,6 +54,7 @@ std::shared_ptr<calibu::CameraInterface<double>> MvlToCalibu( const mvl::CameraM
                 CamAndPose.reset(new calibu::LinearCamera<double>());
                 CamAndPose->SetImageDimensions( mvlcam.Width(), mvlcam.Height());
                 CamAndPose->SetParams(p);
+                CamAndPose->SetType("calibu_fu_fv_u0_v0");
             break;
     }
 

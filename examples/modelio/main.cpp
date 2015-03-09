@@ -15,14 +15,16 @@ void Test1()
     Eigen::Vector2d p;
     Eigen::Vector3d P;
     double d = 10;
-    P << 0,0,d;
+    P << 1,1,d;
  
     // project and lift into the z=1 plane
     p = cam->Project( P );
+    std::cout << p << std::endl; //debug
 
     // unproject form the image back into 3D
     Eigen::Vector3d P2;
     P2 = d*cam->Unproject( p );
+    std::cout << P2 << std::endl; //debug
 }
 
 void Test2()
@@ -33,7 +35,7 @@ void Test2()
         std::shared_ptr<CameraInterface<double>> cam = rig->cameras_[i];
         cam->PrintInfo();
         std::cout << "    Params       = " << cam->K().transpose() << std::endl;
-        std::cout << "    T_rc         = " << cam->Pose().matrix3x4() << std::endl;
+        std::cout << "    T_wc         = " << cam->Pose().matrix3x4() << std::endl;
     }    
 
     WriteXmlRig("cameras_out.xml", rig);
