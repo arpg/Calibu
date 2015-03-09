@@ -22,7 +22,7 @@
 #pragma once
 
 #include <calibu/Platform.h>
-#include <calibu/cam/CameraModel.h>
+#include <calibu/cam/camera_crtp.h>
 #include <Eigen/Eigen>
 #include <Eigen/StdVector>
 #include <sophus/se3.hpp>
