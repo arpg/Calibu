@@ -39,6 +39,11 @@ classdef calibu_rig
                                           obj.cpp_calibu_rig_ptr_, ...
                                           camera_id, Tab, ray, rho);
         end
+
+        %%% Get K.
+        function [K] = getK(obj, camera_id)
+            K = calibu_mex('getK', obj.cpp_calibu_rig_ptr_, camera_id);
+        end
         
     end
     

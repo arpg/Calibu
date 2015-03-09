@@ -3,6 +3,8 @@
 #include "calibu/cam/camera_crtp.h"
 #include "calibu/cam/camera_xml.h"
 
+std::shared_ptr<calibu::Rig<double>> calibu_wrap;
+
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
   // Command string.
@@ -12,7 +14,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   if (nrhs < 1 || mxGetString(prhs[0], cmd, sizeof(cmd))) {
     mexErrMsgTxt("First input should be a string less than 64 characters long.");
   }
-
 
   /// Constructor.
   if (!strcmp("new", cmd)) {
@@ -36,7 +37,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       mexErrMsgTxt("New: Error opening camera model file. Does it exist?");
     }
 
-    std::shared_ptr<calibu::Rig<double>> calibu_wrap = calibu::ReadXmlRig(sfilename);
+    calibu_wrap = calibu::ReadXmlRig(sfilename);
     plhs[0] = convertPtr2Mat<calibu::Rig<double>>(calibu_wrap.get());
 
     return;
@@ -89,7 +90,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   /// Unproject.
   if (!strcmp("unproject", cmd)) {
     unsigned int camera_id = static_cast<unsigned int>(*mxGetPr(prhs[2]));
-    double* pixel_coordinate_ptr = mxGetPr(prhs[2]);
+    double* pixel_coordinate_ptr = mxGetPr(prhs[3]);
 
     if (camera_id == 0 || camera_id > calibu_cam_ptr->cameras_.size()) {
       mexErrMsgTxt("Camera ID is out of bounds.");
@@ -124,23 +125,58 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       return;
     }
 
-    Eigen::Matrix4d t_ba_mat;													//this
-    Sophus::SE3d t_ba;																//is
-    t_ba_mat << t_ba_ptr[0], t_ba_ptr[1], t_ba_ptr[2];//funky
-    t_ba = Sophus::SE3d(t_ba_mat);										//here
+    Eigen::Matrix4d t_ba_mat;
+    t_ba_mat << t_ba_ptr[0], t_ba_ptr[4], t_ba_ptr[8], t_ba_ptr[12],
+        t_ba_ptr[1], t_ba_ptr[5], t_ba_ptr[9], t_ba_ptr[13],
+        t_ba_ptr[2], t_ba_ptr[6], t_ba_ptr[10], t_ba_ptr[14],
+        t_ba_ptr[3], t_ba_ptr[7], t_ba_ptr[11], t_ba_ptr[15];
+    Sophus::SE3d t_ba(t_ba_mat);
     Eigen::Vector3d ray;
     ray << ray_ptr[0], ray_ptr[1], ray_ptr[2];
+
     plhs[0] = mxCreateDoubleMatrix(1, 2, mxREAL);
     double* pixel_coordinate_ptr = mxGetPr(plhs[0]);
 
     Eigen::Vector2d pixel_coordinate;
-    pixel_coordinate = calibu_cam_ptr->cameras_[camera_id-1]->Transfer3d(t_ba, ray, *rho);
+    pixel_coordinate = calibu_cam_ptr->cameras_[camera_id-1]->
+        Transfer3d(t_ba, ray, *rho);
 
     pixel_coordinate_ptr[0] = pixel_coordinate[0];
     pixel_coordinate_ptr[1] = pixel_coordinate[1];
 
     return;
   }
+
+
+  /// Get K.
+  if (!strcmp("getK", cmd)) {
+    unsigned int camera_id = static_cast<unsigned int>(*mxGetPr(prhs[2]));
+
+    if (camera_id == 0 || camera_id > calibu_cam_ptr->cameras_.size()) {
+      mexErrMsgTxt("Camera ID is out of bounds.");
+      return;
+    }
+
+    plhs[0] = mxCreateDoubleMatrix(3, 3, mxREAL);
+    double* k_ptr = mxGetPr(plhs[0]);
+
+    Eigen::Matrix3d K = calibu_cam_ptr->cameras_[camera_id-1]->K();
+
+    k_ptr[0] = K(0,0);
+    k_ptr[1] = K(1,0);
+    k_ptr[2] = K(2,0);
+
+    k_ptr[3] = K(0,1);
+    k_ptr[4] = K(1,1);
+    k_ptr[5] = K(2,1);
+
+    k_ptr[6] = K(0,2);
+    k_ptr[7] = K(1,2);
+    k_ptr[8] = K(2,2);
+
+    return;
+  }
+
 
 
   // Got here, so function not recognized.

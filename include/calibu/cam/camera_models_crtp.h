@@ -49,12 +49,12 @@ struct CameraUtils {
   static inline void K(const T* params, T* Kmat) {
     Kmat[0] = params[0];
     Kmat[1] = 0;
-    Kmat[2] = params[2];
+    Kmat[2] = 0;
     Kmat[3] = 0;
     Kmat[4] = params[1];
-    Kmat[5] = params[3];
-    Kmat[6] = 0;
-    Kmat[7] = 0;
+    Kmat[5] = 0;
+    Kmat[6] = params[2];
+    Kmat[7] = params[3];
     Kmat[8] = 1;
     //Kmat << params[0], 0, params[2],
     //    0, params[1], params[3],
