@@ -7,9 +7,9 @@
 void write_tags( FILE* f, int x, int y, unsigned char* tag, int id, float scale = 25.4, float wb = 0.0f )
 {
   // Convert scale to EPS units, default set to 1"
-  scale *= 72;
-  scale /= 25.4;
-  scale /= 8;
+  scale /= 25.4;  // 25.4 mm per inch
+  scale *= 72;    // 72 eps units per inch
+  scale /= 8;     // 8x8 small blocks per tag
 
   fprintf(f, "%d %d translate\n", x, y);
   for(int ii = 0; ii < 8; ii++) {
@@ -70,12 +70,15 @@ void tag_from_id( int id, unsigned char* tag)
   tag36h11_destroy(tf);
 }
 
-void write_csv( FILE* f, int x, int y, int id )
+void write_csv( FILE* f, int x, int y, int id, float scale = 25.4 )
 {
   id *= 100;
-  float del = (80 / 72.0f) * ( 0.0254);
-  float xf = 0.0254*(x / 72.0f);
-  float yf = 0.0254*(y / 72.0f);
+
+  // x and y are in eps units.  scale is the size of the tag per side in mm
+  float del = scale / 1000;  // mm to m
+  float xf = 0.0254*(x / 72.0f);  // eps units to m
+  float yf = 0.0254*(y / 72.0f);  // eps units to m
+
   fprintf(f, "%d, %f, %f,  0\n", id, xf, yf);
   fprintf(f, "%d, %f, %f,  0\n", id + 1, xf + del, yf);
   fprintf(f, "%d, %f, %f,  0\n", id + 2, xf + del, yf + del);
@@ -106,7 +109,7 @@ int main( int argc, char** argv )
     write_tags(f, atoi(argv[count + 1]), atoi(argv[count + 2]),
         tag, atoi(argv[count]), scale, wb);
     write_csv(csv, atoi(argv[count + 1]), atoi(argv[count + 2]),
-        atoi(argv[count]));
+        atoi(argv[count]), scale);
     count += 3;
   }
 

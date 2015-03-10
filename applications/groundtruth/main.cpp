@@ -252,7 +252,7 @@ void LoadGTPoses( const string& filename, std::vector< Eigen::Vector6d >& gtpose
     rt = _R2Cart(rot*_Cart2R(rt));
 
     Eigen::Vector3d offset;
-    offset << 9, 40, 0;
+    offset << 0, 0, 0;
     offset /= 1000;
     t += offset;
 
@@ -499,9 +499,9 @@ int main( int argc, char** argv )
 
   std::map<int,Eigen::Vector3d> survey_map;
   std::map<int, tag_t>  tags;
-  std::vector< Eigen::Vector6d > gt_poses;
+  std::vector< Eigen::Vector6d > gt_poses_temp, gt_poses;
   if (cl.search("-poses")) {
-    LoadGTPoses(cl.follow("", "-poses"), gt_poses);
+    LoadGTPoses(cl.follow("", "-poses"), gt_poses_temp);
   }
   ParseSurveyMapFile( cl.follow("", "-map"), survey_map, tags );
   fprintf(stdout, "Finished parsing survey map\n");
@@ -629,6 +629,7 @@ int main( int argc, char** argv )
     }
 
     detections.insert( std::pair<int, std::vector< std::shared_ptr< detection > > >(count, ds) );
+    gt_poses.push_back(gt_poses_temp[count]);
   }
 
   fprintf(stdout, "Finished parsing file\n");
