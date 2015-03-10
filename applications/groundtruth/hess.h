@@ -89,7 +89,7 @@ void make_hessian( SceneGraph::GLSimCam* simcam,
   double C = cost(simcam, d, pose, level);
   double C_last = FLT_MAX;
   pose = d->pose;
-  std::cout << "Cost (0) - level("<< level <<"): "<<C<<std::endl;
+//  std::cout << "Cost (0) - level("<< level <<"): "<<C<<std::endl;
   while (C < C_last) {
     step++;
     Eigen::Matrix<double, 6, 1> J;
@@ -102,7 +102,7 @@ void make_hessian( SceneGraph::GLSimCam* simcam,
     pose = pose - update;
     C_last = C;
     C = cost(simcam, d, pose, level);
-    std::cout << "Cost ("<<step<<") - level("<<level<<": "<<C<<std::endl;
+//    std::cout << "Cost ("<<step<<") - level("<<level<<": "<<C<<std::endl;
     if (C < C_last) {
       d->pose = pose;
     }
