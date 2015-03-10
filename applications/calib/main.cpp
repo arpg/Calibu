@@ -176,10 +176,13 @@ int main( int argc, char** argv)
         params_ << 300, 300, w_i/2.0, h_i/2.0, 0.2;
         std::shared_ptr<CameraInterface<double>> starting_cam(new FovCamera<double>(params_, size_));
         input_cameras.push_back( CameraAndPose(starting_cam, Sophus::SE3d() ) );
-      //}else if(filename == "poly2") {
-      //  CameraModelT<Poly2> starting_cam(w_i, h_i);
-      //  starting_cam.Params()  << 300, 300, w_i/2.0, h_i/2.0, 0.0, 0.0;
-      //  input_cameras.push_back( CameraAndPose(CameraModel(starting_cam), Sophus::SE3d() ) );
+      }else if(filename == "poly2") {
+        Eigen::Vector2i size_;
+        Eigen::VectorXd params_(Poly2Camera<double>::NumParams);
+        size_ << w_i, h_i;
+        params_ << 300, 300, w_i/2.0, h_i/2.0, 0.0, 0.0, 0.0;
+        std::shared_ptr<CameraInterface<double>> starting_cam(new Poly2Camera<double>(params_, size_));
+        input_cameras.push_back( CameraAndPose(starting_cam, Sophus::SE3d() ) );
       }else if(filename == "poly3" || filename =="poly") {
         Eigen::Vector2i size_;
         Eigen::VectorXd params_(Poly3Camera<double>::NumParams);
@@ -187,10 +190,13 @@ int main( int argc, char** argv)
         params_ << 300, 300, w_i/2.0, h_i/2.0, 0.0, 0.0, 0.0;
         std::shared_ptr<CameraInterface<double>> starting_cam(new Poly3Camera<double>(params_, size_));
         input_cameras.push_back( CameraAndPose(starting_cam, Sophus::SE3d() ) );
-      //}else if(filename == "kb4") {
-      //  CameraModelT<ProjectionKannalaBrandt> starting_cam(w_i, h_i);
-      //  starting_cam.Params()  << 300, 300, w_i/2.0, h_i/2.0, 0.0, 0.0, 0.0, 0.0;
-      //  input_cameras.push_back( CameraAndPose(CameraModel(starting_cam), Sophus::SE3d() ) );
+      }else if(filename == "kb4") {
+        Eigen::Vector2i size_;
+        Eigen::VectorXd params_(KannalaBrandtCamera<double>::NumParams);
+        size_ << w_i, h_i;
+        params_ << 300, 300, w_i/2.0, h_i/2.0, 0.0, 0.0, 0.0, 0.0;
+        std::shared_ptr<CameraInterface<double>> starting_cam(new KannalaBrandtCamera<double>(params_, size_));
+        input_cameras.push_back( CameraAndPose(starting_cam, Sophus::SE3d() ) );
       }else{
         const std::shared_ptr<Rig<double>> rig = ReadXmlRig(filename);
         for(const std::shared_ptr<CameraInterface<double>> cop : rig->cameras_ ) {

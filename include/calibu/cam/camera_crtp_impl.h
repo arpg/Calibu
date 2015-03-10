@@ -66,7 +66,7 @@ class CameraImpl : public CameraInterface<Scalar> {
       printf("    Width        = %d pixels\n", (int) this->image_size_[0]);
       printf("    Height       = %d pixels\n", (int) this->image_size_[1]);
 
-      // TODO ensure this is right for all models...
+      // Assume we're respecting parameter ordering.
       printf("    Horiz Center = %.3f pixels\n", this->params_[2] );
       printf("    Vert Center  = %.3f pixels\n", this->params_[3] );
       printf("    Horiz FOV    = %.3f degrees\n", 180.0*2.0*atan2( this->image_size_[0]/2, this->params_[0] )/M_PI );

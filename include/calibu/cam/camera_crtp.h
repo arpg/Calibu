@@ -222,7 +222,10 @@ public:
     image_size_[1] = nHeight;
   }
 
-  /// Set "right-down-forward" convention.
+  /// Set the 3x3 RDF matrix, describing the coordinate-frame convention.
+  /// Row0: Right vector in camera frame of reference
+  /// Row1: Down vector in camera frame of reference
+  /// Row2: Forward vector in camera frame of reference
   void SetRDF(const Eigen::Matrix<Scalar, 3, 3>& sRDF) {
     rdf_ = sRDF;
   }

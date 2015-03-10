@@ -560,8 +560,10 @@ class KannalaBrandtCamera : public CameraImpl<Scalar, 8, KannalaBrandtCamera<Sca
         th -= delta;
     }
 
-    *ray = ( sin(th)*cos(psi), sin(th)*sin(psi), cos(th) );
-    }
+    ray[0] = sin(th)*cos(psi);
+    ray[1] = sin(th)*sin(psi);
+    ray[2] = cos(th);
+  }
 
   template<typename T>
   static void Project(const T* ray, const T* params, T* pix) {
