@@ -65,16 +65,16 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   /// Project.
   if (!strcmp("project", cmd)) {
     unsigned int camera_id = static_cast<unsigned int>(*mxGetPr(prhs[2]));
-    double* ray_ptr = mxGetPr(prhs[3]);
 
     if (camera_id == 0 || camera_id > calibu_cam_ptr->cameras_.size()) {
       mexErrMsgTxt("Camera ID is out of bounds.");
       return;
     }
 
+    double* ray_ptr = mxGetPr(prhs[3]);
     Eigen::Vector3d ray;
     ray << ray_ptr[0], ray_ptr[1], ray_ptr[2];
-    plhs[0] = mxCreateDoubleMatrix(1, 2, mxREAL);
+    plhs[0] = mxCreateDoubleMatrix(2, 1, mxREAL);
     double* pixel_coordinate_ptr = mxGetPr(plhs[0]);
 
     Eigen::Vector2d pixel_coordinate;
@@ -87,19 +87,51 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   }
 
 
-  /// Unproject.
-  if (!strcmp("unproject", cmd)) {
+  /// Project Points.
+  if (!strcmp("project_points", cmd)) {
     unsigned int camera_id = static_cast<unsigned int>(*mxGetPr(prhs[2]));
-    double* pixel_coordinate_ptr = mxGetPr(prhs[3]);
 
     if (camera_id == 0 || camera_id > calibu_cam_ptr->cameras_.size()) {
       mexErrMsgTxt("Camera ID is out of bounds.");
       return;
     }
 
+    unsigned int num_pts = static_cast<unsigned int>(*mxGetPr(prhs[3]));
+
+    plhs[0] = mxCreateDoubleMatrix(2, num_pts, mxREAL);
+    double* pixel_coordinate_ptr = mxGetPr(plhs[0]);
+
+    for (size_t ii = 0; ii < num_pts; ++ii) {
+      double* ray_ptr = mxGetPr(prhs[4]);
+      int in_i = ii*3;
+      Eigen::Vector3d ray;
+      ray << ray_ptr[in_i], ray_ptr[in_i+1], ray_ptr[in_i+2];
+
+      Eigen::Vector2d pixel_coordinate;
+      pixel_coordinate = calibu_cam_ptr->cameras_[camera_id-1]->Project(ray);
+
+      int out_i = ii*2;
+      pixel_coordinate_ptr[out_i] = pixel_coordinate[0];
+      pixel_coordinate_ptr[out_i+1] = pixel_coordinate[1];
+    }
+
+    return;
+  }
+
+
+  /// Unproject.
+  if (!strcmp("unproject", cmd)) {
+    unsigned int camera_id = static_cast<unsigned int>(*mxGetPr(prhs[2]));
+
+    if (camera_id == 0 || camera_id > calibu_cam_ptr->cameras_.size()) {
+      mexErrMsgTxt("Camera ID is out of bounds.");
+      return;
+    }
+
+    double* pixel_coordinate_ptr = mxGetPr(prhs[3]);
     Eigen::Vector2d pixel_coordinate;
     pixel_coordinate << pixel_coordinate_ptr[0], pixel_coordinate_ptr[1];
-    plhs[0] = mxCreateDoubleMatrix(1, 3, mxREAL);
+    plhs[0] = mxCreateDoubleMatrix(3, 1, mxREAL);
     double* ray_ptr = mxGetPr(plhs[0]);
 
     Eigen::Vector3d ray;
@@ -111,6 +143,39 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
     return;
   }
+
+  /// Unproject Points.
+  if (!strcmp("unproject_pixels", cmd)) {
+    unsigned int camera_id = static_cast<unsigned int>(*mxGetPr(prhs[2]));
+
+    if (camera_id == 0 || camera_id > calibu_cam_ptr->cameras_.size()) {
+      mexErrMsgTxt("Camera ID is out of bounds.");
+      return;
+    }
+
+    unsigned int num_pixels = static_cast<unsigned int>(*mxGetPr(prhs[3]));
+
+    plhs[0] = mxCreateDoubleMatrix(3, num_pixels, mxREAL);
+    double* rays_ptr = mxGetPr(plhs[0]);
+
+    double* pixel_ptr = mxGetPr(prhs[4]);
+    for (size_t ii = 0; ii < num_pixels; ++ii) {
+      int in_i = ii*2;
+      Eigen::Vector2d pixel;
+      pixel << pixel_ptr[in_i], pixel_ptr[in_i+1];
+
+      Eigen::Vector3d ray;
+      ray = calibu_cam_ptr->cameras_[camera_id-1]->Unproject(pixel);
+
+      int out_i = ii*3;
+      rays_ptr[out_i] = ray[0];
+      rays_ptr[out_i+1] = ray[1];
+      rays_ptr[out_i+2] = ray[2];
+    }
+
+    return;
+  }
+
 
 
   /// Transfer 3d.
@@ -134,7 +199,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     Eigen::Vector3d ray;
     ray << ray_ptr[0], ray_ptr[1], ray_ptr[2];
 
-    plhs[0] = mxCreateDoubleMatrix(1, 2, mxREAL);
+    plhs[0] = mxCreateDoubleMatrix(2, 1, mxREAL);
     double* pixel_coordinate_ptr = mxGetPr(plhs[0]);
 
     Eigen::Vector2d pixel_coordinate;
@@ -149,7 +214,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
 
   /// Get K.
-  if (!strcmp("getK", cmd)) {
+  if (!strcmp("get_K", cmd)) {
     unsigned int camera_id = static_cast<unsigned int>(*mxGetPr(prhs[2]));
 
     if (camera_id == 0 || camera_id > calibu_cam_ptr->cameras_.size()) {
@@ -173,6 +238,43 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     k_ptr[6] = K(0,2);
     k_ptr[7] = K(1,2);
     k_ptr[8] = K(2,2);
+
+    return;
+  }
+
+  /// Get Trc.
+  if (!strcmp("get_Trc", cmd)) {
+    unsigned int camera_id = static_cast<unsigned int>(*mxGetPr(prhs[2]));
+
+    if (camera_id == 0 || camera_id > calibu_cam_ptr->cameras_.size()) {
+      mexErrMsgTxt("Camera ID is out of bounds.");
+      return;
+    }
+
+    plhs[0] = mxCreateDoubleMatrix(4, 4, mxREAL);
+    double* Trc_ptr = mxGetPr(plhs[0]);
+
+    Eigen::Matrix4d Trc = calibu_cam_ptr->cameras_[camera_id-1]->Pose().matrix();
+
+    Trc_ptr[0] = Trc(0,0);
+    Trc_ptr[1] = Trc(1,0);
+    Trc_ptr[2] = Trc(2,0);
+    Trc_ptr[3] = Trc(3,0);
+
+    Trc_ptr[4] = Trc(0,1);
+    Trc_ptr[5] = Trc(1,1);
+    Trc_ptr[6] = Trc(2,1);
+    Trc_ptr[7] = Trc(3,1);
+
+    Trc_ptr[8] = Trc(0,2);
+    Trc_ptr[9] = Trc(1,2);
+    Trc_ptr[10] = Trc(2,2);
+    Trc_ptr[11] = Trc(3,2);
+
+    Trc_ptr[12] = Trc(0,3);
+    Trc_ptr[13] = Trc(1,3);
+    Trc_ptr[14] = Trc(2,3);
+    Trc_ptr[15] = Trc(3,3);
 
     return;
   }
