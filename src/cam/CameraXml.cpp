@@ -116,10 +116,12 @@ std::shared_ptr<CameraInterfaced> ReadXmlCamera(TiXmlElement* pEl)
   } else if (sType == "calibu_fu_fv_u0_v0") {
     rCam.reset(new calibu::LinearCamera<double>());
     rCam->SetParams(Eigen::VectorXd::Constant(LinearCamera<double>::NumParams,1));
-//  } else if (sType == "calibu_fu_fv_u0_v0_k1_k2") {
-//    rCam.reset(new calibu::Poly2Camera<double>());
-//  } else if (sType == "calibu_fu_fv_u0_v0_kb4") {
-//    rCam.reset(new calibu::KannalaBrandt<double>());
+  } else if (sType == "calibu_fu_fv_u0_v0_k1_k2") {
+    rCam.reset(new calibu::Poly2Camera<double>());
+    rCam->SetParams(Eigen::VectorXd::Constant(Poly2Camera<double>::NumParams,1));
+  } else if (sType == "calibu_fu_fv_u0_v0_kb4") {
+    rCam.reset(new calibu::KannalaBrandtCamera<double>());
+    rCam->SetParams(Eigen::VectorXd::Constant(KannalaBrandtCamera<double>::NumParams,1));
   } else if (sType == "calibu_fu_fv_u0_v0_k1_k2_k3") {
     rCam.reset(new calibu::Poly3Camera<double>());
     rCam->SetParams(Eigen::VectorXd::Constant(Poly3Camera<double>::NumParams,1));

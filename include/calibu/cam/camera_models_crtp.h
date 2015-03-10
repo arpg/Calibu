@@ -498,6 +498,293 @@ class FovCamera : public CameraImpl<Scalar, 5, FovCamera<Scalar> > {
   }
 };
 
+/** Kannala-Brandt camera model.
+ * Kannala and Brandt Like 'Generic' Projection Model
+ * http://cs.iupui.edu/~tuceryan/pdf-repository/Kannala2006.pdf
+ * http://april.eecs.umich.edu/wiki/index.php/Camera_suite
+ */
+template<typename Scalar = double>
+class KannalaBrandtCamera : public CameraImpl<Scalar, 8, KannalaBrandtCamera<Scalar> > {
+  typedef CameraImpl<Scalar, 8, KannalaBrandtCamera<Scalar> > Base;
+ public:
+  using Base::Base;
+
+  static constexpr int NumParams = 8;
+
+  template<typename T>
+  static void Scale( const double s, T* params ) {
+    CameraUtils::Scale( s, params );
+  }
+
+  // NOTE: We ASSUME the first four entries of params_ to be fu, fv, sx
+  // and sy. If your camera model doesn't respect this ordering, then evaluating
+  // K for it will result in an incorrect matrix.
+  template<typename T>
+  static void K( const T* params , T* Kmat) {
+    CameraUtils::K( params , Kmat);
+  }
+
+  template<typename T>
+  static void Unproject(const T* pix, const T* params, T* ray) {
+
+    const T fu = params[0];
+    const T fv = params[1];
+    const T u0 = params[2];
+    const T v0 = params[3];
+
+    const T k0 = params[4];
+    const T k1 = params[5];
+    const T k2 = params[6];
+    const T k3 = params[7];
+
+    const T un = pix[0] - u0;
+    const T vn = pix[1] - v0;
+    const T psi = atan2( fu*vn, fv*un );
+
+    const T rth = un / (fu * cos(psi) );
+
+    // Use Newtons method to solve for theta.
+    T th = rth;
+    for (int i=0; i<5; i++)
+    {
+        // f = (th + k0*th**3 + k1*th**5 + k2*th**7 + k3*th**9 - rth)^2
+        const T th2 = th*th;
+        const T th3 = th2*th;
+        const T th4 = th2*th2;
+        const T th6 = th4*th2;
+        const T x0 = k0*th3 + k1*th4*th + k2*th6*th + k3*th6*th3 - rth + th;
+        const T x1 = 3*k0*th2 + 5*k1*th4 + 7*k2*th6 + 9*k3*th6*th2 + 1;
+        const T d  = 2*x0*x1;
+        const T d2 = 4*th*x0*(3*k0 + 10*k1*th2 + 21*k2*th4 + 36*k3*th6) + 2*x1*x1;
+        const T delta = d / d2;
+        th -= delta;
+    }
+
+    *ray = ( sin(th)*cos(psi), sin(th)*sin(psi), cos(th) );
+    }
+
+  template<typename T>
+  static void Project(const T* ray, const T* params, T* pix) {
+    const T fu = params[0];
+    const T fv = params[1];
+    const T u0 = params[2];
+    const T v0 = params[3];
+
+    const T k0 = params[4];
+    const T k1 = params[5];
+    const T k2 = params[6];
+    const T k3 = params[7];
+
+    const T Xsq_plus_Ysq = ray[0]*ray[0]+ray[1]*ray[1];
+    const T theta = atan2( sqrt(Xsq_plus_Ysq), ray[2] );
+    const T psi = atan2( ray[1], ray[0] );
+
+    const T theta2 = theta*theta;
+    const T theta3 = theta2*theta;
+    const T theta5 = theta3*theta2;
+    const T theta7 = theta5*theta2;
+    const T theta9 = theta7*theta2;
+    const T r = theta + k0*theta3 + k1*theta5 + k2*theta7 + k3*theta9;
+
+    pix[0] = fu*r*cos(psi) + u0;
+    pix[1] = fv*r*sin(psi) + v0;
+  }
+
+  template<typename T>
+  static void dProject_dparams(const T* ray, const T* params, T* j) {
+    T pix[2];
+    CameraUtils::Dehomogenize(ray, pix);
+    CameraUtils::dMultK_dparams(params, pix, j);
+  }
+
+  template<typename T>
+  static void dUnproject_dparams(const T* pix, const T* params, T* j) {
+    CameraUtils::dMultInvK_dparams(params, pix, j);
+  }
+
+  template<typename T>
+  static void dProject_dray(const T* ray, const T* params, T* j) {
+      const T fu = params[0];
+      const T fv = params[1];
+      const T k0 = params[4];
+      const T k1 = params[5];
+      const T k2 = params[6];
+      const T k3 = params[7];
+
+      const T x0 = ray[0]*ray[0];
+      const T x1 = ray[1]*ray[1];
+      const T x2 = x0 + x1;
+      const T x3 = sqrt(x2);
+      const T x4 = std::pow(x2,3.0/2.0);
+      const T x5 = ray[2]*ray[2] + x2;
+      const T a = atan2(x3, ray[2]);
+      const T a2 = a*a;
+      const T a4 = a2*a2;
+      const T a6 = a4*a2;
+      const T a8 = a4*a4;
+      const T x11 = k0*a2 + k1*a4 + k2*a6 + k3*a8 + 1;
+      const T x12 = 3*k0*a2 + 5*k1*a4 + 7*k2*a6 + 9*k3*a8 + 1;
+      const T x13 = ray[2]*x12/(x2*x5) - x11*a/x4;
+      const T x14 = ray[0]*fu;
+      const T x15 = ray[1]*fv;
+      const T x16 = -1/x4;
+      const T x17 = x11*a;
+      const T x18 = -x12/x5;
+      const T x19 = x17/x3;
+      const T x20 = ray[2]*x12/(x2*x5);
+
+      j[0] = fu*(x0*x16*x17 + x0*x20 + x19);
+      j[1] = ray[1]*x13*x14;
+      j[2] = x14*x18;
+      j[3] = ray[0]*x13*x15;
+      j[4] = fv*(x1*x16*x17 + x1*x20 + x19);
+      j[5] = x15*x18;
+      }
+};
+
+/** A second degree polynomial distortion model. */
+template<typename Scalar = double>
+class Poly2Camera : public CameraImpl<Scalar, 6, Poly2Camera<Scalar> > {
+  typedef CameraImpl<Scalar, 6, Poly2Camera<Scalar> > Base;
+ public:
+  using Base::Base;
+
+  static constexpr int NumParams = 6;
+
+  template<typename T>
+  static void Scale( const double s, T* params ) {
+    CameraUtils::Scale( s, params );
+  }
+
+  // NOTE: A camera calibration matrix only makes sense for a LinearCamera.
+  // Such a matrix only exists if derived for linear projection models. Ideally
+  // any time we call for K it would be on a linear camera, but we provide this
+  // functionality for obtaining approximate solutions.
+  // FURTHER NOTE: We ASSUME the first four entries of params_ to be fu, fv, sx
+  // and sy. If your camera model doesn't respect this ordering, then evaluating
+  // K for it will result in an incorrect (even approximate) matrix.
+  template<typename T>
+  static void K( const T* params , T* Kmat) {
+    CameraUtils::K( params , Kmat);
+  }
+
+  template<typename T>
+  static T Factor(const T rad, const T* params) {
+    T r2 = rad * rad;
+    T r4 = r2 * r2;
+    return (static_cast<T>(1.0) + params[4]*r2 + params[5]*r4);
+  }
+
+  template<typename T>
+  static T dFactor_drad(const T r, const T* params, T* fac) {
+    *fac = Factor(r, params);
+    return 2.0*params[4]*r + 4.0*params[5]*r*r*r;
+  }
+
+  template<typename T>
+  static T Factor_inv(const T r, const T* params) {
+    T k1 = params[4];
+    T k2 = params[5];
+
+    // Use Newton's method to solve (fixed number of iterations)
+    T ru = r;
+    for (int i=0; i < 5; i++) {
+      // Common sub-expressions of d, d2
+      T ru2 = ru * ru;
+      T ru4 = ru2 * ru2;
+      T pol = k1 * ru2 + k2 * ru4 + 1;
+      T pol2 = 2 * ru2 * (k1 + 2 * k2 * ru2);
+      T pol3 = pol + pol2;
+
+      // 1st derivative
+      T d = (ru * (pol) - r)  *  2 * pol3;
+      // 2nd derivative
+      T d2 = (4 * ru * (ru * pol - r) *
+              (3 * k1 + 10 * k2 * ru2 ) +
+              2 * pol3 * pol3);
+      // Delta update
+      T delta = d / d2;
+      ru -= delta;
+    }
+
+    // Return the undistortion factor
+    return ru / r;
+  }
+
+  template<typename T>
+  static void Unproject(const T* pix, const T* params, T* ray) {
+    // First multiply by inverse K and calculate distortion parameter.
+    T pix_kinv[2];
+    CameraUtils::MultInvK(params, pix, pix_kinv);
+
+    // Homogenize the point.
+    CameraUtils::Homogenize<T>(pix_kinv, ray);
+    const T fac_inv = Factor_inv(CameraUtils::PixNorm(pix_kinv), params);
+    pix_kinv[0] *= fac_inv;
+    pix_kinv[1] *= fac_inv;
+    CameraUtils::Homogenize<T>(pix_kinv, ray);
+  }
+
+  template<typename T>
+  static void Project(const T* ray, const T* params, T* pix) {
+    // De-homogenize and multiply by K.
+    CameraUtils::Dehomogenize(ray, pix);
+
+    // Calculate distortion parameter.
+    const T fac = Factor(CameraUtils::PixNorm(pix), params);
+    pix[0] *= fac;
+    pix[1] *= fac;
+    CameraUtils::MultK<T>(params, pix, pix);
+  }
+
+  template<typename T>
+  static void dProject_dray(const T* ray, const T* params, T* j) {
+    // De-homogenize and multiply by K.
+    T pix[2];
+    CameraUtils::Dehomogenize(ray, pix);
+
+    // Calculate the dehomogenization derivative.
+    T j_dehomog[6];
+    CameraUtils::dDehomogenize_dray(ray, j_dehomog);
+
+    T rad = CameraUtils::PixNorm(pix);
+    T fac;
+    T dfac_drad_byrad = dFactor_drad(rad, params, &fac) / rad;
+    T dfac_dp[2] = { pix[0] * dfac_drad_byrad,
+                     pix[1] * dfac_drad_byrad };
+
+    // Calculate the k matrix and distortion derivative.
+    T params0_pix0 = params[0] * pix[0];
+    T params1_pix1 = params[1] * pix[1];
+    T k00 = dfac_dp[0] * params0_pix0 + fac * params[0];
+    T k01 = dfac_dp[1] * params0_pix0;
+    T k10 = dfac_dp[0] * params1_pix1;
+    T k11 = dfac_dp[1] * params1_pix1 + fac * params[1];
+
+    // Do the multiplication dkmult * ddehomogenized_dray
+    j[0] = j_dehomog[0] * k00;
+    j[1] = j_dehomog[0] * k10;
+    j[2] = j_dehomog[3] * k01;
+    j[3] = j_dehomog[3] * k11;
+    j[4] = j_dehomog[4] * k00 + j_dehomog[5] * k01;
+    j[5] = j_dehomog[4] * k10 + j_dehomog[5] * k11;
+  }
+
+  template<typename T>
+  static void dProject_dparams(const T*, const T*, T* ) {
+    std::cerr << "dProjedt_dparams not defined for the poly2 model. "
+        " Throwing exception." << std::endl;
+    throw 0;
+  }
+
+  template<typename T>
+  static void dUnproject_dparams(const T*, const T*, T* ) {
+    std::cerr << "dUnproject_dparams not defined for the poly3 model. "
+        " Throwing exception." << std::endl;
+    throw 0;
+  }
+};
+
 /** A third degree polynomial distortion model. */
 template<typename Scalar = double>
 class Poly3Camera : public CameraImpl<Scalar, 7, Poly3Camera<Scalar> > {
