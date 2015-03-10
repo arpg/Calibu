@@ -235,7 +235,7 @@ void LoadGTPoses( const string& filename, std::vector< Eigen::Vector6d >& gtpose
   std::string line;
   fprintf(stderr, "Loading data file %s: \n", filename.c_str());
   std::getline ( ifs, line );
-  while( (ifs.good()) && (gtposes.size() < MAX_FRAMES) ){
+  while( ifs.good() ){
     float x, y, z, r, p, q;
     sscanf( line.c_str(), "%f\t%f\t%f\t%f\t%f\t%f\n", &x, &y, &z, &r, &p, &q );
 
@@ -252,8 +252,9 @@ void LoadGTPoses( const string& filename, std::vector< Eigen::Vector6d >& gtpose
     rt = _R2Cart(rot*_Cart2R(rt));
 
     Eigen::Vector3d offset;
-    offset << 0, 0, 0;
-    offset /= 1000;
+    offset << -81, 31, 0;
+    offset /= 72;
+    offset *= 0.0254;
     t += offset;
 
     //  Calibu offset from tag 1 ~= <9, 40>
