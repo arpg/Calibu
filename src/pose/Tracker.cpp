@@ -64,7 +64,7 @@ bool Tracker::ProcessFrame(
     }
 
     // Find target given (approximately) undistorted conics
-    std::shared_ptr<LinearCamera<double>> idcam(new LinearCamera<double>());
+    std::shared_ptr<CameraInterface<double>> idcam(new LinearCamera<double>());
 
     target.FindTarget( idcam, imgs, conics_camframe, conics_target_map );
     conics_candidate_map_first_pass = conics_target_map;
