@@ -128,5 +128,58 @@ namespace calibu
     }
   }
 
+  void CreateLookupTable(
+      const std::shared_ptr<calibu::CameraInterface<double>> cam_from,
+      const Eigen::Matrix3d& R_onKinv,
+      Eigen::Matrix<Eigen::Vector2f, Eigen::Dynamic, Eigen::Dynamic>& lookup_warp
+      )
+  {
+    for(size_t r = 0; r < cam_from->Height(); ++r) {
+      for(size_t c = 0; c < cam_from->Width(); ++c) {
+        // Remap
+        const Eigen::Vector3d p_o = R_onKinv * Eigen::Vector3d(c,r,1);
+        Eigen::Vector2d p_warped = cam_from->Project(p_o);
+
+        // Clamp to valid image coords
+        p_warped[0] = std::min(std::max(0.0, p_warped[0]), cam_from->Width() - 1.0 );
+        p_warped[1] = std::min(std::max(0.0, p_warped[1]), cam_from->Height() - 1.0 );
+
+        lookup_warp(r,c) = p_warped.cast<float>();
+      }
+    }
+  }
+
+  ///////////////////////////////////////////////////////////////////////////////
+  void Rectify(
+      const LookupTable& lut,
+      const unsigned char* pInputImageData,
+      unsigned char* pOutputRectImageData,
+      int w,
+      int h
+      )
+  {
+    // Make the most of the continuous block of memory!
+    const BilinearLutPoint* ptr   = &lut.m_vLutPixels[0];
+
+    const int nHeight = lut.Height();
+    const int nWidth  = lut.Width();
+
+    // Make sure we have been given a correct lookup table.
+    assert(w== nWidth && h == nHeight);
+
+    for( int nRow = 0; nRow < nHeight; nRow++ ) {
+      for( int nCol = 0; nCol < nWidth; nCol++ ) {
+        *pOutputRectImageData++ =
+          (char) ( ptr->w00 * pInputImageData[ ptr->idx0 ] +
+              ptr->w01 * pInputImageData[ ptr->idx0 + 1 ] +
+              ptr->w10 * pInputImageData[ ptr->idx1 ] +
+              ptr->w11 * pInputImageData[ ptr->idx1 + 1 ] );
+        ptr++;
+      }
+    }
+  }
+
+
+
 } // end namespace
 

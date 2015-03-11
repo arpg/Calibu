@@ -1,7 +1,6 @@
-#if 0
 /*
    This file is part of the Calibu Project.
-   https://github.com/gwu-robotics/Calibu
+   https://github.com/arpg/Calibu
    
    Copyright (C) 2013 George Washington University,
                       Steven Lovegrove,
@@ -26,8 +25,8 @@
 
 #include <calibu/Platform.h>
 #include <calibu/cam/camera_crtp.h>
-#include <calibu/cam/Rectify.h>
 #include <calibu/cam/rectify_crtp.h>
+#include <calibu/cam/camera_models_crtp.h>
 
 namespace calibu
 {
@@ -36,10 +35,11 @@ namespace calibu
 /// and output their new intrinsics and extrinsics.
 /// Returns: New camera intrinsics shared by both cameras
 /// T_nr_nl: New scanline rectified extrinsics considering rotation applied in lookup tables.
-    CALIBU_EXPORT calibu::CameraInterface<4> CreateScanlineRectifiedLookupAndCameras(
+    CALIBU_EXPORT
+    std::shared_ptr<calibu::CameraInterface<double>> CreateScanlineRectifiedLookupAndCameras(
         const Sophus::SE3d& T_rl,
-        const calibu::CameraInterface& cam_left,
-        const calibu::CameraInterface& cam_right,
+        const std::shared_ptr<calibu::CameraInterface<double>> cam_left,
+        const std::shared_ptr<calibu::CameraInterface<double>> cam_right,
         Sophus::SE3d& T_nr_nl,
         LookupTable& left_lut,
         LookupTable& right_lut
@@ -47,4 +47,3 @@ namespace calibu
 
 }
 
-#endif

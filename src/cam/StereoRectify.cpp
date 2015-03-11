@@ -1,4 +1,3 @@
-#if 0
 
 /*
    This file is part of the Calibu Project.
@@ -21,18 +20,18 @@
    limitations under the License.
  */
 
-#include <calibu/cam/Rectify.h>
-#include <calibu/cam/StereoRectify.h>
+#include <calibu/cam/rectify_crtp.h>
+#include <calibu/cam/stereo_rectify.h>
 #include <calibu/cam/camera_crtp.h>
 #include <calibu/utils/Range.h>
 
 namespace calibu
 {
 
-calibu::CameraInterface<4> CreateScanlineRectifiedLookupAndCameras(
+std::shared_ptr<calibu::CameraInterface<double>> CreateScanlineRectifiedLookupAndCameras(
         const Sophus::SE3d& T_rl,
-        const calibu::CameraInterface& cam_left,
-        const calibu::CameraInterface& cam_right,
+        const std::shared_ptr<calibu::CameraInterface<double>> cam_left,
+        const std::shared_ptr<calibu::CameraInterface<double>> cam_right,
         Sophus::SE3d& T_nr_nl,        
         LookupTable& left_lut,
         LookupTable& right_lut
@@ -78,18 +77,21 @@ calibu::CameraInterface<4> CreateScanlineRectifiedLookupAndCameras(
 //                );
 
     // We want to map range width/height to image via K.    
-    const double fu = (cam_left.Width()-1) / range_width.Size();
-    const double fv = (cam_left.Height()-1) / range_height.Size();
+    const double fu = (cam_left->Width()-1) / range_width.Size();
+    const double fv = (cam_left->Height()-1) / range_height.Size();
     const double u0 = -fu * range_width.minr;
     const double v0 = -fv * range_height.minr;
     
     // Setup new camera
-    calibu::CameraInterface<4> new_cam(cam_left.Width(),cam_left.Height());
-    new_cam.Params() << fu, fv, u0, v0;
- 
+    Eigen::Vector2i size_;
+    Eigen::VectorXd params_(calibu::LinearCamera<double>::NumParams);
+    size_ << cam_left->Width(), cam_left->Height();
+    params_ << fu, fv, u0, v0;
+    std::shared_ptr<calibu::CameraInterface<double>> new_cam(new calibu::LinearCamera<double>(params_, size_));
+
     // Homographies which should be applied to left and right images to scan-line rectify them
-    const Eigen::Matrix3d Rl_nlKlinv = Rnl_l.transpose() * new_cam.Kinv();
-    const Eigen::Matrix3d Rr_nrKlinv = R_lr.inverse().matrix() * Rnl_l.transpose() * new_cam.Kinv();
+    const Eigen::Matrix3d Rl_nlKlinv = Rnl_l.transpose() * new_cam->K().inverse();
+    const Eigen::Matrix3d Rr_nrKlinv = R_lr.inverse().matrix() * Rnl_l.transpose() * new_cam->K().inverse();
     
     CreateLookupTable(cam_left, Rl_nlKlinv, left_lut );
     CreateLookupTable(cam_right, Rr_nrKlinv, right_lut );     
@@ -97,5 +99,3 @@ calibu::CameraInterface<4> CreateScanlineRectifiedLookupAndCameras(
 }
 
 }
-
-#endif

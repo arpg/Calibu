@@ -53,4 +53,16 @@ inline Sophus::SE3Group<Scalar> ToCoordinateConvention(
     return T_2b_1b;
 }
 
+template<typename Scalar=double>
+inline std::shared_ptr<Rig<double>> ToCoordinateConvention(const std::shared_ptr<Rig<double>> rig, const Sophus::SO3Group<Scalar>& rdf)
+{
+    std::shared_ptr<Rig<double>> ret = rig;
+    for(size_t c=0; c<ret->cameras_.size(); ++c) {
+        const Sophus::SO3Group<Scalar> M = rdf * Sophus::SO3Group<Scalar>(rig->cameras_[c]->RDF()).inverse();
+        ret->cameras_[c]->SetPose(ToCoordinateConvention(rig->cameras_[c]->Pose(), M));
+        ret->cameras_[c]->SetRDF(rdf.matrix());
+    }
+    return ret;
+}
+
 }
