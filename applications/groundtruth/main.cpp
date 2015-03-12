@@ -780,7 +780,7 @@ int main( int argc, char** argv )
     update_objects(detections,
                    camPoses,
                    campose);} );
-  pangolin::RegisterKeyPressCallback('d', [&](){ dense_optimize(detections, &sim_cam, &depth_cam, K);
+  pangolin::RegisterKeyPressCallback('d', [&](){ dense_optimize(detections, &sim_cam, K);
     update_objects(detections,
                    camPoses,
                    campose);} );
@@ -788,7 +788,6 @@ int main( int argc, char** argv )
     update_objects(detections,
                    camPoses,
                    campose);} );
-  pangolin::RegisterKeyPressCallback('t', [&](){ std::cout<< it->second.size() <<std::endl;} );
   pangolin::RegisterKeyPressCallback(']', [&](){ use_gt_pose_ = !use_gt_pose_;} );
   pangolin::RegisterKeyPressCallback('g', [&](){
     for (int ii = 0; ii < gt_axis.size(); ii++) { gt_axis[ii].SetVisible(!gt_axis[ii].IsVisible());} ;} );

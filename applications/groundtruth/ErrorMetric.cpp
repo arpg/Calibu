@@ -95,7 +95,7 @@ double ErrorMetric::ATE(PL Q, PL P)
   for (int n = 0; n < Q.size(); n++) {
     sum += (Q[n].inverse() * S * P[n]).translation().squaredNorm();
   }
-  return ( sum  / Q.size());
+  return sqrt( sum  / Q.size());
 }
 
 void ErrorMetric::pl_to_PL(pl In, PL &out)
