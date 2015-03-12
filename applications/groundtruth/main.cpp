@@ -359,7 +359,7 @@ void dense_optimize( DMap detections,
                      Eigen::Matrix3d K)
 {
   for (DMap::iterator it = detections.begin(); it != detections.end(); it++) {
-    dense_frame_optimize(it->second, sim_cam, K, 2);
+    dense_frame_optimize(it->second, sim_cam, K);
   }
 }
 
@@ -772,24 +772,6 @@ int main( int argc, char** argv )
 
   pangolin::RegisterKeyPressCallback(pangolin::PANGO_SPECIAL + pangolin::PANGO_KEY_RIGHT, [&](){bStep=true; pose_number++;} );
   pangolin::RegisterKeyPressCallback(pangolin::PANGO_SPECIAL + pangolin::PANGO_KEY_LEFT, [&](){bStep=true; pose_number--;} );
-  pangolin::RegisterKeyPressCallback(pangolin::PANGO_SPECIAL + pangolin::PANGO_KEY_UP,
-                                     [&](){ std::shared_ptr< detection > d = it->second[0];
-                                            d->pose(0) += dx*del(0);
-                                            d->pose(1) += dx*del(1);
-                                            d->pose(2) += dx*del(2);
-                                            update_objects(detections,
-                                                           camPoses,
-                                                           campose);});
-
-  pangolin::RegisterKeyPressCallback(pangolin::PANGO_SPECIAL + pangolin::PANGO_KEY_DOWN,
-                                     [&](){ std::shared_ptr< detection > d = it->second[0];
-                                            d->pose(0) -= dx*del(0);
-                                            d->pose(1) -= dx*del(1);
-                                            d->pose(2) -= dx*del(2);
-                                            update_objects(detections,
-                                                           camPoses,
-                                                           campose);});
-  //  pangolin::RegisterKeyPressCallback('h', [&](){ homography_minimization(it->second[0], &sim_cam, K);});
   pangolin::RegisterKeyPressCallback('p', [&](){ pose_shift(it->second[0], &sim_cam, K, &depth_cam);
     update_objects(detections,
                    camPoses,
@@ -798,7 +780,7 @@ int main( int argc, char** argv )
     update_objects(detections,
                    camPoses,
                    campose);} );
-  pangolin::RegisterKeyPressCallback('d', [&](){ sift_optimize(detections, &sim_cam, &depth_cam, K);
+  pangolin::RegisterKeyPressCallback('d', [&](){ dense_optimize(detections, &sim_cam, &depth_cam, K);
     update_objects(detections,
                    camPoses,
                    campose);} );
@@ -817,7 +799,7 @@ int main( int argc, char** argv )
     //  Printing of Error Metric Stuff
     fprintf(stderr, "RMSE frame to frame: %f\n", ErrorMetric::RMSE(gt_poses, camPoses, 1));
     fprintf(stderr, "RMSE_average: %f\n", ErrorMetric::RMSE_ave(gt_poses, camPoses));
-    fprintf(stderr, "ATE: %f\n", ErrorMetric::ATE(gt_poses, camPoses));
+//    fprintf(stderr, "ATE: %f\n", ErrorMetric::ATE(gt_poses, camPoses));
     fflush(stderr);
   } );
   pangolin::RegisterKeyPressCallback('e', [&](){ dense_frame_optimize(it->second, &sim_cam, K);
