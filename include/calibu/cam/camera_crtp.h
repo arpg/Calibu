@@ -285,6 +285,10 @@ class Rig {
     cameras_.push_back(cam);
   }
 
+  size_t NumCams() {
+    return cameras_.size();
+  }
+
   /// Method to clear rig elements.
     void Clear() {
     for (std::shared_ptr<CameraInterface<Scalar>> ptr : cameras_) {
