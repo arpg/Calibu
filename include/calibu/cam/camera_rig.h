@@ -37,7 +37,6 @@ static const Sophus::SO3d RdfVision =
         Sophus::SO3d( (Eigen::Matrix3d() << 1,0,0, 0,1,0, 0,0,1).finished() );
 
 static const Sophus::SO3d RdfRobotics =
-//        Sophus::SO3d( (Eigen::Matrix3d() << 0,1,0, 0,0,1, 1,0,0).finished() );
         Sophus::SO3d( (Eigen::Matrix3d() << 0,0,1, 1,0,0, 0,1,0).finished() );
 
 // T_2b_1b = T_ba * T_2a_1a * T_ab
@@ -54,15 +53,19 @@ inline Sophus::SE3Group<Scalar> ToCoordinateConvention(
 }
 
 template<typename Scalar=double>
-inline std::shared_ptr<Rig<double>> ToCoordinateConvention(const std::shared_ptr<Rig<double>> rig, const Sophus::SO3Group<Scalar>& rdf)
+inline std::shared_ptr<Rig<double>> ToCoordinateConvention(
+    const std::shared_ptr<Rig<double>>& rig,
+    const Sophus::SO3Group<Scalar>& rdf
+  )
 {
-    std::shared_ptr<Rig<double>> ret = rig;
-    for(size_t c=0; c<ret->cameras_.size(); ++c) {
-        const Sophus::SO3Group<Scalar> M = rdf * Sophus::SO3Group<Scalar>(rig->cameras_[c]->RDF()).inverse();
-        ret->cameras_[c]->SetPose(ToCoordinateConvention(rig->cameras_[c]->Pose(), M));
-        ret->cameras_[c]->SetRDF(rdf.matrix());
-    }
-    return ret;
+  std::shared_ptr<calibu::Rig<double>> ret(new calibu::Rig<double>());
+  *ret = *rig;
+  for(size_t c=0; c<ret->NumCams(); ++c) {
+    const Sophus::SO3Group<Scalar> M = rdf * Sophus::SO3Group<Scalar>(rig->cameras_[c]->RDF()).inverse();
+    ret->cameras_[c]->SetPose(ToCoordinateConvention(rig->cameras_[c]->Pose(), M));
+    ret->cameras_[c]->SetRDF(rdf.matrix());
+  }
+  return ret;
 }
 
 }
