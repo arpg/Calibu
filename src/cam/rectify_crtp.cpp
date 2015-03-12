@@ -27,18 +27,18 @@ namespace calibu
 
   ///////////////////////////////////////////////////////////////////////////////
   void CreateLookupTable(
-      const std::shared_ptr<calibu::CameraInterface<double> > cam_from,
+      const std::shared_ptr<calibu::CameraInterface<double> >& cam_from,
       LookupTable& lut )
   {
     /*
-       TODO figure out what K should be for the "new" camera based on 
+       TODO figure out what K should be for the "new" camera based on
        what part of the original image we want to keep.
 
     // Work out parameters of "new" linear camera. We want to map range
     // width/height to image via K.
-    const calibu::Range range_width 
+    const calibu::Range range_width
       = calibu::MinMaxRotatedCol( cam_from, Eigen::Matrix3d::Identity() );
-    const calibu::Range range_height 
+    const calibu::Range range_height
       = calibu::MinMaxRotatedRow( cam_from, Eigen::Matrix3d::Identity() );
 
     printf(" range_width.Size() = %f, range_width.maxr = %f, range_width.minr = %f\n",
@@ -74,7 +74,7 @@ namespace calibu
 
   ///////////////////////////////////////////////////////////////////////////////
   void CreateLookupTable(
-      const std::shared_ptr<calibu::CameraInterface<double>> cam_from,
+      const std::shared_ptr<calibu::CameraInterface<double>>& cam_from,
       const Eigen::Matrix3d& R_onKinv,
       LookupTable& lut
       )
@@ -129,7 +129,7 @@ namespace calibu
   }
 
   void CreateLookupTable(
-      const std::shared_ptr<calibu::CameraInterface<double>> cam_from,
+      const std::shared_ptr<calibu::CameraInterface<double>>& cam_from,
       const Eigen::Matrix3d& R_onKinv,
       Eigen::Matrix<Eigen::Vector2f, Eigen::Dynamic, Eigen::Dynamic>& lookup_warp
       )

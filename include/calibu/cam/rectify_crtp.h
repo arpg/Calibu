@@ -104,7 +104,7 @@ namespace calibu
   /// R_onK is formed from the multiplication R_on (old form new) and the new
   /// camera intrinsics K.
     CALIBU_EXPORT void CreateLookupTable(
-        const std::shared_ptr<calibu::CameraInterface<double>> cam_from,
+        const std::shared_ptr<calibu::CameraInterface<double>>& cam_from,
         const Eigen::Matrix3d& R_onKinv,
         LookupTable& lut
         );
@@ -112,7 +112,7 @@ namespace calibu
     /// Create lookup table which can be used to remap a general camera model
     /// 'cam_from' to a linear.
     void CreateLookupTable(
-        const std::shared_ptr<calibu::CameraInterface<double>> cam_from,
+        const std::shared_ptr<calibu::CameraInterface<double>>& cam_from,
         LookupTable& lut
         );
 

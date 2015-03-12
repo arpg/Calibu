@@ -1,17 +1,17 @@
 /*
    This file is part of the Calibu Project.
    https://github.com/arpg/Calibu
-   
+
    Copyright (C) 2013 George Washington University,
                       Steven Lovegrove,
                       Gabe Sibley
-                      
+
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
-   
+
    http://www.apache.org/licenses/LICENSE-2.0
-   
+
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -38,8 +38,8 @@ namespace calibu
     CALIBU_EXPORT
     std::shared_ptr<calibu::CameraInterface<double>> CreateScanlineRectifiedLookupAndCameras(
         const Sophus::SE3d& T_rl,
-        const std::shared_ptr<calibu::CameraInterface<double>> cam_left,
-        const std::shared_ptr<calibu::CameraInterface<double>> cam_right,
+        const std::shared_ptr<calibu::CameraInterface<double>>& cam_left,
+        const std::shared_ptr<calibu::CameraInterface<double>>& cam_right,
         Sophus::SE3d& T_nr_nl,
         LookupTable& left_lut,
         LookupTable& right_lut
