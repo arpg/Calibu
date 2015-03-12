@@ -60,7 +60,7 @@ double ErrorMetric::RMSE(PL Q, PL P, int delta )
   for (int m = 0; m < Q.size() - delta; m++) {
     sum += RPE(Q, P, m, delta);
   }
-  return ( sum  / (Q.size() - delta));
+  return sqrt( sum  / (Q.size() - delta));
 }
 
 double ErrorMetric::RMSE_ave(PL Q, PL P)
