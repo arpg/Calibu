@@ -41,7 +41,8 @@ include_directories(
     ${Pangolin_INCLUDE_DIRS}
     )
 
-add_executable( ${PROJECT_NAME} main.cpp measurements.h
+add_executable( ${PROJECT_NAME} main.cpp ErrorMetric.cpp ErrorMetric.h
+                                measurements.h
                                 math.h usage.h tags.h usage.h
                                 dense_ceres.h dtrack.h hess.h
                                 pfromh.h ceres_cost_functions.h

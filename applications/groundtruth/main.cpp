@@ -26,7 +26,7 @@
 
 #include "tags.h"
 #include "math.h"
-
+#include "ErrorMetric.h"
 #include "usage.h"
 
 #include <ceres/ceres.h>
@@ -252,12 +252,12 @@ void LoadGTPoses( const string& filename, std::vector< Eigen::Vector6d >& gtpose
     rt = _R2Cart(rot*_Cart2R(rt));
 
     Eigen::Vector3d offset;
-    offset << -81, 31, 0;
+    offset << 81, 22, 0;
     offset /= 72;
     offset *= 0.0254;
     t += offset;
 
-    //  Calibu offset from tag 1 ~= <9, 40>
+    //  Calibu offset from origin
     pz << t(0), t(1), t(2), rt(0), rt(1), rt(2);
 
     gtposes.push_back(pz);
@@ -813,6 +813,13 @@ int main( int argc, char** argv )
   pangolin::RegisterKeyPressCallback('c', [&](){
     for (int ii = 0; ii < campose.size(); ii++) { campose[ii].SetVisible(!campose[ii].IsVisible());} ;} );
   pangolin::RegisterKeyPressCallback(';', [&](){ print_test_data_(it->second[0]);} );
+  pangolin::RegisterKeyPressCallback('j', [&](){
+    //  Printing of Error Metric Stuff
+    fprintf(stderr, "RMSE frame to frame: %f\n", ErrorMetric::RMSE(gt_poses, camPoses, 1));
+    fprintf(stderr, "RMSE_average: %f\n", ErrorMetric::RMSE_ave(gt_poses, camPoses));
+    fprintf(stderr, "ATE: %f\n", ErrorMetric::ATE(gt_poses, camPoses));
+    fflush(stderr);
+  } );
   pangolin::RegisterKeyPressCallback('e', [&](){ dense_frame_optimize(it->second, &sim_cam, K);
     update_objects(detections,
                    camPoses,
