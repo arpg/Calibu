@@ -798,7 +798,7 @@ int main( int argc, char** argv )
     //  Printing of Error Metric Stuff
     fprintf(stderr, "RMSE frame to frame: %f\n", ErrorMetric::RMSE(gt_poses, camPoses, 1));
     fprintf(stderr, "RMSE_average: %f\n", ErrorMetric::RMSE_ave(gt_poses, camPoses));
-//    fprintf(stderr, "ATE: %f\n", ErrorMetric::ATE(gt_poses, camPoses));
+    fprintf(stderr, "ATE: %f\n", ErrorMetric::ATE(gt_poses, camPoses));
     fflush(stderr);
   } );
   pangolin::RegisterKeyPressCallback('e', [&](){ dense_frame_optimize(it->second, &sim_cam, K);

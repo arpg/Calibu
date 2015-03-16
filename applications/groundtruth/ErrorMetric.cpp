@@ -7,15 +7,15 @@
 template <typename Scalar=double>
 struct XformCostFunctor
 {
-  XformCostFunctor( Sophus::SE3d _q, Sophus::SE3d _p) : q(_q), p(_p) {}
+  XformCostFunctor( Sophus::SE3d _qi, Sophus::SE3d _p) : qi(_qi), p(_p) {}
 
   template< typename T>
   bool operator()( const T* const _s, T* residuals ) const
   {
-    Sophus::SE3Group< T > x, Q, P;
+    Sophus::SE3Group< T > x;
     const Eigen::Map<const Sophus::SE3Group<T> > S(_s);
 
-    x = (q.inverse()).template cast<T >() * S * p.template cast<T>();
+    x = qi.template cast<T>() * S * p.template cast<T>();
 
     Eigen::Matrix< T, 6, 1> l = x.log();
     residuals[0] = l(0);
@@ -24,9 +24,10 @@ struct XformCostFunctor
     residuals[3] = l(3);
     residuals[4] = l(4);
     residuals[5] = l(5);
+    return true;
   }
 
-  Sophus::SE3Group< Scalar > q, p;
+  Sophus::SE3Group< Scalar > qi, p;
 };
 
 ErrorMetric::ErrorMetric()
@@ -79,13 +80,14 @@ double ErrorMetric::RMSE_ave(PL Q, PL P)
 
 double ErrorMetric::ATE(PL Q, PL P)
 {
-  Sophus::SE3d S;
+  Sophus::SE3d S = Q[0]*P[0].inverse();
+
   ceres::Problem problem;
   ceres::Solver::Options options;
   for (int ii = 0; ii < Q.size(); ii++) {
       ceres::CostFunction* cf =
           new ceres::AutoDiffCostFunction<XformCostFunctor<double>, 6, 1>
-          (new XformCostFunctor<double>(Q[ii], P[ii]));
+          (new XformCostFunctor<double>(Q[ii].inverse(), P[ii]));
             problem.AddResidualBlock( cf, NULL, S.data() );
   }
   ceres::Solver::Summary summary;
