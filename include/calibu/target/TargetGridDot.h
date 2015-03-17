@@ -150,6 +150,12 @@ public:
             unsigned char id = 0
             ) const;
 
+    void SaveSVG(
+        std::string filename,
+        double rad0,
+        double rad1
+        ) const;
+
  protected:
     void Init();
     void Clear();

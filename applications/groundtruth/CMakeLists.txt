@@ -41,6 +41,8 @@ include_directories(
     ${Pangolin_INCLUDE_DIRS}
     )
 
+set(BUILD_opencv_nonfree true)
+
 add_executable( ${PROJECT_NAME} main.cpp ErrorMetric.cpp ErrorMetric.h
                                 measurements.h
                                 math.h usage.h tags.h usage.h
@@ -51,6 +53,8 @@ add_executable( ${PROJECT_NAME} main.cpp ErrorMetric.cpp ErrorMetric.h
 target_link_libraries( ${PROJECT_NAME}
   ${PbMsgs_LIBRARIES}
   ${OpenCV2_LIBRARIES}
+  ${OpenCV_LIBS}
+  opencv_nonfree
   ${CERES_LIBRARIES}
   ${GFlags_LIBRARIES}
   ${Calibu_LIBRARIES}
