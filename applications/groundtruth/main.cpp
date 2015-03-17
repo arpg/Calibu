@@ -781,6 +781,7 @@ int main( int argc, char** argv )
     update_objects(detections,
                    camPoses,
                    campose);} );
+  pangolin::RegisterKeyPressCallback('/', [&](){ std::cout << "Error: "<< cost(&sim_cam, it->second[0], camPoses[pose_number]) << std:: endl; } );
   pangolin::RegisterKeyPressCallback('d', [&](){ dense_optimize(detections, &sim_cam, K);
     update_objects(detections,
                    camPoses,
