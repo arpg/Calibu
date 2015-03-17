@@ -26,6 +26,7 @@
 #include <set>
 #include <algorithm>
 #include <iostream>
+#include <iomanip>
 #include <deque>
 
 namespace calibu {
@@ -49,12 +50,14 @@ TargetGridDot::TargetGridDot(double grid_spacing, const Eigen::MatrixXi& grid)
 void TargetGridDot::Init() {
   // Create cached grid coordinates
   tpts2d.resize(grid_size(0) * grid_size(1));
+  tpts2d_radius.resize(tpts2d.size());
   tpts3d.resize(grid_size(0) * grid_size(1));
 
   for(int r=0; r< grid_size(1); ++r) {
     for(int c=0; c< grid_size(0); ++c) {
       Eigen::Vector2i p = Eigen::Vector2i(c,r);
       tpts2d[r*grid_size(0)+c] = grid_spacing * Eigen::Vector2d(p(0), p(1));
+      tpts2d_radius[r* grid_size(0) + c] = PG[0](r, c);
       tpts3d[r*grid_size(0)+c] = grid_spacing * Eigen::Vector3d(p(0), p(1), 0);
     }
   }
@@ -587,9 +590,7 @@ void TargetGridDot::SaveEPS(
         unsigned char id
         ) const
 {
-    Eigen::MatrixXi M = GetBinaryPattern(2);
-    rad0 = 0.003;
-    rad1 = 0.005;
+   Eigen::MatrixXi M = GetBinaryPattern(0);
 
     const double border = 3*rad1;
     const Eigen::Vector2d border2d(border,border);
@@ -600,14 +601,13 @@ void TargetGridDot::SaveEPS(
 
     std::ofstream f;
     f.open(filename.c_str());
-    f << "%!PS-Adobe EPSF-3.0" << std::endl;
+    f << "%!PS-Adobe-3.1 EPSF-3.0" << std::endl;
     f << "%%Creator: CalibuCalibrationTarget" << std::endl;
     f << "%%Title: Calibration Target" << std::endl;
     f << "%%Origin: 0 0" << std::endl;
     // usletter BoundingBox is 0, 0, 612, 792
     f << "%%BoundingBox: 0 0 " << max_pts[0] << " " << max_pts[1] << std::endl;
     f << std::endl;
-    f << "270 rotate 0 " << -max_pts[0] << " 0 translate" << std::endl;
 
     for( int r=0; r<M.rows(); ++r ) {
         for( int c=0; c<M.cols(); ++c) {
@@ -619,6 +619,9 @@ void TargetGridDot::SaveEPS(
                 << std::endl;
         }
     }
+
+    std::cerr << "Wrote bounding box: " <<
+                 max_pts[0] << " " << max_pts[1] << std::endl;
 
     // output the binary code -- blank if id == 0, which is the default
     double r = grid_spacing*( M.rows()+2.5 );
@@ -640,5 +643,55 @@ void TargetGridDot::SaveEPS(
     }
     f.close();
 }
+
+void TargetGridDot::SaveSVG(
+        std::string filename,
+        double rad0,
+        double rad1
+        ) const
+{
+    Eigen::MatrixXi M = GetBinaryPattern(0);
+    const double offset = rad1 * 1e3; // mm
+
+    std::ofstream f(filename.c_str());
+    f << "<?xml version=\"1.0\" standalone=\"no\"?>" << std::endl
+      << "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" "
+         "\"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">" << std::endl;
+
+    // units in mm
+    const double margin_bottom = 20; // mm
+    double canvas_width = ((M.cols()-1) * grid_spacing * 1e3) + offset * 2.;
+    double canvas_height = ((M.rows()-1) * grid_spacing * 1e3) + offset * 2. +
+        margin_bottom;
+    f << "<svg width=\"" << canvas_width << "mm\" height=\""
+      << canvas_height << "mm\">" << std::endl;
+
+    for( int r=0; r<M.rows(); ++r ) {
+        const double cy = offset + r * grid_spacing  * 1e3;
+        for( int c=0; c<M.cols(); ++c ) {
+            const double rad = ((M(r,c) == 1) ? rad1 : rad0) * 1e3;
+            const double cx = offset + c * grid_spacing * 1e3;
+            f << "<circle cx=\"" << cx << "mm\" cy=\"" << cy << "mm\" r=\""
+              << rad << "mm\" fill=\"black\" stoke-width=\"0\"/>" << std::endl;
+        }
+    }
+
+    const double text_x = 1;
+    const double text_y = canvas_height - margin_bottom +
+        std::max(rad0, rad1) * 1e3 + 5;
+    f << "<text x=\"" << text_x << "mm\" y=\"" << text_y << "mm\" "
+      << "font-size=\"8mm\">"
+      << "Distance between circle centers: "
+      << std::fixed << std::setprecision(3) << grid_spacing * 1e3 << " mm. "
+      << "Long radius: " << std::fixed << std::setprecision(3)
+      << std::max(rad0, rad1) * 1e3 << " mm. "
+      << "Short radius: " << std::fixed << std::setprecision(3)
+      << std::min(rad0, rad1) * 1e3 << " mm."
+      << "</text>" << std::endl;
+
+    f << "</svg>" << std::endl;
+}
+
+
 
 }
