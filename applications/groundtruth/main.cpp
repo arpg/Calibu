@@ -630,7 +630,8 @@ int main( int argc, char** argv )
     }
 
     detections.insert( std::pair<int, std::vector< std::shared_ptr< detection > > >(count, ds) );
-    gt_poses.push_back(gt_poses_temp[count]);
+    if (gt_poses_temp.size() >= count)
+      gt_poses.push_back(gt_poses_temp[count - 1]);
   }
 
   fprintf(stdout, "Finished parsing file\n");
@@ -796,10 +797,12 @@ int main( int argc, char** argv )
   pangolin::RegisterKeyPressCallback(';', [&](){ print_test_data_(it->second[0]);} );
   pangolin::RegisterKeyPressCallback('j', [&](){
     //  Printing of Error Metric Stuff
-    fprintf(stderr, "RMSE frame to frame: %f\n", ErrorMetric::RMSE(gt_poses, camPoses, 1));
-    fprintf(stderr, "RMSE_average: %f\n", ErrorMetric::RMSE_ave(gt_poses, camPoses));
-    fprintf(stderr, "ATE: %f\n", ErrorMetric::ATE(gt_poses, camPoses));
-    fflush(stderr);
+    if (gt_poses.size() > 0) {
+      fprintf(stderr, "RMSE frame to frame: %f\n", ErrorMetric::RMSE(gt_poses, camPoses, 1));
+      fprintf(stderr, "RMSE_average: %f\n", ErrorMetric::RMSE_ave(gt_poses, camPoses));
+      fprintf(stderr, "ATE: %f\n", ErrorMetric::ATE(gt_poses, camPoses));
+      fflush(stderr);
+    }
   } );
   pangolin::RegisterKeyPressCallback('e', [&](){ dense_frame_optimize(it->second, &sim_cam, K);
     update_objects(detections,
