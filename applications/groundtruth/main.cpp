@@ -752,6 +752,8 @@ int main( int argc, char** argv )
     glGraph.AddChild( &campose[count]);
   }
 
+  ErrorMetric::bring_to_frame(gt_poses, camPoses);
+
   std::vector< SceneGraph::GLAxis > gt_axis;
   gt_axis.resize(gt_poses.size());
   for (int ii = 0; ii < gt_poses.size(); ii++) {

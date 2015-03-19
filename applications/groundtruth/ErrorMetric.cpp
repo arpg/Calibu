@@ -100,12 +100,46 @@ double ErrorMetric::ATE(PL Q, PL P)
   return sqrt( sum  / Q.size());
 }
 
+void ErrorMetric::bring_to_frame(pl& q, pl p)
+{
+  PL Q, P;
+  pl_to_PL(q, Q);
+  pl_to_PL(p, P);
+
+  Sophus::SE3d S = Q[0]*P[0].inverse();
+
+  ceres::Problem problem;
+  ceres::Solver::Options options;
+  for (int ii = 0; ii < Q.size(); ii++) {
+      ceres::CostFunction* cf =
+          new ceres::AutoDiffCostFunction<XformCostFunctor<double>, 6, 1>
+          (new XformCostFunctor<double>(Q[ii].inverse(), P[ii]));
+            problem.AddResidualBlock( cf, NULL, S.data() );
+  }
+  ceres::Solver::Summary summary;
+  ceres::Solve(options, &problem, &summary);
+
+  for (int n = 0; n < Q.size(); n++) {
+    Q[n] = S.inverse() * Q[n];
+  }
+  PL_to_pl(Q, q);
+}
+
+
 void ErrorMetric::pl_to_PL(pl In, PL &out)
 {
     out.clear();
     for (Eigen::Vector6d a : In) {
       out.push_back( Sophus::SE3d(_Cart2T(a)));
     }
+}
+
+void ErrorMetric::PL_to_pl(PL In, pl &out)
+{
+  out.clear();
+  for (Sophus::SE3d a : In) {
+    out.push_back( _T2Cart(a.matrix()));
+  }
 }
 
 double ErrorMetric::RPE(pl Q, pl P, int i, int delta )

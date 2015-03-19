@@ -10,7 +10,7 @@ set( CMAKE_CXX_FLAGS "-O3 -std=c++11 -lprotobuf" )
 #set( CMAKE_C_FLAGS "-O3 -funroll-loops -msse4 -mavx -ffast-math -Wall -Wextra" )
 #set( CMAKE_CXX_FLAGS "-O3 -funroll-loops -msse4 -mavx -ffast-math -Wall -Wextra -std=c++11" )
 add_subdirectory( ImageAlign )
-add_subdirectory( test )
+add_subdirectory( extract )
 
 find_package( PbMsgs REQUIRED )
 find_package( Calibu REQUIRED )

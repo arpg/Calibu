@@ -22,9 +22,11 @@ public:
   static double RMSE(pl Q, pl P, int delta );
   static double RMSE_ave(pl Q, pl P);
   static double ATE(pl Q, pl P);
+  static void   bring_to_frame(pl& q, pl p);
 
 private:
   static void pl_to_PL( pl In, PL& out);
+  static void PL_to_pl( PL In, pl& out);
 
 };
 
