@@ -39,7 +39,7 @@
 #include "hess.h"
 #include "ImageAlign/compute_homography.h"
 
-#define MAX_FRAMES 116
+#define MAX_FRAMES 500
 
 // -cam split:[roi1=0+0+640+480]//proto:[startframe=1500]///Users/faradazerage/Desktop/DataSets/APRIL/Hallway-9-12-13/Twizzler/proto.log -cmod /Users/faradazerage/Desktop/DataSets/APRIL/Hallway-9-12-13/Twizzler/cameras.xml -o outfile.out -map /Users/faradazerage/Desktop/DataSets/APRIL/Hallway-9-12-13/Twizzler/DS20.csv -v -debug -show-ceres
 
@@ -251,11 +251,11 @@ void LoadGTPoses( const string& filename, std::vector< Eigen::Vector6d >& gtpose
     rt << r, p, q;
     rt = _R2Cart(rot*_Cart2R(rt));
 
-    Eigen::Vector3d offset;
-    offset << 81, 22, 0;
-    offset /= 72;
-    offset *= 0.0254;
-    t += offset;
+//    Eigen::Vector3d offset;
+//    offset << 81, 22, 0;
+//    offset /= 72;
+//    offset *= 0.0254;
+//    t += offset;
 
     //  Calibu offset from origin
     pz << t(0), t(1), t(2), rt(0), rt(1), rt(2);
@@ -557,6 +557,7 @@ int main( int argc, char** argv )
   cv::Mat last_image;
   while( start || capture && (count < MAX_FRAMES)){
     capture = cam.Capture( *vImages );
+    if (!capture) break;
     count++;
     if (start) {
       start = false;
@@ -752,7 +753,9 @@ int main( int argc, char** argv )
     glGraph.AddChild( &campose[count]);
   }
 
-  ErrorMetric::bring_to_frame(gt_poses, camPoses);
+//  sparse_frame_optimize(detections.begin()->second, K, cmod);
+//  update_objects(detections, camPoses, campose);
+//  ErrorMetric::bring_to_frame(gt_poses, camPoses );
 
   std::vector< SceneGraph::GLAxis > gt_axis;
   gt_axis.resize(gt_poses.size());
@@ -770,8 +773,6 @@ int main( int argc, char** argv )
   int pose_number = 0;
   DMap::iterator it;
   it = detections.begin();
-  Eigen::Vector3d del;
-  float dx = 1e-3;
 
   pangolin::RegisterKeyPressCallback(pangolin::PANGO_SPECIAL + pangolin::PANGO_KEY_RIGHT, [&](){bStep=true; pose_number++;} );
   pangolin::RegisterKeyPressCallback(pangolin::PANGO_SPECIAL + pangolin::PANGO_KEY_LEFT, [&](){bStep=true; pose_number--;} );
