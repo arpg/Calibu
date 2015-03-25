@@ -284,8 +284,20 @@ int main( int argc, char** argv )
 
   unsigned char* image = (unsigned char *) malloc (640*480);
   for ( Eigen::Vector6d pose : poses ) {
-    simcam.SetPoseVision( _Cart2T(pose) );
-    simcam.CaptureRGB( image );
+//    simcam.SetPoseVision( _Cart2T(pose) );
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glColor4f(1.0f,1.0f,1.0f,1.0f);
+
+    view3d.Activate(stacks3d);
+
+    simcam.SetPoseRobot( _Cart2T(pose) );
+    simcam.RenderToTexture();
+    simcam.CaptureGrey( image );
+
+    glColor4f(1, 1, 1, 1);
+
+    pangolin::FinishFrame();
+
     pb::Msg msg;
     pb::CameraMsg cam_msg;
     pb::ImageMsg* image_msg = cam_msg.add_image();
