@@ -309,7 +309,10 @@ int main( int argc, char** argv )
     simcam.RenderToTexture();
     simcam.CaptureGrey( image );
 
-    sim_image.SetImage( image, 640, 480, GL_RGB, GL_LUMINANCE, GL_UNSIGNED_BYTE);
+    cv::Mat img_object(480, 640, CV_8UC1, image);
+    cv::GaussianBlur( img_object, img_object, cv::Size(5, 5), 1);
+
+    sim_image.SetImage( img_object.data, 640, 480, GL_RGB, GL_LUMINANCE, GL_UNSIGNED_BYTE);
 
     pb::Msg msg;
     pb::CameraMsg cam_msg;
@@ -318,7 +321,7 @@ int main( int argc, char** argv )
     image_msg->set_height(480);
     image_msg->set_format(pb::Format::PB_LUMINANCE);
     image_msg->set_type(pb::Type::PB_UNSIGNED_BYTE);
-    image_msg->set_data(image, 640*480);
+    image_msg->set_data(img_object.data, 640*480);
     msg.mutable_camera()->Swap( &cam_msg );
     logger.LogMessage( msg );
     glColor4f(1, 1, 1, 1);

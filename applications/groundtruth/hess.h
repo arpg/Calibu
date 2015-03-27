@@ -19,6 +19,7 @@ double cost( SceneGraph::GLSimCam* simcam,
 {
   cv::Mat img(d->image.rows, d->image.cols, CV_8UC1);
 
+  simcam->DrawCamera();
   simcam->SetPoseVision(_Cart2T(pose));
   simcam->RenderToTexture();
   simcam->CaptureGrey( img.data );
@@ -225,6 +226,7 @@ void fundamentally_essential( SceneGraph::GLSimCam* simcam,
 
   int sum = 0;
   Eigen::Matrix4d current = _Cart2T(d->pose);
+  simcam->DrawCamera();
   simcam->SetPoseVision( current*P1.inverse() );
   simcam->RenderToTexture();
   simcam->CaptureGrey( img_object.data );

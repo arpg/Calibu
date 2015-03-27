@@ -12,6 +12,7 @@ find_package( PbMsgs 2.0 QUIET )
 find_package( Pangolin REQUIRED )
 find_package( Protobuf REQUIRED)
 find_package( Calibu REQUIRED )
+find_package( OpenCV2 REQUIRED )
 
 include_directories(
     ${PROTOBUF_INCLUDE_DIR}
@@ -20,6 +21,7 @@ include_directories(
     ${HAL_INCLUDE_DIRS}
     ${Calibu_INCLUDE_DIRS}
     ${Pangolin_INCLUDE_DIRS}
+    ${OpenCV2_INCLUDE_DIR}
     )
 
 add_executable( ${PROJECT_NAME} main.cpp codes.h )
@@ -28,6 +30,8 @@ target_link_libraries( ${PROJECT_NAME}
   ${HAL_LIBRARIES}
   ${Pangolin_LIBRARIES}
   ${SceneGraph_LIBRARIES}
+  ${OpenCV2_LIBRARIES}
+  ${OpenCV_LIBS}
   ${PbMsgs_LIBRARIES}
   ${PROTOBUF_LIBRARY}
   ${Calibu_LIBRARIES}

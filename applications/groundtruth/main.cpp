@@ -39,7 +39,7 @@
 #include "hess.h"
 #include "ImageAlign/compute_homography.h"
 
-#define MAX_FRAMES 500
+#define MAX_FRAMES 900
 
 // -cam split:[roi1=0+0+640+480]//proto:[startframe=1500]///Users/faradazerage/Desktop/DataSets/APRIL/Hallway-9-12-13/Twizzler/proto.log -cmod /Users/faradazerage/Desktop/DataSets/APRIL/Hallway-9-12-13/Twizzler/cameras.xml -o outfile.out -map /Users/faradazerage/Desktop/DataSets/APRIL/Hallway-9-12-13/Twizzler/DS20.csv -v -debug -show-ceres
 
@@ -229,7 +229,9 @@ void ParseSurveyMapFile(
   fflush(stderr);
 }
 
-void LoadGTPoses( const string& filename, std::vector< Eigen::Vector6d >& gtposes )
+void LoadGTPoses( const string& filename,
+                  std::vector< Eigen::Vector6d >& gtposes,
+                  bool robot = false )
 {
   std::ifstream ifs( filename );
   std::string line;
@@ -240,25 +242,27 @@ void LoadGTPoses( const string& filename, std::vector< Eigen::Vector6d >& gtpose
     sscanf( line.c_str(), "%f\t%f\t%f\t%f\t%f\t%f\n", &x, &y, &z, &r, &p, &q );
 
     Eigen::Vector6d pz;
+
     Eigen::Vector3d t, rt;
     Eigen::Matrix3d rot;
     // Robotics to vision and invert 'z'
     rot << 0, 1, 0,
-           1, 0, 0,
-           0, 0, -1;
+        1, 0, 0,
+        0, 0, -1;
     t << x, y, z;
     t = rot*t;
     rt << r, p, q;
     rt = _R2Cart(rot*_Cart2R(rt));
 
-//    Eigen::Vector3d offset;
-//    offset << 81, 22, 0;
-//    offset /= 72;
-//    offset *= 0.0254;
-//    t += offset;
-
     //  Calibu offset from origin
     pz << t(0), t(1), t(2), rt(0), rt(1), rt(2);
+    if (robot) {
+      Sophus::SE3d temp(_Cart2T(pz));
+      temp = calibu::ToCoordinateConvention(temp, calibu::RdfVision);
+      pz = _T2Cart( temp.matrix() );
+//      pz(4) += M_PI / 2;
+//      pz(5) += M_PI / 2;
+    }
 
     gtposes.push_back(pz);
     std::getline ( ifs, line );
@@ -502,7 +506,7 @@ int main( int argc, char** argv )
   std::map<int, tag_t>  tags;
   std::vector< Eigen::Vector6d > gt_poses_temp, gt_poses;
   if (cl.search("-poses")) {
-    LoadGTPoses(cl.follow("", "-poses"), gt_poses_temp);
+    LoadGTPoses(cl.follow("", "-poses"), gt_poses_temp, cl.search("-r"));
   }
   ParseSurveyMapFile( cl.follow("", "-map"), survey_map, tags );
   fprintf(stdout, "Finished parsing survey map\n");
@@ -843,7 +847,11 @@ int main( int argc, char** argv )
     }
 
     if (use_gt_pose_) {
+      if (cl.search("-r")){
+        sim_cam.SetPoseRobot(_Cart2T(gt_poses[pose_number]));
+      } else {
       sim_cam.SetPoseVision(_Cart2T(gt_poses[pose_number]));
+      }
     } else {
       sim_cam.SetPoseVision(_Cart2T(camPoses[pose_number]));
     }
