@@ -192,7 +192,7 @@ void load_tags( std::string filename, std::vector< GLTag > *tags )
     int tid, id, corner;
     float x, y, z;
     GLTag t;
-    sscanf(line.c_str(), "%d\t%f\%f\%f\n", &tid, &x, &y, &z);
+    sscanf( line.c_str(), "%d, %f, %f, %f", &tid, &x, &y, &z );
     std::getline( ifs, line );
     id = tid  / 100;
     t.color_high = 1;
@@ -201,15 +201,15 @@ void load_tags( std::string filename, std::vector< GLTag > *tags )
     t.CreateData();
     corner = tid % 100;
     add_corner(t, corner, x, y, z);
-    sscanf(line.c_str(), "%d\t%f\%f\%f\n", &tid, &x, &y, &z);
+    sscanf( line.c_str(), "%d, %f, %f, %f", &tid, &x, &y, &z );
     std::getline( ifs, line );
     corner = tid % 100;
     add_corner(t, corner, x, y, z);
-    sscanf(line.c_str(), "%d\t%f\%f\%f\n", &tid, &x, &y, &z);
+    sscanf( line.c_str(), "%d, %f, %f, %f", &tid, &x, &y, &z );
     std::getline( ifs, line );
     corner = tid % 100;
     add_corner(t, corner, x, y, z);
-    sscanf(line.c_str(), "%d\t%f\%f\%f\n", &tid, &x, &y, &z);
+    sscanf( line.c_str(), "%d, %f, %f, %f", &tid, &x, &y, &z );
     std::getline( ifs, line );
     corner = tid % 100;
     add_corner(t, corner, x, y, z);
