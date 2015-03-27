@@ -190,9 +190,10 @@ void load_tags( std::string filename, std::vector< GLTag > *tags )
   std::getline( ifs, line );
   while (ifs.good()) {
     int tid, id, corner;
-    double x, y, z;
+    float x, y, z;
     GLTag t;
     sscanf(line.c_str(), "%d\t%f\%f\%f\n", &tid, &x, &y, &z);
+    std::getline( ifs, line );
     id = tid  / 100;
     t.color_high = 1;
     t.color_low = 0;
@@ -201,14 +202,19 @@ void load_tags( std::string filename, std::vector< GLTag > *tags )
     corner = tid % 100;
     add_corner(t, corner, x, y, z);
     sscanf(line.c_str(), "%d\t%f\%f\%f\n", &tid, &x, &y, &z);
+    std::getline( ifs, line );
     corner = tid % 100;
     add_corner(t, corner, x, y, z);
     sscanf(line.c_str(), "%d\t%f\%f\%f\n", &tid, &x, &y, &z);
+    std::getline( ifs, line );
     corner = tid % 100;
     add_corner(t, corner, x, y, z);
     sscanf(line.c_str(), "%d\t%f\%f\%f\n", &tid, &x, &y, &z);
+    std::getline( ifs, line );
     corner = tid % 100;
     add_corner(t, corner, x, y, z);
+    t.wb = 0.125;
+    t.add_white_border();
     tags->push_back(t);
     std::getline( ifs, line );
   }
@@ -265,7 +271,14 @@ int main( int argc, char** argv )
         pangolin::ProjectionMatrix(640,480,420,420,320,240,near,far),
         pangolin::ModelViewLookAt(-10, 0, -5, 0, 0, 0, pangolin::AxisNegZ)
         );
+  view3d.SetBounds(0, 0.5, 0, 1)
+      .SetHandler(new SceneGraph::HandlerSceneGraph(scene,stacks3d, pangolin::AxisNegZ))
+      .SetDrawFunction(SceneGraph::ActivateDrawFunctor(scene, stacks3d));
+  container.AddDisplay(view3d);
 
+  SceneGraph::ImageView sim_image;
+  sim_image.SetBounds(0.5, 1, 0, 1);
+  container.AddDisplay(sim_image);
 
   SceneGraph::GLSimCam simcam;
   Eigen::Matrix4d p;
@@ -275,28 +288,28 @@ int main( int argc, char** argv )
       0, 0, 0, 0;
   simcam.Init( &scene, p, K, 640, 480, SceneGraph::eSimCamLuminance);
 
+
   pb::Logger& logger = pb::Logger::GetInstance();
   logger.LogToFile("", "synthetic");
 
-  for ( GLTag g : tags ){
-    scene.AddChild( &g );
+  for (int ii = 0; ii < tags.size(); ii++) {
+    scene.AddChild( &tags[ii] );
   }
+
+  SceneGraph::GLGrid grid;
+  scene.AddChild( &grid );
 
   unsigned char* image = (unsigned char *) malloc (640*480);
   for ( Eigen::Vector6d pose : poses ) {
-//    simcam.SetPoseVision( _Cart2T(pose) );
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glColor4f(1.0f,1.0f,1.0f,1.0f);
 
-    view3d.Activate(stacks3d);
-
+    glColor4f(1.0, 0, 0, 1);
+    simcam.DrawCamera();
     simcam.SetPoseRobot( _Cart2T(pose) );
     simcam.RenderToTexture();
     simcam.CaptureGrey( image );
 
-    glColor4f(1, 1, 1, 1);
-
-    pangolin::FinishFrame();
+    sim_image.SetImage( image, 640, 480, GL_RGB, GL_LUMINANCE, GL_UNSIGNED_BYTE);
 
     pb::Msg msg;
     pb::CameraMsg cam_msg;
@@ -304,10 +317,14 @@ int main( int argc, char** argv )
     image_msg->set_width(640);
     image_msg->set_height(480);
     image_msg->set_format(pb::Format::PB_LUMINANCE);
-    image_msg->set_type(pb::Type::PB_BYTE);
+    image_msg->set_type(pb::Type::PB_UNSIGNED_BYTE);
     image_msg->set_data(image, 640*480);
     msg.mutable_camera()->Swap( &cam_msg );
     logger.LogMessage( msg );
+    glColor4f(1, 1, 1, 1);
+
+    pangolin::FinishFrame();
+    usleep(10e3);
   }
 
   free(image);

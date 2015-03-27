@@ -88,7 +88,7 @@ int main( int argc, char** argv )
   if (cam) {
     while ( cam->Capture(*images_) ) {
       frame++;
-      double time = images_->SystemTime();
+      double time = images_->system_time();
       Vector6d p = ph.get_pose(time);
       fprintf(f, "%f\t%f\t%f\t%f\t%f\t%f\n", p(0), p(1), p(2), p(3), p(4), p(5));
     }
