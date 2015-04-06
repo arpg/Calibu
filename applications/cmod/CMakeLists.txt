@@ -1,4 +1,3 @@
-find_package( Calibu 0.2 REQUIRED )
 find_package( Boost QUIET )
 find_package( ZLIB QUIET )
 

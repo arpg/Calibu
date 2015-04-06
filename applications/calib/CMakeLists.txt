@@ -1,6 +1,6 @@
-#https://github.com/gwu-robotics/Calibu
+#https://github.com/arpg/Calibu
 find_package( Calibu 0.1 REQUIRED )
-include_directories( ${Calibu_INCLUDE_DIRS} )
+include_directories( ${CALIBU_INCLUDE_DIRS} )
 
 # git://github.com/stevenlovegrove/Pangolin.git
 find_package( Pangolin 0.1 QUIET )
@@ -20,7 +20,7 @@ if( Pangolin_FOUND AND Ceres_FOUND AND OpenCV_FOUND AND BUILD_CALIBGRID)
     add_executable( calibgrid main.cpp )
     target_link_libraries( calibgrid ${CERES_LIBRARIES} )
     target_link_libraries( calibgrid ${Pangolin_LIBRARIES} )
-    target_link_libraries( calibgrid ${Calibu_LIBRARIES} )
+    target_link_libraries( calibgrid ${CALIBU_LIBRARIES} )
     target_link_libraries( calibgrid ${CVARS_LIBRARY} )
 
     install(TARGETS calibgrid

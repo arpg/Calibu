@@ -6,7 +6,7 @@ if(POLICY CMP0042)
 endif()
 
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules/)
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules/)
 include( install_package )
 
 set(CALIBU_VERSION_MAJOR 0)
@@ -17,7 +17,7 @@ option(BUILD_APPLICATIONS "Build Applications" ON)
 option(BUILD_MATLAB "Build Matlab Wrappers" OFF)
 option(BUILD_SHARED_LIBS "Build Shared Library" ON)
 
-set(CMAKE_CXX_FLAGS "-std=c++0x -Wall ${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "-std=c++11 -Wall ${CMAKE_CXX_FLAGS}")
 if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
 endif()
@@ -28,11 +28,11 @@ if( NOT CMAKE_BUILD_TYPE )
 endif()
 
 string(TOLOWER ${PROJECT_NAME} LIBRARY_NAME)
- 
+
 #add_subdirectory(src)
 #######################################################
 ## Sources
-set( INC_DIR ${Calibu_SOURCE_DIR}/include/calibu )
+set( INC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include/calibu )
 set(HEADERS
   ${INC_DIR}/Calibu.h
   ${INC_DIR}/Platform.h
@@ -80,7 +80,7 @@ set(HEADERS
   ${INC_DIR}/utils/Xml.h
   )
 
-set(SRC_DIR ${Calibu_SOURCE_DIR}/src)
+set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 SET(SOURCES
   ${SRC_DIR}/cam/CameraXml.cpp
   ${SRC_DIR}/cam/Rectify.cpp
@@ -105,11 +105,14 @@ find_package( Eigen3 REQUIRED )
 find_package( Sophus REQUIRED )
 
 ## Apply project include directories
-list( APPEND CALIBU_INC "${CMAKE_SOURCE_DIR}/include;${CMAKE_CURRENT_BINARY_DIR}/include" )
+list( APPEND CALIBU_INC
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_BINARY_DIR}/include
+    ${CMAKE_BINARY_DIR}
+    )
+
 list( APPEND USER_INC   ${EIGEN3_INCLUDE_DIR} )
 list( APPEND USER_INC   ${Sophus_INCLUDE_DIR} )
-
-message( STATUS "Sophus_INCLUDE_DIR ${Sophus_INCLUDE_DIR}" )
 
 #######################################################
 ## Find optional dependencies
@@ -145,7 +148,7 @@ ENDIF()
 ## Compiler configuration
 include(SetPlatformVars)
 configure_file(
-  "${CMAKE_CURRENT_SOURCE_DIR}/config.h.in"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/config.h.in"
   "${CMAKE_CURRENT_BINARY_DIR}/include/${LIBRARY_NAME}/config.h"
 )
 #list( APPEND HEADERS "${CMAKE_CURRENT_BINARY_DIR}/include/${LIBRARY_NAME}/config.h" )
@@ -157,77 +160,36 @@ include_directories( ${CALIBU_INC} ${USER_INC} ${CMAKE_CURRENT_BINARY_DIR}/inclu
 add_library( calibu ${HEADERS} ${SOURCES} )
 target_link_libraries( calibu ${LINK_LIBS} )
 
-set(INSTALL_HEADERS
-  Calibu.h
-  Platform.h
-  calib/AutoDiffArrayCostFunction.h
-  calib/Calibrator.h
-  calib/CostFunctionAndParams.h
-  calib/LocalParamSe3.h
-  cam/camera_crtp.h
-  cam/camera_models_crtp.h
-  cam/camera_crtp_interop.h
-  cam/CameraModel.h
-  cam/CameraModelInterface.h
-  cam/CameraModelT.h
-  cam/CameraRig.h
-  cam/CameraUtils.h
-  cam/CameraXml.h
-  cam/DistortionModel.h
-  cam/ProjectionModel.h
-  cam/ProjectionKannalaBrandt.h
-  cam/Rectify.h
-  cam/rectify_crtp.h
-  cam/StereoRectify.h
-  conics/Conic.h
-  conics/ConicFinder.h
-  conics/FindConics.h
-  gl/Drawing.h
-  image/AdaptiveThreshold.h
-  image/Gradient.h
-  image/ImageProcessing.h
-  image/IntegralImage.h
-  image/Label.h
-  pose/Ransac.h
-  target/Hungarian.h
-  target/LineGroup.h
-  target/RandomGrid.h
-  target/Target.h
-  target/TargetGridDot.h
-  target/TargetRandomDot.h
-  utils/Rectangle.h
-  utils/Range.h
-  utils/Utils.h
-  utils/PlaneBasis.h
-  utils/StreamOperatorsEigen.h
-  utils/StreamOperatorsSophus.h
-  utils/Xml.h
-  )
-
-
 # install everything
 install_package(
     PKG_NAME Calibu
     LIB_NAME calibu
     VERSION 0.2
     DESCRIPTION "Computer vision camera model library."
-    INSTALL_HEADERS ${INSTALL_HEADERS}
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/include/Calibu
-    INCLUDE_DIRS ${USER_INC} ${EXPORT_CALIBY_INC}
-    LINK_LIBS ${LINK_LIBS} calibu
+    INSTALL_HEADERS ${HEADERS}
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/include/calibu
+    INCLUDE_DIRS ${USER_INC}
+    LINK_LIBS ${LINK_LIBS}
     )
 
-
 if( BUILD_APPLICATIONS )
-  set( Calibu_DIR ${Calibu_BINARY_DIR} )
-#  set( Calibu_INCLUDE_DIRS ${USER_INC} ${CALIBU_INC} )
-#  set( Calibu_LIBRARIES ${LINK_LIBS} calibu )
+  set( CALIBU_LIBRARIES ${LINK_LIBS} calibu )
+  set( CALIBU_INCLUDE_DIRS ${USER_INC} ${CALIBU_INC} )
+  set( CALIBU_DIR ${CMAKE_CURRENT_BINARY_DIR} )
+  link_libraries( ${CALIBU_LIBRARIES} calibu )
 
-  add_subdirectory( applications )
-#  add_subdirectory( examples )
+    add_subdirectory( applications )
+    add_subdirectory( examples )
 endif()
 
 if( BUILD_MATLAB )
-#  add_subdirectory( matlab )
+      add_subdirectory( matlab )
 endif()
+
+###########################
+ include(${CMAKE_MODULE_PATH}/cmake_uninstall.cmake.in)
+
+ add_custom_target(uninstall
+     COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
+ ###########################
 
