@@ -35,6 +35,8 @@ function(install_package)
       VERSION
       DESCRIPTION
       INSTALL_HEADERS 
+      INSTALL_HEADER_DIRS
+      INSTALL_INCLUDE_DIR
       DESTINATION
       INCLUDE_DIRS
       LINK_LIBS
@@ -111,12 +113,25 @@ function(install_package)
     install( FILES ${PACKAGE_INSTALL_HEADERS} DESTINATION ${PACKAGE_DESTINATION} )
   endif()
 
+  if( PACKAGE_INSTALL_INCLUDE_DIR )
+      install(DIRECTORY ${CMAKE_SOURCE_DIR}/include DESTINATION ${PACKAGE_DESTINATION} )
+  endif()
+
+  if( PACKAGE_INSTALL_HEADER_DIRS )
+      foreach(dir IN LISTS PACKAGE_INSTALL_HEADER_DIRS )
+          install( DIRECTORY ${dir}
+              DESTINATION ${PACKAGE_DESTINATION}/include 
+              FILES_MATCHING PATTERN "*.h"
+              )
+      endforeach()
+  endif()
+
   # write and install a cmake "find package" for cmake projects to use.
-  # NB: this .camke file CANNOT refer to any source directory, only to
+  # NB: this .cmake file CANNOT refer to any source directory, only to
   # _installed_ files.
   configure_file( ${modules_dir}/FindPackage.cmake.in Find${PACKAGE_PKG_NAME}.cmake @ONLY )
   install( FILES ${CMAKE_CURRENT_BINARY_DIR}/Find${PACKAGE_PKG_NAME}.cmake 
-       DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/cmake/${PACKAGE_PKG_NAME}/ )
+      DESTINATION ${CMAKE_INSTALL_PREFIX}/share/${PACKAGE_PKG_NAME}/ )
 
   #######################################################
   # Export library for easy inclusion from other cmake projects. APPEND allows
@@ -137,6 +152,12 @@ function(install_package)
   # own examples or applcations in this project.
   configure_file( ${CMAKE_SOURCE_DIR}/cmake_modules/PackageConfig.cmake.in
       ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake @ONLY )
+  install(FILES
+      ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
+      ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Targets.cmake
+      ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake
+      DESTINATION
+      lib/cmake/${PROJECT_NAME})
 
   #  # Install tree config.  NB we DO NOT use this.  We install using brew or
   #  set( EXPORT_LIB_INC_DIR ${LIB_INC_DIR} )

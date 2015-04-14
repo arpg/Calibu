@@ -29,7 +29,6 @@ endif()
 
 string(TOLOWER ${PROJECT_NAME} LIBRARY_NAME)
 
-#add_subdirectory(src)
 #######################################################
 ## Sources
 set( INC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include/calibu )
@@ -149,7 +148,7 @@ ENDIF()
 include(SetPlatformVars)
 configure_file(
   "${CMAKE_CURRENT_SOURCE_DIR}/src/config.h.in"
-  "${CMAKE_CURRENT_BINARY_DIR}/include/${LIBRARY_NAME}/config.h"
+  "${CMAKE_CURRENT_BINARY_DIR}/include/calibu/config.h"
 )
 #list( APPEND HEADERS "${CMAKE_CURRENT_BINARY_DIR}/include/${LIBRARY_NAME}/config.h" )
 
@@ -166,8 +165,9 @@ install_package(
     LIB_NAME calibu
     VERSION 0.2
     DESCRIPTION "Computer vision camera model library."
-    INSTALL_HEADERS ${HEADERS}
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/include/calibu
+    INSTALL_INCLUDE_DIR true
+    INSTALL_HEADER_DIRS ${CMAKE_CURRENT_BINARY_DIR}/include/calibu
+    DESTINATION ${CMAKE_INSTALL_PREFIX}
     INCLUDE_DIRS ${USER_INC}
     LINK_LIBS ${LINK_LIBS}
     )
