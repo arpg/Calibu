@@ -111,7 +111,7 @@ list( APPEND CALIBU_INC
     )
 
 list( APPEND USER_INC   ${EIGEN3_INCLUDE_DIR} )
-list( APPEND USER_INC   ${Sophus_INCLUDE_DIR} )
+list( APPEND USER_INC   ${Sophus_INCLUDE_DIRS} )
 
 #######################################################
 ## Find optional dependencies
