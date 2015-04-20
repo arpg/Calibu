@@ -28,10 +28,9 @@
 namespace calibu
 {
 
-std::shared_ptr<calibu::CameraInterface<double>> CreateScanlineRectifiedLookupAndCameras(
-        const Sophus::SE3d& T_rl,
-        const std::shared_ptr<calibu::CameraInterface<double>>& cam_left,
-        const std::shared_ptr<calibu::CameraInterface<double>>& cam_right,
+std::shared_ptr<calibu::CameraInterface<double>> CreateScanlineRectifiedLookupAndCameras(const Sophus::SE3d& T_rl,
+        const std::shared_ptr<calibu::CameraInterface<double> > cam_left,
+        const std::shared_ptr<calibu::CameraInterface<double> > cam_right,
         Sophus::SE3d& T_nr_nl,
         LookupTable& left_lut,
         LookupTable& right_lut
@@ -87,6 +86,9 @@ std::shared_ptr<calibu::CameraInterface<double>> CreateScanlineRectifiedLookupAn
     Eigen::VectorXd params_(calibu::LinearCamera<double>::NumParams);
     size_ << cam_left->Width(), cam_left->Height();
     params_ << fu, fv, u0, v0;
+    std::cout << "fu: " << fu << " fv: " << fv << " u0: " << u0 <<
+                 " v0: " << v0 << " width: " << cam_left->Width() <<
+                 " height: " << cam_left->Height();
     std::shared_ptr<calibu::CameraInterface<double>> new_cam(new calibu::LinearCamera<double>(params_, size_));
 
     // Homographies which should be applied to left and right images to scan-line rectify them

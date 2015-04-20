@@ -163,7 +163,7 @@ install_package(
     )
 
 if( BUILD_APPLICATIONS )
-  set( CALIBU_LIBRARIES ${LINK_LIBS} calibu )
+  set( CALIBU_LIBRARIES ${LINK_LIBS} )
   set( CALIBU_INCLUDE_DIRS ${USER_INC} ${CALIBU_INC} )
   set( CALIBU_DIR ${CMAKE_CURRENT_BINARY_DIR} )
   link_libraries( ${CALIBU_LIBRARIES} calibu )

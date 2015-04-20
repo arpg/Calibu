@@ -38,8 +38,8 @@ namespace calibu
     CALIBU_EXPORT
     std::shared_ptr<calibu::CameraInterface<double>> CreateScanlineRectifiedLookupAndCameras(
         const Sophus::SE3d& T_rl,
-        const std::shared_ptr<calibu::CameraInterface<double>>& cam_left,
-        const std::shared_ptr<calibu::CameraInterface<double>>& cam_right,
+        const std::shared_ptr<calibu::CameraInterface<double>> cam_left,
+        const std::shared_ptr<calibu::CameraInterface<double>> cam_right,
         Sophus::SE3d& T_nr_nl,
         LookupTable& left_lut,
         LookupTable& right_lut

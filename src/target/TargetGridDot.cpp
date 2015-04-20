@@ -149,7 +149,7 @@ std::vector<Triple*> PrincipleDirections( Vertex& v)
     // find most x-ily and y-ily
     if(ret.size() == 2) {
         Eigen::Vector2d d[2] = { ret[0]->Dir(), ret[1]->Dir() };
-        if(abs(d[1][0]) > abs(d[0][0]) ) {
+        if(std::abs(d[1][0]) > std::abs(d[0][0]) ) {
             std::swap(ret[0], ret[1]);
             std::swap(d[0], d[1]);
         }
@@ -458,7 +458,7 @@ bool TargetGridDot::FindTarget(
                     const Eigen::Vector2i go = f.pg + step;
 
                     // Only accept local neighbours.
-                    if( abs(step[0]) > 1 || abs(step[1]) > 1 ) {
+                    if( std::abs(step[0]) > 1 || std::abs(step[1]) > 1 ) {
                         continue;
                     }
 
