@@ -19,12 +19,10 @@ void Test1()
  
     // project and lift into the z=1 plane
     p = cam->Project( P );
-    std::cout << p << std::endl; //debug
 
     // unproject form the image back into 3D
     Eigen::Vector3d P2;
     P2 = d*cam->Unproject( p );
-    std::cout << P2 << std::endl; //debug
 }
 
 void Test2()

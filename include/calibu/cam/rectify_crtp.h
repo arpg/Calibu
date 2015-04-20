@@ -126,6 +126,19 @@ namespace calibu
       int w, int h
       );
 
+  /// Some helper functions that were in the old Undistort/Distort world.
+  template<typename T> inline
+  Eigen::Matrix<T,2,1> Project(const Eigen::Matrix<T,3,1>& P)
+  {
+      return Eigen::Matrix<T,2,1>(P(0)/P(2), P(1)/P(2));
+  }
+
+  template<typename T> inline
+  Eigen::Matrix<T,3,1> Project(const Eigen::Matrix<T,4,1>& P)
+  {
+      return Eigen::Matrix<T,3,1>(P(0)/P(3), P(1)/P(3), P(2)/P(3));
+  }
+
   ///
   inline Range MinMaxRotatedCol( const std::shared_ptr<calibu::CameraInterface<double>> cam, const Eigen::Matrix3d& Rnl_l )
   {
@@ -139,8 +152,8 @@ namespace calibu
 //      std::cout << "rray:  " << rray.transpose() << std::endl;
 //      double angle = acos( lray.dot(rray)/(lray.norm()*rray.norm()) );
 //      printf( "row %zu,  Angle: %f\n", row, angle*180.0/M_PI );
-      const Vector2d ln = cam->Project( lray );
-      const Vector2d rn = cam->Project( rray );
+      const Vector2d ln = Project( lray );
+      const Vector2d rn = Project( rray );
       range.ExcludeLessThan(ln[0]);
       range.ExcludeGreaterThan(rn[0]);
     }
@@ -153,8 +166,8 @@ namespace calibu
   {
     Range range = Range::Open();
     for(size_t col = 0; col < cam->Width(); ++col) {
-      const Eigen::Vector2d tn = cam->Project(Eigen::Vector3d(Rnl_l*cam->Unproject(Eigen::Vector2d(col,0)) ));
-      const Eigen::Vector2d bn = cam->Project(Eigen::Vector3d(Rnl_l*cam->Unproject(Eigen::Vector2d(col,cam->Height()-1)) ));
+      const Eigen::Vector2d tn = Project(Eigen::Vector3d(Rnl_l*cam->Unproject(Eigen::Vector2d(col,0)) ));
+      const Eigen::Vector2d bn = Project(Eigen::Vector3d(Rnl_l*cam->Unproject(Eigen::Vector2d(col,cam->Height()-1)) ));
       range.ExcludeLessThan(tn[1]);
       range.ExcludeGreaterThan(bn[1]);
     }
