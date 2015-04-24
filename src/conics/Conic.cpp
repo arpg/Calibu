@@ -22,6 +22,8 @@
 #include <calibu/conics/Conic.h>
 #include <calibu/utils/Utils.h>
 #include <Eigen/Dense>
+#include <calibu/cam/camera_crtp.h>
+#include <calibu/cam/camera_crtp_impl.h>
 
 using namespace std;
 using namespace Eigen;
@@ -142,7 +144,7 @@ pair<Vector3d,Matrix3d > PlaneFromConics( const vector<Conic,
     return best;
 }
 
-Conic UnmapConic( const Conic& c, const CameraModelInterface& cam )
+Conic UnmapConic(const Conic& c, const std::shared_ptr<CameraInterface<double> > cam )
 {
     std::vector<Eigen::Vector2d , Eigen::aligned_allocator<Eigen::Vector2d> > d;
     std::vector<Eigen::Vector2d , Eigen::aligned_allocator<Eigen::Vector2d> > u;
@@ -154,7 +156,7 @@ Conic UnmapConic( const Conic& c, const CameraModelInterface& cam )
     d.push_back(Eigen::Vector2d(c.bbox.x2,c.bbox.y2));
 
     for( int i=0; i<5; ++i )
-        u.push_back( Project(cam.Unproject(d[i])) );
+        u.push_back( cam->Project(cam->Unproject(d[i])) );
 
     // Distortion locally estimated by homography
     const Matrix3d H_du = EstimateH_ba(u,d);

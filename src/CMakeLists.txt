@@ -11,20 +11,13 @@ set(HEADERS
   ${INC_DIR}/calib/CostFunctionAndParams.h
   ${INC_DIR}/calib/LocalParamSe3.h
   ${INC_DIR}/cam/camera_crtp.h
+  ${INC_DIR}/cam/camera_crtp_impl.h
   ${INC_DIR}/cam/camera_models_crtp.h
   ${INC_DIR}/cam/camera_crtp_interop.h
-  ${INC_DIR}/cam/CameraModel.h
-  ${INC_DIR}/cam/CameraModelInterface.h
-  ${INC_DIR}/cam/CameraModelT.h
-  ${INC_DIR}/cam/CameraRig.h
-  ${INC_DIR}/cam/CameraUtils.h
-  ${INC_DIR}/cam/CameraXml.h
-  ${INC_DIR}/cam/DistortionModel.h
-  ${INC_DIR}/cam/ProjectionModel.h
-  ${INC_DIR}/cam/ProjectionKannalaBrandt.h
-  ${INC_DIR}/cam/Rectify.h
+  ${INC_DIR}/cam/camera_xml.h
+  ${INC_DIR}/cam/camera_rig.h
   ${INC_DIR}/cam/rectify_crtp.h
-  ${INC_DIR}/cam/StereoRectify.h
+  ${INC_DIR}/cam/stereo_rectify.h
   ${INC_DIR}/conics/Conic.h
   ${INC_DIR}/conics/ConicFinder.h
   ${INC_DIR}/conics/FindConics.h
@@ -40,7 +33,6 @@ set(HEADERS
   ${INC_DIR}/target/RandomGrid.h
   ${INC_DIR}/target/Target.h
   ${INC_DIR}/target/TargetGridDot.h
-  ${INC_DIR}/target/TargetRandomDot.h
   ${INC_DIR}/utils/Rectangle.h
   ${INC_DIR}/utils/Range.h
   ${INC_DIR}/utils/Utils.h
@@ -53,7 +45,6 @@ set(HEADERS
 set(SRC_DIR ${Calibu_SOURCE_DIR}/src)
 SET(SOURCES
   ${SRC_DIR}/cam/CameraXml.cpp
-  ${SRC_DIR}/cam/Rectify.cpp
   ${SRC_DIR}/cam/rectify_crtp.cpp
   ${SRC_DIR}/cam/StereoRectify.cpp
   ${SRC_DIR}/conics/Conic.cpp
@@ -64,7 +55,6 @@ SET(SOURCES
   ${SRC_DIR}/target/Hungarian.cpp
   ${SRC_DIR}/target/RandomGrid.cpp
   ${SRC_DIR}/target/TargetGridDot.cpp
-  ${SRC_DIR}/target/TargetRandomDot.cpp
   ${SRC_DIR}/utils/Utils.cpp
   ${SRC_DIR}/utils/Xml.cpp
   )
@@ -73,6 +63,11 @@ SET(SOURCES
 ## Find required dependencies
 
 find_package( Eigen3 REQUIRED )
+
+find_package( GLog REQUIRED )
+set(HAVE_GLOG 1)
+list( APPEND LINK_LIBS ${GLog_LIBRARIES} )
+list( APPEND CALIBU_INC ${Glog_INCLUDE_DIRS} )
 
 # https://github.com/gwu-robotics/Sophus.git
 find_package( Sophus REQUIRED )

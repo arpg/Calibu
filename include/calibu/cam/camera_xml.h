@@ -1,9 +1,11 @@
-/* 
+/*
    This file is part of the Calibu Project.
-   https://github.com/gwu-robotics/Calibu
+   https://github.com/arpg/Calibu
 
-   Copyright (C) 2013 George Washington University,
+   Copyright (C) 2015 University of Colorado at Boulder,
                       Steven Lovegrove,
+                      Christoffer Heckman,
+                      Nima Keivan,
                       Gabe Sibley
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,16 +24,23 @@
 #pragma once
 
 #include <calibu/Platform.h>
-#include <calibu/cam/CameraRig.h>
+#include <calibu/cam/camera_crtp.h>
+#include <calibu/cam/camera_crtp_impl.h>
+#include <calibu/cam/camera_models_crtp.h>
+#include <calibu/cam/camera_rig.h>
+#include <glog/logging.h>
 #include <sstream>
 
 namespace calibu
 {
 
-const std::string NODE_RIG           = "rig";
-const std::string NODE_CAMMODEL_POSE = "camera";
-const std::string NODE_CAMMODEL      = "camera_model";
-const std::string NODE_POSE          = "pose";
+const std::string NODE_RIG     	= "rig";
+const std::string NODE_CAM_POSE	= "camera";
+const std::string NODE_CAM      = "camera_model";
+const std::string NODE_POSE     = "pose";
+
+typedef CameraInterface<double> CameraInterfaced;
+typedef Rig<double> Rigd;
 
 ///////////////////////////////////////////////////////////////////////////////
 template <class T> inline
@@ -62,7 +71,7 @@ std::string ValToStr( const T& t )
 
 ///////////////////////////////////////////////////////////////////////////////
 CALIBU_EXPORT
-std::string CameraModelType( const std::string& sType );
+std::string CameraType( const std::string& sType );
 
 CALIBU_EXPORT
 std::string IndentStr(int indent);
@@ -74,44 +83,48 @@ CALIBU_EXPORT
 std::string AttribClose(const std::string& attrib);
 
 CALIBU_EXPORT
-void WriteXmlSE3(std::ostream& out, const Sophus::SE3d& T_wc, int indent);
+void WriteXmlSE3(std::ostream& out, const Sophus::SE3d& t_rc, int indent);
+
 
 CALIBU_EXPORT
-void WriteXmlCameraModel(std::ostream& out, const CameraModelInterface& cam, int indent = 0);
+void WriteXmlCamera(std::ostream& out, const std::shared_ptr<CameraInterfaced> cam,
+                    int indent = 0);
 
 CALIBU_EXPORT
-void WriteXmlCameraModel(const std::string& filename, const CameraModelInterface& cam);
+void WriteXmlCamera(const std::string& filename,
+                    const std::shared_ptr<CameraInterfaced> cam);
 
 
 ////////////////////////////////////////////////////////////////////////////
-inline void WriteXmlCameraModelAndTransformWithLut(
+inline void WriteXmlCameraAndTransformWithLut(
         std::ostream& out,
         std::string& sLutXmlElement,
-        const CameraModelAndTransform& cop,
+        const std::shared_ptr<CameraInterfaced> cam,
         int indent = 0
         )
 {
     const std::string dd = IndentStr(indent);
-    out << dd << AttribOpen(NODE_CAMMODEL_POSE) << std::endl;
-    WriteXmlCameraModel(out, cop.camera, indent+4);
-    WriteXmlSE3(out, cop.T_wc, indent+4);
-    
+    out << dd << AttribOpen(NODE_CAM_POSE) << std::endl;
+    WriteXmlCamera(out, cam, indent+4);
+    WriteXmlSE3(out,cam->Pose(),indent+4);
+
     out << dd << sLutXmlElement << std::endl; // LUT, if there is one!
-    out << dd << AttribClose(NODE_CAMMODEL_POSE) << std::endl;
+    out << dd << AttribClose(NODE_CAM_POSE) << std::endl;
 }
 
 
 ///////////////////////////////////////////////////////////////////////////////
 CALIBU_EXPORT
-CameraModel ReadXmlCameraModel(const std::string& filename);
+std::shared_ptr<CameraInterfaced> ReadXmlCamera(
+    const std::string& filename, const std::shared_ptr<CameraInterfaced> cam);
 
 ////////////////////////////////////////////////////////////////////////
 
 CALIBU_EXPORT
-void WriteXmlSE3(std::ostream& out, const Sophus::SE3d& T_wc, int indent = 0);
+void WriteXmlSE3(std::ostream& out, const Sophus::SE3d& t_rc, int indent = 0);
 
 CALIBU_EXPORT
-void WriteXmlSE3(const std::string& filename, const Sophus::SE3d& T_wc);
+void WriteXmlSE3(const std::string& filename, const Sophus::SE3d& t_rc);
 
 CALIBU_EXPORT
 Sophus::SE3d ReadXmlSE3(const std::string& filename);
@@ -119,23 +132,30 @@ Sophus::SE3d ReadXmlSE3(const std::string& filename);
 ////////////////////////////////////////////////////////////////////////
 
 CALIBU_EXPORT
-void WriteXmlCameraModelAndTransform(std::ostream& out, const CameraModelAndTransform& cop, int indent = 0);
+void WriteXmlCameraAndTransform(std::ostream& out,
+                                const std::shared_ptr<CameraInterfaced> cop,
+                                int indent = 0);
 
 CALIBU_EXPORT
-void WriteXmlCameraModelAndTransform(const std::string& filename, const CameraModelAndTransform& cop);
+void WriteXmlCameraAndTransform(const std::string& filename,
+                                const std::shared_ptr<CameraInterfaced> cop);
 
 CALIBU_EXPORT
-CameraModelAndTransform ReadXmlCameraModelAndTransform(const std::string& filename);
+std::shared_ptr<CameraInterfaced> ReadXmlCameraAndTransform(
+    const std::string& filename, const std::shared_ptr<CameraInterfaced> cop);
+
+CALIBU_EXPORT
+std::shared_ptr<CameraInterfaced> ReadXmlCameraAndTransform(
+    const std::string& filename);
 
 ////////////////////////////////////////////////////////////////////////
 CALIBU_EXPORT
-void WriteXmlRig(std::ostream& out, const CameraRig& rig, int indent = 0);
+void WriteXmlRig(std::ostream& out, const std::shared_ptr<Rigd> rig, int indent = 0);
 
 CALIBU_EXPORT
-void WriteXmlRig(const std::string& filename, const CameraRig& rig);
+void WriteXmlRig(const std::string& filename, const std::shared_ptr<Rigd> rig);
 
 CALIBU_EXPORT
-CameraRig ReadXmlRig(const std::string& filename);
+std::shared_ptr<Rigd> ReadXmlRig(const std::string& filename);
 
-
-}
+} // namespace calibu

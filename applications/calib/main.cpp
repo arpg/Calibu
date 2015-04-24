@@ -170,25 +170,37 @@ int main( int argc, char** argv)
       const int h_i = video.Streams()[i].Height();
 
       if(filename == "fov") {
-        CameraModelT<Fov> starting_cam(w_i, h_i);
-        starting_cam.Params()  << 300, 300, w_i/2.0, h_i/2.0, 0.2;
-        input_cameras.push_back( CameraAndPose(CameraModel(starting_cam), Sophus::SE3d() ) );
+        Eigen::Vector2i size_;
+        Eigen::VectorXd params_(FovCamera<double>::NumParams);
+        size_ << w_i, h_i;
+        params_ << 300, 300, w_i/2.0, h_i/2.0, 0.2;
+        std::shared_ptr<CameraInterface<double>> starting_cam(new FovCamera<double>(params_, size_));
+        input_cameras.push_back( CameraAndPose(starting_cam, Sophus::SE3d() ) );
       }else if(filename == "poly2") {
-        CameraModelT<Poly2> starting_cam(w_i, h_i);
-        starting_cam.Params()  << 300, 300, w_i/2.0, h_i/2.0, 0.0, 0.0;
-        input_cameras.push_back( CameraAndPose(CameraModel(starting_cam), Sophus::SE3d() ) );
+        Eigen::Vector2i size_;
+        Eigen::VectorXd params_(Poly2Camera<double>::NumParams);
+        size_ << w_i, h_i;
+        params_ << 300, 300, w_i/2.0, h_i/2.0, 0.0, 0.0, 0.0;
+        std::shared_ptr<CameraInterface<double>> starting_cam(new Poly2Camera<double>(params_, size_));
+        input_cameras.push_back( CameraAndPose(starting_cam, Sophus::SE3d() ) );
       }else if(filename == "poly3" || filename =="poly") {
-        CameraModelT<Poly3> starting_cam(w_i, h_i);
-        starting_cam.Params()  << 300, 300, w_i/2.0, h_i/2.0, 0.0, 0.0, 0.0;
-        input_cameras.push_back( CameraAndPose(CameraModel(starting_cam), Sophus::SE3d() ) );
+        Eigen::Vector2i size_;
+        Eigen::VectorXd params_(Poly3Camera<double>::NumParams);
+        size_ << w_i, h_i;
+        params_ << 300, 300, w_i/2.0, h_i/2.0, 0.0, 0.0, 0.0;
+        std::shared_ptr<CameraInterface<double>> starting_cam(new Poly3Camera<double>(params_, size_));
+        input_cameras.push_back( CameraAndPose(starting_cam, Sophus::SE3d() ) );
       }else if(filename == "kb4") {
-        CameraModelT<ProjectionKannalaBrandt> starting_cam(w_i, h_i);
-        starting_cam.Params()  << 300, 300, w_i/2.0, h_i/2.0, 0.0, 0.0, 0.0, 0.0;
-        input_cameras.push_back( CameraAndPose(CameraModel(starting_cam), Sophus::SE3d() ) );
+        Eigen::Vector2i size_;
+        Eigen::VectorXd params_(KannalaBrandtCamera<double>::NumParams);
+        size_ << w_i, h_i;
+        params_ << 300, 300, w_i/2.0, h_i/2.0, 0.0, 0.0, 0.0, 0.0;
+        std::shared_ptr<CameraInterface<double>> starting_cam(new KannalaBrandtCamera<double>(params_, size_));
+        input_cameras.push_back( CameraAndPose(starting_cam, Sophus::SE3d() ) );
       }else{
-        const CameraRig rig = ReadXmlRig(filename);
-        for(const CameraModelAndTransform& cop : rig.cameras ) {
-          input_cameras.push_back( CameraAndPose(cop.camera, cop.T_wc.inverse()) );
+        const std::shared_ptr<Rig<double>> rig = ReadXmlRig(filename);
+        for(const std::shared_ptr<CameraInterface<double>> cop : rig->cameras_ ) {
+          input_cameras.push_back( CameraAndPose(cop, cop->Pose().inverse()) );
         }
       }
     }else{
@@ -250,13 +262,14 @@ int main( int argc, char** argv)
                                            );
     }else{
       // Generic starting set of parameters.
-      CameraModelT<Fov> starting_cam(w_i, h_i);
-      starting_cam.Params()  << 300, 300, w_i/2.0, h_i/2.0, 0.2;
+      Eigen::Vector2i size_;
+      Eigen::VectorXd params_(FovCamera<double>::NumParams);
+      size_ << w_i, h_i;
+      params_ << 300, 300, w_i/2.0, h_i/2.0, 0.2;
+      std::shared_ptr<FovCamera<double>>
+          starting_cam(new FovCamera<double>(params_, size_));
 
-      calib_cams[i] = calibrator.AddCamera(
-          CameraModel(starting_cam),
-          Sophus::SE3d()
-                                           );
+      calib_cams[i] = calibrator.AddCamera( starting_cam, Sophus::SE3d() );
     }
   }
 
@@ -342,7 +355,7 @@ int main( int argc, char** argv)
     pangolin::RegisterKeyPressCallback(']', [&](){calibrator.Stop();} );
 
     bool step = false;
-    pangolin::RegisterKeyPressCallback(pangolin::PANGO_SPECIAL+ GLUT_KEY_RIGHT, [&](){step = true;} );
+    pangolin::RegisterKeyPressCallback(pangolin::PANGO_SPECIAL+ pangolin::PANGO_KEY_RIGHT, [&](){step = true;} );
     pangolin::RegisterKeyPressCallback(' ', [&](){run = !run;} );
 
     pangolin::RegisterKeyPressCallback('r', [&](){calibrator.PrintResults();} );
@@ -460,7 +473,7 @@ int main( int argc, char** argv)
             for( size_t c = 0; c < codepts.size(); c++ ){
               const Eigen::Vector3d& xwp = codepts[c];
               Eigen::Vector2d pt;
-              pt = cap.camera.Project( T_hw[iI]*xwp );
+              pt = cap.camera->Project( T_hw[iI]*xwp );
               if( pt[0] < 10 || pt[0] >= images[iI].w-10 ||
                   pt[1] < 10 || pt[1] >= images[iI].h-10 ) {
                 found = false;
@@ -518,7 +531,7 @@ int main( int argc, char** argv)
           const int w_i = video.Streams()[c].Width();
           const int h_i = video.Streams()[c].Height();
 
-          const Eigen::Matrix3d Kinv = calibrator.GetCamera(c).camera.Kinv();
+          const Eigen::Matrix3d Kinv = calibrator.GetCamera(c).camera->K().inverse();
 
           const CameraAndPose cap = calibrator.GetCamera(c);
           const Sophus::SE3d T_ck = cap.T_ck;

@@ -1,4 +1,4 @@
-#https://github.com/gwu-robotics/Calibu
+#https://github.com/arpg/Calibu
 find_package( Calibu 0.1 REQUIRED )
 include_directories( ${Calibu_INCLUDE_DIRS} )
 
@@ -21,9 +21,9 @@ if( Pangolin_FOUND AND Ceres_FOUND AND OpenCV_FOUND AND BUILD_CALIBGRID)
     target_link_libraries( calibgrid ${CERES_LIBRARIES} )
     target_link_libraries( calibgrid ${Pangolin_LIBRARIES} )
     target_link_libraries( calibgrid ${Calibu_LIBRARIES} )
-    target_link_libraries( calibgrid ${CVARS_LIBRARY} )
+    target_link_libraries( calibgrid ${CVars_LIBRARY} )
 
-    install(TARGETS calibgrid
+        install(TARGETS calibgrid
         EXPORT CalibuTargets
         RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
     )

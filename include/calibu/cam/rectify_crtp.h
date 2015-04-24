@@ -27,9 +27,8 @@
 
 #include <calibu/Platform.h>
 #include <calibu/cam/camera_crtp.h>
+#include <calibu/cam/camera_crtp_impl.h>
 #include <calibu/utils/Range.h>
-
-#include <calibu/cam/CameraUtils.h> // todo remove this file...
 
 #include <iostream>
 
@@ -105,7 +104,7 @@ namespace calibu
   /// R_onK is formed from the multiplication R_on (old form new) and the new
   /// camera intrinsics K.
     CALIBU_EXPORT void CreateLookupTable(
-        const calibu::CameraInterface<double>& cam_from,
+        const std::shared_ptr<calibu::CameraInterface<double>>& cam_from,
         const Eigen::Matrix3d& R_onKinv,
         LookupTable& lut
         );
@@ -113,7 +112,7 @@ namespace calibu
     /// Create lookup table which can be used to remap a general camera model
     /// 'cam_from' to a linear.
     void CreateLookupTable(
-        const calibu::CameraInterface<double>& cam_from,
+        const std::shared_ptr<calibu::CameraInterface<double>>& cam_from,
         LookupTable& lut
         );
 
@@ -127,15 +126,28 @@ namespace calibu
       int w, int h
       );
 
+  /// Some helper functions that were in the old Undistort/Distort world.
+  template<typename T> inline
+  Eigen::Matrix<T,2,1> Project(const Eigen::Matrix<T,3,1>& P)
+  {
+      return Eigen::Matrix<T,2,1>(P(0)/P(2), P(1)/P(2));
+  }
+
+  template<typename T> inline
+  Eigen::Matrix<T,3,1> Project(const Eigen::Matrix<T,4,1>& P)
+  {
+      return Eigen::Matrix<T,3,1>(P(0)/P(3), P(1)/P(3), P(2)/P(3));
+  }
+
   ///
-  inline Range MinMaxRotatedCol( const calibu::CameraInterface<double>& cam, const Eigen::Matrix3d& Rnl_l )
+  inline Range MinMaxRotatedCol( const std::shared_ptr<calibu::CameraInterface<double>> cam, const Eigen::Matrix3d& Rnl_l )
   {
     using namespace Eigen;
     Range range = Range::Open();
 
-    for(size_t row = 0; row < cam.Height(); ++row) {
-      const Vector3d lray = Rnl_l* cam.Unproject(Vector2d(0,row));
-      const Vector3d rray = Rnl_l* cam.Unproject(Vector2d(cam.Width()-1,row));
+    for(size_t row = 0; row < cam->Height(); ++row) {
+      const Vector3d lray = Rnl_l* cam->Unproject(Vector2d(0,row));
+      const Vector3d rray = Rnl_l* cam->Unproject(Vector2d(cam->Width()-1,row));
 //      std::cout << "lray:  " << lray.transpose() << std::endl;
 //      std::cout << "rray:  " << rray.transpose() << std::endl;
 //      double angle = acos( lray.dot(rray)/(lray.norm()*rray.norm()) );
@@ -150,12 +162,12 @@ namespace calibu
   }
 
   ///
-  inline Range MinMaxRotatedRow( const calibu::CameraInterface<double>& cam, const Eigen::Matrix3d& Rnl_l )
+  inline Range MinMaxRotatedRow( const std::shared_ptr<calibu::CameraInterface<double>> cam, const Eigen::Matrix3d& Rnl_l )
   {
     Range range = Range::Open();
-    for(size_t col = 0; col < cam.Width(); ++col) {
-      const Eigen::Vector2d tn = Project(Eigen::Vector3d(Rnl_l*cam.Unproject(Eigen::Vector2d(col,0)) ));
-      const Eigen::Vector2d bn = Project(Eigen::Vector3d(Rnl_l*cam.Unproject(Eigen::Vector2d(col,cam.Height()-1)) ));
+    for(size_t col = 0; col < cam->Width(); ++col) {
+      const Eigen::Vector2d tn = Project(Eigen::Vector3d(Rnl_l*cam->Unproject(Eigen::Vector2d(col,0)) ));
+      const Eigen::Vector2d bn = Project(Eigen::Vector3d(Rnl_l*cam->Unproject(Eigen::Vector2d(col,cam->Height()-1)) ));
       range.ExcludeLessThan(tn[1]);
       range.ExcludeGreaterThan(bn[1]);
     }

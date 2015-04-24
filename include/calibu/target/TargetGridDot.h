@@ -75,14 +75,14 @@ public:
 
     bool FindTarget(
             const Sophus::SE3d& T_cw,
-            const CameraModelInterface& cam,
+            const std::shared_ptr<CameraInterface<double>> cam,
             const ImageProcessing& images,
             const std::vector<Conic, Eigen::aligned_allocator<Conic> >& conics,
             std::vector<int>& ellipse_target_map
             );
 
     bool FindTarget(
-            const CameraModelInterface& cam,
+            const std::shared_ptr<CameraInterface<double>> cam,
             const ImageProcessing& images,
             const std::vector<Conic, Eigen::aligned_allocator<Conic> >& conics,
             std::vector<int>& ellipse_target_map
