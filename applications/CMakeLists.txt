@@ -1,15 +1,8 @@
 if(NOT ANDROID)
     add_subdirectory( calib )
     add_subdirectory( cmod )
-    find_package( HAL QUIET )
-    find_package( Sophus QUIET )
-    find_package( Calibu QUIET )
-    
-    if( HAL_FOUND )
-        add_subdirectory( calib-hal )
-    endif()
 
-    include_directories(${Sophus_INCLUDE_DIR} ${Calibu_INCLUDE_DIRS})
-    add_executable(grid_gen grid-gen/main.cpp)
-    target_link_libraries(grid_gen calibu)
+    include_directories(${Calibu_INCLUDE_DIRS})
+    add_executable( grid_gen grid-gen/main.cpp )
+    target_link_libraries( grid_gen ${Calibu_LIBRARIES} calibu )
 endif()

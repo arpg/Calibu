@@ -22,7 +22,6 @@
 #include <calibu/pose/Tracker.h>
 #include <calibu/pose/Pnp.h>
 #include <calibu/image/ImageProcessing.h>
-#include <calibu/cam/CameraModel.h>
 
 #include <iostream>
 
@@ -39,8 +38,8 @@ Tracker::Tracker(TargetInterface& target, int w, int h)
 }
 
 bool Tracker::ProcessFrame(
-        CameraModelInterface& cam, unsigned char* I, size_t w, size_t h, size_t pitch
-        )
+    std::shared_ptr<CameraInterface<double>> cam,
+    unsigned char* I, size_t w, size_t h, size_t pitch)
 {
     double rms = 0;
 
@@ -65,7 +64,7 @@ bool Tracker::ProcessFrame(
     }
 
     // Find target given (approximately) undistorted conics
-    const static CameraModelT<ProjectionLinearId> idcam;
+    std::shared_ptr<CameraInterface<double>> idcam(new LinearCamera<double>());
 
     target.FindTarget( idcam, imgs, conics_camframe, conics_target_map );
     conics_candidate_map_first_pass = conics_target_map;

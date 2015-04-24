@@ -1,11 +1,12 @@
 /*
   This file is part of the Calibu Project.
-  https://github.com/gwu-robotics/Calibu
+  https://github.com/arpg/Calibu
 
   Copyright (C) 2013 George Washington University,
   Steven Lovegrove,
   Nima Keivan
   Jack Morrison
+  Christoffer Heckman
   Gabe Sibley
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,6 +28,8 @@
  * Avoids copying inherited function implementations for all camera models.
  *
  * Requires the following functions in the derived class:
+ * - static void Scale(const T* scale, const T* params)
+ * - static void SetParams()
  * - static void Unproject(const T* pix, const T* params, T* ray) {
  * - static void Project(const T* ray, const T* params, T* pix) {
  * - static void dProject_dray(const T* ray, const T* params, T* j) {
@@ -45,8 +48,37 @@ class CameraImpl : public CameraInterface<Scalar> {
 
   CameraImpl() {}
   virtual ~CameraImpl() {}
-  CameraImpl(const Eigen::VectorXd& params, const Eigen::Vector2i& image_size) :
+  CameraImpl(const Eigen::VectorXd& params, Eigen::Vector2i& image_size) :
       CameraInterface<Scalar>(params, image_size) {
+  }
+
+  void
+  Scale(const Scalar& s) override {
+    Derived::Scale( s, this->params_.data() );
+  }
+
+  void
+  PrintInfo() const override {
+      printf("camera model info:\n" );
+      printf("    Right        = [%d; %d; %d] unit vector\n", (int)this->rdf_(0,0), (int)this->rdf_(0,1), (int)this->rdf_(0,2) );
+      printf("    Down         = [%d; %d; %d] unit vector\n", (int)this->rdf_(1,0), (int)this->rdf_(1,1), (int)this->rdf_(1,2) );
+      printf("    Forward      = [%d; %d; %d] unit vector\n", (int)this->rdf_(2,0), (int)this->rdf_(2,1), (int)this->rdf_(2,2) );
+      printf("    Width        = %d pixels\n", (int) this->image_size_[0]);
+      printf("    Height       = %d pixels\n", (int) this->image_size_[1]);
+
+      // Assume we're respecting parameter ordering.
+      printf("    Horiz Center = %.3f pixels\n", this->params_[2] );
+      printf("    Vert Center  = %.3f pixels\n", this->params_[3] );
+      printf("    Horiz FOV    = %.3f degrees\n", 180.0*2.0*atan2( this->image_size_[0]/2, this->params_[0] )/M_PI );
+      printf("    Vert  FOV    = %.3f degrees\n", 180.0*2.0*atan2( this->image_size_[1]/2, this->params_[1] )/M_PI );
+  }
+
+  /** Model-dependent operations. */
+  Eigen::Matrix<Scalar, 3, 3>
+  K() const override {
+    Eigen::Matrix<Scalar,3,3> Kmat;
+    Derived::K( this->params_.data() , Kmat.data());
+    return Kmat;
   }
 
   Vec3t
@@ -83,5 +115,5 @@ class CameraImpl : public CameraInterface<Scalar> {
     Derived::dProject_dray(ray.data(), this->params_.data(), j.data());
     return j;
   }
-};
+}; // public CameraInterface<Scalar>
 }  // namespace calibu

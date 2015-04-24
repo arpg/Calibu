@@ -27,19 +27,18 @@ namespace calibu
 
   ///////////////////////////////////////////////////////////////////////////////
   void CreateLookupTable(
-      const calibu::CameraInterface<double>& cam_from,
-      LookupTable& lut
-      )
+      const std::shared_ptr<calibu::CameraInterface<double> >& cam_from,
+      LookupTable& lut )
   {
     /*
-       TODO figure out what K should be for the "new" camera based on 
+       TODO figure out what K should be for the "new" camera based on
        what part of the original image we want to keep.
 
     // Work out parameters of "new" linear camera. We want to map range
     // width/height to image via K.
-    const calibu::Range range_width 
+    const calibu::Range range_width
       = calibu::MinMaxRotatedCol( cam_from, Eigen::Matrix3d::Identity() );
-    const calibu::Range range_height 
+    const calibu::Range range_height
       = calibu::MinMaxRotatedRow( cam_from, Eigen::Matrix3d::Identity() );
 
     printf(" range_width.Size() = %f, range_width.maxr = %f, range_width.minr = %f\n",
@@ -57,10 +56,10 @@ namespace calibu
     // matrix.  Really we should workout what a good linear model would be
     // based on what portion of the original image is on the z=1 plane (e.g.,
     // cameras with FOV > 180 will need to ignore some pixels).
-    double fu = cam_from.GetParams()[0];
-    double fv = cam_from.GetParams()[1];
-    double u0 = cam_from.GetParams()[2];
-    double v0 = cam_from.GetParams()[3];
+    double fu = cam_from->GetParams()[0];
+    double fv = cam_from->GetParams()[1];
+    double u0 = cam_from->GetParams()[2];
+    double v0 = cam_from->GetParams()[3];
 
     // linear camera model inv(K) matrix
     Eigen::Matrix3d R_onKinv;
@@ -75,13 +74,13 @@ namespace calibu
 
   ///////////////////////////////////////////////////////////////////////////////
   void CreateLookupTable(
-      const calibu::CameraInterface<double>& cam_from,
+      const std::shared_ptr<calibu::CameraInterface<double>>& cam_from,
       const Eigen::Matrix3d& R_onKinv,
       LookupTable& lut
       )
   {
-    const int w = cam_from.Width();
-    const int h = cam_from.Height();
+    const int w = cam_from->Width();
+    const int h = cam_from->Height();
 
     // make sure we have mem in the look up table
     lut.m_vLutPixels.resize( w*h );
@@ -91,7 +90,7 @@ namespace calibu
       for( int c = 0; c < w; ++c) {
         // Remap
         const Eigen::Vector3d p_o = R_onKinv * Eigen::Vector3d(c,r,1);
-        Eigen::Vector2d p_warped = cam_from.Project(p_o);
+        Eigen::Vector2d p_warped = cam_from->Project(p_o);
 
         // Clamp to valid image coords. This will cause out of image
         // data to be stretched from nearest valid coords with
@@ -128,6 +127,59 @@ namespace calibu
       }
     }
   }
+
+  void CreateLookupTable(
+      const std::shared_ptr<calibu::CameraInterface<double>>& cam_from,
+      const Eigen::Matrix3d& R_onKinv,
+      Eigen::Matrix<Eigen::Vector2f, Eigen::Dynamic, Eigen::Dynamic>& lookup_warp
+      )
+  {
+    for(size_t r = 0; r < cam_from->Height(); ++r) {
+      for(size_t c = 0; c < cam_from->Width(); ++c) {
+        // Remap
+        const Eigen::Vector3d p_o = R_onKinv * Eigen::Vector3d(c,r,1);
+        Eigen::Vector2d p_warped = cam_from->Project(p_o);
+
+        // Clamp to valid image coords
+        p_warped[0] = std::min(std::max(0.0, p_warped[0]), cam_from->Width() - 1.0 );
+        p_warped[1] = std::min(std::max(0.0, p_warped[1]), cam_from->Height() - 1.0 );
+
+        lookup_warp(r,c) = p_warped.cast<float>();
+      }
+    }
+  }
+
+  ///////////////////////////////////////////////////////////////////////////////
+  void Rectify(
+      const LookupTable& lut,
+      const unsigned char* pInputImageData,
+      unsigned char* pOutputRectImageData,
+      int w,
+      int h
+      )
+  {
+    // Make the most of the continuous block of memory!
+    const BilinearLutPoint* ptr   = &lut.m_vLutPixels[0];
+
+    const int nHeight = lut.Height();
+    const int nWidth  = lut.Width();
+
+    // Make sure we have been given a correct lookup table.
+    assert(w== nWidth && h == nHeight);
+
+    for( int nRow = 0; nRow < nHeight; nRow++ ) {
+      for( int nCol = 0; nCol < nWidth; nCol++ ) {
+        *pOutputRectImageData++ =
+          (char) ( ptr->w00 * pInputImageData[ ptr->idx0 ] +
+              ptr->w01 * pInputImageData[ ptr->idx0 + 1 ] +
+              ptr->w10 * pInputImageData[ ptr->idx1 ] +
+              ptr->w11 * pInputImageData[ ptr->idx1 + 1 ] );
+        ptr++;
+      }
+    }
+  }
+
+
 
 } // end namespace
 

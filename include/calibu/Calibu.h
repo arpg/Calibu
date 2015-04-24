@@ -1,10 +1,13 @@
 /* 
    This file is part of the Calibu Project.
-   https://github.com/gwu-robotics/Calibu
+   https://github.com/arpg/Calibu
 
    Copyright (C) 2013 George Washington University,
                       Steven Lovegrove
-                      Gabe Sibley 
+                      Gabe Sibley
+
+   Copyright (C) 2015 University of Colorado,
+                      Christoffer Heckman
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -23,6 +26,6 @@
 
 #include <calibu/Platform.h>
 
-#include <calibu/cam/CameraXml.h>
-#include <calibu/cam/Rectify.h>
+#include <calibu/cam/camera_xml.h>
+#include <calibu/cam/rectify_crtp.h>
 

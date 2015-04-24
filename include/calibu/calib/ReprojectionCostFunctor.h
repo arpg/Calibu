@@ -23,7 +23,7 @@
 #include <Eigen/Eigen>
 #include <sophus/se3.hpp>
 
-#include <calibu/cam/ProjectionModel.h>
+#include <calibu/cam/camera_crtp.h>
 
 namespace calibu
 {
@@ -31,7 +31,7 @@ namespace calibu
 // Parameter block 0: T_kw // keyframe
 // Parameter block 1: T_ck // keyframe to cam
 // Parameter block 2: fu,fv,u0,v0,w
-template<typename ProjModel>
+template<typename CameraInt>
 struct ReprojectionCostFunctor
 {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
@@ -52,7 +52,8 @@ struct ReprojectionCostFunctor
         const Eigen::Map<const Sophus::SE3Group<T> > T_ck(pT_ck);
 
         const Eigen::Matrix<T,3,1> Pc = T_ck * (T_kw * m_Pw.cast<T>());
-        const Eigen::Matrix<T,2,1> pc = ProjModel::template Project<T>(Pc, camparam);
+        Eigen::Matrix<T,2,1> pc;
+        CameraInt::Project(Pc.data(), camparam, pc.data());
         r = pc - m_pc.cast<T>();
         return true;
     }
