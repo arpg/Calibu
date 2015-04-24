@@ -35,6 +35,7 @@ function(install_package)
       VERSION
       DESCRIPTION
       INSTALL_HEADERS 
+      INSTALL_GENERATED_HEADERS 
       INSTALL_HEADER_DIRS
       INSTALL_INCLUDE_DIR
       DESTINATION
@@ -70,26 +71,32 @@ function(install_package)
   endif()
 
   # construct Cflags arguments for pkg-config file
-  string( CONCAT PACKAGE_CFLAGS ${PACKAGE_CFLAGS} ${CMAKE_C_FLAGS} )
+#  string( CONCAT PACKAGE_CFLAGS ${PACKAGE_CFLAGS} ${CMAKE_C_FLAGS} )
+  set( PACKAGE_CFLAGS "${PACKAGE_CFLAGS} ${CMAKE_C_FLAGS}" )
   foreach(var IN LISTS PACKAGE_INCLUDE_DIRS )
-    string( CONCAT PACKAGE_CFLAGS ${PACKAGE_CFLAGS} " -I${var}" )
+#    string( CONCAT PACKAGE_CFLAGS ${PACKAGE_CFLAGS} " -I${var}" )
+    set( PACKAGE_CFLAGS "${PACKAGE_CFLAGS} -I${var}" )
   endforeach()
 
   # now construct Libs.private arguments 
   foreach(var IN LISTS PACKAGE_LINK_DIRS )
-    string( CONCAT PACKAGE_LIBS ${PACKAGE_LIBS} " -L${var}" )
+#    string( CONCAT PACKAGE_LIBS ${PACKAGE_LIBS} " -L${var}" )
+    set( PACKAGE_LIBS "${PACKAGE_LIBS} -L${var}" )
   endforeach()
   foreach(var IN LISTS PACKAGE_LINK_LIBS )
     if( EXISTS ${var} OR  ${var} MATCHES "-framework*" )
-      string( CONCAT PACKAGE_LIBS ${PACKAGE_LIBS} " ${var}" )
+#      string( CONCAT PACKAGE_LIBS ${PACKAGE_LIBS} " ${var}" )
+      set( PACKAGE_LIBS "${PACKAGE_LIBS} ${var}" )
     else() # assume it's just a -l call??
-      string( CONCAT PACKAGE_LIBS ${PACKAGE_LIBS} " -l${var}" )
+#      string( CONCAT PACKAGE_LIBS ${PACKAGE_LIBS} " -l${var}" )
+      set( PACKAGE_LIBS "${PACKAGE_LIBS} -l${var}" )
     endif()
   endforeach()
 
   # add any CXX flags user has passed in
   if( PACKAGE_CXXFLAGS )
-    string( CONCAT PACKAGE_CFLAGS ${PACKAGE_CXXFLAGS} )
+#    string( CONCAT PACKAGE_CFLAGS ${PACKAGE_CXXFLAGS} )
+    set( PACKAGE_CFLAGS ${PACKAGE_CXXFLAGS} )
   endif()
 
 
@@ -97,7 +104,9 @@ function(install_package)
   if( NOT EXPORT_${PROJECT_NAME} )
         # add "installed" library to list of required libraries to link against
         if( PACKAGE_LIB_NAME )
-            cmake_policy( SET CMP0026 OLD )
+            if(POLICY CMP0026)
+              cmake_policy( SET CMP0026 OLD )
+            endif()
             get_target_property( _target_library ${PACKAGE_LIB_NAME} LOCATION )
             get_filename_component( _lib ${_target_library} NAME )
             list( APPEND PACKAGE_LINK_LIBS ${CMAKE_INSTALL_PREFIX}/lib/${_lib} )
@@ -108,7 +117,7 @@ function(install_package)
             foreach(dir IN LISTS PACKAGE_INSTALL_HEADER_DIRS )
             install( DIRECTORY ${dir}
                 DESTINATION ${PACKAGE_DESTINATION}/include 
-                FILES_MATCHING PATTERN "*.h"
+                FILES_MATCHING PATTERN "*.h|*.hxx|*.hpp"
                 )
             endforeach()
         endif()
@@ -116,6 +125,15 @@ function(install_package)
         # install header files
         if( PACKAGE_INSTALL_HEADERS )
             install( FILES ${PACKAGE_INSTALL_HEADERS} DESTINATION ${PACKAGE_DESTINATION} )
+        endif()
+        if( PACKAGE_INSTALL_GENERATED_HEADERS )
+          foreach(hdr IN LISTS PACKAGE_INSTALL_GENERATED_HEADERS )
+             get_filename_component( _fp ${hdr} ABSOLUTE )
+             file( RELATIVE_PATH _rpath ${CMAKE_BINARY_DIR} ${_fp} )
+             get_filename_component( _dir ${_rpath} DIRECTORY )
+             install( FILES ${_fp}
+                 DESTINATION ${PACKAGE_DESTINATION}/${_dir} )
+         endforeach()
         endif()
 
         if( PACKAGE_INSTALL_INCLUDE_DIR )
@@ -174,7 +192,9 @@ function(install_package)
   elseif( EXPORT_${PROJECT_NAME} )
 
       if( PACKAGE_LIB_NAME )
-            cmake_policy( SET CMP0026 OLD )
+            if(POLICY CMP0026)
+              cmake_policy( SET CMP0026 OLD )
+            endif()
             get_target_property( _target_library ${PACKAGE_LIB_NAME} LOCATION )
             list( APPEND PACKAGE_LINK_LIBS ${_target_library} )
         endif()

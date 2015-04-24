@@ -156,7 +156,7 @@ install_package(
     VERSION 0.2
     DESCRIPTION "Computer vision camera model library."
     INSTALL_INCLUDE_DIR true
-    INSTALL_HEADER_DIRS ${CMAKE_CURRENT_BINARY_DIR}/include/calibu
+    INSTALL_GENERATED_HEADERS ${CMAKE_CURRENT_BINARY_DIR}/include/calibu/config.h
     DESTINATION ${CMAKE_INSTALL_PREFIX}
     INCLUDE_DIRS ${USER_INC}
     LINK_LIBS ${LINK_LIBS}
