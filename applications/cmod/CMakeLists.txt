@@ -2,8 +2,8 @@ find_package( Boost QUIET )
 find_package( ZLIB QUIET )
 
 if( Boost_FOUND AND ZLIB_FOUND )
-    include_directories( ${CALIBU_INCLUDE_DIRS} )
-    link_libraries( ${CALIBU_LIBRARIES} )
+    include_directories( ${Calibu_INCLUDE_DIRS} )
+    link_libraries( ${Calibu_LIBRARIES} )
 
     include_directories( ${Boost_INCLUDE_DIRS} )
     link_libraries( ${Boost_LIBRARIES} )
