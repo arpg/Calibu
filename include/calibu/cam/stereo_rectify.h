@@ -33,10 +33,10 @@ namespace calibu
 
 /// Create left and right camera lookup tables from left and right camera models,
 /// and output their new intrinsics and extrinsics.
-/// Returns: New camera intrinsics shared by both cameras
+/// Returns: New camera rig (intrinsics same for both cameras)
 /// T_nr_nl: New scanline rectified extrinsics considering rotation applied in lookup tables.
     CALIBU_EXPORT
-    std::shared_ptr<calibu::CameraInterface<double>> CreateScanlineRectifiedLookupAndCameras(
+    std::shared_ptr<calibu::Rig<double> > CreateScanlineRectifiedLookupAndCameras(
         const Sophus::SE3d& T_rl,
         const std::shared_ptr<calibu::CameraInterface<double>> cam_left,
         const std::shared_ptr<calibu::CameraInterface<double>> cam_right,

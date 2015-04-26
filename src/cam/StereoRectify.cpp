@@ -28,7 +28,7 @@
 namespace calibu
 {
 
-std::shared_ptr<calibu::CameraInterface<double>> CreateScanlineRectifiedLookupAndCameras(const Sophus::SE3d& T_rl,
+std::shared_ptr<calibu::Rig<double>> CreateScanlineRectifiedLookupAndCameras(const Sophus::SE3d& T_rl,
         const std::shared_ptr<calibu::CameraInterface<double> > cam_left,
         const std::shared_ptr<calibu::CameraInterface<double> > cam_right,
         Sophus::SE3d& T_nr_nl,
@@ -86,18 +86,26 @@ std::shared_ptr<calibu::CameraInterface<double>> CreateScanlineRectifiedLookupAn
     Eigen::VectorXd params_(calibu::LinearCamera<double>::NumParams);
     size_ << cam_left->Width(), cam_left->Height();
     params_ << fu, fv, u0, v0;
-    std::cout << "fu: " << fu << " fv: " << fv << " u0: " << u0 <<
-                 " v0: " << v0 << " width: " << cam_left->Width() <<
-                 " height: " << cam_left->Height();
-    std::shared_ptr<calibu::CameraInterface<double>> new_cam(new calibu::LinearCamera<double>(params_, size_));
+
+    std::shared_ptr<calibu::Rig<double>> new_rig(new calibu::Rig<double>());
+
+    std::shared_ptr<calibu::CameraInterface<double>>
+        new_cam_left(new calibu::LinearCamera<double>(params_, size_));
+    new_cam_left->SetPose(Sophus::SE3d());
+    std::shared_ptr<calibu::CameraInterface<double>>
+        new_cam_right(new calibu::LinearCamera<double>(params_, size_));
+    new_cam_left->SetPose(T_nr_nl);
+
+    new_rig->AddCamera(new_cam_left);
+    new_rig->AddCamera(new_cam_right);
 
     // Homographies which should be applied to left and right images to scan-line rectify them
-    const Eigen::Matrix3d Rl_nlKlinv = Rnl_l.transpose() * new_cam->K().inverse();
-    const Eigen::Matrix3d Rr_nrKlinv = R_lr.inverse().matrix() * Rnl_l.transpose() * new_cam->K().inverse();
+    const Eigen::Matrix3d Rl_nlKlinv = Rnl_l.transpose() * new_cam_left->K().inverse();
+    const Eigen::Matrix3d Rr_nrKlinv = R_lr.inverse().matrix() * Rnl_l.transpose() * new_cam_left->K().inverse();
 
     CreateLookupTable(cam_left, Rl_nlKlinv, left_lut);
     CreateLookupTable(cam_right, Rr_nrKlinv, right_lut);
-    return new_cam;
+    return new_rig;
 }
 
 }
