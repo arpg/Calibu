@@ -58,10 +58,11 @@ inline std::shared_ptr<Rig<double>> ToCoordinateConvention(
     const Sophus::SO3Group<Scalar>& rdf
   )
 {
-  std::shared_ptr<calibu::Rig<double>> ret(new calibu::Rig<double>());
+  std::shared_ptr<calibu::Rig<Scalar>> ret(new calibu::Rig<Scalar>());
   *ret = *rig;
   for(size_t c=0; c<ret->NumCams(); ++c) {
-    const Sophus::SO3Group<Scalar> M = rdf * Sophus::SO3Group<Scalar>(rig->cameras_[c]->RDF()).inverse();
+    const Sophus::SO3Group<Scalar> M =
+        rdf * Sophus::SO3Group<Scalar>(rig->cameras_[c]->RDF()).inverse();
     ret->cameras_[c]->SetPose(ToCoordinateConvention(rig->cameras_[c]->Pose(), M));
     ret->cameras_[c]->SetRDF(rdf.matrix());
   }
