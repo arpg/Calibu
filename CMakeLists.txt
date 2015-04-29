@@ -163,13 +163,8 @@ install_package(
     )
 
 if( BUILD_APPLICATIONS )
-  set( Calibu_LIBRARIES ${LINK_LIBS} )
-  set( Calibu_INCLUDE_DIRS ${USER_INC} ${CALIBU_INC} )
-  set( Calibu_DIR ${CMAKE_CURRENT_BINARY_DIR} )
-  link_libraries( ${Calibu_LIBRARIES} calibu )
-
-    add_subdirectory( applications )
-    add_subdirectory( examples )
+  set( Calibu_DIR ${CMAKE_CURRENT_BINARY_DIR} ) # so subdirs can call find_package( Calibu )
+  add_subdirectory( applications )
 endif()
 
 if( BUILD_MATLAB )

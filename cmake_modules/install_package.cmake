@@ -109,9 +109,8 @@ function(install_package)
             endif()
             get_target_property( _target_library ${PACKAGE_LIB_NAME} LOCATION )
             get_filename_component( _lib ${_target_library} NAME )
-            list( APPEND PACKAGE_LINK_LIBS ${CMAKE_INSTALL_PREFIX}/lib/${_lib} )
+            list( APPEND PACKAGE_LINK_LIBS ${PACKAGE_LIB_NAME} )
         endif()
-
 
         if( PACKAGE_INSTALL_HEADER_DIRS )
             foreach(dir IN LISTS PACKAGE_INSTALL_HEADER_DIRS )

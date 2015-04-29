@@ -1,5 +1,5 @@
 #https://github.com/arpg/Calibu
-find_package( Calibu 0.1 REQUIRED )
+find_package( Calibu 0.2 REQUIRED )
 include_directories( ${Calibu_INCLUDE_DIRS} )
 
 # git://github.com/stevenlovegrove/Pangolin.git
@@ -23,8 +23,6 @@ if( Pangolin_FOUND AND Ceres_FOUND AND OpenCV_FOUND AND BUILD_CALIBGRID)
     target_link_libraries( calibgrid ${Calibu_LIBRARIES} )
     target_link_libraries( calibgrid ${CVars_LIBRARY} )
 
-        install(TARGETS calibgrid
-        EXPORT CalibuTargets
-        RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
-    )
+    install(TARGETS calibgrid EXPORT CalibuTargets RUNTIME
+            DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 endif()
