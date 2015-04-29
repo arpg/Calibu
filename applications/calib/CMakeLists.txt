@@ -1,5 +1,3 @@
-#https://github.com/arpg/Calibu
-find_package( Calibu 0.1 REQUIRED )
 include_directories( ${Calibu_INCLUDE_DIRS} )
 
 # git://github.com/stevenlovegrove/Pangolin.git
@@ -18,13 +16,13 @@ find_package( OpenCV QUIET )
 option(BUILD_CALIBGRID OFF "Toggle build calibgrid.")
 if( Pangolin_FOUND AND Ceres_FOUND AND OpenCV_FOUND AND BUILD_CALIBGRID)
     add_executable( calibgrid main.cpp )
-    target_link_libraries( calibgrid ${CERES_LIBRARIES} )
-    target_link_libraries( calibgrid ${Pangolin_LIBRARIES} )
-    target_link_libraries( calibgrid ${Calibu_LIBRARIES} )
-    target_link_libraries( calibgrid ${CVars_LIBRARY} )
+    target_link_libraries( calibgrid
+        ${CERES_LIBRARIES}
+        ${Pangolin_LIBRARIES}
+        ${Calibu_LIBRARIES}
+        ${CVars_LIBRARY}
+        calibu )
 
-        install(TARGETS calibgrid
-        EXPORT CalibuTargets
-        RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
-    )
+    install(TARGETS calibgrid EXPORT CalibuTargets RUNTIME
+            DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 endif()

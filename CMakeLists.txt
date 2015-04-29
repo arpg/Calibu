@@ -38,6 +38,7 @@ set(HEADERS
   ${INC_DIR}/calib/AutoDiffArrayCostFunction.h
   ${INC_DIR}/calib/Calibrator.h
   ${INC_DIR}/calib/CostFunctionAndParams.h
+  ${INC_DIR}/calib/ReprojectionCostFunctor.h
   ${INC_DIR}/calib/LocalParamSe3.h
   ${INC_DIR}/cam/camera_crtp.h
   ${INC_DIR}/cam/camera_models_crtp.h
@@ -146,7 +147,7 @@ configure_file(
 include_directories( ${CALIBU_INC} ${USER_INC} ${CMAKE_CURRENT_BINARY_DIR}/include )
 
 # build calibu library
-add_library( calibu ${HEADERS} ${SOURCES} )
+add_library( calibu ${SOURCES} )
 target_link_libraries( calibu ${LINK_LIBS} )
 
 # install everything
@@ -155,7 +156,7 @@ install_package(
     LIB_NAME calibu
     VERSION 0.2
     DESCRIPTION "Computer vision camera model library."
-    INSTALL_INCLUDE_DIR true
+    INSTALL_HEADERS ${HEADERS}
     INSTALL_GENERATED_HEADERS ${CMAKE_CURRENT_BINARY_DIR}/include/calibu/config.h
     DESTINATION ${CMAKE_INSTALL_PREFIX}
     INCLUDE_DIRS ${USER_INC}
@@ -163,13 +164,8 @@ install_package(
     )
 
 if( BUILD_APPLICATIONS )
-  set( Calibu_LIBRARIES ${LINK_LIBS} )
-  set( Calibu_INCLUDE_DIRS ${USER_INC} ${CALIBU_INC} )
-  set( Calibu_DIR ${CMAKE_CURRENT_BINARY_DIR} )
-  link_libraries( ${Calibu_LIBRARIES} calibu )
-
-    add_subdirectory( applications )
-    add_subdirectory( examples )
+  set( Calibu_DIR ${CMAKE_CURRENT_BINARY_DIR} ) # so subdirs can call find_package( Calibu )
+  add_subdirectory( applications )
 endif()
 
 if( BUILD_MATLAB )
