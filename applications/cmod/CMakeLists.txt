@@ -1,9 +1,8 @@
-find_package( Calibu 0.2 REQUIRED )
 find_package( ZLIB QUIET )
 
 if( ZLIB_FOUND )
   include_directories( ${Calibu_INCLUDE_DIRS} ${ZLIB_INCLUDE_DIR} )
-  link_libraries( ${Calibu_LIBRARIES} ${ZLIB_LIBRARIES} )
+  link_libraries( ${Calibu_LIBRARIES} ${ZLIB_LIBRARIES} calibu )
 
     # grab the old MVL source for old camera models
     file( GLOB mvlsrcs "MVL/*.c*")
