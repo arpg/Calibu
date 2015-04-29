@@ -146,7 +146,7 @@ configure_file(
 include_directories( ${CALIBU_INC} ${USER_INC} ${CMAKE_CURRENT_BINARY_DIR}/include )
 
 # build calibu library
-add_library( calibu ${HEADERS} ${SOURCES} )
+add_library( calibu ${SOURCES} )
 target_link_libraries( calibu ${LINK_LIBS} )
 
 # install everything
@@ -155,7 +155,7 @@ install_package(
     LIB_NAME calibu
     VERSION 0.2
     DESCRIPTION "Computer vision camera model library."
-    INSTALL_INCLUDE_DIR true
+    INSTALL_HEADERS ${HEADERS}
     INSTALL_GENERATED_HEADERS ${CMAKE_CURRENT_BINARY_DIR}/include/calibu/config.h
     DESTINATION ${CMAKE_INSTALL_PREFIX}
     INCLUDE_DIRS ${USER_INC}
