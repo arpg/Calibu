@@ -642,6 +642,16 @@ void TargetGridDot::SaveEPS(
                 <<  " 0.0 setgray fill\n";
         }
     }
+
+    // now generate the bullseyes
+    f << "1 0 0 setrbgcolor\n"
+      << "50 0 moveto\n"
+      << "50 100 lineto\n"
+      << "0 50 moveto\n"
+      << "100 50 lineto\n"
+      << "1 setlinewidth\n"
+      << "stroke\n";
+
     f.close();
 }
 
