@@ -127,6 +127,10 @@ public:
     const Eigen::Matrix<Scalar, 2, Eigen::Dynamic> d_project_dparams =
                     dProject_dparams(ray_dehomogenized);
 
+    // This is a total derivative comprised of the derivative of the projection
+    // function wrt to the calibration parameters + the derivative of the
+    // transferred point wrt the calibration parameters (which is required
+    // since we are in inverse depth)
     return d_project_dparams + dtransfer3d_dray * dray_dparams;
   }
 
