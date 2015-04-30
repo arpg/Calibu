@@ -643,7 +643,7 @@ void TargetGridDot::SaveEPS(
         }
     }
 
-    // now generate the bullseyes
+    // now generate the crosshairs
     f << "1 0 0 setrbgcolor\n"
       << "50 0 moveto\n"
       << "50 100 lineto\n"

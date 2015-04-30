@@ -255,7 +255,7 @@ protected:
   /// Direct input of parameters and image size to create a camera inteface.
   CameraInterface(const Eigen::VectorXd& params_in,
                   const Eigen::Vector2i& image_size)
-          : params_(params_in), image_size_(image_size) {
+          : image_size_(image_size), params_(params_in) {
   }
 
   Eigen::Vector2i image_size_;
