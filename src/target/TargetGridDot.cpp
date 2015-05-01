@@ -630,7 +630,7 @@ void TargetGridDot::SaveEPS(
     f << "%%Origin: 0 0" << std::endl;
     // usletter BoundingBox is 0, 0, 612, 792
     f << "%%BoundingBox: 0 0 " << max_pts[0] << " " << max_pts[1] << std::endl;
-    f << std::endl;
+    f << "/Times-Roman findfont 20 scalefont setfont\n";
 
     for( int r=0; r<M.rows(); ++r ) {
         for( int c=0; c<M.cols(); ++c) {
@@ -671,6 +671,9 @@ void TargetGridDot::SaveEPS(
     double x0 = margin;
     double y0 = margin;
     double width = 2*margin;
+    double ch_dx = grid_spacing_*(M.cols()+2);
+    double ch_dy = grid_spacing_*(M.rows()+2);
+    double crosshair_distance = sqrt(ch_dx*ch_dx + ch_dy*ch_dy);
     PlotCrossHair( x0, y0, width, f );
     x0 = max_pts[0]-margin; 
     PlotCrossHair( x0, y0, width, f );
@@ -678,6 +681,35 @@ void TargetGridDot::SaveEPS(
     PlotCrossHair( x0, y0, width, f );
     x0 = margin;
     PlotCrossHair( x0, y0, width, f ); // (0,0,0)
+
+    f << "/Times-Roman findfont\n"
+      << "4 scalefont\n"
+      << "setfont\n"
+      << "newpath\n"
+      << x0+2*margin << " " << y0-margin/2.1 << " moveto\n"
+      << "((0,0,0)) show\n";
+
+    f << "newpath\n"
+      << max_pts[0]/2-20 << " " << y0-margin/2.1 << " moveto\n"
+      << "(Calibu Target (see http://github/arpg/Calibu)) show\n";
+
+    f << "newpath\n"
+      << max_pts[0]/2-20 << " " << y0-margin/2.1-4 << " moveto\n"
+      << "(Gridspacing: " << grid_spacing_ 
+      << "cm) show\n";
+
+    f << "newpath\n"
+      << max_pts[0]/2-20 << " " << y0-margin/2.1-8 << " moveto\n"
+      << "(Diagonal crosshair distance: "<< crosshair_distance << "cm ) show\n";
+
+    f << "newpath\n"
+      << max_pts[0]/2-20 << " " << margin << " moveto\n"
+      << "(Horizontal crosshair distance: "<< ch_dx << "cm ) show\n";
+
+    f << "newpath\n"
+      << 2*margin << " " << max_pts[0]/2-90  << " moveto\n"
+      << "90 rotate\n"
+      << "(Vertical crosshair distance: "<< ch_dy << "cm ) show\n";
 
 //    x0 = max_pts[0];
 //    PlotCrossHair( x0, y0, pts_per_unit*rad0, f );
