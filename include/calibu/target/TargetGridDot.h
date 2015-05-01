@@ -1,8 +1,12 @@
 /*
    This file is part of the Calibu Project.
-   https://github.com/gwu-robotics/Calibu
+   https://github.com/arpg/Calibu
 
-   Copyright (C) 2013 George Washington University,
+   Copyright (C) 2013 George Washington University
+                      University of Colorado Boulder
+                      Gabe Sibley
+                      Christoffer Heckman
+                      Nima Keivan
                       Steven Lovegrove
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -99,13 +103,13 @@ public:
     inline double CircleRadius() const
     {
         // TODO: Load this from eps or something.
-        return grid_spacing / 10.0;
+        return grid_spacing_ / 10.0;
     }
 
     inline double CircleRadius(uint32_t circle_index) const
     {
         // TODO: Load this from eps or something.
-        return grid_spacing / 10.0 *
+        return grid_spacing_ / 10.0 *
             (tpts2d_radius[circle_index] == 1 ? 2.0 : 0.5);
     }
 
@@ -129,16 +133,16 @@ public:
 
   const std::vector<Vertex,
                     Eigen::aligned_allocator<Vertex> >& Map() const {
-        return vs;
+        return vs_;
     }
 
     const std::list<LineGroup>& LineGroups() const {
-        return line_groups;
+        return line_groups_;
     }
 
     Eigen::MatrixXi GetBinaryPattern( unsigned int idx = 0 ) const
     {
-        return PG[idx];
+        return PG_[idx];
     }
 
     void SaveEPS(
@@ -170,19 +174,19 @@ public:
     std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > tpts3d;
   std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > codepts3d;
 
-    double grid_spacing;
-    Eigen::Vector2i grid_size;
-    std::array<Eigen::MatrixXi,4> PG;
+    double grid_spacing_;
+    Eigen::Vector2i grid_size_;
+    std::array<Eigen::MatrixXi,4> PG_;
 
-    ParamsGridDot params;
+    ParamsGridDot params_;
 
-  std::vector<Vertex, Eigen::aligned_allocator<Vertex> > vs;
+  std::vector<Vertex, Eigen::aligned_allocator<Vertex> > vs_;
     std::map<Eigen::Vector2i, Vertex*,
              std::less<Eigen::Vector2i>,
              Eigen::aligned_allocator<
-               std::pair<Eigen::Vector2i, Vertex*> > > map_grid_ellipse;
+               std::pair<Eigen::Vector2i, Vertex*> > > map_grid_ellipse_;
 
-    std::list<LineGroup> line_groups;
+    std::list<LineGroup> line_groups_;
 };
 
 }

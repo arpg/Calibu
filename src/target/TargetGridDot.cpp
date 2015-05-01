@@ -33,40 +33,40 @@
 namespace calibu {
 
 TargetGridDot::TargetGridDot(double grid_spacing, Eigen::Vector2i grid_size, uint32_t seed)
-    : grid_spacing(grid_spacing), grid_size(grid_size)
+    : grid_spacing_(grid_spacing), grid_size_(grid_size)
 {
     // Create binary pattern (and rotated pattern) from seed
-    PG = MakePatternGroup(grid_size(1), grid_size(0), seed);
+    PG_ = MakePatternGroup(grid_size_(1), grid_size_(0), seed);
     Init();
 }
 
 TargetGridDot::TargetGridDot(double grid_spacing, const Eigen::MatrixXi& grid)
-    : grid_spacing(grid_spacing), grid_size(grid.cols(), grid.rows())
+    : grid_spacing_(grid_spacing), grid_size_(grid.cols(), grid.rows())
 {
   // Create binary pattern (and rotated pattern) from seed
-  PG = FillGroup(grid);
+  PG_ = FillGroup(grid);
   Init();
 }
 
 void TargetGridDot::Init() {
   // Create cached grid coordinates
-  tpts2d.resize(grid_size(0) * grid_size(1));
+  tpts2d.resize(grid_size_(0) * grid_size_(1));
   tpts2d_radius.resize(tpts2d.size());
-  tpts3d.resize(grid_size(0) * grid_size(1));
+  tpts3d.resize(grid_size_(0) * grid_size_(1));
 
-  for(int r=0; r< grid_size(1); ++r) {
-    for(int c=0; c< grid_size(0); ++c) {
+  for(int r=0; r< grid_size_(1); ++r) {
+    for(int c=0; c< grid_size_(0); ++c) {
       Eigen::Vector2i p = Eigen::Vector2i(c,r);
-      tpts2d[r*grid_size(0)+c] = grid_spacing * Eigen::Vector2d(p(0), p(1));
-      tpts2d_radius[r* grid_size(0) + c] = PG[0](r, c);
-      tpts3d[r*grid_size(0)+c] = grid_spacing * Eigen::Vector3d(p(0), p(1), 0);
+      tpts2d[r*grid_size_(0)+c] = grid_spacing_ * Eigen::Vector2d(p(0), p(1));
+      tpts2d_radius[r* grid_size_(0) + c] = PG_[0](r, c);
+      tpts3d[r*grid_size_(0)+c] = grid_spacing_ * Eigen::Vector3d(p(0), p(1), 0);
     }
   }
 
   // create binary pattern coords
   codepts3d.resize( 8 );
-  double r = grid_spacing*(grid_size(1)+2.5);
-  double dx =  (grid_spacing*(grid_size(0)-1))/8;
+  double r = grid_spacing_*(grid_size_(1)+2.5);
+  double dx =  (grid_spacing_*(grid_size_(0)-1))/8;
   Eigen::Vector3d base( dx/2.0, 0, 0 );
   for( int c = 0; c < 8; c++ ){
     codepts3d[c] = base + Eigen::Vector3d( dx*c, r, 0 );
@@ -292,15 +292,15 @@ bool TargetGridDot::FindTarget(
 
 void TargetGridDot::Clear()
 {
-    vs.clear();
-    line_groups.clear();
-    map_grid_ellipse.clear();
+    vs_.clear();
+    line_groups_.clear();
+    map_grid_ellipse_.clear();
 }
 
 void TargetGridDot::SetGrid(Vertex& v, const Eigen::Vector2i& g)
 {
     v.pg = g;
-    map_grid_ellipse[g] = &v;
+    map_grid_ellipse_[g] = &v;
 }
 
 bool TargetGridDot::Match(std::map<Eigen::Vector2i, Vertex*,
@@ -336,16 +336,16 @@ bool TargetGridDot::Match(std::map<Eigen::Vector2i, Vertex*,
 
         // TODO: Check best score is uniquely best.
         int bs,bg,br,bc;
-        const int num_matches = NumExactMatches(PG,m,bs,bg,br,bc);
+        const int num_matches = NumExactMatches(PG_,m,bs,bg,br,bc);
         if( num_matches <= 1 && bs < num_valid / 8 )
 //        if( num_matches == 1 )
         {
             // Found unique match
             Sophus::SE2Group<int> T_0x[4] = {
                 Sophus::SE2Group<int>(Sophus::SO2Group<int>(1,0), Eigen::Vector2i(0,0) ),
-                Sophus::SE2Group<int>(Sophus::SO2Group<int>(0,1), Eigen::Vector2i(grid_size[0]-1,0) ),
-                Sophus::SE2Group<int>(Sophus::SO2Group<int>(-1,0), Eigen::Vector2i(grid_size[0]-1,grid_size[1]-1) ),
-                Sophus::SE2Group<int>(Sophus::SO2Group<int>(0,-1), Eigen::Vector2i(0,grid_size[1]-1) )
+                Sophus::SE2Group<int>(Sophus::SO2Group<int>(0,1), Eigen::Vector2i(grid_size_[0]-1,0) ),
+                Sophus::SE2Group<int>(Sophus::SO2Group<int>(-1,0), Eigen::Vector2i(grid_size_[0]-1,grid_size_[1]-1) ),
+                Sophus::SE2Group<int>(Sophus::SO2Group<int>(0,-1), Eigen::Vector2i(0,grid_size_[1]-1) )
             };
 
             Sophus::SE2Group<int> T_xm(Sophus::SO2Group<int>(), Eigen::Vector2i(bc,br));
@@ -380,17 +380,17 @@ bool TargetGridDot::FindTarget(
     // Generate vertex and point structures
     for( size_t i=0; i < conics.size(); ++i ) {
       Vertex v(i, conics[i]);
-      vs.push_back(v);
+      vs_.push_back(v);
     }
 
     // Compute closest points for each ellipse
-    std::vector<std::vector<Dist> > vs_distance = ClosestPoints(vs);
+    std::vector<std::vector<Dist> > vs_distance = ClosestPoints(vs_);
     std::vector<Dist> vs_central = MostCentral(vs_distance);
 
     // Find colinear neighbours for each ellipse
-    for(size_t i=0; i < vs.size(); ++i) {
-        FindTriples(vs[i], vs_distance[i], params.max_line_dist_ratio, params.max_norm_triple_area );
-        for(Triple& t : vs[i].triples) line_groups.push_back( LineGroup(t)  );
+    for(size_t i=0; i < vs_.size(); ++i) {
+        FindTriples(vs_[i], vs_distance[i], params_.max_line_dist_ratio, params_.max_norm_triple_area );
+        for(Triple& t : vs_[i].triples) line_groups_.push_back( LineGroup(t)  );
     }
 
     // Find central, well connected vertex
@@ -414,14 +414,14 @@ bool TargetGridDot::FindTarget(
     }
 
     for(auto* t: principle) {
-        line_groups.push_back( LineGroup(*t) );
+        line_groups_.push_back( LineGroup(*t) );
     }
 
     // Search structures
     std::deque<Vertex*> fringe;
     std::deque<Vertex*> available;
-    for(size_t i=0; i< vs.size(); ++i) {
-        available.push_back(&vs[i]);
+    for(size_t i=0; i< vs_.size(); ++i) {
+        available.push_back(&vs_[i]);
     }
 
     // Setup central as center of grid
@@ -517,14 +517,14 @@ bool TargetGridDot::FindTarget(
     }
 
     // Compute area and grid neighbours for all ellipses in grid
-    for(auto i = map_grid_ellipse.begin(); i != map_grid_ellipse.end(); ++i) {
+    for(auto i = map_grid_ellipse_.begin(); i != map_grid_ellipse_.end(); ++i) {
         Vertex& v = *i->second;
         v.area = Area(v.conic);
-        v.neighbours = Neighbours(map_grid_ellipse,v);
+        v.neighbours = Neighbours(map_grid_ellipse_,v);
     }
 
     // Determine binary value from neighbours area
-    for(auto i = map_grid_ellipse.begin(); i != map_grid_ellipse.end(); ++i) {
+    for(auto i = map_grid_ellipse_.begin(); i != map_grid_ellipse_.end(); ++i) {
         Vertex& v = *i->second;
 
         if(v.neighbours.size() > 2) {
@@ -561,7 +561,7 @@ bool TargetGridDot::FindTarget(
     }
 
     // Correlation of what we have with binary pattern
-    const bool found = Match(map_grid_ellipse, PG);
+    const bool found = Match(map_grid_ellipse_, PG_);
 
     if(!found) {
         std::cerr << "Pattern not found" << std::endl;
@@ -569,17 +569,39 @@ bool TargetGridDot::FindTarget(
     }
 
     // output map
-    ellipse_target_map.resize(vs.size(), -1);
-    for(size_t p=0; p < vs.size(); ++p) {
-        Vertex& v = vs[p];
-        if( 0<= v.pg(0) && v.pg(0) < grid_size(0) &&  0<= v.pg(1) && v.pg(1) < grid_size(1) )
+    ellipse_target_map.resize(vs_.size(), -1);
+    for(size_t p=0; p < vs_.size(); ++p) {
+        Vertex& v = vs_[p];
+        if( 0<= v.pg(0) && v.pg(0) < grid_size_(0) &&  0<= v.pg(1) && v.pg(1) < grid_size_(1) )
         {
-            ellipse_target_map[p] = v.pg(1)*grid_size(0) + v.pg(0);
+            ellipse_target_map[p] = v.pg(1)*grid_size_(0) + v.pg(0);
         }
     }
 
     return true;
 }
+
+void PlotCrossHair(
+    double x, 
+    double y, 
+    double size, 
+    std::ofstream& f 
+    ) 
+{
+  double l = x - size/2;
+  double r = x + size/2;
+  double t = y + size/2;
+  double b = y - size/2;
+ 
+  f << "0 0 0 setrgbcolor\n"
+    << l << " " << y << " moveto\n"
+    << r << " " << y << " lineto\n"
+    << x << " " << t << " moveto\n"
+    << x << " " << b << " lineto\n"
+    << "0.1 setlinewidth\n"
+    << "stroke\n";
+}
+
 
 
 void TargetGridDot::SaveEPS(
@@ -593,11 +615,11 @@ void TargetGridDot::SaveEPS(
 {
     Eigen::MatrixXi M = GetBinaryPattern(0);
 
-    const double border = 3*rad1;
+    const double border = 1.1*grid_spacing_;
     const Eigen::Vector2d border2d(border,border);
     const Eigen::Vector2d max_pts(
-            pts_per_unit * ((M.cols()-1) * grid_spacing + 2*border),
-            pts_per_unit * ((M.rows()-1) * grid_spacing + 2*border)
+            pts_per_unit * ((M.cols()-1) * grid_spacing_ + 2*border),
+            pts_per_unit * ((M.rows()-1) * grid_spacing_ + 2*border)
             );
 
     std::ofstream f;
@@ -608,12 +630,12 @@ void TargetGridDot::SaveEPS(
     f << "%%Origin: 0 0" << std::endl;
     // usletter BoundingBox is 0, 0, 612, 792
     f << "%%BoundingBox: 0 0 " << max_pts[0] << " " << max_pts[1] << std::endl;
-    f << std::endl;
+    f << "/Times-Roman findfont 20 scalefont setfont\n";
 
     for( int r=0; r<M.rows(); ++r ) {
         for( int c=0; c<M.cols(); ++c) {
             const double rad_pts = pts_per_unit * ((M(r,c) == 1) ? rad1 : rad0);
-            const Eigen::Vector2d p_pts = pts_per_unit* (offset + border2d + grid_spacing * Eigen::Vector2d(c,r));
+            const Eigen::Vector2d p_pts = pts_per_unit* (offset + border2d + grid_spacing_ * Eigen::Vector2d(c,r));
             f << p_pts[0] << " " << max_pts[1] - p_pts[1] << " "
                 << rad_pts << " 0 360 arc closepath" << std::endl
                 << "0.0 setgray fill" << std::endl
@@ -624,9 +646,10 @@ void TargetGridDot::SaveEPS(
     std::cerr << "Wrote bounding box: " <<
                  max_pts[0] << " " << max_pts[1] << std::endl;
 
+    // TODO this looks like dead code
     // output the binary code -- blank if id == 0, which is the default
-    double r = grid_spacing*( M.rows()+2.5 );
-    double dx =  (grid_spacing*(M.cols()-1))/8;
+    double r = grid_spacing_*( M.rows()+2.5 );
+    double dx =  (grid_spacing_*(M.cols()-1))/8;
     double hw = (pts_per_unit*dx)/2;
     Eigen::Vector2d base( dx/2.0, 0 );
     for( int c = 0; c < 8; c++ ){
@@ -642,6 +665,55 @@ void TargetGridDot::SaveEPS(
                 <<  " 0.0 setgray fill\n";
         }
     }
+
+    // now generate the crosshairs
+    double margin = pts_per_unit*(border - grid_spacing_);
+    double x0 = margin;
+    double y0 = margin;
+    double width = 2*margin;
+    double ch_dx = grid_spacing_*(M.cols()+2);
+    double ch_dy = grid_spacing_*(M.rows()+2);
+    double crosshair_distance = sqrt(ch_dx*ch_dx + ch_dy*ch_dy);
+    PlotCrossHair( x0, y0, width, f );
+    x0 = max_pts[0]-margin; 
+    PlotCrossHair( x0, y0, width, f );
+    y0 = max_pts[1]-margin; 
+    PlotCrossHair( x0, y0, width, f );
+    x0 = margin;
+    PlotCrossHair( x0, y0, width, f ); // (0,0,0)
+
+    f << "/Times-Roman findfont\n"
+      << "4 scalefont\n"
+      << "setfont\n"
+      << "newpath\n"
+      << x0+2*margin << " " << y0-margin/2.1 << " moveto\n"
+      << "((0,0,0)) show\n";
+
+    f << "newpath\n"
+      << max_pts[0]/2-20 << " " << y0-margin/2.1 << " moveto\n"
+      << "(Calibu Target (see http://github/arpg/Calibu)) show\n";
+
+    f << "newpath\n"
+      << max_pts[0]/2-20 << " " << y0-margin/2.1-4 << " moveto\n"
+      << "(Gridspacing: " << grid_spacing_ 
+      << "cm) show\n";
+
+    f << "newpath\n"
+      << max_pts[0]/2-20 << " " << y0-margin/2.1-8 << " moveto\n"
+      << "(Diagonal crosshair distance: "<< crosshair_distance << "cm ) show\n";
+
+    f << "newpath\n"
+      << max_pts[0]/2-20 << " " << margin << " moveto\n"
+      << "(Horizontal crosshair distance: "<< ch_dx << "cm ) show\n";
+
+    f << "newpath\n"
+      << 2*margin << " " << max_pts[0]/2-90  << " moveto\n"
+      << "90 rotate\n"
+      << "(Vertical crosshair distance: "<< ch_dy << "cm ) show\n";
+
+//    x0 = max_pts[0];
+//    PlotCrossHair( x0, y0, pts_per_unit*rad0, f );
+
     f.close();
 }
 
@@ -661,17 +733,17 @@ void TargetGridDot::SaveSVG(
 
     // units in mm
     const double margin_bottom = 20; // mm
-    double canvas_width = ((M.cols()-1) * grid_spacing * 1e3) + offset * 2.;
-    double canvas_height = ((M.rows()-1) * grid_spacing * 1e3) + offset * 2. +
+    double canvas_width = ((M.cols()-1) * grid_spacing_ * 1e3) + offset * 2.;
+    double canvas_height = ((M.rows()-1) * grid_spacing_ * 1e3) + offset * 2. +
         margin_bottom;
     f << "<svg width=\"" << canvas_width << "mm\" height=\""
       << canvas_height << "mm\">" << std::endl;
 
     for( int r=0; r<M.rows(); ++r ) {
-        const double cy = offset + r * grid_spacing  * 1e3;
+        const double cy = offset + r * grid_spacing_  * 1e3;
         for( int c=0; c<M.cols(); ++c ) {
             const double rad = ((M(r,c) == 1) ? rad1 : rad0) * 1e3;
-            const double cx = offset + c * grid_spacing * 1e3;
+            const double cx = offset + c * grid_spacing_ * 1e3;
             f << "<circle cx=\"" << cx << "mm\" cy=\"" << cy << "mm\" r=\""
               << rad << "mm\" fill=\"black\" stoke-width=\"0\"/>" << std::endl;
         }
@@ -683,7 +755,7 @@ void TargetGridDot::SaveSVG(
     f << "<text x=\"" << text_x << "mm\" y=\"" << text_y << "mm\" "
       << "font-size=\"8mm\">"
       << "Distance between circle centers: "
-      << std::fixed << std::setprecision(3) << grid_spacing * 1e3 << " mm. "
+      << std::fixed << std::setprecision(3) << grid_spacing_ * 1e3 << " mm. "
       << "Long radius: " << std::fixed << std::setprecision(3)
       << std::max(rad0, rad1) * 1e3 << " mm. "
       << "Short radius: " << std::fixed << std::setprecision(3)

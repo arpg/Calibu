@@ -177,7 +177,7 @@ std::shared_ptr<CameraInterfaced> ReadXmlCamera(const std::string& filename)
       return ReadXmlCamera(pEl);
     }
   }
-  //return std::shared_ptr<CameraInterfaced>();
+  return std::shared_ptr<CameraInterfaced>(NULL);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -267,7 +267,7 @@ std::shared_ptr<CameraInterfaced> ReadXmlCameraAndTransform(
       return ReadXmlCameraAndTransform(pNode);
     }
   }
-  //return cam;
+  return std::shared_ptr<CameraInterfaced>(NULL);
 }
 
 
@@ -316,7 +316,7 @@ std::shared_ptr<Rigd> ReadXmlRig(const std::string& filename)//, const std::shar
   }else{
     std::cerr << doc.ErrorDesc() << ": '" << filename << "'" << std::endl;
   }
-  //return rig;
+  return std::shared_ptr<Rigd>(NULL);
 }
 
 }
