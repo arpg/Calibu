@@ -13,8 +13,6 @@
 
 #include "camera.h"
 
-#include <boost/shared_ptr.hpp>
-
 namespace mvl
 {
 
@@ -168,7 +166,7 @@ namespace mvl
 
         private:
             Eigen::Matrix4d                   m_dPose;
-            boost::shared_ptr<mvl_camera_t>   m_pCameraModel;
+            std::shared_ptr<mvl_camera_t>   m_pCameraModel;
             std::string                       m_sFileName;
     };
 } // mvl namespace
