@@ -47,19 +47,13 @@ struct ParamsTracker
     double max_rms;
 };
 
-template<typename Scalar = double>
-using CameraInterfaced = CameraInterface<Scalar>;
-
-template<typename Scalar = double>
-using Rigd = Rig<Scalar>;
-
 class Tracker
 {
 public:
     Tracker(TargetInterface& target, int w, int h);
 
     bool ProcessFrame( std::shared_ptr<CameraInterface<double>> cam,
-                       unsigned char *I, size_t w, size_t h, size_t pitch );
+                      const unsigned char *I, size_t w, size_t h, size_t pitch );
     
     const TargetInterface& Target() const {
         return target;

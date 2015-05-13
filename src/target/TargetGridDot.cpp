@@ -56,11 +56,17 @@ TargetGridDot::TargetGridDot( const std::string& preset )
   double small_dot_radius;
   calibu::LoadGridFromPreset( preset, grid, grid_spacing_, 
       large_dot_radius, small_dot_radius );
+
+  grid_size_(0) = grid.cols();
+  grid_size_(1) = grid.rows();
+
   PG_ = FillGroup(grid);
   Init();
 }
 
-void TargetGridDot::Init() {
+
+void TargetGridDot::Init() 
+{
   // Create cached grid coordinates
   tpts2d.resize(grid_size_(0) * grid_size_(1));
   tpts2d_radius.resize(tpts2d.size());
