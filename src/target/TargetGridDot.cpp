@@ -20,6 +20,7 @@
  */
 
 #include <calibu/target/TargetGridDot.h>
+#include <calibu/target/GridDefinitions.h>
 #include <calibu/target/RandomGrid.h>
 #include <calibu/cam/camera_crtp.h>
 
@@ -44,6 +45,17 @@ TargetGridDot::TargetGridDot(double grid_spacing, const Eigen::MatrixXi& grid)
     : grid_spacing_(grid_spacing), grid_size_(grid.cols(), grid.rows())
 {
   // Create binary pattern (and rotated pattern) from seed
+  PG_ = FillGroup(grid);
+  Init();
+}
+
+TargetGridDot::TargetGridDot( const std::string& preset )
+{
+  Eigen::MatrixXi grid; 
+  double large_dot_radius;
+  double small_dot_radius;
+  calibu::LoadGridFromPreset( preset, grid, grid_spacing_, 
+      large_dot_radius, small_dot_radius );
   PG_ = FillGroup(grid);
   Init();
 }

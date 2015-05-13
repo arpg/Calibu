@@ -74,6 +74,7 @@ public:
 
     TargetGridDot(double grid_spacing, Eigen::Vector2i grid_size, uint32_t seed = 71);
     TargetGridDot(double grid_spacing, const Eigen::MatrixXi& grid);
+    TargetGridDot( const std::string& preset );
 
     ////////////////////////////////////////////////////////////////////////////
 
