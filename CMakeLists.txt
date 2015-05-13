@@ -63,6 +63,7 @@ set(HEADERS
   ${INC_DIR}/target/RandomGrid.h
   ${INC_DIR}/target/Target.h
   ${INC_DIR}/target/TargetGridDot.h
+  ${INC_DIR}/target/GridDefinitions.h
   ${INC_DIR}/utils/Rectangle.h
   ${INC_DIR}/utils/Range.h
   ${INC_DIR}/utils/Utils.h
