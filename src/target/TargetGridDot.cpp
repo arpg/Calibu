@@ -700,16 +700,16 @@ void TargetGridDot::SaveEPS(
 
     f << "newpath\n"
       << max_pts[0]/2-20 << " " << y0-margin/2.1-8 << " moveto\n"
-      << "(Diagonal crosshair distance: "<< crosshair_distance << "cm ) show\n";
+      << "(Diagonal crosshair distance: "<< crosshair_distance << "m ) show\n";
 
     f << "newpath\n"
       << max_pts[0]/2-20 << " " << margin << " moveto\n"
-      << "(Horizontal crosshair distance: "<< ch_dx << "cm ) show\n";
+      << "(Horizontal crosshair distance: "<< ch_dx << "m ) show\n";
 
     f << "newpath\n"
       << 2*margin << " " << max_pts[0]/2-90  << " moveto\n"
       << "90 rotate\n"
-      << "(Vertical crosshair distance: "<< ch_dy << "cm ) show\n";
+      << "(Vertical crosshair distance: "<< ch_dy << "m ) show\n";
 
 //    x0 = max_pts[0];
 //    PlotCrossHair( x0, y0, pts_per_unit*rad0, f );
