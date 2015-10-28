@@ -20,7 +20,7 @@
    limitations under the License.
  */
 
-#include <calibu/utils/Xml.h>
+#include <tinyxml.h>
 #include <calibu/utils/StreamOperatorsEigen.h>
 #include <calibu/cam/camera_xml.h>
 #include <calibu/cam/camera_crtp.h>

@@ -42,7 +42,6 @@ set(HEADERS
   ${INC_DIR}/calib/LocalParamSe3.h
   ${INC_DIR}/cam/camera_crtp.h
   ${INC_DIR}/cam/camera_models_crtp.h
-  ${INC_DIR}/cam/camera_crtp_interop.h
   ${INC_DIR}/cam/camera_xml.h
   ${INC_DIR}/cam/stereo_rectify.h
   ${INC_DIR}/cam/camera_rig.h
@@ -69,7 +68,6 @@ set(HEADERS
   ${INC_DIR}/utils/PlaneBasis.h
   ${INC_DIR}/utils/StreamOperatorsEigen.h
   ${INC_DIR}/utils/StreamOperatorsSophus.h
-  ${INC_DIR}/utils/Xml.h
   )
 
 set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
@@ -86,13 +84,17 @@ SET(SOURCES
   ${SRC_DIR}/target/RandomGrid.cpp
   ${SRC_DIR}/target/TargetGridDot.cpp
   ${SRC_DIR}/utils/Utils.cpp
-  ${SRC_DIR}/utils/Xml.cpp
   )
 
 #######################################################
 ## Find required dependencies
 find_package( Eigen3 REQUIRED )
 find_package( Sophus REQUIRED )
+
+find_package(TinyXML REQUIRED)
+list(APPEND CALIBU_INC ${TINYXML_INCLUDE_DIRS} )
+list(APPEND LINK_LIBS ${TINYXML_LIBRARIES} )
+
 
 ## Apply project include directories
 list( APPEND CALIBU_INC
