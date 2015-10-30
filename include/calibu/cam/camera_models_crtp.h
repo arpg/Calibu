@@ -500,7 +500,7 @@ class FovCamera : public CameraImpl<Scalar, 5, FovCamera<Scalar> > {
 
 /** Kannala-Brandt camera model.
  * Kannala and Brandt Like 'Generic' Projection Model
- * http://cs.iupui.edu/~tuceryan/pdf-repository/Kannala2006.pdf
+ * http://ieeexplore.ieee.org/iel5/34/34427/01642666.pdf
  * http://april.eecs.umich.edu/wiki/index.php/Camera_suite
  */
 template<typename Scalar = double>
