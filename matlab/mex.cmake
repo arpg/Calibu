@@ -253,6 +253,7 @@ function(mex_setup)
 
     add_library(liblast STATIC ${dummy_c_file})
     target_link_libraries(liblast ${MEXLIB_LDFLAGS})
+  
   endif()
 
   set (MEXLIB_LDFLAGS "${MEXLIB_LDFLAGS}" PARENT_SCOPE)
@@ -308,8 +309,11 @@ function(add_mex)
       )
     endif()
   else ()
-    add_library(${target} MODULE ${ARGV})
-    set_target_properties(${target} PROPERTIES
+
+  add_library(${target} MODULE ${ARGV})
+  target_link_libraries(${target} "${MEXLIB_LDFLAGS} ${MEX_LINK_LIBS}")
+
+  set_target_properties(${target} PROPERTIES
       COMPILE_FLAGS "-DMATLAB_MEX_FILE ${MEX_COMPILE_FLAGS}"
       PREFIX ""
       SUFFIX ".${MEX_EXT}"
@@ -318,10 +322,11 @@ function(add_mex)
       ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
       LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
       )
-    foreach( OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES} )
-      string( TOUPPER ${OUTPUTCONFIG} OUTPUTCONFIG )
-      set_target_properties(${target} PROPERTIES
-  ARCHIVE_OUTPUT_DIRECTORY_${OUTPUTCONFIG} "${CMAKE_CURRENT_SOURCE_DIR}"
+
+  foreach( OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES} )
+  string( TOUPPER ${OUTPUTCONFIG} OUTPUTCONFIG )
+  set_target_properties(${target} PROPERTIES
+      ARCHIVE_OUTPUT_DIRECTORY_${OUTPUTCONFIG} "${CMAKE_CURRENT_SOURCE_DIR}"
         LIBRARY_OUTPUT_DIRECTORY_${OUTPUTCONFIG} "${CMAKE_CURRENT_SOURCE_DIR}"
   )
      endforeach()

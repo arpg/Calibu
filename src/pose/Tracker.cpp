@@ -39,7 +39,7 @@ Tracker::Tracker(TargetInterface& target, int w, int h)
 
 bool Tracker::ProcessFrame(
     std::shared_ptr<CameraInterface<double>> cam,
-    unsigned char* I, size_t w, size_t h, size_t pitch)
+    const unsigned char* I, size_t w, size_t h, size_t pitch)
 {
     double rms = 0;
 
@@ -70,7 +70,8 @@ bool Tracker::ProcessFrame(
     conics_candidate_map_first_pass = conics_target_map;
     int inliers = CountInliers(conics_candidate_map_first_pass);
     if (inliers<params.inlier_num_required) {
-        return false;
+      printf("1) inliers(%d)<params.inlier_num_required(%d)\n", inliers, params.inlier_num_required );
+      return false;
     }
 
     conics_target_map = PosePnPRansac( cam, ellipses, target.Circles3D(),
@@ -86,6 +87,7 @@ bool Tracker::ProcessFrame(
     inliers = CountInliers(conics_candidate_map_second_pass);
 
     if (inliers<params.inlier_num_required){
+      printf("2) inliers<params.inlier_num_required\n");
         return false;
     }
 
@@ -103,7 +105,7 @@ bool Tracker::ProcessFrame(
         T_gw = T_hw;
         return true;
     }
-
+    printf("Failed:     if( isfinite((double)rms) && rms < params.max_rms &&  inliers>=params.inlier_num_required) {\n");
     return false;
 }
 

@@ -14,8 +14,13 @@ set(CALIBU_VERSION_MINOR 2)
 set(CALIBU_VERSION ${CALIBU_VERSION_MAJOR}.${CALIBU_VERSION_MINOR})
 
 option(BUILD_APPLICATIONS "Build Applications" ON)
-option(BUILD_MATLAB "Build Matlab Wrappers" OFF)
 option(BUILD_SHARED_LIBS "Build Shared Library" ON)
+
+find_package( MATLAB QUIET )
+if( MATLAB_FOUND )
+  message( STATUS "Building matlab wrappers" )
+  option(BUILD_MATLAB "Build Matlab Wrappers" ON)
+endif()
 
 set(CMAKE_CXX_FLAGS "-std=c++11 -Wall ${CMAKE_CXX_FLAGS}")
 if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
@@ -62,6 +67,7 @@ set(HEADERS
   ${INC_DIR}/target/RandomGrid.h
   ${INC_DIR}/target/Target.h
   ${INC_DIR}/target/TargetGridDot.h
+  ${INC_DIR}/target/GridDefinitions.h
   ${INC_DIR}/utils/Rectangle.h
   ${INC_DIR}/utils/Range.h
   ${INC_DIR}/utils/Utils.h
@@ -148,6 +154,10 @@ configure_file(
 # Include source/build directories first to preempt any installed Calibu
 include_directories( ${CALIBU_INC} ${USER_INC} ${CMAKE_CURRENT_BINARY_DIR}/include )
 
+if( BUILD_MATLAB )
+  add_subdirectory( matlab )
+endif()
+
 # build calibu library
 add_library( calibu ${SOURCES} )
 target_link_libraries( calibu ${LINK_LIBS} )
@@ -169,10 +179,6 @@ install_package(
 if( BUILD_APPLICATIONS )
   set( Calibu_DIR ${CMAKE_CURRENT_BINARY_DIR} ) # so subdirs can call find_package( Calibu )
   add_subdirectory( applications )
-endif()
-
-if( BUILD_MATLAB )
-      add_subdirectory( matlab )
 endif()
 
 ###########################
