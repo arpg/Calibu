@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 2.8.8)
 
-find_package(Calibu REQUIRED) # Find Calibu.
 include(mex.cmake) # Load add_mex macro.
 
 # List external library dependencies.
