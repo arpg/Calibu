@@ -1,6 +1,40 @@
+#CMake-generated files
+CMakeCache.txt
+CalibuConfig.cmake
+CalibuConfigVersion.cmake
+CalibuTargets.cmake
+FindCalibu.cmake
+Makefile
+CMakeFiles/
+cmake_install.cmake
+cmake_uninstall.cmake
+install_manifest.txt
+
+#Generated project files
+include/calibu/config.h
+
+#eclipse-specific
+.project
+.cproject
+.settings/
+
+Calibu.pc
+
+#debian packages
+*.deb
+description-pak
+doc-pak/
+
+#generated binaries
+libcalibu.so
+grid_gen
+modelio
+cmod
+
 target_A4.eps
 CMakeLists.txt.user
 debug
 release
 build
+
 *~
