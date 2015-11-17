@@ -20,8 +20,24 @@
   limitations under the License.
 */
 
-/*
-   explain what this file does/is for.
+/**
+ * This file contains various camera models.
+ *
+ *
+ * NOTES ON RADIAL DISTORTION MODELS (Poly2, Poly3, Rational3, etc.)
+ * Generalized radial distortion model:
+ *   x_d = f(r_u)*x_u                           (1)
+ *   y_d = f(r_u)*y_u
+ *   r_d = sqrt(x_d^2 + y_d^2)
+ *   r_d = sqrt((f(r_u)*x_u)^2 + (f(r_u)*y_u)^2)
+ *   r_d = sqrt((f(r_u))^2*(x_u^2*y_u^2))       (2)
+ * Recall that r_u = x_u^2*y_u^2                (3)
+ * So, if we want to consider purely the radii, substitute (3) into (2):
+ *   r_d = r_u*f(r_u)                           (4)
+ * here, r_d is known, so if we find minimum of (r_u*f(r_u)-r_d)^2 we are effectively finding
+ * the zeroes of equation (4), and several models use the Newton method to approximate these quickly.
+ * Using the found r_u, we use r_u / r_d = 1 / f(r_u) to compute the factor,
+ * so we can compute x_u = (r_u / r_d) * x_d.
  */
 
 #pragma once
@@ -462,7 +478,7 @@ class KannalaBrandtCamera : public CameraImpl<Scalar, 8, KannalaBrandtCamera<Sca
       }
 };
 
-/** A second degree polynomial distortion model. */
+/** A two-coefficient polynomial distortion model. */
 template<typename Scalar = double>
 class Poly2Camera : public CameraImpl<Scalar, 6, Poly2Camera<Scalar> > {
   typedef CameraImpl<Scalar, 6, Poly2Camera<Scalar> > Base;
@@ -507,6 +523,7 @@ class Poly2Camera : public CameraImpl<Scalar, 6, Poly2Camera<Scalar> > {
     T k2 = params[5];
 
     // Use Newton's method to solve (fixed number of iterations)
+    // (for explanation, see notes in beginning of camera_models_crtp.h)
     T ru = r;
     for (int i=0; i < 5; i++) {
       // Common sub-expressions of d, d2
@@ -599,13 +616,13 @@ class Poly2Camera : public CameraImpl<Scalar, 6, Poly2Camera<Scalar> > {
 
   template<typename T>
   static void dUnproject_dparams(const T*, const T*, T* ) {
-    std::cerr << "dUnproject_dparams not defined for the poly3 model. "
+    std::cerr << "dUnproject_dparams not defined for the poly2 model. "
         " Throwing exception." << std::endl;
     throw 0;
   }
 };
 
-/** A third degree polynomial distortion model. */
+/** A three-coefficient polynomial distortion model. */
 template<typename Scalar = double>
 class Poly3Camera : public CameraImpl<Scalar, 7, Poly3Camera<Scalar> > {
   typedef CameraImpl<Scalar, 7, Poly3Camera<Scalar> > Base;
@@ -658,6 +675,7 @@ class Poly3Camera : public CameraImpl<Scalar, 7, Poly3Camera<Scalar> > {
     T k3 = params[6];
 
     // Use Newton's method to solve (fixed number of iterations)
+    // (for explanation, see notes in beginning of camera_models_crtp.h)
     T ru = r;
     for (int i=0; i < 5; i++) {
       // Common sub-expressions of d, d2
