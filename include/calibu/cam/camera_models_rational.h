@@ -37,8 +37,8 @@ namespace calibu {
 
 /** A six-coefficient rational distortion model. */
 template<typename Scalar = double>
-class Rational6Camera : public CameraImpl<Scalar, 10, Poly3Camera<Scalar> > {
-  typedef CameraImpl<Scalar, 10, Poly3Camera<Scalar> > Base;
+class Rational6Camera : public CameraImpl<Scalar, 10, Rational6Camera<Scalar> > {
+  typedef CameraImpl<Scalar, 10, Rational6Camera<Scalar> > Base;
  public:
   using Base::Base;
 
