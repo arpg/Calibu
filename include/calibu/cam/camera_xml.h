@@ -24,9 +24,6 @@
 #pragma once
 
 #include <calibu/Platform.h>
-#include <calibu/cam/camera_crtp.h>
-#include <calibu/cam/camera_crtp_impl.h>
-#include <calibu/cam/camera_models_crtp.h>
 #include <calibu/cam/camera_rig.h>
 #include <glog/logging.h>
 #include <sstream>

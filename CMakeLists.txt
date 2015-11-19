@@ -47,6 +47,7 @@ set(HEADERS
   ${INC_DIR}/calib/LocalParamSe3.h
   ${INC_DIR}/cam/camera_crtp.h
   ${INC_DIR}/cam/camera_models_crtp.h
+  ${INC_DIR}/cam/camera_models_rational.h
   ${INC_DIR}/cam/camera_xml.h
   ${INC_DIR}/cam/stereo_rectify.h
   ${INC_DIR}/cam/camera_rig.h
