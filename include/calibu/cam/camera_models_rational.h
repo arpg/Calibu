@@ -91,7 +91,6 @@ class Rational6Camera : public CameraImpl<Scalar, 10, Rational6Camera<Scalar> > 
 	T ru6 = ru4 * ru2;
 	T numer = k1 * ru2 + k2 * ru4 + k3 * ru6 + 1;
 	T denom = k4 * ru2 + k5 * ru4 + k6 * ru6 + 1;
-	T pol = numer / denom;
 	T d_numer = ru * (2*k1 + 4*k2*ru2 * 6*k3*ru4);
 	T d_denom = ru * (2*k4 + 4*k5*ru2 * 6*k6*ru4);
 	T denom2 = (denom * denom);
