@@ -25,7 +25,6 @@
 #include <calibu/cam/camera_xml.h>
 #include <calibu/cam/camera_crtp.h>
 #include <calibu/cam/camera_crtp_impl.h>
-#include <calibu/cam/camera_models_rational.h>
 #include <calibu/cam/camera_models_crtp.h>
 #include <fstream>
 

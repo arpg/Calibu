@@ -16,10 +16,14 @@ set(CALIBU_VERSION ${CALIBU_VERSION_MAJOR}.${CALIBU_VERSION_MINOR})
 option(BUILD_APPLICATIONS "Build Applications" ON)
 option(BUILD_SHARED_LIBS "Build Shared Library" ON)
 
-find_package( MATLAB QUIET )
-if( MATLAB_FOUND )
-  message( STATUS "Building matlab wrappers" )
-  option(BUILD_MATLAB "Build Matlab Wrappers" ON)
+option(BUILD_MATLAB "Build MATLAB wrappers." OFF)
+if(BUILD_MATLAB)
+  find_package( MATLAB QUIET )
+  if( MATLAB_FOUND )
+    message( STATUS "Building matlab wrappers" )
+  else()
+    set(BUILD_MATLAB OFF)
+  endif()
 endif()
 
 set(CMAKE_CXX_FLAGS "-std=c++11 -Wall ${CMAKE_CXX_FLAGS}")
@@ -47,6 +51,8 @@ set(HEADERS
   ${INC_DIR}/calib/LocalParamSe3.h
   ${INC_DIR}/cam/camera_crtp.h
   ${INC_DIR}/cam/camera_models_crtp.h
+  ${INC_DIR}/cam/camera_models_poly.h
+  ${INC_DIR}/cam/camera_models_kb4.h
   ${INC_DIR}/cam/camera_models_rational.h
   ${INC_DIR}/cam/camera_xml.h
   ${INC_DIR}/cam/stereo_rectify.h
@@ -170,7 +176,7 @@ install_package(
     VERSION 0.2
     DESCRIPTION "Computer vision camera model library."
 #    INSTALL_HEADERS ${HEADERS}
-    INSTALL_INCLUDE_DIR true 
+    INSTALL_INCLUDE_DIR true
     INSTALL_GENERATED_HEADERS ${CMAKE_CURRENT_BINARY_DIR}/include/calibu/config.h
     DESTINATION ${CMAKE_INSTALL_PREFIX}
     INCLUDE_DIRS ${USER_INC}
