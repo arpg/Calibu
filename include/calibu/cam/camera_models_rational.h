@@ -210,14 +210,14 @@ class Rational6Camera : public CameraImpl<Scalar, 10, Rational6Camera<Scalar> > 
 
   template<typename T>
   static void dProject_dparams(const T*, const T*, T* ) {
-    std::cerr << "dProjedt_dparams not defined for the poly3 rational model. "
+    std::cerr << "dProjedt_dparams not defined for the rational6 model. "
         " Throwing exception." << std::endl;
     throw 0;
   }
 
   template<typename T>
   static void dUnproject_dparams(const T*, const T*, T* ) {
-    std::cerr << "dUnproject_dparams not defined for the poly3 rational model. "
+    std::cerr << "dUnproject_dparams not defined for the rational6 model. "
         " Throwing exception." << std::endl;
     throw 0;
   }
