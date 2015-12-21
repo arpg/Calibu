@@ -28,7 +28,7 @@ namespace calibu
   ///////////////////////////////////////////////////////////////////////////////
   void CreateLookupTable(
       const std::shared_ptr<calibu::CameraInterface<double> >& cam_from,
-      LookupTable& lut )
+      LookupTable& lut, int lookup_width, int lookup_height )
   {
     /*
        TODO figure out what K should be for the "new" camera based on
@@ -67,7 +67,7 @@ namespace calibu
                      0,   1.0/fv,   -v0 / fv,
                      0,        0,           1;
 
-    CreateLookupTable( cam_from, R_onKinv, lut );
+    CreateLookupTable( cam_from, R_onKinv, lut, lookup_width, lookup_height );
   }
 
 
@@ -76,27 +76,41 @@ namespace calibu
   void CreateLookupTable(
       const std::shared_ptr<calibu::CameraInterface<double>>& cam_from,
       const Eigen::Matrix3d& R_onKinv,
-      LookupTable& lut
+      LookupTable& lut,
+	  int lookup_width,
+	  int lookup_height
       )
   {
-    const int w = cam_from->Width();
-    const int h = cam_from->Height();
+    const int cam_width = cam_from->Width();
+    const int cam_height = cam_from->Height();
 
-    // make sure we have mem in the look up table
-    lut.m_vLutPixels.resize( w*h );
-    lut.m_nWidth = w;
+    if(lookup_width < 1 || lookup_height < 1){
+    	if(lut.Height() == 0){
+			lookup_width = cam_width;
+			lookup_height = cam_height;
+			// make sure we have mem in the look up table
+			lut.m_vLutPixels.resize( lookup_width*lookup_height );
+			lut.m_nWidth = lookup_width;
+    	}else{
+    		lookup_width = lut.Width();
+			lookup_height = lut.Height();
+    	}
+    }
 
-    for( int r = 0; r < h; ++r) {
-      for( int c = 0; c < w; ++c) {
+    double x_offset = (lookup_width - cam_width) / 2.0;
+    double y_offset = (lookup_height - cam_height) / 2.0;
+
+    for( int r = 0; r < lookup_height; ++r) {
+      for( int c = 0; c < lookup_width; ++c) {
         // Remap
-        const Eigen::Vector3d p_o = R_onKinv * Eigen::Vector3d(c,r,1);
+        const Eigen::Vector3d p_o = R_onKinv * Eigen::Vector3d(c - x_offset,r - y_offset,1);
         Eigen::Vector2d p_warped = cam_from->Project(p_o);
 
         // Clamp to valid image coords. This will cause out of image
         // data to be stretched from nearest valid coords with
         // no branching in rectify function.
-        p_warped[0] = std::min(std::max(0.0, p_warped[0]), w - 1.0 );
-        p_warped[1] = std::min(std::max(0.0, p_warped[1]), h - 1.0 );
+        p_warped[0] = std::min(std::max(0.0, p_warped[0]), cam_width - 1.0 );
+        p_warped[1] = std::min(std::max(0.0, p_warped[1]), cam_height - 1.0 );
 
         // Truncates the values for the left image
         int u  = (int) p_warped[0];
@@ -104,20 +118,20 @@ namespace calibu
         float su = p_warped[0] - (double)u;
         float sv = p_warped[1] - (double)v;
 
-        // Fix pixel access for last row/column to ensure all are in bounds
-        if(u == (w-1)) {
+        // Fix pixel access for last row/column to ensure all accesses are in bounds
+        if(u == (cam_width-1)) {
           u -= 1;
           su = 1.0;
         }
-        if(v == (w-1)) {
+        if(v == (cam_width-1)) {
           v -= 1;
           sv = 1.0;
         }
 
         // Pre-compute the bilinear interpolation weights
         BilinearLutPoint p;
-        p.idx0 = u + v*w;
-        p.idx1 = u + v*w + w;
+        p.idx0 = u + v*cam_width;
+        p.idx1 = u + v*cam_width + cam_width;
         p.w00  = (1-su)*(1-sv);
         p.w01  =    su *(1-sv);
         p.w10  = (1-su)*sv;
