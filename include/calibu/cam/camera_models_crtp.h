@@ -828,9 +828,9 @@ class Poly3Camera : public CameraImpl<Scalar, 7, Poly3Camera<Scalar> > {
     *fac = Factor(r, params);
     T r2 = r * r;
     T r3 = r2 * r;
-    return (2.0 * params[4] * r +
-            4.0 * params[5] * r3 +
-            6.0 * params[6] * r3 * r2);
+    return (T(2.0) * params[4] * r +
+            T(4.0) * params[5] * r3 +
+            T(6.0) * params[6] * r3 * r2);
   }
 
   template<typename T>
@@ -846,16 +846,16 @@ class Poly3Camera : public CameraImpl<Scalar, 7, Poly3Camera<Scalar> > {
       T ru2 = ru * ru;
       T ru4 = ru2 * ru2;
       T ru6 = ru4 * ru2;
-      T pol = k1 * ru2 + k2 * ru4 + k3 * ru6 + 1;
-      T pol2 = 2 * ru2 * (k1 + 2 * k2 * ru2 + 3 * k3 * ru4);
+      T pol = k1 * ru2 + k2 * ru4 + k3 * ru6 + T(1);
+      T pol2 = T(2) * ru2 * (k1 + T(2) * k2 * ru2 + T(3) * k3 * ru4);
       T pol3 = pol + pol2;
 
       // 1st derivative
-      T d = (ru * (pol) - r)  *  2 * pol3;
+      T d = (ru * (pol) - r)  *  T(2) * pol3;
       // 2nd derivative
-      T d2 = (4 * ru * (ru * pol - r) *
-              (3 * k1 + 10 * k2 * ru2 + 21 * k3 * ru4) +
-              2 * pol3 * pol3);
+      T d2 = (T(4) * ru * (ru * pol - r) *
+              (T(3) * k1 + T(10) * k2 * ru2 + T(21) * k3 * ru4) +
+              T(2) * pol3 * pol3);
       // Delta update
       T delta = d / d2;
       ru -= delta;
