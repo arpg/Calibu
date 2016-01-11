@@ -20,7 +20,7 @@
    limitations under the License.
  */
 
-#include <calibu/utils/Xml.h>
+#include <tinyxml.h>
 #include <calibu/utils/StreamOperatorsEigen.h>
 #include <calibu/cam/camera_xml.h>
 #include <calibu/cam/camera_crtp.h>
@@ -125,6 +125,9 @@ std::shared_ptr<CameraInterfaced> ReadXmlCamera(TiXmlElement* pEl)
   } else if (sType == "calibu_fu_fv_u0_v0_k1_k2_k3") {
     rCam.reset(new calibu::Poly3Camera<double>());
     rCam->SetParams(Eigen::VectorXd::Constant(Poly3Camera<double>::NumParams,1));
+  } else if (sType == "calibu_fu_fv_u0_v0_rational6") {
+	rCam.reset(new calibu::Rational6Camera<double>());
+	rCam->SetParams(Eigen::VectorXd::Constant(Rational6Camera<double>::NumParams,1));
   } else {
     std::cerr << "Unknown old camera type " << sType << " please implement this"
                  " camera before initializing it. " << std::endl;

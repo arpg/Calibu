@@ -14,8 +14,17 @@ set(CALIBU_VERSION_MINOR 2)
 set(CALIBU_VERSION ${CALIBU_VERSION_MAJOR}.${CALIBU_VERSION_MINOR})
 
 option(BUILD_APPLICATIONS "Build Applications" ON)
-option(BUILD_MATLAB "Build Matlab Wrappers" OFF)
 option(BUILD_SHARED_LIBS "Build Shared Library" ON)
+
+option(BUILD_MATLAB "Build MATLAB wrappers." OFF)
+if(BUILD_MATLAB)
+  find_package( MATLAB QUIET )
+  if( MATLAB_FOUND )
+    message( STATUS "Building matlab wrappers" )
+  else()
+    set(BUILD_MATLAB OFF)
+  endif()
+endif()
 
 set(CMAKE_CXX_FLAGS "-std=c++11 -Wall ${CMAKE_CXX_FLAGS}")
 if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
@@ -42,7 +51,9 @@ set(HEADERS
   ${INC_DIR}/calib/LocalParamSe3.h
   ${INC_DIR}/cam/camera_crtp.h
   ${INC_DIR}/cam/camera_models_crtp.h
-  ${INC_DIR}/cam/camera_crtp_interop.h
+  ${INC_DIR}/cam/camera_models_poly.h
+  ${INC_DIR}/cam/camera_models_kb4.h
+  ${INC_DIR}/cam/camera_models_rational.h
   ${INC_DIR}/cam/camera_xml.h
   ${INC_DIR}/cam/stereo_rectify.h
   ${INC_DIR}/cam/camera_rig.h
@@ -70,7 +81,6 @@ set(HEADERS
   ${INC_DIR}/utils/PlaneBasis.h
   ${INC_DIR}/utils/StreamOperatorsEigen.h
   ${INC_DIR}/utils/StreamOperatorsSophus.h
-  ${INC_DIR}/utils/Xml.h
   )
 
 set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
@@ -87,13 +97,17 @@ SET(SOURCES
   ${SRC_DIR}/target/RandomGrid.cpp
   ${SRC_DIR}/target/TargetGridDot.cpp
   ${SRC_DIR}/utils/Utils.cpp
-  ${SRC_DIR}/utils/Xml.cpp
   )
 
 #######################################################
 ## Find required dependencies
 find_package( Eigen3 REQUIRED )
 find_package( Sophus REQUIRED )
+
+find_package(TinyXML REQUIRED)
+list(APPEND CALIBU_INC ${TINYXML_INCLUDE_DIRS} )
+list(APPEND LINK_LIBS ${TINYXML_LIBRARIES} )
+
 
 ## Apply project include directories
 list( APPEND CALIBU_INC
@@ -109,11 +123,11 @@ list( APPEND USER_INC   ${Sophus_INCLUDE_DIRS} )
 ## Find optional dependencies
 
 # OpenCV is required for PNP methods and calibration application
-find_package( OpenCV2 REQUIRED )
-if( OpenCV2_FOUND )
+find_package( OpenCV REQUIRED core calib3d )
+if( OpenCV_FOUND )
     set( HAVE_OPENCV 1 )
-    list( APPEND LINK_LIBS  ${OpenCV2_LIBRARIES})
-    list( APPEND USER_INC ${OpenCV2_INCLUDE_DIRS} )
+    list( APPEND LINK_LIBS  ${OpenCV_LIBS})
+    list( APPEND USER_INC ${OpenCV_INCLUDE_DIRS} )
     list( APPEND HEADERS ${INC_DIR}/pose/Pnp.h ${INC_DIR}/pose/Tracker.h )
     list( APPEND SOURCES ${SRC_DIR}/pose/Pnp.cpp ${SRC_DIR}/pose/Tracker.cpp )
 endif()
@@ -147,6 +161,10 @@ configure_file(
 # Include source/build directories first to preempt any installed Calibu
 include_directories( ${CALIBU_INC} ${USER_INC} ${CMAKE_CURRENT_BINARY_DIR}/include )
 
+if( BUILD_MATLAB )
+  add_subdirectory( matlab )
+endif()
+
 # build calibu library
 add_library( calibu ${SOURCES} )
 target_link_libraries( calibu ${LINK_LIBS} )
@@ -158,7 +176,7 @@ install_package(
     VERSION 0.2
     DESCRIPTION "Computer vision camera model library."
 #    INSTALL_HEADERS ${HEADERS}
-    INSTALL_INCLUDE_DIR true 
+    INSTALL_INCLUDE_DIR true
     INSTALL_GENERATED_HEADERS ${CMAKE_CURRENT_BINARY_DIR}/include/calibu/config.h
     DESTINATION ${CMAKE_INSTALL_PREFIX}
     INCLUDE_DIRS ${USER_INC}
@@ -168,10 +186,6 @@ install_package(
 if( BUILD_APPLICATIONS )
   set( Calibu_DIR ${CMAKE_CURRENT_BINARY_DIR} ) # so subdirs can call find_package( Calibu )
   add_subdirectory( applications )
-endif()
-
-if( BUILD_MATLAB )
-      add_subdirectory( matlab )
 endif()
 
 ###########################

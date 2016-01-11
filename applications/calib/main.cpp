@@ -14,7 +14,7 @@
 #include <calibu/pose/Pnp.h>
 #include <calibu/conics/ConicFinder.h>
 
-#include <CVars/CVar.h>
+#include <cvars/CVar.h>
 
 #include "GetPot"
 

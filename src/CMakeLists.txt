@@ -13,7 +13,6 @@ set(HEADERS
   ${INC_DIR}/cam/camera_crtp.h
   ${INC_DIR}/cam/camera_crtp_impl.h
   ${INC_DIR}/cam/camera_models_crtp.h
-  ${INC_DIR}/cam/camera_crtp_interop.h
   ${INC_DIR}/cam/camera_xml.h
   ${INC_DIR}/cam/camera_rig.h
   ${INC_DIR}/cam/rectify_crtp.h
@@ -39,7 +38,6 @@ set(HEADERS
   ${INC_DIR}/utils/PlaneBasis.h
   ${INC_DIR}/utils/StreamOperatorsEigen.h
   ${INC_DIR}/utils/StreamOperatorsSophus.h
-  ${INC_DIR}/utils/Xml.h
   )
 
 set(SRC_DIR ${Calibu_SOURCE_DIR}/src)
