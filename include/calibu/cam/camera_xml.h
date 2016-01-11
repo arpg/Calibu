@@ -155,4 +155,6 @@ void WriteXmlRig(const std::string& filename, const std::shared_ptr<Rigd> rig);
 CALIBU_EXPORT
 std::shared_ptr<Rigd> ReadXmlRig(const std::string& filename);
 
+CALIBU_EXPORT
+std::shared_ptr<Rigd> ReadXmlRigFromString(const std::string& modelXML);
 } // namespace calibu
