@@ -110,6 +110,18 @@ namespace calibu{
     return m;
   }
 
+  inline Eigen::MatrixXi TinyGrid() {
+    Eigen::MatrixXi m(5, 5);
+    m <<
+      1, 1, 1, 0, 0,
+      0, 1, 0, 1, 0,
+      1, 1, 0, 0, 1,
+      0, 0, 0, 0, 0,
+      1, 0, 0, 1, 1;
+
+    return m;
+  }
+  
   inline void LoadGridFromPreset( 
       const std::string& preset,//< input:
       Eigen::MatrixXi& grid,    //< output:
@@ -124,6 +136,13 @@ namespace calibu{
         large_dot_radius = 0.00423;
         small_dot_radius = 0.00283;
     }
+    else if (preset == "tiny")
+      {
+	grid = calibu::TinyGrid();
+        grid_spacing = 0.02 ;  // meters
+        large_dot_radius = 0.075;
+        small_dot_radius = 0.05;
+      }
     else if( preset == "letter" ){
         grid = calibu::LetterGrid();
         double paper_width = 8.5*0.0254;
