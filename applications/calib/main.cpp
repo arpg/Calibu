@@ -2,7 +2,7 @@
 #include <memory>
 
 #include <pangolin/pangolin.h>
-#include <pangolin/gldraw.h>
+#include <pangolin/gl/gldraw.h>
 
 #include <sophus/se3.hpp>
 

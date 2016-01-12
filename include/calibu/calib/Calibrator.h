@@ -32,7 +32,7 @@
 #include <sophus/se3.hpp>
 
 #include <calibu/Platform.h>
-#include <calibu/cam/camera_crtp.h>
+#include <calibu/cam/camera_models_crtp.h>
 #include <calibu/cam/camera_xml.h>
 #include <calibu/calib/CostFunctionAndParams.h>
 
