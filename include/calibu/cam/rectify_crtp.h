@@ -36,20 +36,20 @@ namespace calibu
 {
   ///////////////////////////////////////////////////////////////////////////////
   /// This structure is used to build a LUT without requiring branching
-  //  when rectifying images. The values out of the image to the top left
-  //  pixels instead of having a test for out of bound access, the aim is
-  //  to avoid a branch in the code.
-  //
-  //    int xt = (int) x;  /* top-left corner */
-  //    int yt = (int) y;
-  //    float ax = x - xt;
-  //    float ay = y - yt;
-  //    float *ptr = image + (width*yt) + xt;
-  //
-  //    return( (1-ax) * (1-ay) * *ptr +
-  //            ( ax ) * (1-ay) * *(ptr+1) +
-  //            (1-ax) * ( ay ) * *(ptr+(width)) +
-  //            ( ax ) * ( ay ) * *(ptr+(width)+1) );
+  /// when rectifying images. The values out of the image to the top left
+  /// pixels instead of having a test for out of bound access, the aim is
+  /// to avoid a branch in the code.
+  ///
+  ///   int xt = (int) x;  /* top-left corner */
+  ///   int yt = (int) y;
+  ///   float ax = x - xt;
+  ///   float ay = y - yt;
+  ///   float *ptr = image + (width*yt) + xt;
+  ///
+  ///   return( (1-ax) * (1-ay) * *ptr +
+  ///           ( ax ) * (1-ay) * *(ptr+1) +
+  ///           (1-ax) * ( ay ) * *(ptr+(width)) +
+  ///           ( ax ) * ( ay ) * *(ptr+(width)+1) );
   struct BilinearLutPoint
   {
     int idx0; // index to pixel in src image
@@ -64,7 +64,7 @@ namespace calibu
   CALIBU_EXPORT
     struct LookupTable
     {
-      inline LookupTable(){};
+      inline LookupTable():m_vLutPixels(std::vector<BilinearLutPoint>()),m_nWidth(0){};
       inline LookupTable( int nWidth, int nHeight )
       {
         m_vLutPixels.resize( nWidth*nHeight );
@@ -98,6 +98,11 @@ namespace calibu
       int m_nWidth; // so m_nHeight = m_vPixels.size()/m_nWidth
     };
 
+  enum BorderTreatment{
+	  BORDER_REPEAT,
+	  BORDER_BLACK
+  };
+
 
   /// Create lookup table which can be used to remap a general camera model
   /// 'cam_from' to a linear and potentially rotated model, 'R_onK'.
@@ -106,14 +111,18 @@ namespace calibu
     CALIBU_EXPORT void CreateLookupTable(
         const std::shared_ptr<calibu::CameraInterface<double>>& cam_from,
         const Eigen::Matrix3d& R_onKinv,
-        LookupTable& lut
+        LookupTable& lut,
+		int lookup_width = 0,
+		int lookup_height= 0
         );
 
     /// Create lookup table which can be used to remap a general camera model
     /// 'cam_from' to a linear.
     void CreateLookupTable(
         const std::shared_ptr<calibu::CameraInterface<double>>& cam_from,
-        LookupTable& lut
+        LookupTable& lut,
+		int lookup_width = 0,
+		int lookup_height = 0
         );
 
 

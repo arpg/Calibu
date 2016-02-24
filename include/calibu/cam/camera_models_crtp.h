@@ -50,7 +50,6 @@
 #include <iostream>
 
 /// Add camera model templates.
-
 #include <calibu/cam/camera_models_poly.h>
 #include <calibu/cam/camera_models_kb4.h>
 #include <calibu/cam/camera_models_rational.h>

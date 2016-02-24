@@ -321,5 +321,19 @@ std::shared_ptr<Rigd> ReadXmlRig(const std::string& filename)//, const std::shar
   }
   return std::shared_ptr<Rigd>(NULL);
 }
-
+  
+std::shared_ptr<Rigd> ReadXmlRigFromString(const std::string& modelXML)
+{
+  TiXmlDocument doc;
+  if(doc.Parse(modelXML.c_str())) {
+    TiXmlNode* pNode = doc.FirstChild(NODE_RIG);
+    if(pNode) {
+      return ReadXmlRig(pNode);
+    }
+  }else{
+    std::cerr << doc.ErrorDesc() << ": Error parsing XML from string: '" << modelXML << "'" << std::endl;
+  }
+  return std::shared_ptr<Rigd>(NULL);
+}
+  
 }

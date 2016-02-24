@@ -17,6 +17,7 @@ find_package( CVars QUIET )
 option(BUILD_CALIBGRID OFF "Toggle build calibgrid.")
 if( Pangolin_FOUND AND Ceres_FOUND AND OpenCV_FOUND AND CVars_FOUND AND BUILD_CALIBGRID)
     add_executable( calibgrid main.cpp )
+    include_directories( ${CVars_INCLUDE_DIRS} )
     target_link_libraries( calibgrid
         ${CERES_LIBRARIES}
         ${Pangolin_LIBRARIES}
