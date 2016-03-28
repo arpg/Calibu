@@ -36,7 +36,45 @@ Tracker::Tracker(TargetInterface& target, int w, int h)
 {
 
 }
+  
+bool Tracker::ProcessFrame( const unsigned char* I, size_t w, size_t h, size_t pitch)
+{
+    //Produce a conics list with only camera observations
+    //Taken from vicalib-task.cc AddImageMeasurements
+    imgs.Process(I, w, h, pitch );
+    conic_finder.Find(imgs);
 
+    const std::vector<Conic, Eigen::aligned_allocator<Conic> >& conics =
+        conic_finder.Conics();
+
+    // Generate map and point structures
+    conics_target_map.clear();
+    conics_target_map.resize(conics.size(),-1);
+
+    //Don't assume a camera model in play
+    target.FindTarget(imgs, conics, conics_target_map );
+    return true;
+    // Procedure for higher-level code to extract a conic list
+    /*
+    for (size_t i = 0; i < conics.size(); ++i)
+      {
+	const Eigen::Vector3d& pos_3d =
+            target.Circles3D()[conics_target_map[i]];
+	if(conics_target_map[i] < 0 )
+	  {
+	    continue;
+	  }
+
+	std::cout << ellipse_target__map[i] <<
+                        "," << conics[i].center[0] << "," <<
+                        conics[i].center[1] << "," <<
+                        pos_3d[0] << "," << pos_3d[1] << "," << pos_3d[2] <<
+                        std::endl;
+
+      }
+    */
+}
+  
 bool Tracker::ProcessFrame(
     std::shared_ptr<CameraInterface<double>> cam,
     const unsigned char* I, size_t w, size_t h, size_t pitch)
@@ -52,6 +90,7 @@ bool Tracker::ProcessFrame(
     // Generate map and point structures
     conics_target_map.clear();
     conics_target_map.resize(conics.size(),-1);
+
     vector<Vector2d, aligned_allocator<Vector2d> > ellipses;
     for( size_t i=0; i < conics.size(); ++i ) {
         ellipses.push_back(Vector2d(conics[i].center.x(),conics[i].center.y()));
@@ -62,7 +101,7 @@ bool Tracker::ProcessFrame(
     for( unsigned int i=0; i<conics.size(); ++i ) {
         conics_camframe.push_back(UnmapConic(conics[i],cam));
     }
-
+    
     // Find target given (approximately) undistorted conics
     std::shared_ptr<CameraInterface<double>> idcam(new LinearCamera<double>());
 

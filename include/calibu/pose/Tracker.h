@@ -54,6 +54,9 @@ public:
 
     bool ProcessFrame( std::shared_ptr<CameraInterface<double>> cam,
                       const unsigned char *I, size_t w, size_t h, size_t pitch );
+
+    //No assumption re camera model - just report observations
+    bool ProcessFrame( const unsigned char* I, size_t w, size_t h, size_t pitch);
     
     const TargetInterface& Target() const {
         return target;
