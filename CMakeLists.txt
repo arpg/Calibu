@@ -103,10 +103,11 @@ SET(SOURCES
 ## Find required dependencies
 find_package( Eigen3 REQUIRED )
 find_package( Sophus REQUIRED )
+find_package( glog REQUIRED )
 
-find_package(TinyXML REQUIRED)
-list(APPEND CALIBU_INC ${TINYXML_INCLUDE_DIRS} )
-list(APPEND LINK_LIBS ${TINYXML_LIBRARIES} )
+find_package(TinyXML2 REQUIRED)
+list(APPEND CALIBU_INC ${TinyXML2_INCLUDE_DIRS} )
+list(APPEND LINK_LIBS ${TinyXML2_LIBRARIES} )
 
 
 ## Apply project include directories

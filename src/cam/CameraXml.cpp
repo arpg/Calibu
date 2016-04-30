@@ -20,7 +20,7 @@
    limitations under the License.
  */
 
-#include <tinyxml.h>
+#include <tinyxml2.h>
 #include <calibu/utils/StreamOperatorsEigen.h>
 #include <calibu/cam/camera_xml.h>
 #include <calibu/cam/camera_crtp.h>
@@ -105,7 +105,7 @@ void WriteXmlCamera(const std::string& filename,
   WriteXmlCamera(of, cam, indent);
 }
 
-std::shared_ptr<CameraInterfaced> ReadXmlCamera(TiXmlElement* pEl)
+std::shared_ptr<CameraInterfaced> ReadXmlCamera(tinyxml2::XMLElement* pEl)
 {    
   std::string sType = CameraType( pEl->Attribute("type"));
   std::shared_ptr<CameraInterfaced> rCam;
@@ -140,12 +140,12 @@ std::shared_ptr<CameraInterfaced> ReadXmlCamera(TiXmlElement* pEl)
     std::string sIndex  = pEl->Attribute("index");
     std::string sSerial = pEl->Attribute("serialno");
 
-    TiXmlElement* xmlp = pEl->FirstChildElement("params");
-    TiXmlElement* xmlw = pEl->FirstChildElement("width");
-    TiXmlElement* xmlh = pEl->FirstChildElement("height");
-    TiXmlElement* xmlRight = pEl->FirstChildElement("right");
-    TiXmlElement* xmlDown = pEl->FirstChildElement("down");
-    TiXmlElement* xmlForward = pEl->FirstChildElement("forward");
+    tinyxml2::XMLElement* xmlp = pEl->FirstChildElement("params");
+    tinyxml2::XMLElement* xmlw = pEl->FirstChildElement("width");
+    tinyxml2::XMLElement* xmlh = pEl->FirstChildElement("height");
+    tinyxml2::XMLElement* xmlRight = pEl->FirstChildElement("right");
+    tinyxml2::XMLElement* xmlDown = pEl->FirstChildElement("down");
+    tinyxml2::XMLElement* xmlForward = pEl->FirstChildElement("forward");
 
     std::string sParams = xmlp ? xmlp->GetText() : "";
     std::string sWidth  = xmlw ? xmlw->GetText() : "";
@@ -173,9 +173,9 @@ std::shared_ptr<CameraInterfaced> ReadXmlCamera(TiXmlElement* pEl)
 
 std::shared_ptr<CameraInterfaced> ReadXmlCamera(const std::string& filename)
 {
-  TiXmlDocument doc;
-  if(doc.LoadFile(filename)) {
-    TiXmlElement* pEl = doc.FirstChildElement(NODE_CAM);
+  tinyxml2::XMLDocument doc;
+  if(doc.LoadFile(filename.c_str())) {
+    tinyxml2::XMLElement* pEl = doc.FirstChildElement(NODE_CAM.c_str());
     if(pEl) {
       return ReadXmlCamera(pEl);
     }
@@ -203,7 +203,7 @@ void WriteXmlSE3(const std::string& filename, const Sophus::SE3d& t_rc)
   WriteXmlSE3(of, t_rc);
 }
 
-Sophus::SE3d ReadXmlSE3(TiXmlNode* xmlcampose)
+Sophus::SE3d ReadXmlSE3(tinyxml2::XMLNode* xmlcampose)
 {
   /// Actually now T_rc (rig->camera), but preserving backward compatibility.
   const std::string val = xmlcampose->FirstChildElement("T_wc")->GetText();
@@ -213,9 +213,9 @@ Sophus::SE3d ReadXmlSE3(TiXmlNode* xmlcampose)
 
 Sophus::SE3d ReadXmlSE3(const std::string& filename)
 {
-  TiXmlDocument doc;
-  if(doc.LoadFile(filename)) {
-    TiXmlNode* pNode = doc.FirstChild(NODE_POSE);
+  tinyxml2::XMLDocument doc;
+  if(doc.LoadFile(filename.c_str())) {
+    tinyxml2::XMLNode* pNode = doc.FirstChildElement(NODE_POSE.c_str());
     if(pNode) {
       return ReadXmlSE3(pNode);
     }
@@ -243,16 +243,16 @@ void WriteXmlCameraAndTransform(const std::string& filename,
   WriteXmlCameraAndTransform(of, cop, indent);
 }
 
-std::shared_ptr<CameraInterfaced> ReadXmlCameraAndTransform(TiXmlNode* xmlcampose)
+std::shared_ptr<CameraInterfaced> ReadXmlCameraAndTransform(tinyxml2::XMLNode* xmlcampose)
 {
   std::shared_ptr<CameraInterfaced> cop;
 
-  TiXmlElement* xmlcam  = xmlcampose->FirstChildElement(NODE_CAM);
+  tinyxml2::XMLElement* xmlcam  = xmlcampose->FirstChildElement(NODE_CAM.c_str());
   if(xmlcam) {
     cop = ReadXmlCamera(xmlcam);
   }
 
-  TiXmlNode* xmlpose = xmlcampose->FirstChild(NODE_POSE);
+  tinyxml2::XMLNode* xmlpose = xmlcampose->FirstChildElement(NODE_POSE.c_str());
   if(xmlpose) {
     cop->SetPose(ReadXmlSE3(xmlpose));
   }
@@ -263,9 +263,9 @@ std::shared_ptr<CameraInterfaced> ReadXmlCameraAndTransform(TiXmlNode* xmlcampos
 std::shared_ptr<CameraInterfaced> ReadXmlCameraAndTransform(
     const std::string& filename)//, const std::shared_ptr<CameraInterfaced> cam)
 {
-  TiXmlDocument doc;
-  if(doc.LoadFile(filename)) {
-    TiXmlNode* pNode = doc.FirstChild(NODE_CAM_POSE);
+  tinyxml2::XMLDocument doc;
+  if(doc.LoadFile(filename.c_str())) {
+    tinyxml2::XMLNode* pNode = doc.FirstChildElement(NODE_CAM_POSE.c_str());
     if(pNode) {
       return ReadXmlCameraAndTransform(pNode);
     }
@@ -293,11 +293,11 @@ void WriteXmlRig(const std::string& filename, const std::shared_ptr<Rigd> rig)
   WriteXmlRig(of, rig, 0);
 }
 
-std::shared_ptr<Rigd> ReadXmlRig(TiXmlNode* xmlrig)
+std::shared_ptr<Rigd> ReadXmlRig(tinyxml2::XMLNode* xmlrig)
 {
   std::shared_ptr<Rigd> rig(new Rigd());
 
-  for( TiXmlNode* child = xmlrig->FirstChild(NODE_CAM_POSE); child; child = child->NextSibling(NODE_CAM_POSE) )
+  for( tinyxml2::XMLNode* child = xmlrig->FirstChildElement(NODE_CAM_POSE.c_str()); child; child = child->NextSiblingElement(NODE_CAM_POSE.c_str()) )
   {
     std::shared_ptr<CameraInterfaced> cap = ReadXmlCameraAndTransform(child);
     if(cap->IsInitialized()) {
@@ -310,28 +310,28 @@ std::shared_ptr<Rigd> ReadXmlRig(TiXmlNode* xmlrig)
 
 std::shared_ptr<Rigd> ReadXmlRig(const std::string& filename)//, const std::shared_ptr<Rigd> rig)
 {
-  TiXmlDocument doc;
-  if(doc.LoadFile(filename)) {
-    TiXmlNode* pNode = doc.FirstChild(NODE_RIG);
+  tinyxml2::XMLDocument doc;
+  if(doc.LoadFile(filename.c_str())) {
+    tinyxml2::XMLNode* pNode = doc.FirstChildElement(NODE_RIG.c_str());
     if(pNode) {
       return ReadXmlRig(pNode);
     }
   }else{
-    std::cerr << doc.ErrorDesc() << ": '" << filename << "'" << std::endl;
+    std::cerr << doc.GetErrorStr1() << ": '" << filename << "'" << std::endl;
   }
   return std::shared_ptr<Rigd>(NULL);
 }
   
 std::shared_ptr<Rigd> ReadXmlRigFromString(const std::string& modelXML)
 {
-  TiXmlDocument doc;
+  tinyxml2::XMLDocument doc;
   if(doc.Parse(modelXML.c_str())) {
-    TiXmlNode* pNode = doc.FirstChild(NODE_RIG);
+    tinyxml2::XMLNode* pNode = doc.FirstChildElement(NODE_RIG.c_str());
     if(pNode) {
       return ReadXmlRig(pNode);
     }
   }else{
-    std::cerr << doc.ErrorDesc() << ": Error parsing XML from string: '" << modelXML << "'" << std::endl;
+    std::cerr << doc.GetErrorStr1() << ": Error parsing XML from string: '" << modelXML << "'" << std::endl;
   }
   return std::shared_ptr<Rigd>(NULL);
 }
