@@ -21,7 +21,6 @@
  */
 
 #include <tinyxml2.h>
-#include <calibu/utils/StreamOperatorsEigen.h>
 #include <calibu/cam/camera_xml.h>
 #include <calibu/cam/camera_crtp.h>
 #include <calibu/cam/camera_crtp_impl.h>
