@@ -24,6 +24,7 @@
 #pragma once
 
 #include <calibu/Platform.h>
+#include <calibu/utils/StreamOperatorsEigen.h>
 #include <calibu/cam/camera_rig.h>
 #include <glog/logging.h>
 #include <sstream>

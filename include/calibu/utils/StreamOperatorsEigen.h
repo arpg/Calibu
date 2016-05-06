@@ -45,7 +45,7 @@ inline std::istream& operator>>( std::istream& Stream, Eigen::Matrix<T,R,C>& Mat
     char str[256];
 
     Stream.getline(str, 255, '[');
-    if( Stream.gcount() > 1 ) {
+    if( Stream.gcount() == 0 ) {
         return Stream;
     }
     for( unsigned int ii = 0; ii < nRows-1; ii++ ) {
