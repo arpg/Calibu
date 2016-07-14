@@ -83,13 +83,13 @@ void Label( int w, int h, const unsigned char* I, short* label, vector<PixelClas
     {
         if( d<w )
         {
-            for( int r=0; r< std::min(d,h); ++r )
+            for( int r=0; r< std::min(d,h-1); ++r )
                 AssignLabel(w,h,I,label,labels,r,d, passval);
         }
         
         if( d<h )
         {
-            for( int c=0; c<= std::min(d,w); ++c )
+            for( int c=0; c<= std::min(d,w-1); ++c )
                 AssignLabel(w,h,I,label,labels,d,c, passval);
         }
     }
