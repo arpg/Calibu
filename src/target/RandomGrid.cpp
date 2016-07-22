@@ -87,11 +87,10 @@ Eigen::MatrixXi MakePattern(int r, int c, uint32_t seed )
     Eigen::MatrixXi M(r,c);
 
     std::mt19937 rng(seed);
-    std::uniform_int_distribution<uint32_t> uint_dist1(0,1);
 
     for(int r=0; r < M.rows(); ++r) {
         for(int c=0; c < M.cols(); ++c) {
-            M(r,c) = uint_dist1(rng);
+            M(r,c) = rng() % 2;
         }
     }
     return M;
