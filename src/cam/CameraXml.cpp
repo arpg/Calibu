@@ -173,7 +173,7 @@ std::shared_ptr<CameraInterfaced> ReadXmlCamera(tinyxml2::XMLElement* pEl)
 std::shared_ptr<CameraInterfaced> ReadXmlCamera(const std::string& filename)
 {
   tinyxml2::XMLDocument doc;
-  if(tinyxml2::XML_NO_ERROR == doc.LoadFile(filename.c_str())) {
+  if(tinyxml2::XML_SUCCESS == doc.LoadFile(filename.c_str())) {
     tinyxml2::XMLElement* pEl = doc.FirstChildElement(NODE_CAM.c_str());
     if(pEl) {
       return ReadXmlCamera(pEl);
@@ -213,7 +213,7 @@ Sophus::SE3d ReadXmlSE3(tinyxml2::XMLNode* xmlcampose)
 Sophus::SE3d ReadXmlSE3(const std::string& filename)
 {
   tinyxml2::XMLDocument doc;
-  if(tinyxml2::XML_NO_ERROR == doc.LoadFile(filename.c_str())) {
+  if(tinyxml2::XML_SUCCESS == doc.LoadFile(filename.c_str())) {
     tinyxml2::XMLNode* pNode = doc.FirstChildElement(NODE_POSE.c_str());
     if(pNode) {
       return ReadXmlSE3(pNode);
@@ -263,7 +263,7 @@ std::shared_ptr<CameraInterfaced> ReadXmlCameraAndTransform(
     const std::string& filename)//, const std::shared_ptr<CameraInterfaced> cam)
 {
   tinyxml2::XMLDocument doc;
-  if(tinyxml2::XML_NO_ERROR == doc.LoadFile(filename.c_str())) {
+  if(tinyxml2::XML_SUCCESS == doc.LoadFile(filename.c_str())) {
     tinyxml2::XMLNode* pNode = doc.FirstChildElement(NODE_CAM_POSE.c_str());
     if(pNode) {
       return ReadXmlCameraAndTransform(pNode);
@@ -310,7 +310,7 @@ std::shared_ptr<Rigd> ReadXmlRig(tinyxml2::XMLNode* xmlrig)
 std::shared_ptr<Rigd> ReadXmlRig(const std::string& filename)//, const std::shared_ptr<Rigd> rig)
 {
   tinyxml2::XMLDocument doc;
-  if(tinyxml2::XML_NO_ERROR == doc.LoadFile(filename.c_str())) {
+  if(tinyxml2::XML_SUCCESS == doc.LoadFile(filename.c_str())) {
     tinyxml2::XMLNode* pNode = doc.FirstChildElement(NODE_RIG.c_str());
     if(pNode) {
       return ReadXmlRig(pNode);
@@ -324,7 +324,7 @@ std::shared_ptr<Rigd> ReadXmlRig(const std::string& filename)//, const std::shar
 std::shared_ptr<Rigd> ReadXmlRigFromString(const std::string& modelXML)
 {
   tinyxml2::XMLDocument doc;
-  if(tinyxml2::XML_NO_ERROR == doc.Parse(modelXML.c_str())) {
+  if(tinyxml2::XML_SUCCESS == doc.Parse(modelXML.c_str())) {
     tinyxml2::XMLNode* pNode = doc.FirstChildElement(NODE_RIG.c_str());
     if(pNode) {
       return ReadXmlRig(pNode);
