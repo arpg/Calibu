@@ -103,7 +103,7 @@ SET(SOURCES
 ## Find required dependencies
 find_package( Eigen3 REQUIRED )
 find_package( Sophus REQUIRED )
-find_package( glog REQUIRED )
+find_package( GLog REQUIRED )
 
 find_package(TinyXML2 REQUIRED)
 list(APPEND CALIBU_INC ${TinyXML2_INCLUDE_DIRS} )
