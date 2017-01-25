@@ -83,7 +83,8 @@ std::shared_ptr<calibu::Rig<double>> CreateScanlineRectifiedLookupAndCameras(con
 
     // Setup new camera
     Eigen::Vector2i size_;
-    Eigen::VectorXd params_(calibu::LinearCamera<double>::NumParams);
+    Eigen::VectorXd params_(1);
+    params_.resize(calibu::LinearCamera<double>::NumParams);
     size_ << cam_left->Width(), cam_left->Height();
     params_ << fu, fv, u0, v0;
 
