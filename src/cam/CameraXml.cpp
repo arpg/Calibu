@@ -316,7 +316,7 @@ std::shared_ptr<Rigd> ReadXmlRig(const std::string& filename)//, const std::shar
       return ReadXmlRig(pNode);
     }
   }else{
-    std::cerr << doc.GetErrorStr1() << ": '" << filename << "'" << std::endl;
+    std::cerr << doc.ErrorStr() << ": '" << filename << "'" << std::endl;
   }
   return std::shared_ptr<Rigd>(NULL);
 }
@@ -330,7 +330,7 @@ std::shared_ptr<Rigd> ReadXmlRigFromString(const std::string& modelXML)
       return ReadXmlRig(pNode);
     }
   }else{
-    std::cerr << doc.GetErrorStr1() << ": Error parsing XML from string: '" << modelXML << "'" << std::endl;
+    std::cerr << doc.ErrorStr() << ": Error parsing XML from string: '" << modelXML << "'" << std::endl;
   }
   return std::shared_ptr<Rigd>(NULL);
 }
