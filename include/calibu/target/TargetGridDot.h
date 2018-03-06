@@ -165,9 +165,7 @@ public:
     void Init();
     void Clear();
     void SetGrid(Vertex& v, const Eigen::Vector2i& g);
-  bool Match(std::map<Eigen::Vector2i, Vertex*,
-             std::less<Eigen::Vector2i>,
-             Eigen::aligned_allocator<std::pair<Eigen::Vector2i, Vertex*> > >& obs,
+  bool Match(std::map<Eigen::Vector2i, Vertex *, std::less<Eigen::Vector2i>, Eigen::aligned_allocator<std::pair<const Eigen::Vector2i, Vertex *> > > &obs,
              const std::array<Eigen::MatrixXi,4>& PG);
 
     std::vector<Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> > tpts2d;
@@ -185,7 +183,7 @@ public:
     std::map<Eigen::Vector2i, Vertex*,
              std::less<Eigen::Vector2i>,
              Eigen::aligned_allocator<
-               std::pair<Eigen::Vector2i, Vertex*> > > map_grid_ellipse_;
+               std::pair<const Eigen::Vector2i, Vertex*> > > map_grid_ellipse_;
 
     std::list<LineGroup> line_groups_;
 };
