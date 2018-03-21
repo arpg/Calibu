@@ -213,10 +213,10 @@ double Area(const Conic& c)
     }
 }
 
-std::set<Vertex*> Neighbours(std::map<Eigen::Vector2i, Vertex*,
+std::set<Vertex*> Neighbours(std::map<Eigen::Vector2i const, Vertex*,
                              std::less<Eigen::Vector2i>,
                              Eigen::aligned_allocator<
-                             std::pair<const Eigen::Vector2i, Vertex*> > >& map, const Vertex& v)
+                             std::pair<Eigen::Vector2i const, Vertex*> > >& map, const Vertex& v)
 {
     std::set<Vertex*> neighbours;
     for(int r=-1; r <=1; ++r) {
@@ -321,9 +321,9 @@ void TargetGridDot::SetGrid(Vertex& v, const Eigen::Vector2i& g)
     map_grid_ellipse_[g] = &v;
 }
 
-bool TargetGridDot::Match(std::map<Eigen::Vector2i, Vertex*,
+bool TargetGridDot::Match(std::map<Eigen::Vector2i const, Vertex*,
                           std::less<Eigen::Vector2i>,
-                          Eigen::aligned_allocator< std::pair<const Eigen::Vector2i, Vertex*> > >& obs,
+                          Eigen::aligned_allocator< std::pair<Eigen::Vector2i const, Vertex*> > >& obs,
                           const std::array<Eigen::MatrixXi,4>& PG)
 {
     Eigen::Vector2i omin(std::numeric_limits<int>::max(),std::numeric_limits<int>::max());
