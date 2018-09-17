@@ -123,7 +123,7 @@ namespace calibu
           u -= 1;
           su = 1.0;
         }
-        if(v == (cam_width-1)) {
+        if(v == (cam_height-1)) {
           v -= 1;
           sv = 1.0;
         }
