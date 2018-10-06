@@ -14,10 +14,10 @@ class Poly3Response : public ResponseImpl<Scalar, Poly3Response<Scalar>>
   public:
 
     /** Number of parameters used for model */
-    static const int NumParams = 3;
+    static const int param_count = 3;
 
     /** Unique inverse-response type name */
-    static constexpr const char* Type = "poly3";
+    static constexpr const char* type = "poly3";
 
   public:
 
@@ -48,7 +48,7 @@ class Poly3Response : public ResponseImpl<Scalar, Poly3Response<Scalar>>
 
       // add each term of the polynomial
 
-      for (int i = 0; i < NumParams; ++i)
+      for (int i = 0; i < param_count; ++i)
       {
         result += pow * params[i];
         pow *= value;
@@ -79,10 +79,10 @@ class Poly4Response : public ResponseImpl<Scalar, Poly4Response<Scalar>>
   public:
 
     /** Number of parameters used for model */
-    static const int NumParams = 4;
+    static const int param_count = 4;
 
     /** Unique inverse-response type name */
-    static constexpr const char* Type = "poly4";
+    static constexpr const char* type = "poly4";
 
   public:
 
@@ -113,7 +113,7 @@ class Poly4Response : public ResponseImpl<Scalar, Poly4Response<Scalar>>
 
       // add each term of the polynomial
 
-      for (int i = 0; i < NumParams; ++i)
+      for (int i = 0; i < param_count; ++i)
       {
         result += pow * params[i];
         pow *= value;

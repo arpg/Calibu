@@ -15,10 +15,10 @@ class LinearResponse : public ResponseImpl<Scalar, LinearResponse<Scalar>>
   public:
 
     /** Number of parameters used for model */
-    static const int NumParams = 0;
+    static const int param_count = 0;
 
     /** Unique vignetting type name */
-    static constexpr const char* Type = "linear";
+    static constexpr const char* type = "linear";
 
   public:
 

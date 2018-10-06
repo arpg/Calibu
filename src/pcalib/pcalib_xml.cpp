@@ -74,15 +74,15 @@ std::shared_ptr<Response<double> > PhotoCalibReader::ReadResponse(
   std::shared_ptr<Response<double>> response;
   const std::string type(element->Attribute("type"));
 
-  if (type.compare(Poly3Response<double>::Type) == 0)
+  if (type.compare(Poly3Response<double>::type) == 0)
   {
     response = std::make_shared<Poly3Response<double>>();
   }
-  else if (type.compare(Poly4Response<double>::Type) == 0)
+  else if (type.compare(Poly4Response<double>::type) == 0)
   {
     response = std::make_shared<Poly4Response<double>>();
   }
-  else if (type.compare(LinearResponse<double>::Type) == 0)
+  else if (type.compare(LinearResponse<double>::type) == 0)
   {
     response = std::make_shared<LinearResponse<double>>();
   }

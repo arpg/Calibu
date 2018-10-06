@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <Eigen/Eigen>
+#include <calibu/calib/exception.h>
 
 namespace calibu
 {
@@ -39,6 +40,16 @@ class Response
     inline int NumParams() const
     {
       return params_.size();
+    }
+
+    /**
+     * Determines if given intensity value is within value response range
+     * @param value intensity value in question
+     * @return true if within range
+     */
+    inline bool InRange(double value) const
+    {
+      return value >= range_[0] && value <= range_[1];
     }
 
     /**
@@ -91,14 +102,7 @@ class Response
      */
     inline void SetParams(const Eigen::VectorXd& params)
     {
-      // check if expected parameter count
-
-      if (params.size() != params_.size())
-      {
-        std::cerr << "invalid parameter count" << std::endl;
-        throw 0;
-      }
-
+      CALIBU_ASSERT_MSG(params.size() == params_.size(), "invalid param count");
       params_ = params;
     }
 

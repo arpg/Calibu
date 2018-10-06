@@ -49,6 +49,7 @@ set(HEADERS
   ${INC_DIR}/calib/CostFunctionAndParams.h
   ${INC_DIR}/calib/ReprojectionCostFunctor.h
   ${INC_DIR}/calib/LocalParamSe3.h
+  ${INC_DIR}/calib/exception.h
   ${INC_DIR}/cam/camera_crtp.h
   ${INC_DIR}/cam/camera_models_crtp.h
   ${INC_DIR}/cam/camera_models_poly.h

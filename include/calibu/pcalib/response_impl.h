@@ -1,5 +1,6 @@
 #pragma once
 
+#include <calibu/calib/exception.h>
 #include <calibu/pcalib/response.h>
 
 namespace calibu
@@ -33,6 +34,7 @@ class ResponseImpl : public Response<Scalar>
      */
     Scalar operator()(Scalar value) const override
     {
+      CALIBU_DEBUG_MSG(this->InRange(value), "invalid intensity value");
       return Derived::GetResponse(this->params_.data(), value);
     }
 
@@ -52,8 +54,8 @@ class ResponseImpl : public Response<Scalar>
     void Initialize()
     {
       this->range_ = Eigen::Vector2d(0, 1);
-      this->type_ = std::string(Derived::Type);
-      this->params_.resize(Derived::NumParams);
+      this->type_ = std::string(Derived::type);
+      this->params_.resize(Derived::param_count);
       Derived::ResetParameters(this->params_.data());
     }
 };
