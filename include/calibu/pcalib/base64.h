@@ -318,43 +318,28 @@ class Base64Encoder : public Base64
 {
   public:
 
-    Base64Encoder()
-    {
-    }
+    /**
+     * Create a default Base64Encoder object
+     */
+    Base64Encoder();
 
+    /**
+     * Encodes given object and appends it to the stream
+     * @param value value to be encoded
+     * @return reference to the updated encoder
+     */
     template <typename T>
-    inline Base64Encoder& operator<<(const T& matrix)
-    {
-      // allocate encoding buffer
+    Base64Encoder& operator<<(const T& value);
 
-      std::vector<uint8_t> buffer(sizeof(uint64_t) * matrix.size());
-      uint64_t* pointer = reinterpret_cast<uint64_t*>(buffer.data());
-
-      // encode each cell of matrix
-
-      for (int col = 0; col < matrix.cols(); ++col)
-      {
-        for (int row = 0; row < matrix.rows(); ++row)
-        {
-          *pointer = DoubleEncoder::Encode(matrix(row, col));
-          ++pointer;
-        }
-      }
-
-      // write encoding to stream
-
-      stream_ << Base64::Encode(buffer);
-
-      return *this;
-    }
-
-    inline std::string str() const
-    {
-      return stream_.str();
-    }
+    /**
+     * Returns to current encoded string
+     * @return current base64 encoded string
+     */
+    std::string str() const;
 
   protected:
 
+    /** Output stream of encoded data */
     std::ostringstream stream_;
 };
 
@@ -362,39 +347,23 @@ class Base64Decoder: public Base64
 {
   public:
 
-    Base64Decoder(const std::string data) :
-      stream_(data)
-    {
-    }
+    /**
+     * Create a default Base64Decoder object for decoding the given string
+     * @param data base-64 encoded string to be decoded
+     */
+    Base64Decoder(const std::string data);
 
+    /**
+     * Reads the current stream and decodes value of the specified type
+     * @param output for decoded object
+     * @return retference to the updated decoder
+     */
     template <typename T>
-    inline Base64Decoder& operator>>(T& matrix)
-    {
-      const size_t bytes = sizeof(uint64_t) * matrix.size();
-      const size_t chars = Base64::GetEncodingSize(bytes);
-
-      std::vector<char> encoding(chars);
-      stream_.read(encoding.data(), chars);
-
-      const std::vector<uint8_t> data = Base64::Decode(encoding);
-      const uint64_t* pointer = reinterpret_cast<const uint64_t*>(data.data());
-
-      // decode each cell of matrix
-
-      for (int col = 0; col < matrix.cols(); ++col)
-      {
-        for (int row = 0; row < matrix.rows(); ++row)
-        {
-          matrix(row, col) = DoubleEncoder::Decode(*pointer);
-          ++pointer;
-        }
-      }
-
-      return *this;
-    }
+    Base64Decoder& operator>>(T& value);
 
   protected:
 
+    /** Input stream of encoded data */
     std::istringstream stream_;
 };
 

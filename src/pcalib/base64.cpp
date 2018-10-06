@@ -1,7 +1,10 @@
 #include <calibu/pcalib/base64.h>
+#include <Eigen/Eigen>
 
 namespace calibu
 {
+
+////////////////////////////////////////////////////////////////////////////////
 
 const uint8_t Base64::encoding_map[] =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -28,5 +31,77 @@ const uint8_t Base64::decoding_map[] =
    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 };
+
+////////////////////////////////////////////////////////////////////////////////
+
+Base64Encoder::Base64Encoder()
+{
+}
+
+template <>
+Base64Encoder& Base64Encoder::operator<<(const Eigen::MatrixXd& value)
+{
+  // allocate encoding buffer
+
+  std::vector<uint8_t> buffer(sizeof(uint64_t) * value.size());
+  uint64_t* pointer = reinterpret_cast<uint64_t*>(buffer.data());
+
+  // encode each cell of matrix
+
+  for (int col = 0; col < value.cols(); ++col)
+  {
+    for (int row = 0; row < value.rows(); ++row)
+    {
+      *pointer = DoubleEncoder::Encode(value(row, col));
+      ++pointer;
+    }
+  }
+
+  // write encoding to stream
+
+  stream_ << Base64::Encode(buffer);
+
+  return *this;
+}
+
+std::string Base64Encoder::str() const
+{
+  return stream_.str();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+Base64Decoder::Base64Decoder(const std::string data) :
+  stream_(data)
+{
+}
+
+template <>
+Base64Decoder& Base64Decoder::operator>>(Eigen::MatrixXd& value)
+{
+  const size_t bytes = sizeof(uint64_t) * value.size();
+  const size_t chars = Base64::GetEncodingSize(bytes);
+
+  std::vector<char> encoding(chars);
+  stream_.read(encoding.data(), chars);
+
+  const std::vector<uint8_t> data = Base64::Decode(encoding);
+  const uint64_t* pointer = reinterpret_cast<const uint64_t*>(data.data());
+
+  // decode each cell of matrix
+
+  for (int col = 0; col < value.cols(); ++col)
+  {
+    for (int row = 0; row < value.rows(); ++row)
+    {
+      value(row, col) = DoubleEncoder::Decode(*pointer);
+      ++pointer;
+    }
+  }
+
+  return *this;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 
 } // namespace calibu
