@@ -126,15 +126,15 @@ std::shared_ptr<Vignetting<double>> PhotoCalibReader::ReadVignetting(
   const int w = size(0, 0);
   const int h = size(1, 0);
 
-  if (type.compare(DenseVignetting<double>::Type) == 0)
+  if (type.compare(DenseVignetting<double>::type) == 0)
   {
     vignetting = std::make_shared<DenseVignetting<double>>(w, h);
   }
-  else if (type.compare(EvenPoly6Vignetting<double>::Type) == 0)
+  else if (type.compare(EvenPoly6Vignetting<double>::type) == 0)
   {
     vignetting = std::make_shared<EvenPoly6Vignetting<double>>(w, h);
   }
-  else if (type.compare(UniformVignetting<double>::Type) == 0)
+  else if (type.compare(UniformVignetting<double>::type) == 0)
   {
     vignetting = std::make_shared<UniformVignetting<double>>(w, h);
   }

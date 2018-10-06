@@ -37,7 +37,7 @@ class VignettingImpl : public Vignetting<Scalar>
      */
     Scalar operator()(Scalar u, Scalar v) const override
     {
-      return Derived::GetVignetting(this->params_.data(), u, v,
+      return Derived::GetAttenuation(this->params_.data(), u, v,
           this->width_, this->height_);
     }
 
@@ -59,7 +59,7 @@ class VignettingImpl : public Vignetting<Scalar>
     {
       const int w = this->width_;
       const int h = this->height_;
-      this->type_ = std::string(Derived::Type);
+      this->type_ = std::string(Derived::type);
       this->params_.resize(Derived::GetNumParams(w, h));
       Derived::ResetParameters(this->params_.data(), w, h);
     }

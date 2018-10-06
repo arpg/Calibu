@@ -16,7 +16,7 @@ class UniformVignetting :
   public:
 
     /** Unique vignetting type name */
-    static constexpr const char* Type = "uniform";
+    static constexpr const char* type = "uniform";
 
   public:
 
@@ -47,7 +47,7 @@ class UniformVignetting :
      * @return evaluated attenuation factor at image position
      */
     template <typename T>
-    static inline T GetVignetting(const T*, double, double, int, int)
+    static inline T GetAttenuation(const T*, double, double, int, int)
     {
       return T(1);
     }

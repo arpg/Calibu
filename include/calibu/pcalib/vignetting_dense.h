@@ -6,7 +6,9 @@ namespace calibu
 {
 
 /**
- * Dense vignetting model, with one attenuation factor specified per pixel
+ * Dense vignetting model, with one attenuation factor specified per pixel.
+ * The 1D parameter vector, representing the 2D matrix of attenuation factors,
+ * is organized in row-major order.
  */
 template <typename Scalar>
 class DenseVignetting : public VignettingImpl<Scalar, DenseVignetting<Scalar>>
@@ -14,7 +16,7 @@ class DenseVignetting : public VignettingImpl<Scalar, DenseVignetting<Scalar>>
   public:
 
     /** Unique vignetting type name */
-    static constexpr const char* Type = "dense";
+    static constexpr const char* type = "dense";
 
   public:
 
@@ -36,7 +38,7 @@ class DenseVignetting : public VignettingImpl<Scalar, DenseVignetting<Scalar>>
      * Evaluates the attenuation at the specified point in the image.
      * The attuentation factor is retrieved from a look up table, using bilinear
      * interpolation. If the point is outside the image an attenuation factor of
-     * zero is returned.
+     * the closest pixel inside the image will be used.
      * @param params model parameters used for evaluation
      * @param u horizontal image coordinate for point being evaluated
      * @param v vertical image coordinate for point being evaluated
@@ -45,19 +47,17 @@ class DenseVignetting : public VignettingImpl<Scalar, DenseVignetting<Scalar>>
      * @return evaluated attenuation factor at image position
      */
     template <typename T>
-    static inline T GetVignetting(const T* params, double u, double v,
+    static inline T GetAttenuation(const T* params, double u, double v,
         int width, int height)
     {
       // initialize attenuation
 
       T result = T(0);
 
-      // check if given position outside of image
+      // force point inside image
 
-      if (u < 0.5 || u > width - 0.5 || v < 0.5 || v > height - 0.5)
-      {
-        return result;
-      }
+      u = std::max(0.5, std::min(width - 0.5, u));
+      v = std::max(0.5, std::min(height - 0.5, v));
 
       // compute values and weigths for bilinear interpolation
 

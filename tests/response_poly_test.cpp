@@ -58,6 +58,7 @@ TEST(Poly3Response, Params)
 
   params = Eigen::Vector3d(0.5, -0.1, 2.1);
   response.SetParams(params);
+  params = response.GetParams();
   ASSERT_DOUBLE_EQ( 0.5, params[0]);
   ASSERT_DOUBLE_EQ(-0.1, params[1]);
   ASSERT_DOUBLE_EQ( 2.1, params[2]);
@@ -114,13 +115,13 @@ TEST(Poly3Response, Response)
 TEST(Poly3Response, Reset)
 {
   Poly3Response<double> response;
+  Eigen::Vector3d params;
 
   response.SetRange(0, 255);
   response.SetParams(Eigen::Vector3d(0.5, -0.1, 2.1));
   response.Reset();
 
-  const Eigen::VectorXd& params = response.GetParams();
-  ASSERT_EQ(3, params.size());
+  params = response.GetParams();
   ASSERT_DOUBLE_EQ(1, params[0]);
   ASSERT_DOUBLE_EQ(0, params[1]);
   ASSERT_DOUBLE_EQ(0, params[2]);
@@ -129,6 +130,12 @@ TEST(Poly3Response, Reset)
   {
     ASSERT_DOUBLE_EQ(i, response(i));
   }
+
+  params = Eigen::Vector3d(0.5, -0.1, 2.1);
+  Poly3Response<double>::ResetParameters(params.data());
+  ASSERT_DOUBLE_EQ(1, params[0]);
+  ASSERT_DOUBLE_EQ(0, params[1]);
+  ASSERT_DOUBLE_EQ(0, params[2]);
 }
 
 TEST(Poly4Response, Constructor)
@@ -184,6 +191,7 @@ TEST(Poly4Response, Params)
 
   params = Eigen::Vector4d(0.5, -0.1, 2.1, 5.6);
   response.SetParams(params);
+  params = response.GetParams();
   ASSERT_DOUBLE_EQ( 0.5, params[0]);
   ASSERT_DOUBLE_EQ(-0.1, params[1]);
   ASSERT_DOUBLE_EQ( 2.1, params[2]);
@@ -243,13 +251,13 @@ TEST(Poly4Response, Response)
 TEST(Poly4Response, Reset)
 {
   Poly4Response<double> response;
+  Eigen::Vector4d params;
 
   response.SetRange(0, 255);
   response.SetParams(Eigen::Vector4d(0.5, -0.1, 2.1, -0.2));
   response.Reset();
 
-  const Eigen::VectorXd& params = response.GetParams();
-  ASSERT_EQ(4, params.size());
+  params = response.GetParams();
   ASSERT_DOUBLE_EQ(1, params[0]);
   ASSERT_DOUBLE_EQ(0, params[1]);
   ASSERT_DOUBLE_EQ(0, params[2]);
@@ -259,6 +267,13 @@ TEST(Poly4Response, Reset)
   {
     ASSERT_DOUBLE_EQ(i, response(i));
   }
+
+  params = Eigen::Vector4d(0.5, -0.1, 2.1, -0.2);
+  Poly4Response<double>::ResetParameters(params.data());
+  ASSERT_DOUBLE_EQ(1, params[0]);
+  ASSERT_DOUBLE_EQ(0, params[1]);
+  ASSERT_DOUBLE_EQ(0, params[2]);
+  ASSERT_DOUBLE_EQ(0, params[3]);
 }
 
 } // namespace testing

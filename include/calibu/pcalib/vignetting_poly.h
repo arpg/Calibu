@@ -18,7 +18,7 @@ class EvenPoly6Vignetting :
   public:
 
     /** Unique vignetting type name */
-    static constexpr const char* Type = "epoly6";
+    static constexpr const char* type = "epoly6";
 
   public:
 
@@ -38,8 +38,8 @@ class EvenPoly6Vignetting :
 
     /**
      * Evaluates the attenuation at the specified point in the image.
-     * The evaluated point radius is computed in absolute pixels, so the
-     * provided image resolution arguments are ignored
+     * The evaluated point radius is computed relative to the image diagonal,
+     * so a point at any corner of the image would have a radius of one.
      * @param params model parameters used for evaluation
      * @param u horizontal image coordinate for point being evaluated
      * @param v vertical image coordinate for point being evaluated
@@ -48,12 +48,19 @@ class EvenPoly6Vignetting :
      * @return evaluated attenuation factor at image position
      */
     template <typename T>
-    static inline T GetVignetting(const T* params, double u, double v, int, int)
+    static inline T GetAttenuation(const T* params, double u, double v,
+        int width, int height)
     {
       // initialize attenuation
 
       T result = T(1);
-      const T rr = u * u + v * v;
+      const Eigen::Vector2d point(u, v);
+      const Eigen::Vector2d size(width, height);
+      const Eigen::Vector2d center = 0.5 * size;
+      const double radius = (point - center).norm();
+      const double max_radius = center.norm();
+      const double ratio = radius / max_radius;
+      const T rr = ratio * ratio;
       T pow = rr;
 
       // add each term of the polynomial
@@ -76,7 +83,7 @@ class EvenPoly6Vignetting :
     static inline void ResetParameters(double* params, int, int)
     {
       Eigen::Map<Eigen::Vector3d> x(params);
-      x = Eigen::Vector3d(1, 0, 0);
+      x = Eigen::Vector3d(0, 0, 0);
     }
 
     /**

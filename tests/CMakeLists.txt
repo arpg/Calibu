@@ -19,9 +19,11 @@ list(APPEND REQUIRED_LIBRARIES pthread)
 set(CPP_SOURCES
   base64_test.cpp
   pcalib_xml_test.cpp
-  response_test.cpp
   response_linear_test.cpp
   response_poly_test.cpp
+  vignetting_dense_test.cpp
+  vignetting_poly_test.cpp
+  vignetting_uniform_test.cpp
 )
 
 # build executable
