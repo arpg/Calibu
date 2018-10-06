@@ -9,7 +9,7 @@
 #include <calibu/pcalib/vignetting_poly.h>
 #include <calibu/pcalib/vignetting_uniform.h>
 
-#define NUM_SHORT_PARAMS 10
+#define NUM_SHORT_PARAMS 25
 
 namespace calibu
 {
@@ -26,13 +26,8 @@ void PhotoCalibReader::Read(PhotoCalibd& calib)
 {
   calib.Clear();
   PrepareRead();
-
-  if (root_)
-  {
-    ReadResponses(calib);
-    ReadVignettings(calib);
-  }
-
+  ReadResponses(calib);
+  ReadVignettings(calib);
   FinishRead();
 }
 
@@ -40,29 +35,39 @@ void PhotoCalibReader::PrepareRead()
 {
   document_.LoadFile(filename_.c_str());
   root_ = document_.FirstChildElement("pcalib");
-  if (!root_) std::cerr << "missing 'pcalib' element" << std::endl;
+  CALIBU_ASSERT_DESC(root_, "missing 'pcalib' element");
 }
 
 void PhotoCalibReader::ReadResponses(PhotoCalibd& calib)
 {
+  // get first response
   const tinyxml2::XMLElement* child = root_->FirstChildElement("response");
 
+  // process until no more responses
   while (child)
   {
+    // process current resposne
     std::shared_ptr<Response<double>> response = ReadResponse(child);
     if (response) calib.responses.push_back(response);
+
+    // get next response
     child = child->NextSiblingElement("response");
   }
 }
 
 void PhotoCalibReader::ReadVignettings(PhotoCalibd& calib)
 {
+  // get first vignetting
   const tinyxml2::XMLElement* child = root_->FirstChildElement("vignetting");
 
+  // process until no more vignettings
   while (child)
   {
+    // process current vignetting
     std::shared_ptr<Vignetting<double>> vignetting = ReadVignetting(child);
     if (vignetting) calib.vignettings.push_back(vignetting);
+
+    // get next vignetting
     child = child->NextSiblingElement("vignetting");
   }
 }
@@ -72,43 +77,26 @@ std::shared_ptr<Response<double> > PhotoCalibReader::ReadResponse(
 {
   using namespace tinyxml2;
   std::shared_ptr<Response<double>> response;
+
+  //read type
   const std::string type(element->Attribute("type"));
+  response = CreateResponse(type);
 
-  if (type.compare(Poly3Response<double>::type) == 0)
-  {
-    response = std::make_shared<Poly3Response<double>>();
-  }
-  else if (type.compare(Poly4Response<double>::type) == 0)
-  {
-    response = std::make_shared<Poly4Response<double>>();
-  }
-  else if (type.compare(LinearResponse<double>::type) == 0)
-  {
-    response = std::make_shared<LinearResponse<double>>();
-  }
-  else
-  {
-    std::cerr << "unknown response type '" << type << "'" << std::endl;
-  }
+  // read range
+  Eigen::MatrixXd range;
+  range = response->GetRange();
 
-  if (response)
-  {
-    // read range
-    Eigen::MatrixXd range;
-    range = response->GetRange();
+  const XMLElement* range_elem = element->FirstChildElement("range");
+  if (range_elem) GetMatrix(range_elem->GetText(), range);
+  response->SetRange(range);
 
-    const XMLElement* range_elem = element->FirstChildElement("range");
-    if (range_elem) GetMatrix(range_elem->GetText(), range);
-    response->SetRange(range);
+  // read params
+  Eigen::MatrixXd params;
+  params = response->GetParams();
 
-    // read params
-    Eigen::MatrixXd params;
-    params = response->GetParams();
-
-    const XMLElement* params_elem = element->FirstChildElement("params");
-    if (params_elem) GetMatrix(params_elem->GetText(), params);
-    response->SetParams(params);
-  }
+  const XMLElement* params_elem = element->FirstChildElement("params");
+  if (params_elem) GetMatrix(params_elem->GetText(), params);
+  response->SetParams(params);
 
   return response;
 }
@@ -118,40 +106,25 @@ std::shared_ptr<Vignetting<double>> PhotoCalibReader::ReadVignetting(
 {
   using namespace tinyxml2;
   std::shared_ptr<Vignetting<double>> vignetting;
-  const std::string type(element->Attribute("type"));
 
+  // read size
   Eigen::MatrixXd size = Eigen::Vector2d(0, 0);
   const XMLElement* size_elem = element->FirstChildElement("size");
   if (size_elem) GetMatrix(size_elem->GetText(), size);
   const int w = size(0, 0);
   const int h = size(1, 0);
 
-  if (type.compare(DenseVignetting<double>::type) == 0)
-  {
-    vignetting = std::make_shared<DenseVignetting<double>>(w, h);
-  }
-  else if (type.compare(EvenPoly6Vignetting<double>::type) == 0)
-  {
-    vignetting = std::make_shared<EvenPoly6Vignetting<double>>(w, h);
-  }
-  else if (type.compare(UniformVignetting<double>::type) == 0)
-  {
-    vignetting = std::make_shared<UniformVignetting<double>>(w, h);
-  }
-  else
-  {
-    std::cerr << "unknown vignetting type '" << type << "'" << std::endl;
-  }
+  // read type
+  const std::string type(element->Attribute("type"));
+  vignetting = CreateVignetting(type, w, h);
 
-  if (vignetting)
-  {
-    Eigen::MatrixXd params;
-    params = vignetting->GetParams();
+  // read params
+  Eigen::MatrixXd params;
+  params = vignetting->GetParams();
 
-    const XMLElement* params_elem = element->FirstChildElement("params");
-    if (params_elem) GetMatrix(params_elem->GetText(), params);
-    vignetting->SetParams(params);
-  }
+  const XMLElement* params_elem = element->FirstChildElement("params");
+  if (params_elem) GetMatrix(params_elem->GetText(), params);
+  vignetting->SetParams(params);
 
   return vignetting;
 }
@@ -160,6 +133,44 @@ void PhotoCalibReader::FinishRead()
 {
   document_.Clear();
   root_ = nullptr;
+}
+
+std::shared_ptr<Response<double>> PhotoCalibReader::CreateResponse(
+    const std::string& type)
+{
+  if (type.compare(Poly3Response<double>::type) == 0)
+  {
+    return std::make_shared<Poly3Response<double>>();
+  }
+  else if (type.compare(Poly4Response<double>::type) == 0)
+  {
+    return std::make_shared<Poly4Response<double>>();
+  }
+  else if (type.compare(LinearResponse<double>::type) == 0)
+  {
+    return std::make_shared<LinearResponse<double>>();
+  }
+
+  CALIBU_THROW("unsupported response type: " + type);
+}
+
+std::shared_ptr<Vignetting<double>> PhotoCalibReader::CreateVignetting(
+    const std::string& type, int width, int height)
+{
+  if (type.compare(DenseVignetting<double>::type) == 0)
+  {
+    return std::make_shared<DenseVignetting<double>>(width, height);
+  }
+  else if (type.compare(EvenPoly6Vignetting<double>::type) == 0)
+  {
+    return std::make_shared<EvenPoly6Vignetting<double>>(width, height);
+  }
+  else if (type.compare(UniformVignetting<double>::type) == 0)
+  {
+    return std::make_shared<UniformVignetting<double>>(width, height);
+  }
+
+  CALIBU_THROW("unsupported vignetting type: " + type);
 }
 
 void PhotoCalibReader::GetMatrix(const char* text, Eigen::MatrixXd& matrix)
@@ -361,6 +372,8 @@ std::shared_ptr<PhotoCalibd> ReadXmlPhotoCalib(const std::string& filename)
   reader.Read(*calib);
   return calib;
 }
+
+////////////////////////////////////////////////////////////////////////////////
 
 void WriteXmlPhotoCalib(const std::string& filename, const PhotoCalibd& calib)
 {

@@ -11,7 +11,7 @@ namespace calibu
 namespace testing
 {
 
-TEST(PhotoCalibWriter, Write)
+TEST(PhotoCalibXml, ReadWrite)
 {
   PhotoCalibd found;
   PhotoCalibd expected;
@@ -82,8 +82,31 @@ TEST(PhotoCalibWriter, Write)
     std::shared_ptr<const Response<double>> e = expected.responses[i];
     std::shared_ptr<const Response<double>> f = found.responses[i];
 
+    ASSERT_EQ(e->Type(), f->Type());
     ASSERT_NEAR(e->GetRange()[0], f->GetRange()[0], 1E-10);
     ASSERT_NEAR(f->GetRange()[1], f->GetRange()[1], 1E-10);
+
+    const Eigen::VectorXd& eparams = e->GetParams();
+    const Eigen::VectorXd& fparams = f->GetParams();
+
+    ASSERT_EQ(eparams.size(), fparams.size());
+
+    for (int j = 0; j < eparams.size(); ++j)
+    {
+      ASSERT_NEAR(eparams[j], fparams[j], 1E-10);
+    }
+  }
+
+  ASSERT_EQ(expected.vignettings.size(), found.vignettings.size());
+
+  for (size_t i = 0; i < expected.vignettings.size(); ++i)
+  {
+    std::shared_ptr<const Vignetting<double>> e = expected.vignettings[i];
+    std::shared_ptr<const Vignetting<double>> f = found.vignettings[i];
+
+    ASSERT_EQ(e->Type(), f->Type());
+    ASSERT_EQ(e->Width(), f->Width());
+    ASSERT_EQ(e->Height(), f->Height());
 
     const Eigen::VectorXd& eparams = e->GetParams();
     const Eigen::VectorXd& fparams = f->GetParams();
