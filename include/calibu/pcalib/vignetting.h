@@ -2,7 +2,7 @@
 
 #include <iostream>
 #include <Eigen/Eigen>
-#include <calibu/calib/exception.h>
+#include <calibu/exception.h>
 
 namespace calibu
 {
@@ -82,7 +82,7 @@ class Vignetting
      */
     inline void SetParams(const Eigen::VectorXd& params)
     {
-      CALIBU_ASSERT_MSG(params.size() == params_.size(), "invalid param count");
+      CALIBU_ASSERT_DESC(params.size() == params_.size(), "invalid param count");
       params_ = params;
     }
 

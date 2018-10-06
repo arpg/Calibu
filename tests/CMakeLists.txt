@@ -18,6 +18,7 @@ list(APPEND REQUIRED_LIBRARIES pthread)
 
 set(CPP_SOURCES
   base64_test.cpp
+  exception_test.cpp
   pcalib_xml_test.cpp
   response_linear_test.cpp
   response_poly_test.cpp
