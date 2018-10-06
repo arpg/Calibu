@@ -9,6 +9,10 @@
 namespace calibu
 {
 
+/**
+ * Handles encoding & decoding double-precision floating-point numbers,
+ * ensuring values can be written and read in a platform-independent manner
+ */
 class DoubleEncoder
 {
   protected:
@@ -136,6 +140,10 @@ class DoubleEncoder
     }
 };
 
+/**
+ * Handles encoding of byte arrays as base-64 strings, which can be used when
+ * writting and reading large amounts of data to/from text files
+ */
 class Base64
 {
   protected:

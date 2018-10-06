@@ -73,7 +73,7 @@ TEST(PhotoCalibWriter, Write)
   PhotoCalibReader reader(filename);
   reader.Read(found);
 
-  // std::remove(filename.c_str());
+  std::remove(filename.c_str());
 
   ASSERT_EQ(expected.responses.size(), found.responses.size());
 

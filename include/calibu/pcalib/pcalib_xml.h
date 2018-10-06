@@ -9,12 +9,23 @@
 namespace calibu
 {
 
+/**
+ * Reads photometric calibration objects from an XML file
+ */
 class PhotoCalibReader
 {
   public:
 
+    /**
+     * Creates PhotoCalibReader object for read from the given file
+     * @param filename full file path to the input XML file
+     */
     PhotoCalibReader(const std::string& filename);
 
+    /**
+     * Reads calibration from file and stores results in the give argument
+     * @param calib output calibration object
+     */
     void Read(PhotoCalibd& calib);
 
   protected:

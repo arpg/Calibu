@@ -5,17 +5,25 @@
 namespace calibu
 {
 
+/**
+ * 3rd order polynomial inverse-response model.
+ */
 template <typename Scalar>
 class Poly3Response : public ResponseImpl<Scalar, Poly3Response<Scalar>>
 {
   public:
 
+    /** Number of parameters used for model */
     static const int NumParams = 3;
 
+    /** Unique inverse-response type name */
     static constexpr const char* Type = "poly3";
 
   public:
 
+    /**
+     * Create inverse-response model
+     */
     Poly3Response()
     {
     }
@@ -24,11 +32,21 @@ class Poly3Response : public ResponseImpl<Scalar, Poly3Response<Scalar>>
     {
     }
 
+    /**
+     * Evaluates the inverse-response for the given pixel intensity.
+     * @param params model parameters used for evaluation
+     * @param value pixel intensity
+     * @return evaluated inverse-response
+     */
     template <typename T>
     static inline T GetResponse(const T* params, T value)
     {
+      // initialize attenuation
+
       T pow = value;
       T result = T(0);
+
+      // add each term of the polynomial
 
       for (int i = 0; i < NumParams; ++i)
       {
@@ -39,6 +57,11 @@ class Poly3Response : public ResponseImpl<Scalar, Poly3Response<Scalar>>
       return result;
     }
 
+    /**
+     * Resets the model parameters, which results in a linear response.
+     * @param params parameter vector to be reset
+     * @param range min and max range of image intensities
+     */
     template <typename T>
     static inline void ResetParameters(T* params)
     {
@@ -47,17 +70,25 @@ class Poly3Response : public ResponseImpl<Scalar, Poly3Response<Scalar>>
     }
 };
 
+/**
+ * 4th order polynomial inverse-response model.
+ */
 template <typename Scalar>
 class Poly4Response : public ResponseImpl<Scalar, Poly4Response<Scalar>>
 {
   public:
 
+    /** Number of parameters used for model */
     static const int NumParams = 4;
 
+    /** Unique inverse-response type name */
     static constexpr const char* Type = "poly4";
 
   public:
 
+    /**
+     * Create inverse-response model
+     */
     Poly4Response()
     {
     }
@@ -66,11 +97,21 @@ class Poly4Response : public ResponseImpl<Scalar, Poly4Response<Scalar>>
     {
     }
 
+    /**
+     * Evaluates the inverse-response for the given pixel intensity.
+     * @param params model parameters used for evaluation
+     * @param value pixel intensity
+     * @return evaluated inverse-response
+     */
     template <typename T>
     static inline T GetResponse(const T* params, T value)
     {
+      // initialize attenuation
+
       T pow = value;
       T result = T(0);
+
+      // add each term of the polynomial
 
       for (int i = 0; i < NumParams; ++i)
       {
@@ -81,6 +122,11 @@ class Poly4Response : public ResponseImpl<Scalar, Poly4Response<Scalar>>
       return result;
     }
 
+    /**
+     * Resets the model parameters, which results in a linear response.
+     * @param params parameter vector to be reset
+     * @param range min and max range of image intensities
+     */
     template <typename T>
     static inline void ResetParameters(T* params)
     {
