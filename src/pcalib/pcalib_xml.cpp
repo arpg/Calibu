@@ -87,7 +87,8 @@ std::shared_ptr<Response<double> > PhotoCalibReader::ReadResponse(
   range = response->GetRange();
 
   const XMLElement* range_elem = element->FirstChildElement("range");
-  if (range_elem) GetMatrix(range_elem->GetText(), range);
+  CALIBU_ASSERT_DESC(range_elem, "response missing range element");
+  GetMatrix(range_elem->GetText(), range);
   response->SetRange(range);
 
   // read params
@@ -110,9 +111,13 @@ std::shared_ptr<Vignetting<double>> PhotoCalibReader::ReadVignetting(
   // read size
   Eigen::MatrixXd size = Eigen::Vector2d(0, 0);
   const XMLElement* size_elem = element->FirstChildElement("size");
-  if (size_elem) GetMatrix(size_elem->GetText(), size);
+  CALIBU_ASSERT_DESC(size_elem, "vignetting missing size element");
+
+  GetMatrix(size_elem->GetText(), size);
   const int w = size(0, 0);
   const int h = size(1, 0);
+
+  CALIBU_ASSERT_DESC(w > 0 && h > 0, "invalid vignetting size");
 
   // read type
   const std::string type(element->Attribute("type"));
