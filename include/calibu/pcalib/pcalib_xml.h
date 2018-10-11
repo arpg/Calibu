@@ -10,21 +10,21 @@ namespace calibu
 {
 
 /**
- * Reads photometric calibration objects from an XML file
+ * Reads photometric rig objects from an XML file
  */
 class PhotoRigReader
 {
   public:
 
     /**
-     * Creates PhotoCalibReader object for reading from the given file
+     * Creates PhotoRigReader object for reading from the given file
      * @param filename full file path to the input XML file
      */
     PhotoRigReader(const std::string& filename);
 
     /**
-     * Reads calibration from file and stores results in the give argument
-     * @param calib output calibration object
+     * Reads a rig from file and stores results in the give argument
+     * @param rig output rig object
      */
     void Read(PhotoRigd& rig);
 
@@ -44,6 +44,7 @@ class PhotoRigReader
     /**
      * Reads a camera model from the given XML element
      * @param element XML element to be parsed
+     * @return parsed camera model
      */
     std::shared_ptr<PhotoCamerad> ReadCamera(
         const tinyxml2::XMLElement* element);
@@ -142,21 +143,21 @@ class PhotoRigReader
 };
 
 /**
- * Writes photometric calibration objects to an XML file
+ * Writes photometric rig objects to an XML file
  */
 class PhotoRigWriter
 {
   public:
 
     /**
-     * Creates PhotoCalibWriter object for writting to the given file
+     * Creates PhotoRigWriter object for writting to the given file
      * @param filename full file path to the output XML file
      */
     PhotoRigWriter(const std::string& filename);
 
     /**
-     * Writes a calibration from file and stores results in the give argument
-     * @param calib output calibration object
+     * Writes the given rig to the output XML file
+     * @param rig output rig object
      */
     void Write(const PhotoRigd& rig);
 
@@ -168,27 +169,29 @@ class PhotoRigWriter
     void PrepareWrite();
 
     /**
-     * Writes a calibration from file and stores results in the give argument
-     * @param calib output calibration object
+     * Writes all the cameras in the rig to the output XML file
+     * @param rig rig containing the cameras to be written
      */
     void WriteCameras(const PhotoRigd& rig);
 
     /**
-     * Writes a calibration from file and stores results in the give argument
-     * @param calib output calibration object
+     * Writes the given camera to the output XML file
+     * @param camera output camera object
      */
     void WriteCamera(const PhotoCamerad& camera);
 
     /**
-     * Writes all the response models in the given calibration to file
-     * @param calib calibration containing responses to be written
+     * Writes all the response models in the given camera to file
+     * @param parent parent XML element to be parsed
+     * @param camera camera containing responses to be written
      */
     void WriteResponses(tinyxml2::XMLElement* parent,
         const PhotoCamerad& camera);
 
     /**
-     * Writes all the vignetting models in the given calibration to file
-     * @param calib calibration containing vignettings to be written
+     * Writes all the vignetting models in the given camera to file
+     * @param parent parent XML element to be parsed
+     * @param camera camera containing vignettings to be written
      */
     void WriteVignettings(tinyxml2::XMLElement* parent,
         const PhotoCamerad& camera);
@@ -245,17 +248,17 @@ class PhotoRigWriter
 };
 
 /**
- * Parses the photometric calibration from the given XML file
+ * Parses the photometric camera rig from the given XML file
  * @param filename XML file to be parsed
- * @return photometric calibration parse from the XML file
+ * @return photometric camera rig parse from the XML file
  */
 CALIBU_EXPORT
 std::shared_ptr<PhotoRigd> ReadXmlPhotoRig(const std::string& filename);
 
 /**
- * Writes the given photometric calibration to the specified XML file
+ * Writes the given photometric camera rig to the specified XML file
  * @param filename output XML file to be written
- * @param calib calibration object to be written
+ * @param rig photometric camera rig object to be written
  */
 CALIBU_EXPORT
 void WriteXmlPhotoRig(const std::string& filename, const PhotoRigd& rig);
