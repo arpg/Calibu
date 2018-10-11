@@ -12,7 +12,7 @@ namespace calibu
 /**
  * Reads photometric calibration objects from an XML file
  */
-class PhotoCalibReader
+class PhotoRigReader
 {
   public:
 
@@ -20,13 +20,13 @@ class PhotoCalibReader
      * Creates PhotoCalibReader object for reading from the given file
      * @param filename full file path to the input XML file
      */
-    PhotoCalibReader(const std::string& filename);
+    PhotoRigReader(const std::string& filename);
 
     /**
      * Reads calibration from file and stores results in the give argument
      * @param calib output calibration object
      */
-    void Read(PhotoCalibd& calib);
+    void Read(PhotoRigd& rig);
 
   protected:
 
@@ -36,16 +36,33 @@ class PhotoCalibReader
     void PrepareRead();
 
     /**
-     * Reads all responses models and writes output to given calibration
-     * @param calib output calibration object
+     * Reads all camera models and writes output to given rig
+     * @param rig output rig object
      */
-    void ReadResponses(PhotoCalibd& calib);
+    void ReadCameras(PhotoRigd& rig);
 
     /**
-     * Reads all vignetting models and writes output to given calibration
-     * @param calib output calibration object
+     * Reads a camera model from the given XML element
+     * @param element XML element to be parsed
      */
-    void ReadVignettings(PhotoCalibd& calib);
+    std::shared_ptr<PhotoCamerad> ReadCamera(
+        const tinyxml2::XMLElement* element);
+
+    /**
+     * Reads all responses models and writes output to given camera
+     * @param parent parent camera XML element to parase
+     * @param camera output camera object
+     */
+    void ReadResponses(const tinyxml2::XMLElement* parent,
+        PhotoCamerad& camera);
+
+    /**
+     * Reads all vignetting models and writes output to given camera
+     * @param parent parent camera XML element to parase
+     * @param camera output camera object
+     */
+    void ReadVignettings(const tinyxml2::XMLElement* parent,
+        PhotoCamerad& camera);
 
     /**
      * Reads a response model from the given XML element.
@@ -127,7 +144,7 @@ class PhotoCalibReader
 /**
  * Writes photometric calibration objects to an XML file
  */
-class PhotoCalibWriter
+class PhotoRigWriter
 {
   public:
 
@@ -135,13 +152,13 @@ class PhotoCalibWriter
      * Creates PhotoCalibWriter object for writting to the given file
      * @param filename full file path to the output XML file
      */
-    PhotoCalibWriter(const std::string& filename);
+    PhotoRigWriter(const std::string& filename);
 
     /**
      * Writes a calibration from file and stores results in the give argument
      * @param calib output calibration object
      */
-    void Write(const PhotoCalibd& calib);
+    void Write(const PhotoRigd& rig);
 
   protected:
 
@@ -151,28 +168,44 @@ class PhotoCalibWriter
     void PrepareWrite();
 
     /**
+     * Writes a calibration from file and stores results in the give argument
+     * @param calib output calibration object
+     */
+    void WriteCameras(const PhotoRigd& rig);
+
+    /**
+     * Writes a calibration from file and stores results in the give argument
+     * @param calib output calibration object
+     */
+    void WriteCamera(const PhotoCamerad& camera);
+
+    /**
      * Writes all the response models in the given calibration to file
      * @param calib calibration containing responses to be written
      */
-    void WriteResponses(const PhotoCalibd& calib);
+    void WriteResponses(tinyxml2::XMLElement* parent,
+        const PhotoCamerad& camera);
 
     /**
      * Writes all the vignetting models in the given calibration to file
      * @param calib calibration containing vignettings to be written
      */
-    void WriteVignettings(const PhotoCalibd& calib);
+    void WriteVignettings(tinyxml2::XMLElement* parent,
+        const PhotoCamerad& camera);
 
     /**
      * Writes the given response to file
      * @param response response to be written
      */
-    void WriteResponse(const Response<double>& response);
+    void WriteResponse(tinyxml2::XMLElement* parent,
+        const Response<double>& response);
 
     /**
      * Writes the given vignetting to file
      * @param vignetting vignetting to be written
      */
-    void WriteVignetting(const Vignetting<double>& vignetting);
+    void WriteVignetting(tinyxml2::XMLElement* parent,
+        const Vignetting<double>& vignetting);
 
     /**
      * Closes the XML document
@@ -217,7 +250,7 @@ class PhotoCalibWriter
  * @return photometric calibration parse from the XML file
  */
 CALIBU_EXPORT
-std::shared_ptr<PhotoCalibd> ReadXmlPhotoCalib(const std::string& filename);
+std::shared_ptr<PhotoRigd> ReadXmlPhotoRig(const std::string& filename);
 
 /**
  * Writes the given photometric calibration to the specified XML file
@@ -225,6 +258,6 @@ std::shared_ptr<PhotoCalibd> ReadXmlPhotoCalib(const std::string& filename);
  * @param calib calibration object to be written
  */
 CALIBU_EXPORT
-void WriteXmlPhotoCalib(const std::string& filename, const PhotoCalibd& calib);
+void WriteXmlPhotoRig(const std::string& filename, const PhotoRigd& rig);
 
 } // namespace calibu

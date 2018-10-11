@@ -16,7 +16,7 @@ namespace calibu
  * pertains to all color channels. The same is true for vignetting.
  */
 template <typename Scalar>
-struct PhotoCalib
+struct PhotoCamera
 {
   /**
    * Clears the response and vignetting vectors
@@ -34,6 +34,27 @@ struct PhotoCalib
   std::vector<std::shared_ptr<Vignetting<Scalar>>> vignettings;
 };
 
-typedef PhotoCalib<double> PhotoCalibd;
+/**
+ * Represents a collection photometric camera calibrations
+ * The order of cameras is assumed to align with input camera streams order.
+ */
+template <typename Scalar>
+struct PhotoRig
+{
+  /**
+   * Clears camera vector
+   */
+  inline void Clear()
+  {
+    cameras.clear();
+  }
+
+  /** Ordered list of photometric camera calibrations */
+  std::vector<std::shared_ptr<PhotoCamera<Scalar>>> cameras;
+};
+
+typedef PhotoCamera<double> PhotoCamerad;
+
+typedef PhotoRig<double> PhotoRigd;
 
 } // namespace calibu
