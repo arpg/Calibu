@@ -44,6 +44,7 @@ set( INC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include/calibu )
 set(HEADERS
   ${INC_DIR}/Calibu.h
   ${INC_DIR}/Platform.h
+  ${INC_DIR}/exception.h
   ${INC_DIR}/calib/AutoDiffArrayCostFunction.h
   ${INC_DIR}/calib/Calibrator.h
   ${INC_DIR}/calib/CostFunctionAndParams.h
@@ -68,6 +69,18 @@ set(HEADERS
   ${INC_DIR}/image/ImageProcessing.h
   ${INC_DIR}/image/IntegralImage.h
   ${INC_DIR}/image/Label.h
+  ${INC_DIR}/pcalib/base64.h
+  ${INC_DIR}/pcalib/pcalib.h
+  ${INC_DIR}/pcalib/pcalib_xml.h
+  ${INC_DIR}/pcalib/response.h
+  ${INC_DIR}/pcalib/response_impl.h
+  ${INC_DIR}/pcalib/response_linear.h
+  ${INC_DIR}/pcalib/response_poly.h
+  ${INC_DIR}/pcalib/vignetting_dense.h
+  ${INC_DIR}/pcalib/vignetting.h
+  ${INC_DIR}/pcalib/vignetting_impl.h
+  ${INC_DIR}/pcalib/vignetting_poly.h
+  ${INC_DIR}/pcalib/vignetting_uniform.h
   ${INC_DIR}/pose/Ransac.h
   ${INC_DIR}/target/Hungarian.h
   ${INC_DIR}/target/LineGroup.h
@@ -93,6 +106,8 @@ SET(SOURCES
   ${SRC_DIR}/conics/FindConics.cpp
   ${SRC_DIR}/image/ImageProcessing.cpp
   ${SRC_DIR}/image/Label.cpp
+  ${SRC_DIR}/pcalib/base64.cpp
+  ${SRC_DIR}/pcalib/pcalib_xml.cpp
   ${SRC_DIR}/target/Hungarian.cpp
   ${SRC_DIR}/target/RandomGrid.cpp
   ${SRC_DIR}/target/TargetGridDot.cpp
@@ -146,6 +161,15 @@ IF(MSVC)
         STATIC_DEFINE ${LIBRARY_NAME_CAPS}_BUILT_AS_STATIC
     )
 ENDIF()
+
+#######################################################
+## Optionally create unit tests
+
+option(BUILD_TESTS "Build unit tests" OFF)
+
+if(BUILD_TESTS)
+  add_subdirectory(tests)
+endif()
 
 #######################################################
 ## Create configure file for inclusion in library
